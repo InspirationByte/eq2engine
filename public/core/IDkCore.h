@@ -7,7 +7,7 @@
 
 #pragma once
 
-class KeyValues;
+struct KVSection;
 class ICommandLine;
 
 using CoreExceptionCallback = void(*)();
@@ -28,6 +28,8 @@ struct CoreAppInitParameters
 	CommandLine		commandLine = nullptr;
 };
 
+struct OSModule;
+
 // DarkTech core interface
 class IDkCore
 {
@@ -45,8 +47,19 @@ public:
 	virtual void					RemoveExceptionCallback(CoreExceptionCallback callback) = 0;
 
 	// now configuration is global for all applications
-	virtual KeyValues*					GetConfig() const = 0;
+	virtual const KVSection&			GetConfig() const = 0;
 	virtual const CoreDebugSettings&	GetDebugSettings() const = 0;
+
+// Dynamic library stuff
+
+	// load module
+	virtual OSModule*				OpenModule(const char* mod_name, EqString* outError = nullptr) = 0;
+
+	// free module
+	virtual void					CloseModule(OSModule* pModule) = 0;
+
+	// returns procedure address of the loaded module
+	virtual void*					GetProcedureAddress(OSModule* pModule, const char* pszProc) const = 0;
 
 // Interface management for engine
 

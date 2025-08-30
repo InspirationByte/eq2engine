@@ -938,3 +938,7 @@ inline TMat4<T> inverse(const TMat4<T> &m)
 {
 	return !m;
 }
+
+#undef rcDot2
+#undef rcDot3
+#undef rcDot4

@@ -290,7 +290,6 @@ static int UserTypeCallMemberFunc(lua_State* L)
 	void* thisPtr = thisGetter(L, isConstRef);
 	if (!thisPtr)
 	{
-		// TODO: ctx.ThrowError
 		luaL_error(L, "Error calling %s::%s - self is nil", className, mem->name);
 		return -1;
 	}
@@ -410,7 +409,6 @@ static int UserTypeIndexImpl(lua_State* L)
 		ASSERT(mem->type == esl::MEMB_VAR);
 		if (!thisPtr)
 		{
-			// TODO: ThrowError
 			luaL_error(L, "self is nil while accessing %s.%s", className, mem->name);
 			return 0;
 		}
@@ -453,7 +451,6 @@ static int UserTypeNewIndexImpl(lua_State* L)
 		ASSERT(mem->type == esl::MEMB_VAR);
 		if (!thisPtr)
 		{
-			// TODO: ThrowError
 			luaL_error(L, "self is nil while accessing property %s.%s", className, mem->name);
 			return 0;
 		}

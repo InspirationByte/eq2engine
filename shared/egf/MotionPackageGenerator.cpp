@@ -527,16 +527,18 @@ static bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, DSMod
 }
 
 
-void CMotionPackageGenerator::LoadFBXAnimations(const KVSection* section)
+void CMotionPackageGenerator::LoadFBXAnimations(const KVSection& section)
 {
-	const char* fbxFileName = KV_GetValueString(section);
+	EqStringRef fbxFileName;
+	section.GetValues(fbxFileName);
+
 	EqString finalFileName = fnmPathCombine(m_animPath, "anims", fbxFileName);
 
 	// load from exporter-supported path
 	if (!g_fileSystem->FileExist(finalFileName))
 		finalFileName = fnmPathCombine(m_animPath, fbxFileName);
 
-	SharedModel::LoadFBXAnimations(m_animations, finalFileName, KV_GetValueString(section->FindSection("meshFilter"), 0, nullptr));
+	SharedModel::LoadFBXAnimations(m_animations, finalFileName, KV_GetValueString(section.FindSection("meshFilter"), 0, nullptr));
 }
 
 //************************************
@@ -647,9 +649,9 @@ int CMotionPackageGenerator::DuplicateAnimationByIndex(int animIndex, const char
 //************************************
 // Loads animation from key-values parameters and applies.
 //************************************
-void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
+void CMotionPackageGenerator::LoadAnimation(const KVSection& section)
 {
-	KVSection* pPathKey = section->FindSection("path");
+	KVSection* pPathKey = section.FindSection("path");
 
 	if(!pPathKey)
 	{
@@ -659,15 +661,15 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 
 	const char* animName = KV_GetValueString(pPathKey);
 
-	const KVSection* externalpath = section->FindSection("externalFile");
+	const KVSection* externalpath = section.FindSection("externalFile");
 	if(externalpath)
 		animName = KV_GetValueString(externalpath);
 
-	Msg("LoadAnimation '%s' as '%s'\n", animName, KV_GetValueString(section));
+	Msg("LoadAnimation '%s' as '%s'\n", animName, KV_GetValueString(&section));
 
 	int animIdx = GetAnimationIndex(animName);
 	if(animIdx != -1)
-		animIdx = DuplicateAnimationByIndex(animIdx, KV_GetValueString(section));
+		animIdx = DuplicateAnimationByIndex(animIdx, KV_GetValueString(&section));
 
 	if (animIdx == -1) // try to load new one if not found
 		animIdx = LoadAnimationFromESA(animName);
@@ -684,11 +686,11 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 	Vector3D animRootVelocity = vec3_zero;
 	float velocityRate = 1.0f;
 
-	section->Get("offset").GetValues(animRootOffset);
+	section.Get("offset").GetValues(animRootOffset);
 	if (length(animRootOffset) > 0)
 		Msg("...animation offset: %f %f %f\n", animRootOffset.x, animRootOffset.y, animRootOffset.z);
 
-	if (section->Get("moveVelocity").GetValues(animRootVelocity, velocityRate) == 2)
+	if (section.Get("moveVelocity").GetValues(animRootVelocity, velocityRate) == 2)
 		animRootVelocity /= velocityRate;
 
 	DSAnimData& currentAnim = m_animations[ animIdx ];
@@ -701,7 +703,7 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 		VelocityBackTransform(currentAnim.bones[i], animRootVelocity);
 	}
 
-	const KVSection* subtractKey = section->FindSection("subtract");
+	const KVSection* subtractKey = section.FindSection("subtract");
 	if(subtractKey)
 	{
 		const int subtractByAnimIdx = GetAnimationIndex( KV_GetValueString(subtractKey) );
@@ -718,7 +720,7 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 
 	int cropFrom = -1;
 	int cropTo = -1;
-	if (section->Get("crop").GetValues(cropFrom, cropTo))
+	if (section.Get("crop").GetValues(cropFrom, cropTo))
 	{
 		if (cropFrom >= 0)
 		{
@@ -736,7 +738,7 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 	}
 
 	int customLength = -1;
-	if(section->Get("customLength").GetValues(customLength))
+	if(section.Get("customLength").GetValues(customLength))
 	{
 		if (customLength > 0)
 		{
@@ -750,7 +752,7 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 	}
 
 	bool reverse = false;
-	section->Get("reverse").GetValues(reverse);
+	section.Get("reverse").GetValues(reverse);
 	if(reverse)
 	{
 		Msg("...reverse\n");
@@ -761,11 +763,11 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 //************************************
 // Parses animation list from script
 //************************************
-bool CMotionPackageGenerator::ParseAnimations(const KVSection* section)
+bool CMotionPackageGenerator::ParseAnimations(const KVSection& section)
 {
 	Msg("Processing animations\n");
-	for(KVKeyIterator it(section, "animation"); !it.atEnd(); ++it)
-		LoadAnimation(*it);
+	for(const KVSection& sec : section.Keys("animation"))
+		LoadAnimation(sec);
 
 	return m_animations.numElem() > 0;
 }
@@ -773,13 +775,12 @@ bool CMotionPackageGenerator::ParseAnimations(const KVSection* section)
 //************************************
 // Parses pose parameters from script
 //************************************
-void CMotionPackageGenerator::ParsePoseparameters(const KVSection* section)
+void CMotionPackageGenerator::ParsePoseparameters(const KVSection& section)
 {
 	Msg("Processing pose parameters\n");
-	for (KVKeyIterator it(section, "poseParameter"); !it.atEnd(); ++it)
+	for (const KVSection& poseParamKey : section.Keys("poseParameter"))
 	{
-		const KVSection* poseParamKey = *it;
-		if(poseParamKey->values.numElem() < 3)
+		if(poseParamKey.ValueCount() < 3)
 		{
 			MsgError("Incorrect usage. Example: poseparameter <poseparam name> <min range> <max range>");
 			continue;
@@ -787,16 +788,16 @@ void CMotionPackageGenerator::ParsePoseparameters(const KVSection* section)
 
 		posecontroller_t& controller = m_posecontrollers.append();
 
-		strcpy(controller.name, KV_GetValueString(poseParamKey, 0));
-		controller.blendRange[0] = KV_GetValueFloat(poseParamKey, 1);
-		controller.blendRange[1] = KV_GetValueFloat(poseParamKey, 2);
+		strcpy(controller.name, KV_GetValueString(&poseParamKey, 0));
+		controller.blendRange[0] = KV_GetValueFloat(&poseParamKey, 1);
+		controller.blendRange[1] = KV_GetValueFloat(&poseParamKey, 2);
 	}
 }
 
 //************************************
 // Loads sequence parameters
 //************************************
-void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char* seqName)
+void CMotionPackageGenerator::LoadSequence(const KVSection& section, const char* seqName)
 {
 	sequencedesc_t desc;
 	memset(&desc,0,sizeof(sequencedesc_t));
@@ -804,12 +805,12 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 
 	// UNDONE: duplicate animation and translate if the key "translate" found.
 
-	for (KVKeyIterator it(section, "sequenceLayer"); !it.atEnd(); ++it)
+	for (const KVSection& layerSec : section.Keys("sequenceLayer"))
 	{
-		const int seqIndex = GetSequenceIndex(KV_GetValueString(*it));
+		const int seqIndex = GetSequenceIndex(KV_GetValueString(&layerSec));
 		if(seqIndex == -1)
 		{
-			MsgError("No such sequence '%s' for making layer in sequence '%s'\n", KV_GetValueString(*it), seqName);
+			MsgError("No such sequence '%s' for making layer in sequence '%s'\n", KV_GetValueString(&layerSec), seqName);
 			return;
 		}
 
@@ -823,25 +824,25 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 	}
 
 	// length alignment, for differrent animation lengths, takes the first animation as etalon
-	bool alignAnimationLengths = KV_GetValueBool(section->FindSection("alignLengths"));
+	bool alignAnimationLengths = KV_GetValueBool(section.FindSection("alignLengths"));
 
 	if(g_cmdLine->FindArgument("-forceAlign") != -1)
 		alignAnimationLengths = true;
 
 	// parse default parameters
-	const KVSection* frameRateKey = section->FindSection("frameRate");
+	const KVSection* frameRateKey = section.FindSection("frameRate");
 	if(!frameRateKey)
 		desc.framerate = 30;
 	else
 		desc.framerate = KV_GetValueFloat(frameRateKey);
 
-	const KVSection* animListKvs = section->FindSection("weights");
+	const KVSection* animListKvs = section.FindSection("weights");
 	if(animListKvs)
 	{
 		desc.numAnimations = 0;
-		for(KVKeyIterator it(animListKvs, "animation"); !it.atEnd(); ++it)
+		for(const KVSection& animSec : animListKvs->Keys("animation"))
 		{
-			const char* animName = KV_GetValueString(*it);
+			const char* animName = KV_GetValueString(&animSec);
 
 			int animIdx = GetAnimationIndex(animName);
 			if(animIdx == -1) // try to load new one if not found
@@ -908,7 +909,7 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 	{
 		desc.numAnimations = 1;
 
-		KVSection* pKey = section->FindSection("animation");
+		KVSection* pKey = section.FindSection("animation");
 		if(!pKey)
 		{
 			MsgError("No 'animation' key.\n");
@@ -935,27 +936,27 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 	}
 
 	// parse default parameters
-	strcpy(desc.activity, KV_GetValueString(section->FindSection("activity"), 0, "ACT_INVALID"));
+	strcpy(desc.activity, KV_GetValueString(section.FindSection("activity"), 0, "ACT_INVALID"));
 
 	Msg("  Adding sequence '%s' with activity '%s'\n", desc.name, desc.activity);
 	{
-		desc.flags |= KV_GetValueBool(section->FindSection("loop")) ? SEQFLAG_LOOP : 0;
-		desc.flags |= KV_GetValueBool(section->FindSection("slotBlend")) ? SEQFLAG_SLOTBLEND : 0;
+		desc.flags |= KV_GetValueBool(section.FindSection("loop")) ? SEQFLAG_LOOP : 0;
+		desc.flags |= KV_GetValueBool(section.FindSection("slotBlend")) ? SEQFLAG_SLOTBLEND : 0;
 	}
 
 	// parse transitiontime value
-	desc.transitiontime = KV_GetValueFloat(section->FindSection("transitionTime"), 0, SEQ_DEFAULT_TRANSITION_TIME);
+	desc.transitiontime = KV_GetValueFloat(section.FindSection("transitionTime"), 0, SEQ_DEFAULT_TRANSITION_TIME);
 
 	// parse events
-	const KVSection* eventList = section->FindSection("events");
+	const KVSection* eventList = section.FindSection("events");
 	if(eventList)
 	{
 		int kvSecCount = 0;
-		for(const KVSection* sec : eventList->Keys())
+		for(const KVSection& sec : eventList->Keys())
 		{
-			const float eventTime = (float)atof(sec->name);
-			const KVSection* pEventCommand = sec->FindSection("command");
-			const KVSection* pEventOptions = sec->FindSection("options");
+			const float eventTime = (float)atof(sec.GetName());
+			const KVSection* pEventCommand = sec.FindSection("command");
+			const KVSection* pEventOptions = sec.FindSection("options");
 
 			if(pEventCommand && pEventOptions)
 			{
@@ -984,7 +985,7 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 		}
 	}
 
-	const char* poseParameterName = KV_GetValueString(section->FindSection("poseParameter"), 0, nullptr);
+	const char* poseParameterName = KV_GetValueString(section.FindSection("poseParameter"), 0, nullptr);
 	if (poseParameterName)
 	{
 		desc.posecontroller = GetPoseControllerIndex(poseParameterName);
@@ -994,7 +995,7 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 	else
 		desc.posecontroller = -1;
 
-	const char* timeParameterName = KV_GetValueString(section->FindSection("timeParameter"), 0, nullptr);
+	const char* timeParameterName = KV_GetValueString(section.FindSection("timeParameter"), 0, nullptr);
 	if (timeParameterName)
 	{
 		desc.timecontroller = GetPoseControllerIndex(timeParameterName);
@@ -1004,7 +1005,7 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 	else
 		desc.timecontroller = -1;
 
-	desc.activityslot = KV_GetValueInt(section->FindSection("activitySlot"), 0, 0);
+	desc.activityslot = KV_GetValueInt(section.FindSection("activitySlot"), 0, 0);
 
 	// add sequence
 	m_sequences.append(desc);
@@ -1013,13 +1014,12 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 //************************************
 // Parses sequence list
 //************************************
-void CMotionPackageGenerator::ParseSequences(const KVSection* section)
+void CMotionPackageGenerator::ParseSequences(const KVSection& section)
 {
 	Msg("Processing sequences\n");
-	for (KVKeyIterator it(section, "sequence"); !it.atEnd(); ++it)
+	for (const KVSection& seqSec : section.Keys("sequence"))
 	{
-		const KVSection* seqSec = *it;
-		LoadSequence(seqSec, KV_GetValueString(seqSec, 0, "unnamed_seq"));
+		LoadSequence(seqSec, KV_GetValueString(&seqSec, 0, "unnamed_seq"));
 	}
 }
 
@@ -1081,24 +1081,21 @@ void CMotionPackageGenerator::MakeDefaultPoseAnimation()
 //************************************
 bool CMotionPackageGenerator::CompileScript(const char* filename)
 {
-	KeyValues kvs;
-
-	if (!kvs.LoadFromFile(filename))
+	KVSection kvs;
+	if (!KV_LoadFromFile(filename, -1, kvs))
 	{
 		MsgError("Cannot open %s!\n", filename);
 		return false;
 	}
 
-	KVSection* sec = kvs.GetRootSection();
-
-	KVSection* outPackageKey = sec->FindSection("Package");
+	const KVSection* outPackageKey = kvs.FindSection("Package");
 	if(!outPackageKey)
 	{
 		MsgError("No 'Package' key specified - must be output package file name\n");
 		return false;
 	}
 
-	KVSection* egfModelKey = sec->FindSection("Model");
+	const KVSection* egfModelKey = kvs.FindSection("Model");
 	if (!egfModelKey)
 	{
 		MsgError("No 'Model' key specified - must be EGF file name\n");
@@ -1117,23 +1114,21 @@ bool CMotionPackageGenerator::CompileScript(const char* filename)
 
 	m_animPath = fnmPathStripName(filename);
 
-	KVSection* animSourceKey = sec->FindSection("FBXSource");
+	const KVSection* animSourceKey = kvs.FindSection("FBXSource");
 	if (animSourceKey)
-	{
-		LoadFBXAnimations(animSourceKey);
-	}
+		LoadFBXAnimations(*animSourceKey);
 	
 	// begin script compilation
 	MakeDefaultPoseAnimation();
 
 	// parse all animations in this script.
-	ParseAnimations(sec);
+	ParseAnimations(kvs);
 
 	// parse all pose parameters
-	ParsePoseparameters(sec);
+	ParsePoseparameters(kvs);
 
 	// parse sequences
-	ParseSequences(sec);
+	ParseSequences(kvs);
 
 	// write made package
 	WriteAnimationPackage(mopFilename);

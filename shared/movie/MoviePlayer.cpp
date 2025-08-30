@@ -670,7 +670,6 @@ CMovieAudioSource::CMovieAudioSource()
 bool CMovieAudioSource::IsStreaming() const 
 {
 	// NOTE: this is directly streamed because of alBufferCallbackSOFT
-	// TODO: audio system capabilities?
 	return false; 
 }
 

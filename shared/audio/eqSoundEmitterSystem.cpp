@@ -656,8 +656,8 @@ void CSoundEmitterSystem::LoadScriptBank(const char* scriptFileName)
 {
 	const uint nameHash = StringId(scriptFileName, true);
 
-	KeyValues kv;
-	if(!kv.LoadFromFile(scriptFileName))
+	KVSection kvs;
+	if(!KV_LoadFromFile(scriptFileName, -1, kvs))
 	{
 		MsgError("*** Error! Failed to open sound script bank file '%s'!\n", scriptFileName);
 		return;
@@ -672,15 +672,17 @@ void CSoundEmitterSystem::LoadScriptBank(const char* scriptFileName)
 	DevMsg(DEVMSG_SOUND, "Loading sound script bank file '%s'\n", scriptFileName);
 
 	KVSection defaultsSec;
-	for(const KVSection* sec : kv.Keys())
+	for(const KVSection& sec : kvs.Keys())
 	{
-		if (sec->IsSection())
+		if (sec.IsSection())
 		{
-			CreateSoundScript(scriptBank, *sec, &defaultsSec);
+			CreateSoundScript(scriptBank, sec, &defaultsSec);
 		}
-		else if (!CString::CompareCaseIns("default", sec->GetName()))
+		else if (!CString::CompareCaseIns("default", sec.GetName()))
 		{
-			defaultsSec.AddKey(KV_GetValueString(sec), KV_GetValueString(sec, 1));
+			EqStringRef paramName, value;
+			sec.GetValues(paramName, value);
+			defaultsSec.AddKey(paramName, value.ToCString());
 		}
 	}
 }

@@ -49,10 +49,10 @@ static void GUIDrawWindow(const AARectangle &rect, const MColor& color1, IGPURen
 {
 	MColor color2(0.2f,0.2f,0.2f,0.8f);
 
-	const Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -0.5f) };
-	const Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
-	const Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
-	const Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -0.5f) };
+	const Vector2D r0[] = { MAKE_QUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -0.5f) };
+	const Vector2D r1[] = { MAKE_QUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
+	const Vector2D r2[] = { MAKE_QUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
+	const Vector2D r3[] = { MAKE_QUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -0.5f) };
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
@@ -592,7 +592,7 @@ static void DrawCylinder(CMeshBuilder& meshBuilder, DDCylinder& cylinder, float 
 
 static void DrawCylinderArray(ArrayRef<DDCylinder> cylArray, float frametime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
 {
-	if (cylArray.numElem())
+	if (!cylArray.numElem())
 		return;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
@@ -640,9 +640,7 @@ static void DrawGraph(DDGraphBucket* graph, int position, IEqFont* pFont, float 
 	float x_pos = 15;
 	float y_pos = GRAPH_Y_OFFSET + GRAPH_HEIGHT + position*110;
 
-	Vector2D last_point(-1);
-
-	Vertex2D lines[] =
+	const Vertex2D lines[] =
 	{
 		Vertex2D(Vector2D(x_pos, y_pos), vec2_zero),
 		Vertex2D(Vector2D(x_pos, y_pos - GRAPH_HEIGHT), vec2_zero),
@@ -671,63 +669,50 @@ static void DrawGraph(DDGraphBucket* graph, int position, IEqFont* pFont, float 
 	defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
 	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRender);
 
-	g_matSystem->SetupDrawDefaultUP(PRIM_LINES, ArrayCRef(lines), defaultPassContext);
+	g_matSystem->SetupDrawDefaultUP(PRIM_LINES, lines, defaultPassContext);
 
 	pFont->SetupRenderText(EqString::Format("%.2f", (graph->maxValue*0.75f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.75f), textStl, rendPassRecorder);
 	pFont->SetupRenderText(EqString::Format("%.2f", (graph->maxValue*0.50f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.50f), textStl, rendPassRecorder);
 	pFont->SetupRenderText(EqString::Format("%.2f", (graph->maxValue*0.25f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.25f), textStl, rendPassRecorder);
 
-	int value_id = 0;
+	int valId = 0;
 
-	Vertex2D graph_line_verts[GRAPH_MAX_VALUES*2];
-	int num_line_verts = 0;
+	FixedArray<Vertex2D, GRAPH_MAX_VALUES * 2> graphVerts;
+	float graphMaxVal = 1.0f;
 
-	float graph_max_value = 1.0f;
-
+	Vector2D lastPoint(-1);
 	int length = graph->values.numElem();
 	while(length-- > 0)
 	{
-		//if(graph->points.getCurrent() > graph->fMaxValue)
-		//	graph->fMaxValue = graph->points.getCurrent();
-
 		const int graphIdx = (graph->cursor + length) % graph->values.numElem();
 		DDGraphBucket::DbgGraphValue& graphVal = graph->values[graphIdx];
 
 		// get a value of it.
 		float value = clamp(graphVal.value, 0.0f, graph->maxValue);
 
-		if(graphVal.value > graph_max_value )
-			graph_max_value = graphVal.value;
+		if(graphVal.value > graphMaxVal )
+			graphMaxVal = graphVal.value;
 
 		value /= graph->maxValue;
-
 		value *= GRAPH_HEIGHT;
 
-		Vector2D point(x_pos + GRAPH_MAX_VALUES - value_id, y_pos - value);
+		const Vector2D point(x_pos + GRAPH_MAX_VALUES - valId, y_pos - value);
 
-		if(value_id > 0 && num_line_verts < GRAPH_MAX_VALUES*2)
+		if(valId > 0 && !graphVerts.isFull())
 		{
-			graph_line_verts[num_line_verts].position = last_point;
-			graph_line_verts[num_line_verts].color = graphVal.color;
-
-			num_line_verts++;
-
-			graph_line_verts[num_line_verts].position = point;
-			graph_line_verts[num_line_verts].color = graphVal.color;
-
-			num_line_verts++;
+			graphVerts.appendEmplace(lastPoint, vec2_zero, MColor(graphVal.color));
+			graphVerts.appendEmplace(point, vec2_zero, MColor(graphVal.color));
 		}
+		valId++;
 
-		value_id++;
-
-		last_point = point;
+		lastPoint = point;
 	}
 
 	if(graph->dynamic)
-		graph->maxValue = graph_max_value;
+		graph->maxValue = graphMaxVal;
 
 	defaultRender.blendMode = SHADER_BLEND_NONE;
-	g_matSystem->SetupDrawDefaultUP(PRIM_LINES, ArrayCRef(graph_line_verts, num_line_verts), defaultPassContext);
+	g_matSystem->SetupDrawDefaultUP(PRIM_LINES, graphVerts, defaultPassContext);
 
 	graph->remainingTime -= frame_time;
 
@@ -1248,8 +1233,8 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	// now rendering 2D stuff
 	g_matSystem->Setup2D(winWide, winTall);
 
-	const Vector2D drawFadedTextBoxPosition = Vector2D(15,45);
-	const Vector2D drawTextBoxPosition = Vector2D(15,45);
+	const Vector2D drawFadedTextBoxPosition = Vector2D(15, 80);
+	const Vector2D drawTextBoxPosition = Vector2D(15, 45);
 
 	FontStyleParam textStl;
 	textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
@@ -1279,8 +1264,8 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 			textStl.textColor = curColor;
 
-			const Vector2D textPos = drawFadedTextBoxPosition + Vector2D(0, (n * m_debugFont->GetLineHeight(textStl)));
-			m_debugFont->SetupRenderText(current.text, textPos, textStl, rendPassRecorder);
+			const Vector2D textPos = drawFadedTextBoxPosition + Vector2D(0, (n * m_debugFont2->GetLineHeight(textStl)));
+			m_debugFont2->SetupRenderText(current.text, textPos, textStl, rendPassRecorder);
 
 			++n;
 		}
@@ -1408,7 +1393,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 			h *= fac;
 		}
 
-		Vertex2D rect[] = { MAKETEXQUAD(0, 0, w, h, 0) };
+		const Vertex2D rect[] = { MAKE_QUAD_UVS(0, 0, w, h, 0) };
 
 		const int flags = m_dbgTexture->GetFlags();
 		const bool isCubemap = (flags & TEXFLAG_CUBEMAP);
@@ -1418,7 +1403,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 		MatSysDefaultRenderPass defaultRender;
 		defaultRender.texture = TextureView(m_dbgTexture, viewIndex);
-		g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rect), RenderPassContext(rendPassRecorder, &defaultRender));
+		g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, rect, RenderPassContext(rendPassRecorder, &defaultRender));
 
 		FontStyleParam textStl;
 		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;

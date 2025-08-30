@@ -13,8 +13,6 @@ struct EGFHwVertex
 		VERT_BONEWEIGHT,
 		VERT_COLOR,
 
-		// TODO: more UVs ?
-
 		VERT_COUNT,
 
 		EGF_MASK = (1 << VERT_COUNT)-1,

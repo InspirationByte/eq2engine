@@ -42,25 +42,25 @@ Panel::Panel()
 	m_selColor = ColorRGBA(0.25f);
 }
 
-void Panel::InitFromKeyValues(const KVSection* sec, bool keepElements)
+void Panel::InitFromKeyValues(const KVSection& sec, bool keepElements)
 {
 	// initialize from scheme
-	const KVSection* mainSec = sec->FindSection("panel");
+	const KVSection* mainSec = sec.FindSection("panel");
 	if (mainSec == nullptr)
-		mainSec = sec;
+		mainSec = &sec;
 
-	BaseClass::InitFromKeyValues(mainSec, keepElements);
+	BaseClass::InitFromKeyValues(*mainSec, keepElements);
 }
 
-void Panel::Parse(const KVSection* sec )
+void Panel::Parse(const KVSection& sec )
 {
 	BaseClass::Parse(sec);
 
-	m_windowControls = KV_GetValueBool(sec->FindSection("window"), 0, m_windowControls);
+	m_windowControls = KV_GetValueBool(sec.FindSection("window"), 0, m_windowControls);
 	m_visible = !m_windowControls;
-	m_visible = KV_GetValueBool(sec->FindSection("visible"), 0, m_visible);
-	m_screenOverlay = KV_GetValueBool(sec->FindSection("screenoverlay"), 0, m_screenOverlay);
-	m_color = KV_GetVector4D(sec->FindSection("color"), 0, m_color);
+	m_visible = KV_GetValueBool(sec.FindSection("visible"), 0, m_visible);
+	m_screenOverlay = KV_GetValueBool(sec.FindSection("screenoverlay"), 0, m_screenOverlay);
+	m_color = KV_GetVector4D(sec.FindSection("color"), 0, m_color);
 	m_grabbed = false;
 	m_closeButton = nullptr;
 	m_labelCtrl = nullptr;
@@ -68,13 +68,13 @@ void Panel::Parse(const KVSection* sec )
 	if(m_windowControls)
 	{
 		KVSection winRes;
-		KV_LoadFromFile("resources/WindowControls.res", -1, &winRes);
+		KV_LoadFromFile("resources/WindowControls.res", -1, winRes);
 
 		// make child controls
-		for(const KVSection* childSec : winRes.Keys("child", KV_FLAG_SECTION))
+		for(const KVSection& childSec : winRes.Keys("child", KV_FLAG_SECTION))
 		{
 			EqStringRef controlClass;
-			childSec->GetValues(controlClass);
+			childSec.GetValues(controlClass);
 
 			IUIControl* control = equi::Manager->CreateElement(controlClass);
 			if(!control)
@@ -133,10 +133,10 @@ void Panel::CenterOnScreen()
 
 void DrawWindowRectangle(const AARectangle& rect, const ColorRGBA& color1, const ColorRGBA& color2, IGPURenderPassRecorder* rendPassRecorder)
 {
-	const Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -1) };
-	const Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
-	const Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
-	const Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -1) };
+	const Vector2D r0[] = { MAKE_QUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -1) };
+	const Vector2D r1[] = { MAKE_QUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
+	const Vector2D r2[] = { MAKE_QUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
+	const Vector2D r3[] = { MAKE_QUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -1) };
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
@@ -208,17 +208,17 @@ public:
 	void			DrawSelf( const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override {}
 };
 
-void Container::Parse(const KVSection* sec)
+void Container::Parse(const KVSection& sec)
 {
 	BaseClass::Parse(sec);
 
 	EqStringRef fileName;
-	if (sec->Get("file").GetValues(fileName))
+	if (sec.Get("file").GetValues(fileName))
 	{
 		KVSection kvExtFile;
-		KV_LoadFromFile("resources/" + fileName, SP_MOD | SP_DATA, &kvExtFile);
+		KV_LoadFromFile("resources/" + fileName, SP_MOD | SP_DATA, kvExtFile);
 
-		InitChildItems(&kvExtFile);
+		InitChildItems(kvExtFile);
 	}
 }
 

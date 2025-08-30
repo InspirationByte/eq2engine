@@ -6,11 +6,6 @@
 //				Uses engine to load, draw fonts
 //////////////////////////////////////////////////////////////////////////////////
 
-/*
-TODO:
-		- Text rendering shaders and effects
-*/
-
 #include "core/core_common.h"
 #include "core/ConVar.h"
 #include "utils/KeyValues.h"
@@ -28,7 +23,6 @@ TODO:
 DECLARE_CVAR(r_font_debug, "0", nullptr, CV_CHEAT);
 #endif
 
-// TODO: really a font parameters!!!
 DECLARE_CVAR(r_font_sdfStart, "0.94", nullptr, CV_CHEAT);
 DECLARE_CVAR(r_font_sdfRange, "0.06", nullptr, CV_CHEAT);
 
@@ -584,7 +578,6 @@ void CFont::SetupDrawTextMeshBuffer(RenderDrawCmd& drawCmd, const FontStyleParam
 	baseColor.Set(color_white);
 
 	// draw shadow
-	// TODO: shadow color should be separate from text vertices color!!!
 	if ((params.styleFlag & TEXT_STYLE_SHADOW) && params.shadowAlpha > 0.0f)
 	{
 		shadowColor.Set(ColorRGBA(params.shadowColor, params.shadowAlpha));
@@ -706,14 +699,14 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 	const EqString finalFileName = _Es(FONT_DEFAULT_PATH) + m_name + _Es(".fnt");
 
-	KeyValues kvs;
-	if( !kvs.LoadFromFile( finalFileName ) )
+	KVSection kvs;
+	if( !KV_LoadFromFile(finalFileName, -1, kvs) )
 	{
 		MsgError("ERROR: Can't open font file '%s' (%s)\n", finalFileName.ToCString(), filenamePrefix);
 		return false;
 	}
 
-	const KVSection* fontSec = kvs.GetRootSection()->FindSection("Font", KV_FLAG_SECTION);
+	const KVSection* fontSec = kvs.FindSection("Font", KV_FLAG_SECTION);
 	if(fontSec)
 	{
 		const int charWide = KV_GetValueInt(fontSec->FindSection("charWidth"), 0, 8);
@@ -770,7 +763,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 		return true;
 	}
 
-	fontSec = kvs.GetRootSection()->FindSection("eqFont");
+	fontSec = kvs.FindSection("eqFont");
 	if (fontSec)
 	{
 		m_flags.sdf = KV_GetValueBool(fontSec->FindSection("isSDF"));
@@ -798,16 +791,13 @@ bool CFont::LoadFont( const char* filenamePrefix )
 		m_baseline = KV_GetValueFloat(fontSec->FindSection("baseline")) * m_scale.y;
 		m_lineHeight = KV_GetValueFloat(fontSec->FindSection("lineheight")) * m_scale.y;
 
-		for (const KVSection* charSec : fontSec->Keys())
+		for (const KVSection& charSec : fontSec->Keys())
 		{
-			if (charSec->ValueCount() < 7)
-				continue;
-
 			// x y w h ox oy advanceX
 			// 0 1 2 3 4  5  6
 
 			FontChar fontChar;
-			const int valueCount = charSec->GetValues(
+			const int valueCount = charSec.GetValues(
 				fontChar.x0,
 				fontChar.y0,
 				fontChar.x1,
@@ -819,7 +809,10 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 			if(valueCount != 7)
 			{
-				ASSERT_FAIL("Invalid font file %s", filenamePrefix);
+				if(valueCount > 2)
+				{
+					ASSERT_FAIL("Invalid font file %s", filenamePrefix);
+				}
 				continue;
 			}
 
@@ -830,7 +823,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 			fontChar.ofsY *= m_scale.y;
 			fontChar.advX *= m_scale.x;
 
-			const int charIdx = atoi(charSec->GetName());
+			const int charIdx = atoi(charSec.GetName());
 			m_charMap.insert(charIdx, fontChar);
 		}
 

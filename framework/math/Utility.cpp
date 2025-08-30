@@ -222,6 +222,39 @@ bool IsRayIntersectsTriangle(const Vector3D& pt1, const Vector3D& pt2, const Vec
 	return true;
 }
 
+bool PlaneTriangleIntersection(const Plane& plane, const Vector3D verts[3], FixedArray<Vector3D, 2>& isectPoints)
+{
+	float dist[3];
+	for (int i = 0; i < 3; ++i)
+		dist[i] = plane.Distance(verts[i]);
+
+	for (int i = 0; i < 3; ++i) 
+	{
+		const int j = (i + 1) % 3;
+		const float d0 = dist[i];
+		const float d1 = dist[j];
+
+		// Skip if points are on the same side of the plane (no intersection)
+		if (d0 * d1 > 0)
+			continue;
+
+		const float denom = d0 - d1;
+		if (abs(denom) < F_EPS)
+			continue;
+
+		const float t = d0 / denom;
+		const Vector3D p0 = verts[i];
+		const Vector3D p1 = verts[j];
+		const Vector3D isectPoint = p0 + t * (p1 - p0);
+		isectPoints.append(isectPoint);
+
+		if (isectPoints.isFull())
+			return true;
+	}
+
+	return false;
+}
+
 bool LineIntersectsLine2D(const Vector2D& v1, const Vector2D& v2, const Vector2D& lB, const Vector2D& lE, Vector2D& isectPoint)
 {
 	const float a = v2.x - v1.x;

@@ -31,7 +31,7 @@ public:
 
 	void		Cleanup();
 
-	bool		GenerateGeometry(SharedModel::DSModel* srcModel, const KVSection* physInfo, bool forceGroupSubdivision);
+	bool		GenerateGeometry(SharedModel::DSModel* srcModel, const KVSection& physInfo, bool forceGroupSubdivision);
 	void		SaveToFile(const char* filename);
 	bool		HasObjects() const {return m_objects.numElem() > 0;}
 

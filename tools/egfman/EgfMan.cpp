@@ -4,10 +4,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine Geometry viewer - new with physics support
 //
-// TODO:	- Standard EGF viewing
+// TODO:	- (DONE) Standard EGF viewing
 //			- Physics model listing with properties
 //			- Physics model testing
-//			- Full animation support, may be with ik (BaseAnimating.cpp, for game make entity with BaseAnimatingEntity.cpp)
+//			- (DONE) Full animation support, may be with ik (BaseAnimating.cpp, for game make entity with BaseAnimatingEntity.cpp)
 //			- physics model properties saving
 //			- sequence properties saving (speed, smoothing, etc.)
 //
@@ -52,7 +52,7 @@ IPhysics* physics = &s_physics;
 
 CBulletStudioShapeCache	s_shapeCache;
 
-DKMODULE*			g_matsysmodule = nullptr;
+OSModule*			g_matsysmodule = nullptr;
 IShaderAPI*			g_renderAPI = nullptr;
 IMaterialSystem*	g_matSystem = nullptr;
 
@@ -86,8 +86,6 @@ class CEGFViewApp: public wxApp
 {
     virtual bool OnInit();
 	virtual int	 OnExit();
-
-	// TODO: more things
 };
 
 //
@@ -857,8 +855,6 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 			{
 				EqString model_path;
 
-				KeyValues script;
-
 				EqString fname;
 				AnsiUnicodeConverter(fname, EqWStringRef(paths[i].wchar_str()));
 				const EqString ext = fnmPathExtractExt(fname);
@@ -875,29 +871,25 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 				}
 				else
 				{
-					if(script.LoadFromFile(fname.GetData()))
+					KVSection scriptSec;
+					if(KV_LoadFromFile(fname, -1, scriptSec))
 					{
 						// load all script data
-						KVSection* mainsection = script.GetRootSection();
-						if(mainsection)
+						const KVSection* pPair = scriptSec.FindSection("modelfilename");
+						if(pPair)
 						{
-							KVSection* pPair = mainsection->FindSection("modelfilename");
+							model_path = KV_GetValueString(pPair);
+							EqString cmdLine = EqString::Format("egfca.exe -devAddon \"%s\" +filename \"%s\"", devAddonDir, fname.GetData());
 
-							if(pPair)
+							Msg("***Starting egfCa: '%s'\n", cmdLine.ToCString());
+							if (system(cmdLine.ToCString()) != 0)
 							{
-								model_path = KV_GetValueString(pPair);
-								EqString cmdLine = EqString::Format("egfca.exe -devAddon \"%s\" +filename \"%s\"", devAddonDir, fname.GetData());
-
-								Msg("***Starting egfCa: '%s'\n", cmdLine.ToCString());
-								if (system(cmdLine.ToCString()) != 0)
-								{
-									wxMessageBox(wxString::Format("Failed to run command %s", cmdLine.ToCString()), "Error", wxOK | wxICON_EXCLAMATION, this);
-								}
+								wxMessageBox(wxString::Format("Failed to run command %s", cmdLine.ToCString()), "Error", wxOK | wxICON_EXCLAMATION, this);
 							}
-							else
-							{
-								wxMessageBox("ERROR! 'modelfilename' is not specified in the script!", "Error", wxOK | wxICON_EXCLAMATION, this);
-							}
+						}
+						else
+						{
+							wxMessageBox("ERROR! 'modelfilename' is not specified in the script!", "Error", wxOK | wxICON_EXCLAMATION, this);
 						}
 					}
 
@@ -1468,7 +1460,7 @@ bool CEGFViewApp::OnInit()
 
 	// first, load matsystem module
 	EqString loadErr;
-	g_matsysmodule = g_fileSystem->OpenModule("eqMatSystem", &loadErr);
+	g_matsysmodule = g_eqCore->OpenModule("eqMatSystem", &loadErr);
 
 	if(!g_matsysmodule)
 	{
@@ -1496,7 +1488,7 @@ int CEGFViewApp::OnExit()
 	g_fontCache->Shutdown();
 	g_matSystem->Shutdown();
 
-	g_fileSystem->CloseModule(g_matsysmodule);
+	g_eqCore->CloseModule(g_matsysmodule);
 	
 	// shutdown core
 	g_eqCore->Shutdown();

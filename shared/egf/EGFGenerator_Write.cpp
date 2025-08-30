@@ -537,7 +537,7 @@ void CEGFGenerator::WriteIkChains(studioHdr_t* header, IFileStream* stream)
 		const GenIKChain& srcChain = m_ikchains[i];
 		studioIkChain_t* chain = header->pIkChain(i);
 
-		chain->numLinks = srcChain.link_list.numElem();
+		chain->numLinks = srcChain.links.numElem();
 
 		strcpy(chain->name, srcChain.name);
 
@@ -549,7 +549,7 @@ void CEGFGenerator::WriteIkChains(studioHdr_t* header, IFileStream* stream)
 		{
 			const int link_id = (chain->numLinks - 1) - j;
 
-			const GenIKLink& link = srcChain.link_list[link_id];
+			const GenIKLink& link = srcChain.links[link_id];
 
 			Msg("IK chain bone id: %d\n", link.bone->refBone->boneIdx);
 
@@ -581,10 +581,10 @@ void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IFileStream* stream)
 	
 
 	// write material groups
-	for (int i = 0; i < m_matGroups.numElem(); i++)
+	for (int i = 0; i < m_skins.numElem(); i++)
 	{
-		GenMaterialGroup* grp = m_matGroups[i];
-		int materialGroupStart = header->numMaterials;
+		GenSkin* grp = m_skins[i];
+		int skinStart = header->numMaterials;
 
 		for (int j = 0; j < grp->materials.numElem(); j++)
 		{
@@ -598,7 +598,7 @@ void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IFileStream* stream)
 
 			header->numMaterials++;
 
-			studioMaterialDesc_t* matDesc = header->pMaterial(materialGroupStart + j);
+			studioMaterialDesc_t* matDesc = header->pMaterial(skinStart + j);
 			strcpy(matDesc->materialname, fnmPathStripExt(mat.materialname));
 
 			WRITE_RESERVE(studioMaterialDesc_t);
@@ -612,11 +612,11 @@ void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IFileStream* stream)
 void CEGFGenerator::WriteMaterialPaths(studioHdr_t* header, IFileStream* stream)
 {
 	header->materialSearchPathsOffset = WRITE_OFS;
-	header->numMaterialSearchPaths = m_matpathes.numElem();
-	WRITE_RESERVE_NUM(materialPathDesc_t, m_matpathes.numElem());
+	header->numMaterialSearchPaths = m_matPaths.numElem();
+	WRITE_RESERVE_NUM(materialPathDesc_t, m_matPaths.numElem());
 
-	for(int i = 0; i < m_matpathes.numElem(); i++)
-		*header->pMaterialSearchPath(i) = m_matpathes[i];
+	for(int i = 0; i < m_matPaths.numElem(); i++)
+		*header->pMaterialSearchPath(i) = m_matPaths[i];
 }
 
 //************************************

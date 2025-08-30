@@ -52,7 +52,7 @@ Tokenizer::~Tokenizer()
 
 void Tokenizer::setString(const char* string)
 {
-	length = strlen(string);
+	length = CString::Length(string);
 
 	// Increase capacity if necessary
 	if (length >= capacity) {

@@ -43,7 +43,7 @@ public:
 
 	void				WriteWString(const wchar_t* pszStr);
 
-	void				WriteKeyValues(KVSection* kbase);
+	void				WriteKeyValues(const KVSection& kbase);
 
 	int8				ReadByte()					{int8 r; ReadData(&r, sizeof(int8)); return r;}
 	ubyte				ReadUByte()					{ubyte r; ReadData(&r, sizeof(ubyte)); return r;}
@@ -58,7 +58,7 @@ public:
 	Vector3D			ReadVector3D()				{Vector3D v;ReadData((ubyte*)&v, sizeof(Vector3D));return v;}
 	Vector4D			ReadVector4D()				{Vector4D v;ReadData((ubyte*)&v, sizeof(Vector4D));return v;}
 
-	void				ReadKeyValues(KVSection* kbase);
+	void				ReadKeyValues(KVSection& kbase);
 
 	void				ReadString(char* pszDestStr);
 	void				ReadWString(wchar_t* pszDestStr);

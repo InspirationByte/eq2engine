@@ -23,7 +23,14 @@ enum EPrimTopology : int;
 
 struct Vertex2D
 {
-	Vertex2D() = default;
+	Vertex2D() = default;	
+	Vertex2D(const Vector2D& p)
+	{
+		position = p;
+		texCoord = vec2_zero;
+		color = color_white.pack();
+	}
+
 	Vertex2D(const Vector2D& p, const Vector2D& t)
 	{
 		position = p;
@@ -116,48 +123,35 @@ struct VertexFVFResolver<Vertex3D>
 	inline static int value = VERTEX_FVF_XYZ | VERTEX_FVF_UVS | VERTEX_FVF_COLOR_DW;
 };
 
-#define MAKEQUAD(x0, y0, x1, y1, o)	\
-	Vector2D(x0 + o, y0 + o),	\
-	Vector2D(x0 + o, y1 - o),	\
-	Vector2D(x1 - o, y0 + o),	\
-	Vector2D(x1 - o, y1 - o)
+#define MAKE_RECT(x0, y0, x1, y1, lw) \
+	{ Vector2D{x0, y0} },			\
+	{ Vector2D{x0 + lw, y0 + lw} },	\
+	{ Vector2D{x1, y0} },			\
+	{ Vector2D{x1 - lw, y0 + lw} },	\
+	{ Vector2D{x1, y1} },			\
+	{ Vector2D{x1 - lw, y1 - lw} },	\
+	{ Vector2D{x0, y1} },			\
+	{ Vector2D{x0 + lw, y1 - lw} },	\
+	{ Vector2D{x0, y0} },			\
+	{ Vector2D{x0 + lw, y0 + lw} }
 
-#define MAKERECT(x0, y0, x1, y1, lw) \
-	Vector2D(x0, y0),			\
-	Vector2D(x0 + lw, y0 + lw),	\
-	Vector2D(x1, y0),			\
-	Vector2D(x1 - lw, y0 + lw),	\
-	Vector2D(x1, y1),			\
-	Vector2D(x1 - lw, y1 - lw),	\
-	Vector2D(x0, y1),			\
-	Vector2D(x0 + lw, y1 - lw),	\
-	Vector2D(x0, y0),			\
-	Vector2D(x0 + lw, y0 + lw)
+#define MAKE_QUAD(x0, y0, x1, y1, o) \
+	{ Vector2D{x0 + o, y0 + o} },	\
+	{ Vector2D{x0 + o, y1 - o} },	\
+	{ Vector2D{x1 - o, y0 + o} },	\
+	{ Vector2D{x1 - o, y1 - o} }
 
-#define MAKETEXRECT(x0, y0, x1, y1, lw) \
-	Vertex2D(Vector2D(x0, y0),vec2_zero),			\
-	Vertex2D(Vector2D(x0 + lw, y0 + lw),vec2_zero),	\
-	Vertex2D(Vector2D(x1, y0),vec2_zero),			\
-	Vertex2D(Vector2D(x1 - lw, y0 + lw),vec2_zero),	\
-	Vertex2D(Vector2D(x1, y1),vec2_zero),			\
-	Vertex2D(Vector2D(x1 - lw, y1 - lw),vec2_zero),	\
-	Vertex2D(Vector2D(x0, y1),vec2_zero),			\
-	Vertex2D(Vector2D(x0 + lw, y1 - lw),vec2_zero),	\
-	Vertex2D(Vector2D(x0, y0),vec2_zero),			\
-	Vertex2D(Vector2D(x0 + lw, y0 + lw),vec2_zero)
+#define MAKE_QUAD_UVS(x0, y0, x1, y1, o) \
+	{ Vector2D{x0 + o, y0 + o}, Vector2D{0.0f, 0.0f}},	\
+	{ Vector2D{x0 + o, y1 - o}, Vector2D{0.0f, 1.0f}},	\
+	{ Vector2D{x1 - o, y0 + o}, Vector2D{1.0f, 0.0f}},	\
+	{ Vector2D{x1 - o, y1 - o}, Vector2D{1.0f, 1.0f}}
 
-#define MAKETEXQUAD(x0, y0, x1, y1, o) \
-	Vertex2D(Vector2D(x0 + o, y0 + o), Vector2D(0, 0)),	\
-	Vertex2D(Vector2D(x0 + o, y1 - o), Vector2D(0, 1)),	\
-	Vertex2D(Vector2D(x1 - o, y0 + o), Vector2D(1, 0)),	\
-	Vertex2D(Vector2D(x1 - o, y1 - o), Vector2D(1, 1))
-
-#define MAKEQUADCOLORED(x0, y0, x1, y1, o, colorLT, colorLB, colorRT, colorRB) \
-	Vertex2D(Vector2D(x0 + o, y0 + o), Vector2D(0, 0), colorLT),	\
-	Vertex2D(Vector2D(x0 + o, y1 - o), Vector2D(0, 1), colorLB),	\
-	Vertex2D(Vector2D(x1 - o, y0 + o), Vector2D(1, 0), colorRT),	\
-	Vertex2D(Vector2D(x1 - o, y1 - o), Vector2D(1, 1), colorRB)
-
+#define MAKE_QUAD_UVS_COLOR(x0, y0, x1, y1, o, colorLT, colorLB, colorRT, colorRB) \
+	{ Vector2D{x0 + o, y0 + o}, Vector2D{0.0f, 0.0f}, colorLT },	\
+	{ Vector2D{x0 + o, y1 - o}, Vector2D{0.0f, 1.0f}, colorLB },	\
+	{ Vector2D{x1 - o, y0 + o}, Vector2D{1.0f, 0.0f}, colorRT },	\
+	{ Vector2D{x1 - o, y1 - o}, Vector2D{1.0f, 1.0f}, colorRB }
 
 struct RenderBufferInfo
 {

@@ -294,5 +294,8 @@
 			</Item>
 		</Expand>
 	</Type>
-	
+	<Type Name="FReal">
+		<DisplayString>[fix] {(float)raw / (float)FPMATH_ONE}</DisplayString>
+	</Type>
+
 </AutoVisualizer>

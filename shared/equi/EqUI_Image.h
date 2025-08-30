@@ -28,7 +28,7 @@ public:
 	Image();
 	virtual ~Image();
 
-	void				Parse(const KVSection* sec) override;
+	void				Parse(const KVSection& sec) override;
 
 	void				SetMaterial(const char* materialName);
 	void				SetAtlasImage(const char* materialAtlasName, const char* imageName);

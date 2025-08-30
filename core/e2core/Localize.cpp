@@ -154,7 +154,7 @@ void CLocalize::SetLanguageName(const char* name)
 	// try using EqConfig regional settings instead
 	if (m_language.Length() == 0)
 	{
-		const KVSection* regionalCfg = g_eqCore->GetConfig()->FindSection("RegionalSettings", KV_FLAG_SECTION);
+		const KVSection* regionalCfg = g_eqCore->GetConfig().FindSection("RegionalSettings", KV_FLAG_SECTION);
 		if (!regionalCfg)
 		{
 			Msg("Core config missing RegionalSettings section... force english!\n");
@@ -252,7 +252,7 @@ void CLocalize::ParseLanguageFile(int langFileIdx, bool reload)
 
 	FixedArray<EqString, 2> currentTokens;
 
-	KV_Tokenizer(fileStart, fileSize, textFilePath, [&](int line, const char* dataPtr, const char* sig, va_list args) {
+	KeyValues::Tokenizer(fileStart, fileSize, textFilePath, 1, [&](int line, const char* dataPtr, const char* sig, va_list args) {
 		switch (*sig)
 		{
 		case 't':   // text token
@@ -290,7 +290,7 @@ void CLocalize::ParseLanguageFile(int langFileIdx, bool reload)
 		}
 		}
 
-		return KV_PARSE_RESUME;
+		return KeyValues::KV_PARSE_RESUME;
 	});
 }
 

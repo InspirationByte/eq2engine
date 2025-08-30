@@ -34,6 +34,9 @@ public:
 	void					DrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset);
 	void					DrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset);
 
+	void					MultiDrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset);
+	void					MultiDrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset);
+
 	// TODO:
 
 	// BeginOcclusionQuery(uint32_t queryIndex);

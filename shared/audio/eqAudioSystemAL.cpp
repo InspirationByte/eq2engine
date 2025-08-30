@@ -263,7 +263,7 @@ void CEqAudioSystemAL::InitEffects()
 	//
 	// Load effect presets from file
 	//
-	const KVSection* soundSettings = g_eqCore->GetConfig()->FindSection("Sound");
+	const KVSection* soundSettings = g_eqCore->GetConfig().FindSection("Sound");
 
 	const char* effectFilePath = soundSettings ? KV_GetValueString(soundSettings->FindSection("EFXScript"), 0, nullptr) : nullptr;
 	if (effectFilePath == nullptr)
@@ -272,21 +272,21 @@ void CEqAudioSystemAL::InitEffects()
 		return;
 	}
 
-	KeyValues kv;
-	if (!kv.LoadFromFile(effectFilePath))
+	KVSection kvs;
+	if (!KV_LoadFromFile(effectFilePath, -1, kvs))
 	{
 		MsgError("InitEFX: Can't init EFX from '%s'\n", effectFilePath);
 		return;
 	}
 
-	for (const KVSection* effectSec : kv.Keys())
+	for (const KVSection& effectSec : kvs.Keys())
 	{
-		const int nameHash = StringId24(effectSec->name, true);
+		const int nameHash = StringId24(effectSec.GetName(), true);
 
 		EffectInfo effect;
-		strcpy(effect.name, effectSec->name);
+		strcpy(effect.name, effectSec.GetName());
 
-		const KVSection* typeNameKey = effectSec->FindSection("type");
+		const KVSection* typeNameKey = effectSec.FindSection("type");
 		if (typeNameKey)
 		{
 			if (!CreateALEffect(KV_GetValueString(typeNameKey), effectSec, effect))
@@ -307,9 +307,9 @@ void CEqAudioSystemAL::InitEffects()
 	}
 }
 
-bool CEqAudioSystemAL::CreateALEffect(const char* pszName, const KVSection* pSection, EffectInfo& effect)
+bool CEqAudioSystemAL::CreateALEffect(const char* pszName, const KVSection& section, EffectInfo& effect)
 {
-#define PARAM_VALUE(type, name, str_name)  AL_##type##_##name, clamp(KV_GetValueFloat(pSection->FindSection(str_name), 0, AL_##type##_DEFAULT_##name), AL_##type##_MIN_##name, AL_##type##_MAX_##name)
+#define PARAM_VALUE(type, name, str_name)  AL_##type##_##name, clamp(KV_GetValueFloat(section.FindSection(str_name), 0, AL_##type##_DEFAULT_##name), AL_##type##_MIN_##name, AL_##type##_MAX_##name)
 
 
 	if (!CString::CompareCaseIns(pszName, "reverb"))

@@ -841,8 +841,8 @@ bool CAnimatingEGF::RecalcBoneTransforms()
 			finalBoneFrame = AddFrameTransform(finalBoneFrame, timerFrame);
 		}
 
-		ASSERT(!V3IsNaN(finalBoneFrame.vecBonePosition));
-		ASSERT(!V3IsNaN(finalBoneFrame.angBoneAngles));
+		ASSERT(vecIsValid(finalBoneFrame.vecBonePosition));
+		ASSERT(finalBoneFrame.angBoneAngles.isValid());
 
 		// compute transformation
 		const Matrix4x4 calculatedFrameMat = CalculateLocalBonematrix(finalBoneFrame);

@@ -43,7 +43,7 @@ public:
 	struct DrawProps;
 	struct HWGeomRef;
 
-	static void					SetInstanceFormatId(int instanceFormatId);
+	static void				SetInstanceFormatId(int instanceFormatId);
 
 	CEqStudioGeom();
 	~CEqStudioGeom();
@@ -61,10 +61,12 @@ public:
 	ArrayCRef<int>			GetMotionDataIdxs() const;
 	ArrayCRef<HWGeomRef>	GetHwGeomRefs() const { return m_hwGeomRefs; }
 	
+	const IMaterialPtr&		GetMaterial(int materialIdx, int skinIdx = 0) const;
+	ArrayCRef<IMaterialPtr>	GetMaterials(int skinIdx = 0) const;
 
-	const IMaterialPtr&		GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
-	ArrayCRef<IMaterialPtr>	GetMaterials(int materialGroupIdx = 0) const;
-	int						GetMaterialGroupsCount() const { return m_materialGroupsCount; }
+	int						GetSkinCount() const;
+	int						GetSkinIdx(const char* name) const;
+
 	void					QueueMaterialsLoading() const;
 
 	// selects a lod. returns index
@@ -86,7 +88,8 @@ private:
 
 	bool					LoadModel(const char* pszPath, bool useJob = true);
 	void					DestroyModel();
-	
+
+	bool					LoadSkinDescFile();
 	bool					LoadFromFile();
 	void					LoadMaterials();
 	void					LoadPhysicsData(); // loads physics object data
@@ -94,15 +97,18 @@ private:
 	void					LoadMotionPackages();
 	void					LoadSetupBones();
 
+	void					LoadMaterials(ArrayCRef<EqStringRef> materialNames, ArrayCRef<EqStringRef> materialSearchPaths);
+
 	//-----------------------------------------------
 
-	using MaterialList = FixedArray<IMaterialPtr, MAX_STUDIOMATERIALS>;
 	using MotionDataList = FixedArray<int, MAX_MOTIONPACKAGES>;
 
 	Future<bool>			m_loadingFuture;
 
-	// array of material index for each group
-	MaterialList			m_materials;
+	Array<IMaterialPtr>		m_materials{ PP_SL };	
+	Map<int, int>			m_skinNameIds{ PP_SL };		// map of names to skin IDs
+	int						m_materialCount{ 0 };
+
 	MotionDataList			m_motionData;
 
 	Array<EqString>			m_additionalMotionPackages{ PP_SL };
@@ -121,9 +127,6 @@ private:
 	IGPUBufferPtr			m_indexBuffer;
 	int						m_indexFmt{ -1 };
 
-	int						m_materialCount{ 0 };
-	int						m_materialGroupsCount{ 0 };
-
 	volatile int			m_readyState{ 0 };
 };
 
@@ -134,19 +137,14 @@ struct CEqStudioGeom::DrawProps
 	using SetupDrawFunc = EqFunction<void(RenderDrawCmd& drawCmd)>;
 	using BodyGroupFunc = EqFunction<void(RenderDrawCmd& drawCmd, IMaterial* material, int bodyGroup, int meshIndex)>;
 
-	// DEPRECATED
-	ArrayCRef<EGFHwVertex::VertexStreamId> vertexStreamMapping{ g_defaultVertexStreamMapping };
 	IVertexFormat*			vertexFormat{ nullptr };
-	// END DEPRECATED
-
-	//MeshInstanceFormatRef	instFormat;
 	GPUBufferView			boneTransforms; // BSKN uniform buffer
 
 	SetupDrawFunc			setupDrawCmd;	// called once before entire EGF is drawn
 	BodyGroupFunc			setupBodyGroup;	// called multiple times before body group is drawn
 	
 	int						bodyGroupFlags{ -1 };
-	int						materialGroup{ 0 };
+	int						skinIdx{ 0 };
 	int						lod{ 0 };
 
 	int						materialFlags{ -1 };

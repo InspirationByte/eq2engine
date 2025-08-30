@@ -50,10 +50,10 @@ struct KVDescFlagInfo
 
 //-----------------------
 
-#define DECLARE_KEYVALUES_FLAGS_DESC(enumDescName) \
-	struct enumDescName { \
-		static ArrayCRef<KVDescFlagInfo> GetFlags(); \
-	};
+template<typename EnumType>
+struct KVFlagsEnumDesc {
+	static ArrayCRef<KVDescFlagInfo> GetFlags();
+};
 
 // See KeyValues.h for next defines:
 // 
@@ -66,11 +66,3 @@ struct KVDescFlagInfo
 
 // TODO: Map support as Dictionary type
 
-template<typename T>
-inline bool KV_ParseDesc(T& descData, const KVSection& section)
-{
-	using Desc = typename T::Desc;
-	for (const KVDescFieldInfo& info : Desc::GetFields())
-		info.parseFunc(section, info.name, reinterpret_cast<ubyte*>(&descData) + info.offset);
-	return true;
-}

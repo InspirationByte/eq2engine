@@ -133,6 +133,7 @@ void CBulletStudioShapeCache::DestroyStudioCache(StudioPhysData& studioData)
 
 	for(StudioPhyShapeData& shapeData : studioData.shapes)
 	{
+		CScopedMutex m(s_shapeCacheMutex);
 		const int shapeIdx = arrayFindIndex(m_collisionShapes, reinterpret_cast<btCollisionShape*>(shapeData.cacheRef));
 
 		if (shapeIdx == -1)
@@ -146,11 +147,7 @@ void CBulletStudioShapeCache::DestroyStudioCache(StudioPhysData& studioData)
 		}
 
 		delete shape;
-
-		{
-			CScopedMutex m(s_shapeCacheMutex);
-			m_collisionShapes.fastRemoveIndex(shapeIdx);
-		}
+		m_collisionShapes.fastRemoveIndex(shapeIdx);
 	}
 }
 

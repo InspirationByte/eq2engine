@@ -43,7 +43,8 @@ void CWGPUSwapChain::UpdateBackbufferView() const
 
 	switch (rhiSurfTex.status)
 	{
-    case WGPUSurfaceGetCurrentTextureStatus_Success:
+    case WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal:
+	case WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal:
 		// All good, could check for `surfTex.suboptimal` here.
 		break;
 	case WGPUSurfaceGetCurrentTextureStatus_Timeout:
@@ -51,8 +52,6 @@ void CWGPUSwapChain::UpdateBackbufferView() const
 	case WGPUSurfaceGetCurrentTextureStatus_Lost:
 	case WGPUSurfaceGetCurrentTextureStatus_Error:
 		return;
-	case WGPUSurfaceGetCurrentTextureStatus_OutOfMemory:
-	case WGPUSurfaceGetCurrentTextureStatus_DeviceLost:
 	case WGPUSurfaceGetCurrentTextureStatus_Force32:
 		// Fatal error
 		ASSERT_FAIL("wgpuSurfaceGetCurrentTexture status=%#.8x\n", rhiSurfTex.status);

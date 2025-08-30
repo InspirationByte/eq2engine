@@ -34,7 +34,6 @@ static locale_t xgetlocale()
 
 static char* xstrupr(char* str)
 {
-	ASSERT(str);
 	char* it = str;
 
 	while (*it != 0) { *it = toupper(*it); ++it; }
@@ -44,7 +43,6 @@ static char* xstrupr(char* str)
 
 static char* xstrlwr(char* str)
 {
-	ASSERT(str);
 	char* it = str;
 
 	while (*it != 0) { *it = tolower(*it); ++it; }
@@ -54,8 +52,6 @@ static char* xstrlwr(char* str)
 
 static wchar_t* xwcslwr(wchar_t* str)
 {
-	ASSERT(str);
-
 	wchar_t* it = str;
 
 #ifdef _WIN32
@@ -69,8 +65,6 @@ static wchar_t* xwcslwr(wchar_t* str)
 
 static wchar_t* xwcsupr(wchar_t* str)
 {
-	ASSERT(str);
-
 	wchar_t* it = str;
 
 #ifdef _WIN32
@@ -84,22 +78,13 @@ static wchar_t* xwcsupr(wchar_t* str)
 
 static char* xstrstr(  const char* s1, const char* search )
 {
-	ASSERT( s1 );
-	ASSERT( search );
-
 	return strstr( (char* )s1, search );
 }
 
 // Finds a string in another string with a case insensitive test
-static char const* xstristr( char const* pStr, char const* pSearch )
+static char* xstristr( char* pStr, const char* pSearch )
 {
-	ASSERT(pStr);
-	ASSERT(pSearch);
-
-	if (!pStr || !pSearch)
-		return 0;
-
-	char const* pLetter = pStr;
+	char* pLetter = pStr;
 
 	// Check the entire string
 	while (*pLetter != 0)
@@ -134,11 +119,6 @@ static char const* xstristr( char const* pStr, char const* pSearch )
 	return 0;
 }
 
-static char* xstristr( char* pStr, char const* pSearch )
-{
-	return (char*)xstristr( (char const*)pStr, pSearch );
-}
-
 //------------------------------------------------------
 // wide string
 //------------------------------------------------------
@@ -146,9 +126,6 @@ static char* xstristr( char* pStr, char const* pSearch )
 // compares two strings
 static int xwcscmp( const wchar_t *s1, const wchar_t *s2)
 {
-	ASSERT( s1 );
-	ASSERT( s2 );
-
 	while (1)
 	{
 		if (*s1 != *s2)
@@ -165,9 +142,6 @@ static int xwcscmp( const wchar_t *s1, const wchar_t *s2)
 // compares two strings case-insensetive
 static int xwcsicmp( const wchar_t* s1, const wchar_t* s2 )
 {
-	ASSERT( s1 );
-	ASSERT( s2 );
-
 	while (1)
 	{
 		if (towlower(*s1) != towlower(*s2))
@@ -183,7 +157,7 @@ static int xwcsicmp( const wchar_t* s1, const wchar_t* s2 )
 }
 
 // finds substring in string case insensetive
-static wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch )
+static wchar_t* xwcsistr(wchar_t* pStr, const wchar_t* pSearch )
 {
 	ASSERT(pStr);
 	ASSERT(pSearch);
@@ -191,7 +165,7 @@ static wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch )
 	if (!pStr || !pSearch)
 		return 0;
 
-	wchar_t const* pLetter = pStr;
+	wchar_t* pLetter = pStr;
 
 	// Check the entire string
 	while (*pLetter != 0)
@@ -200,8 +174,8 @@ static wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch )
 		if (tolower(*pLetter) == tolower(*pSearch))
 		{
 			// Check for match
-			wchar_t const* pMatch = pLetter + 1;
-			wchar_t const* pTest = pSearch + 1;
+			const wchar_t* pMatch = pLetter + 1;
+			const wchar_t* pTest = pSearch + 1;
 			while (*pTest != 0)
 			{
 				// We've run off the end; don't bother.
@@ -226,15 +200,6 @@ static wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch )
 	return 0;
 }
 
-// finds substring in string case insensetive
-static wchar_t* xwcsistr(wchar_t* pStr, wchar_t const* pSearch)
-{
-	ASSERT(pStr);
-	ASSERT(pSearch);
-
-	return (wchar_t*)xwcsistr((wchar_t const*)pStr, pSearch);
-}
-
 namespace CType
 {
 template<> bool IsAlphabetic(char chr) { return isalpha(static_cast<uint8>(chr)); }
@@ -253,7 +218,8 @@ template<> char UpperChar(char chr) { return toupper(chr); }
 template<> wchar_t LowerChar(wchar_t chr)
 {
 #ifdef _WIN32
-	return *CharLowerW(&chr);
+	wchar_t tmp[] = { chr, 0 };
+	return *CharLowerW(tmp);
 #else
 	return towlower_l(chr, xgetlocale());
 #endif // _WIN32
@@ -262,7 +228,8 @@ template<> wchar_t LowerChar(wchar_t chr)
 template<> wchar_t UpperChar(wchar_t chr)
 {
 #ifdef _WIN32
-	return *CharUpperW(&chr);
+	wchar_t tmp[] = { chr, 0 };
+	return *CharUpperW(tmp);
 #else
 	return towupper_l(chr, xgetlocale());
 #endif // _WIN32
@@ -273,92 +240,103 @@ namespace CString
 {
 template<> int Length<char>(const char* str)
 {
-	if (!str) return 0;
+	ASSERT(str);
 	return static_cast<int>(strlen(str));
 }
 
 template<> int Length<wchar_t>(const wchar_t* str)
 {
-	if (!str) return 0;
+	ASSERT(str);
 	return static_cast<int>(wcslen(str));
 }
 
 template<> char* SubString(char* str, const char* search)
 {
-	if (!str || !search) return nullptr;
+	ASSERT(str && search);
 	return strstr(str, search);
 }
 
 template<> char* SubStringCaseIns(char* str, const char* search)
 {
-	if (!str || !search) return nullptr;
+	ASSERT(str && search);
 	return xstristr(str, search);
 }
 
 template<> wchar_t* SubString(wchar_t* str, const wchar_t* search)
 {
-	if (!str || !search) return nullptr;
+	ASSERT(str && search);
 	return wcsstr(str, search);
 }
 
 template<> wchar_t* SubStringCaseIns(wchar_t* str, const wchar_t* search)
 {
-	if (!str || !search) return nullptr;
+	ASSERT(str && search);
 	return xwcsistr(str, search);
 }
 
 template<> char* LowerCase(char* str)
 {
+	ASSERT(str);
 	return xstrlwr(str);
 }
 
 template<> wchar_t* LowerCase(wchar_t* str)
 {
+	ASSERT(str);
 	return xwcslwr(str);
 }
 
 template<> char* UpperCase(char* str)
 {
+	ASSERT(str);
 	return xstrupr(str);
 }
 
 template<> wchar_t* UpperCase(wchar_t* str)
 {
+	ASSERT(str);
 	return xwcsupr(str);
 }
 
 template<> int Compare(const char* strA, const char* strB)
 {
+	ASSERT(strA && strB);
 	return strcmp(strA, strB);
 }
 
 template<> int Compare(const wchar_t* strA, const wchar_t* strB)
 {
+	ASSERT(strA && strB);
 	return wcscmp(strA, strB);
 }
 
 template<> int CompareCaseIns(const char* strA, const char* strB)
 {
+	ASSERT(strA && strB);
 	return stricmp(strA, strB);
 }
 
 template<> int CompareCaseIns(const wchar_t* strA, const wchar_t* strB)
 {
+	ASSERT(strA && strB);
 	return xwcsicmp(strA, strB);
 }
 
 template<> int PrintFV(char* buffer, int bufferCnt, const char* fmt, va_list argList)
 {
+	ASSERT(buffer && fmt);
 	return vsnprintf(buffer, bufferCnt, fmt, argList);
 }
 
 template<> int PrintFV(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, va_list argList)
 {
+	ASSERT(buffer && fmt);
 	return _vsnwprintf(buffer, bufferCnt, fmt, argList);
 }
 
 template<> int PrintF(char* buffer, int bufferCnt, const char* fmt, ...)
 {
+	ASSERT(buffer && fmt);
 	va_list argptr;
 	va_start(argptr, fmt);
 	int result = PrintFV(buffer, bufferCnt, fmt, argptr);
@@ -368,6 +346,7 @@ template<> int PrintF(char* buffer, int bufferCnt, const char* fmt, ...)
 
 template<> int PrintF(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, ...)
 {
+	ASSERT(buffer && fmt);
 	va_list argptr;
 	va_start(argptr, fmt);
 	int result = PrintFV(buffer, bufferCnt, fmt, argptr);
@@ -403,6 +382,14 @@ wchar_t* DuplicateNew(const wchar_t* s)
 }
 
 //------------------------------------------------
+
+template<typename CH>
+int EqTStrRef<CH>::Length() const
+{
+	if (!m_pszString)
+		return 0;
+	return (m_nLength == -1) ? m_nLength = CString::Length(m_pszString) : m_nLength; 
+}
 
 template<typename CH>
 int EqTStrRef<CH>::Compare(EqTStrRef otherStr) const

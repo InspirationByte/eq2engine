@@ -11,11 +11,8 @@
 
 static void DoCoreExceptionCallbacks()
 {
-	const Array<CoreExceptionCallback>& handlerCallbacks = ((CDkCore*)g_eqCore)->GetExceptionHandlers();
-	for (int i = 0; i < handlerCallbacks.numElem(); i++)
-	{
-		handlerCallbacks[i]();
-	}
+	for (CoreExceptionCallback cb : static_cast<CDkCore*>(g_eqCore)->GetExceptionHandlers())
+		cb();
 }
 
 #ifdef PLAT_WIN

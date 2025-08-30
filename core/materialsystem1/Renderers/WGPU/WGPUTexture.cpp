@@ -178,13 +178,13 @@ bool CWGPUTexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& s
 
 				const WGPUExtent3D rhiTexSize{ (uint)mipWidth, (uint)mipHeight, (uint)mipDepth };
 
-				WGPUImageCopyTexture rhImageCopy{};
+				WGPUTexelCopyTextureInfo rhImageCopy{};
 				rhImageCopy.texture = rhiTexture;
 				rhImageCopy.aspect = WGPUTextureAspect_All;
 				rhImageCopy.mipLevel = lockBoxLevel;
 				rhImageCopy.origin = WGPUOrigin3D{ 0, 0, (uint)arrIdx };
 
-				WGPUTextureDataLayout rhiTexDataLayout{};
+				WGPUTexelCopyBufferLayout rhiTexDataLayout{};
 				rhiTexDataLayout.offset = 0;
 				if (IsCompressedFormat(imgFmt))
 				{
@@ -294,12 +294,12 @@ void CWGPUTexture::Unlock(IGPUCommandRecorder* writeCmdRecorder)
 
 	if (!(data.flags & TEXLOCK_READONLY))
 	{
-		WGPUTextureDataLayout rhiTexLayout{};
+		WGPUTexelCopyBufferLayout rhiTexLayout{};
 		rhiTexLayout.offset = 0;
 		rhiTexLayout.bytesPerRow = data.lockPitch;
 		rhiTexLayout.rowsPerImage = data.lockSize.height;
 
-		WGPUImageCopyTexture rhiTexDestination{};
+		WGPUTexelCopyTextureInfo rhiTexDestination{};
 		rhiTexDestination.texture = m_rhiTexture;
 		rhiTexDestination.aspect = WGPUTextureAspect_All;
 		rhiTexDestination.mipLevel = data.lockOrigin.mipLevel;
@@ -315,7 +315,7 @@ void CWGPUTexture::Unlock(IGPUCommandRecorder* writeCmdRecorder)
 			CWGPUBuffer tmpBuffer(BufferInfo(1, data.lockByteCount), BUFFERUSAGE_COPY_SRC | BUFFERUSAGE_COPY_DST, "TexLockWriteBuffer");
 			writeCmdRecorder->WriteBuffer(&tmpBuffer, data.lockData, data.lockByteCount, 0);
 
-			WGPUImageCopyBuffer rhiTexBuffer{};
+			WGPUTexelCopyBufferInfo rhiTexBuffer{};
 			rhiTexBuffer.layout = rhiTexLayout;
 			rhiTexBuffer.buffer = tmpBuffer.GetWGPUBuffer();
 

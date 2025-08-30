@@ -355,7 +355,6 @@ void CLuaStateSingleton::Initialize()
 		Instance = AllocLuaState();
 		m_threadId = Threading::GetCurrentThreadID();
 
-		// TODO: move this to esl::InitState()
 		esl::ScriptState state(Instance);
 		esl::LuaEvent::Bind(state);
 

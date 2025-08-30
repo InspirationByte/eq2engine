@@ -22,7 +22,7 @@ public:
 	Mask();
 	virtual ~Mask();
 
-	void				Parse(const KVSection* sec) override;
+	void				Parse(const KVSection& sec) override;
 	void				DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override;
 	void				RenderChilds(int depth, RenderContextAbstract& context) override;
 

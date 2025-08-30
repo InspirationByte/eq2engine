@@ -27,7 +27,7 @@ struct ShaderOverride
 
 class IRenderLibrary;
 class CMaterial;
-struct DKMODULE;
+struct OSModule;
 
 class CMaterialSystem : public IMaterialSystem
 {
@@ -185,7 +185,7 @@ private:
 	MatSysRenderSettings		m_config;
 
 	IRenderLibrary*				m_renderLibrary{ nullptr };	// render library.
-	DKMODULE*					m_rendermodule{ nullptr };	// render dll.
+	OSModule*					m_rendermodule{ nullptr };	// render dll.
 
 	IShaderAPI*					m_shaderAPI{ nullptr };		// the main renderer interface
 	EqString					m_materialsPath;			// material path
@@ -193,7 +193,7 @@ private:
 
 	MaterialVarBlock			m_globalMaterialVars;
 
-	Array<DKMODULE*>			m_shaderLibs{ PP_SL };				// loaded shader libraries
+	Array<OSModule*>			m_shaderLibs{ PP_SL };				// loaded shader libraries
 	Map<int, MatSysShaderFactory>	m_shaderFactoryList{ PP_SL };		// registered shaders
 	Array<ShaderOverride>		m_shaderOverrideList{ PP_SL };		// shader override functors
 	Array<ShaderProxyFactory>	m_proxyFactoryList{ PP_SL };

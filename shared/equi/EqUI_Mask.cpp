@@ -53,13 +53,13 @@ void Mask::InitMask(const char* fileName)
 	g_matSystem->QueueLoading(m_maskMaterial);
 }
 
-void Mask::Parse(const KVSection* sec)
+void Mask::Parse(const KVSection& sec)
 {
 	BaseClass::Parse(sec);
 
 	EqStringRef maskImageName;
-	sec->Get("image").GetValues(maskImageName);
-	sec->Get("color").GetValues(m_color);
+	sec.Get("image").GetValues(maskImageName);
+	sec.Get("color").GetValues(m_color);
 
 	InitMask(maskImageName);
 }

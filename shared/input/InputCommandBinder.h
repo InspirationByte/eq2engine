@@ -67,7 +67,7 @@ struct InputTouchZone : public InputCommand
 class CInputCommandBinder
 {
 public:
-	CInputCommandBinder();
+	CInputCommandBinder() = default;
 
 	void					Init();
 	void					Shutdown();
@@ -86,6 +86,7 @@ public:
 	// removes single binding on specified keychar
 	void					UnbindKey( const char* pszKeyStr );
 	void					UnbindCommandByName( const char* name, const char* argStr = nullptr);
+	void					UnregisterCommand(ConCommandBase* cmdBase);
 	void					DeleteBinding(InputBinding* binding);
 
 	// clears and removes all key bindings
@@ -118,6 +119,9 @@ public:
 	void					OnTouchEvent( int finger, const Vector2D& position, bool down );
 
 protected:
+	InputBinding*			AllocBinding();
+	void					FreeBinding(InputBinding* binding);
+
 	InputBinding*			CreateCommandBinding(const char* pszKeyStr, const char* pszCommand, const char* pszArgs);
 
 	// executes binding with selected state
@@ -130,9 +134,12 @@ protected:
 	InputVectorAction*		FindAxisAction(const char* name) const;
 
 	static constexpr int	BITS_BUTTONS = 1024;
+
 	BIT_STORAGE_TYPE		m_currentButtonBits[bitArray2Dword(BITS_BUTTONS)]{0};	// current keyboard buttons
-	Array<InputBinding*>	m_bindings{ PP_SL };
-	Array<InputTouchZone>	m_touchZones{ PP_SL };
+	MemoryPool<InputBinding>	m_bindingMemPool{ PP_SL };
+
+	Array<InputBinding*>		m_bindings{ PP_SL };
+	Array<InputTouchZone>		m_touchZones{ PP_SL };
 	Array<InputVectorAction>	m_axisActs{ PP_SL };
 
 	EInputDeviceType		m_lastInputDev{ INPUTDEV_KEYBOARD };

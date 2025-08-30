@@ -63,11 +63,8 @@ studioHdr_t* Studio_LoadModel(const char* pszPath)
 	}
 
 	ConvertHeaderToLatestVersion( pBaseHdr );
-
-	// TODO: Double data protection!!! (hash lookup)
-
+	
 	studioHdr_t* pHdr = (studioHdr_t*)pBaseHdr;
-
 	if(pHdr->version != EQUILIBRIUM_MODEL_VERSION)
 	{
 		MsgError("Wrong model '%s' version, excepted %i, but model version is %i\n",pszPath, EQUILIBRIUM_MODEL_VERSION,pBaseHdr->version);

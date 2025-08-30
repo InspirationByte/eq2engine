@@ -263,16 +263,15 @@ static KVSection s_variables;
 
 static void ProcessVariableString(EqString& string)
 {
-	for (const KVSection* key : s_variables.Keys())
+	for (const KVSection& key : s_variables.Keys())
 	{
 		int found = 0;
 		do {
-			found = string.ReplaceSubstr(EqString::Format("%%%s%%", key->name), KV_GetValueString(key), true, found);
+			found = string.ReplaceSubstr(EqString::Format("%%%s%%", key.GetName()), KV_GetValueString(&key), true, found);
 		} while (found != -1);
 	}
 }
 
-// TODO: separate source file
 class CFileListBuilder
 {
 public:
@@ -387,8 +386,8 @@ static bool CheckExtensionList(Array<EqString>& extList, const char* ext)
 static void CookPackageTarget(const char* targetName)
 {
 	// load all properties
-	KeyValues kvs;
-	if (!kvs.LoadFromFile("PackageCooker.CONFIG", SP_ROOT))
+	KVSection kvs;
+	if (!KV_LoadFromFile("PackageCooker.CONFIG", SP_ROOT, kvs))
 	{
 		MsgError("Failed to load 'PackageCooker.CONFIG' file!\n");
 		return;
@@ -513,12 +512,12 @@ static void CookPackageTarget(const char* targetName)
 
 			if (CheckExtensionList(keyValueFileExt, fileExt))
 			{
-				// TODO: convert key-values file and store it (maybe uncompressed)
+				// convert key-values file and store it (maybe uncompressed)
 				KVSection sectionFile;
-				if (KV_LoadFromFile(fileInfo.fileName, SP_ROOT, &sectionFile))
+				if (KV_LoadFromFile(fileInfo.fileName, SP_ROOT, sectionFile))
 				{
 					fileMemoryStream.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, 16 * 1024);
-					KV_WriteToStreamBinary(&fileMemoryStream, &sectionFile);
+					KeyValues::WriteBinary(&fileMemoryStream, sectionFile);
 
 					MsgInfo("Converted key-values file to binary: %s\n", fileInfo.fileName.ToCString());
 					loadRawFile = false;

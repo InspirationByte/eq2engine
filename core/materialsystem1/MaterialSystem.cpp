@@ -207,7 +207,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 {
 	Msg(" \n--------- MaterialSystem Init --------- \n");
 
-	const KVSection* matSystemSettings = g_eqCore->GetConfig()->FindSection("MaterialSystem");
+	const KVSection* matSystemSettings = g_eqCore->GetConfig().FindSection("MaterialSystem");
 
 	ASSERT(m_shaderAPI == nullptr);
 
@@ -252,7 +252,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 	auto tryLoadRenderer = [this, &config](const char* rendererName)
 	{
 		EqString loadErr;
-		DKMODULE* renderModule = g_fileSystem->OpenModule(rendererName, &loadErr);
+		OSModule* renderModule = g_eqCore->OpenModule(rendererName, &loadErr);
 		IRenderManager* renderMng = nullptr;
 		IRenderLibrary* renderLib = nullptr;
 		IShaderAPI* shaderAPI = nullptr;
@@ -269,7 +269,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 			}
 			else
 			{
-				g_fileSystem->CloseModule(renderModule);
+				g_eqCore->CloseModule(renderModule);
 			}
 		};
 
@@ -450,11 +450,11 @@ void CMaterialSystem::Shutdown()
 	m_shaderAPI->Shutdown();
 	m_renderLibrary->ExitAPI();
 
-	for(DKMODULE* shaderModule : m_shaderLibs)
-		g_fileSystem->CloseModule(shaderModule);
+	for(OSModule* shaderModule : m_shaderLibs)
+		g_eqCore->CloseModule(shaderModule);
 
 	// shutdown render libraries, all shaders and other
-	g_fileSystem->CloseModule( m_rendermodule );
+	g_eqCore->CloseModule( m_rendermodule );
 }
 
 void CMaterialSystem::CreateWhiteTexture()
@@ -572,7 +572,7 @@ const char* CMaterialSystem::GetMaterialSRCPath() const
 bool CMaterialSystem::LoadShaderLibrary(const char* libname)
 {
 	EqString loadErr;
-	DKMODULE* shaderlib = g_fileSystem->OpenModule( libname );
+	OSModule* shaderlib = g_eqCore->OpenModule( libname );
 	if(!shaderlib)
 	{
 		MsgError("LoadShaderLibrary Error: Failed to load %s - %s\n", libname, loadErr.ToCString());
@@ -581,7 +581,7 @@ bool CMaterialSystem::LoadShaderLibrary(const char* libname)
 
 	typedef int (*InitShaderLibraryFunction)(IMaterialSystem* pMatSystem);
 
-	InitShaderLibraryFunction functionPtr = (InitShaderLibraryFunction)g_fileSystem->GetProcedureAddress(shaderlib, "InitShaderLibrary");
+	InitShaderLibraryFunction functionPtr = (InitShaderLibraryFunction)g_eqCore->GetProcedureAddress(shaderlib, "InitShaderLibrary");
 	if(!functionPtr)
 	{
 		MsgError("Invalid shader library '%s' - can't get InitShaderLibrary function!\n",libname);
@@ -1115,6 +1115,9 @@ const ITexturePtr& CMaterialSystem::GetErrorCheckerboardTexture(ETextureDimensio
 bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 {
 	if(!m_shaderAPI)
+		return false;
+
+	if (m_frameBegun)
 		return false;
 
 	const bool prevDeviceState = m_shaderAPI->IsDeviceActive();

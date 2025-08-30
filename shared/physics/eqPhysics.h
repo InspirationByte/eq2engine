@@ -36,13 +36,13 @@ class btCollisionWorld;
 class btCollisionConfiguration;
 class btCollisionDispatcher;
 class btCollisionShape;
+class btBroadphaseInterface;
 
 struct eqCollisionInfo;
 struct eqContactPair;
 struct KVSection;
 class CEqCollisionObject;
 class CEqRigidBody;
-class CEqCollisionBroadphaseGrid;
 class IEqPhysicsConstraint;
 class IEqPhysController;
 
@@ -53,7 +53,10 @@ typedef void (*FNSIMULATECALLBACK)(float fDt, int iterNum);
 
 class CEqPhysicsWorld
 {
-	struct sweptTestParams_t
+	friend class CEqCollisionObject;
+	friend class CEqRigidBody;
+
+	struct SweptTestParams
 	{
 		Quaternion rotation;
 		const btCollisionShape*	shape;
@@ -64,12 +67,12 @@ public:
 	~CEqPhysicsWorld();
 
 	void							InitWorld();										///< initializes world
-	void							InitGrid();											///< initializes broadphase grid
+	void							InitGrid(const BoundingBox& worldBBox);				///< initializes broadphase grid
 
 	void							DestroyWorld();										///< destroys world
 	void							DestroyGrid();										///< destroys broadphase grid
 
-	void							AddSurfaceParamFromKV(const char* name, const KVSection* kvSection);
+	void							AddSurfaceParamFromKV(const char* name, const KVSection& kvSection);
 	const int						FindSurfaceParamID(const char* name) const;
 	const eqPhysSurfParam*			FindSurfaceParam(const char* name) const;
 	const eqPhysSurfParam*			GetSurfaceParamByID(int id) const;
@@ -149,7 +152,7 @@ public:
 protected:
 
 
-	void							SetupBodyOnCell(CEqCollisionObject* body);		///< only rigid body and ghost objects
+	void							SetupCollisionObjectBroadphase(CEqCollisionObject* body);
 
 	///< Integrates single body without collision detection
 	void							IntegrateSingle(CEqRigidBody* body);
@@ -162,41 +165,6 @@ protected:
 
 	void							DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt);
 	void							DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt);
-
-	typedef bool (fnSingleObjectLineCollisionCheck)(CEqCollisionObject* object,
-		const FVector3D& start,
-		const FVector3D& end,
-		const BoundingBox& raybox,
-		eqCollisionInfo& coll,
-		float closestHit,
-		int rayMask,
-		const eqPhysCollisionFilter* filterParams,
-		void* args);
-
-	///< tests line versus some objects
-	template <typename F>
-	bool							TestLineCollisionOnCell(int y, int x,
-															const FVector3D& start, const FVector3D& end,
-															const BoundingBox& rayBox,
-															eqCollisionInfo& coll,
-															Set<CEqCollisionObject*>& skipObjects,
-															int rayMask,
-															const eqPhysCollisionFilter* filterParams,
-															F func,
-															void* args = nullptr);
-
-	///< Performs collision tests in broadphase grid
-	template <typename F>
-	void							InternalTestLineCollisionCells(	const Vector2D& startCell, const Vector2D& endCell,
-																	const FVector3D& start, const FVector3D& end,
-																	const BoundingBox& rayBox,
-																	eqCollisionInfo& coll,
-																	int rayMask,
-																	const eqPhysCollisionFilter* filterParams,
-																	F func,
-																	void* args = nullptr);
-
-	CEqCollisionBroadphaseGrid*		m_grid{ nullptr };
 
 protected:
 
@@ -216,6 +184,7 @@ protected:
 	btCollisionWorld*				m_collisionWorld{ nullptr };
 	btCollisionConfiguration*		m_collConfig{ nullptr };
 	btCollisionDispatcher*			m_collDispatcher{ nullptr };
+	btBroadphaseInterface*			m_broadphase{ nullptr };
 
 	int								m_numRayQueries{ 0 };
 	float							m_fDt{ 0.0f };

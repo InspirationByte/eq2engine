@@ -20,6 +20,9 @@
 #ifdef CRT_DEBUG_ENABLED
 #include <crtdbg.h>
 #endif
+#else
+#include <dlfcn.h>	// dlopen()
+using HMODULE = void*;
 #endif
 
 #include "core/IFileSystem.h"
@@ -40,6 +43,12 @@ static lpp::LppDefaultAgent s_lppAgent;
 #endif // HAS_LIVEPP_SUPPORT
 
 EXPORTED_INTERFACE(IDkCore, CDkCore)
+
+struct OSModule
+{
+	EqString	name;
+	HMODULE		module;
+};
 
 #ifdef PLAT_WIN
 BOOL WINAPI DllMain(HINSTANCE module_handle, DWORD reason_for_call, LPVOID reserved)
@@ -98,11 +107,6 @@ ConCommand* c_log_flush;
 
 void PPMemInit();
 void PPMemShutdown();
-
-CDkCore::CDkCore()
-{
-	m_coreConfiguration = nullptr;
-}
 
 //-----------------------------------------------------------------------------
 // Returns the directory where this .exe is running from
@@ -190,41 +194,38 @@ bool CDkCore::Init(const CoreAppInitParameters& initParams)
 
 	m_szApplicationName = initParams.appName;
 
-	m_coreConfiguration = PPNew KeyValues();
-	KVSection* coreConfigRoot = m_coreConfiguration->GetRootSection();
-
 	EqString appConfigName = initParams.appConfigName ? initParams.appConfigName : "E2.CONFIG";
 
 	// try different locations of E2.CONFIG
-	bool eqConfigFound = m_coreConfiguration->LoadFromFile(appConfigName, SP_ROOT);
+	bool eqConfigFound = KV_LoadFromFile(appConfigName, SP_ROOT, m_coreConfiguration);
 	if (!eqConfigFound)
 	{
 		appConfigName = "../" + appConfigName;
-		eqConfigFound = m_coreConfiguration->LoadFromFile(appConfigName, SP_ROOT);
+		eqConfigFound = KV_LoadFromFile(appConfigName, SP_ROOT, m_coreConfiguration);
 		g_fileSystem->SetBasePath(".."); // little hack
 	}
 
 	if (!eqConfigFound)
 	{
 		// try create default settings
-		KVSection& appDebug = *coreConfigRoot->CreateSection("ApplicationDebug");
+		KVSection& appDebug = m_coreConfiguration.CreateSection("ApplicationDebug");
 		appDebug
 			.SetKey("ForceLogApplications", initParams.appName);
 
-		KVSection& fsSection = *coreConfigRoot->CreateSection("FileSystem");
+		KVSection& fsSection = m_coreConfiguration.CreateSection("FileSystem");
 
 		fsSection
 			.SetKey("EngineDataDir", "E2Base")
 			.SetKey("DefaultGameDir", "GameData");
 
-		KVSection& regionalConfig = *coreConfigRoot->CreateSection("RegionalSettings");
+		KVSection& regionalConfig = m_coreConfiguration.CreateSection("RegionalSettings");
 		regionalConfig
 			.SetKey("DefaultLanguage", "English");
 	}
 
 	bool logEnabled = false;
 
-	const KVSection* appDebugSec = coreConfigRoot->FindSection("ApplicationDebug", KV_FLAG_SECTION);
+	const KVSection* appDebugSec = m_coreConfiguration.FindSection("ApplicationDebug", KV_FLAG_SECTION);
 	if (appDebugSec)
 	{
 		if (appDebugSec->FindSection("ForceEnableLog", KV_FLAG_NOVALUE))
@@ -324,7 +325,7 @@ bool CDkCore::Init(const CoreAppInitParameters& initParams)
 	g_consoleCommands->ResetCounter();
 
 	// Show core message
-	MsgAccept("Equilibrium 2 - %s %s\n", __DATE__, __TIME__);
+	MsgAccept("E2Core - %s %s\n", __DATE__, __TIME__);
 
 	CEqCPUCaps* cpuCaps = (CEqCPUCaps*)g_cpuCaps.GetInstancePtr();
 	cpuCaps->Init();
@@ -351,7 +352,7 @@ bool CDkCore::Init(const CoreAppInitParameters& initParams)
 	return true;
 }
 
-KeyValues* CDkCore::GetConfig() const
+const KVSection& CDkCore::GetConfig() const
 {
 	return m_coreConfiguration;
 }
@@ -365,7 +366,7 @@ void CDkCore::Shutdown()
 
 	g_fileSystem->Shutdown();
 
-	SAFE_DELETE(m_coreConfiguration);
+	m_coreConfiguration.Clear();
 	m_interfaces.clear(true);
 
 	SAFE_DELETE(c_log_enable);
@@ -388,11 +389,107 @@ void CDkCore::Shutdown()
 	PPMemShutdown();
 	Log_Close();
 	m_exceptionCb.clear(true);
+
+	for (int i = 0; i < m_modules.numElem(); i++)
+	{
+		CloseModule(m_modules[i]);
+		i--;
+	}
 }
 
 char* CDkCore::GetApplicationName() const
 {
 	return (char*)m_szApplicationName.GetData();
+}
+
+// loads module
+OSModule* CDkCore::OpenModule(const char* mod_name, EqString* outError)
+{
+	EqString moduleFileName = mod_name;
+	EqString modExt = fnmPathExtractExt(moduleFileName);
+
+#ifdef _WIN32
+	// make default module extension
+	if (modExt.Length() == 0)
+		moduleFileName = moduleFileName + ".dll";
+
+	HMODULE mod = LoadLibraryA(moduleFileName);
+	DWORD lastErr = GetLastError();
+
+	char err[256] = { '\0' };
+	if (lastErr != 0)
+	{
+		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM,
+			nullptr,
+			lastErr,
+			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			err,
+			255,
+			nullptr);
+	}
+
+#else
+	// make default module extension
+	if (modExt.Length() == 0)
+		moduleFileName = moduleFileName + ".so";
+
+	HMODULE mod = dlopen(moduleFileName, RTLD_LAZY | RTLD_LOCAL);
+	if (!mod)
+	{
+		moduleFileName = "lib" + moduleFileName;
+		mod = dlopen(moduleFileName, RTLD_LAZY | RTLD_LOCAL);
+	}
+
+	const char* err = dlerror();
+	int lastErr = 0;
+#endif // _WIN32 && MEMDLL
+
+	if (!mod)
+	{
+		if (outError)
+			*outError = err;
+
+		return nullptr;
+	}
+
+	g_eqCore->OnModuleLoaded(moduleFileName);
+
+	MsgInfo("Loaded module '%s'\n", moduleFileName.ToCString());
+
+	OSModule* pModule = PPNew OSModule;
+	pModule->name = moduleFileName;
+	pModule->module = (HMODULE)mod;
+
+	return pModule;
+}
+
+// frees module
+void CDkCore::CloseModule(OSModule* pModule)
+{
+	if (!pModule)
+		return;
+
+	g_eqCore->OnModuleUnloaded(pModule->name);
+
+	// don't unload any modules if we prining a leaklog
+#ifdef _WIN32
+	FreeLibrary(pModule->module);
+#else
+	dlclose(pModule->module);
+#endif // _WIN32 && MEMDLL
+
+	delete pModule;
+	m_modules.remove(pModule);
+}
+
+// returns procedure address of the loaded module
+void* CDkCore::GetProcedureAddress(OSModule* pModule, const char* pszProc) const
+{
+#ifdef _WIN32
+	return GetProcAddress(pModule->module, pszProc);
+#else
+	return dlsym(pModule->module, pszProc);
+#endif // _WIN32 && MEMDLL
 }
 
 // Interface management for engine

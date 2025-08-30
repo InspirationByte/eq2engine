@@ -12,21 +12,14 @@
 #include "core/ConVar.h"
 #include "egf/model.h"
 #include "eqCollision_Object.h"
-
 #include "physics/BulletConvert.h"
 #include "eqBulletIndexedMesh.h"
-
-#include "materialsystem1/IMaterialSystem.h"
 
 DECLARE_CVAR(ph_margin, "0.0001", nullptr, CV_CHEAT | CV_UNREGISTERED);
 
 static constexpr const float EQPHYSICS_AABB_EXPAND = 0.15f;
 
 CEqCollisionObject::GetSurfaceParamIdFunc CEqCollisionObject::GetSurfaceParamId = nullptr;
-
-CEqCollisionObject::CEqCollisionObject()
-{
-}
 
 CEqCollisionObject::~CEqCollisionObject()
 {
@@ -37,11 +30,9 @@ void CEqCollisionObject::Destroy()
 {
 	SAFE_DELETE(m_trimap);
 	SAFE_DELETE(m_collObject);
-
 	if (!m_studioShape)
 	{
 		SAFE_DELETE(m_shape);
-
 		if (m_shapeList)
 		{
 			for (int i = 0; i < m_numShapes; ++i)
@@ -52,9 +43,7 @@ void CEqCollisionObject::Destroy()
 
 	m_shape = nullptr;
 	m_mesh = nullptr;
-	m_collObject = nullptr;
-	m_trimap = nullptr;
-
+	m_broadphaseProxy = nullptr;
 	m_studioShape = false;
 	m_numShapes = 0;
 }
@@ -131,6 +120,10 @@ bool CEqCollisionObject::Initialize(const StudioPhyObjData& physObject)
 bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh, bool internalEdges )
 {
 	ASSERT(!m_shape);
+	ASSERT(mesh);
+
+	if (!mesh)
+		return false;
 
 	m_mesh = mesh;
 
@@ -258,46 +251,9 @@ bool CEqCollisionObject::Initialize(float radius, float height)
 	return true;
 }
 
-btCollisionObject* CEqCollisionObject::GetBulletObject() const
-{
-	return m_collObject;
-}
-
 ArrayCRef<btCollisionShape*> CEqCollisionObject::GetBulletCollisionShapes() const
 {
 	return ArrayCRef<btCollisionShape*>(m_numShapes > 1 ? m_shapeList : &m_shape, m_numShapes);
-}
-
-CEqBulletIndexedMesh* CEqCollisionObject::GetMesh() const
-{
-	return m_mesh;
-}
-
-const Vector3D& CEqCollisionObject::GetShapeCenter() const
-{
-	return m_center;
-}
-
-void CEqCollisionObject::SetUserData(void* ptr)
-{
-	m_userData = ptr;
-}
-
-void* CEqCollisionObject::GetUserData() const
-{
-	return m_userData;
-}
-
-//--------------------
-
-const FVector3D& CEqCollisionObject::GetPosition() const
-{
-	return m_position;
-}
-
-const Quaternion& CEqCollisionObject::GetOrientation() const
-{
-	return m_orientation;
 }
 
 const Transform3D CEqCollisionObject::GetTransform() const
@@ -336,6 +292,7 @@ void CEqCollisionObject::UpdateBoundingBoxTransform()
 	if ((m_flags & COLLOBJ_BOUNDBOX_DIRTY) == 0)
 		return;
 	m_flags &= ~COLLOBJ_BOUNDBOX_DIRTY;
+	m_flags |= COLLOBJ_BROADPHASE_DIRTY;
 
 	BoundingBox srcBox = m_aabb;
 	BoundingBox finalBox;
@@ -351,60 +308,6 @@ void CEqCollisionObject::UpdateBoundingBoxTransform()
 	m_aabb_transformed = finalBox;
 }
 
-//------------------------------
-
-float CEqCollisionObject::GetFriction() const
-{
-	return m_friction;
-}
-
-float CEqCollisionObject::GetRestitution() const
-{
-	return m_restitution;
-}
-
-float CEqCollisionObject::GetErp() const
-{
-	return m_erp;
-}
-
-void CEqCollisionObject::SetFriction(float value)
-{
-	m_friction = value;
-}
-
-void CEqCollisionObject::SetRestitution(float value)
-{
-	m_restitution = value;
-}
-
-void CEqCollisionObject::SetErp(float value)
-{
-	m_erp = value;
-}
-
-//-----------------------------
-
-void CEqCollisionObject::SetContents(int contents)
-{
-	m_contents = contents;
-}
-
-void CEqCollisionObject::SetCollideMask(int maskContents)
-{
-	m_collMask = maskContents;
-}
-
-int	CEqCollisionObject::GetContents() const
-{
-	return m_contents;
-}
-
-int CEqCollisionObject::GetCollideMask() const
-{
-	return m_collMask;
-}
-
 // logical check, pre-broadphase
 bool CEqCollisionObject::CheckCanCollideWith( CEqCollisionObject* object ) const
 {
@@ -415,8 +318,6 @@ bool CEqCollisionObject::CheckCanCollideWith( CEqCollisionObject* object ) const
 
 	return false;
 }
-
-//-----------------------------
 
 void CEqCollisionObject::ConstructRenderMatrix( Matrix4x4& outMatrix )
 {

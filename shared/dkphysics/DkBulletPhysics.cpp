@@ -246,17 +246,17 @@ bool DkPhysics::Init(int nSceneSize)
 	// Always init the physics when new map is loading
 	m_nSceneSize = nSceneSize;
 
-	KeyValues surfParamsKvs;
-	if(!surfParamsKvs.LoadFromFile("scripts/SurfaceParams.def"))
+	KVSection surfParamsKvs;
+	if(!KV_LoadFromFile("scripts/SurfaceParams.def", -1, surfParamsKvs))
 	{
 		MsgError("Error! Physics surface definition file 'scripts/SurfaceParams.def' not found\n");
 		CrashMsg("Error! Physics surface definition file 'scripts/SurfaceParams.def' not found, Exiting.\n");
 		return false;
 	}
 
-	for(const KVSection* pSec : surfParamsKvs.Keys())
+	for(const KVSection& sec : surfParamsKvs.Keys())
 	{
-		if (!pSec->name.Compare("#include"))
+		if (!CString::Compare(sec.GetName(), "#include"))
 		{
 			continue;
 		}
@@ -264,9 +264,9 @@ bool DkPhysics::Init(int nSceneSize)
 		phySurfaceMaterial_t* pMaterial = PPNew phySurfaceMaterial_t;
 		DefaultMaterialParams(pMaterial);
 
-		pMaterial->name = pSec->name;
+		pMaterial->name = sec.GetName();
 
-		KVSection* pBaseNamePair = pSec->FindSection("base");
+		KVSection* pBaseNamePair = sec.FindSection("base");
 		if(pBaseNamePair)
 		{
 			phySurfaceMaterial_t* param = FindMaterial( KV_GetValueString(pBaseNamePair));
@@ -278,28 +278,28 @@ bool DkPhysics::Init(int nSceneSize)
 				DevMsg(DEVMSG_CORE, "script error: physics surface properties '%s' doesn't exist\n", KV_GetValueString(pBaseNamePair) );
 		}
 
-		pMaterial->friction = KV_GetValueFloat(pSec->FindSection("friction"), 0, 1.0f);
-		pMaterial->dampening = KV_GetValueFloat(pSec->FindSection("damping"), 0, 0.0f);
-		pMaterial->density = KV_GetValueFloat(pSec->FindSection("density"), 0, 100.0f);
-		pMaterial->surfaceword = KV_GetValueString(pSec->FindSection("surfaceword"), 0, "C")[0];
+		pMaterial->friction = KV_GetValueFloat(sec.FindSection("friction"), 0, 1.0f);
+		pMaterial->dampening = KV_GetValueFloat(sec.FindSection("damping"), 0, 0.0f);
+		pMaterial->density = KV_GetValueFloat(sec.FindSection("density"), 0, 100.0f);
+		pMaterial->surfaceword = KV_GetValueString(sec.FindSection("surfaceword"), 0, "C")[0];
 
-		KVSection* pPair = pSec->FindSection("footsteps");
+		KVSection* pPair = sec.FindSection("footsteps");
 		if(pPair)
 			pMaterial->footStepSound = KV_GetValueString(pPair);
 
-		pPair = pSec->FindSection("bulletimpact");
+		pPair = sec.FindSection("bulletimpact");
 		if(pPair)
 			pMaterial->bulletImpactSound = KV_GetValueString(pPair);
 
-		pPair = pSec->FindSection("scrape");
+		pPair = sec.FindSection("scrape");
 		if(pPair)
 			pMaterial->scrapeSound = KV_GetValueString(pPair);
 
-		pPair = pSec->FindSection("impactlight");
+		pPair = sec.FindSection("impactlight");
 		if(pPair)
 			pMaterial->lightImpactSound = KV_GetValueString(pPair);
 
-		pPair = pSec->FindSection("impactheavy");
+		pPair = sec.FindSection("impactheavy");
 		if(pPair)
 			pMaterial->heavyImpactSound = KV_GetValueString(pPair);
 

@@ -17,23 +17,23 @@
 class CAddProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* material, const KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, const KVSection& section) override
 	{
-		if(pKeyBase->values.numElem() < 3)
+		if(section.ValueCount() < 3)
 		{
 			MsgError("'add' proxy in '%s' error: invalid argument count\n Usage: add v1 v2 out [options]\n", material->GetName());
 			return;
 		}
 
-		ParseVariable(material, in1, KV_GetValueString(pKeyBase, 0) );
-		ParseVariable(material, in2, KV_GetValueString(pKeyBase, 1) );
-		ParseVariable(material, out, KV_GetValueString(pKeyBase, 2) );
+		ParseVariable(material, in1, KV_GetValueString(&section, 0) );
+		ParseVariable(material, in2, KV_GetValueString(&section, 1) );
+		ParseVariable(material, out, KV_GetValueString(&section, 2) );
 
 		useFrameTime = false;
 
-		for(int i = 3; i < pKeyBase->values.numElem(); i++)
+		for(int i = 3; i < section.ValueCount(); i++)
 		{
-			if(!CString::CompareCaseIns(KV_GetValueString(pKeyBase, i), "useftime"))
+			if(!CString::CompareCaseIns(KV_GetValueString(&section, i), "useftime"))
 				useFrameTime = true;
 		}
 	}
@@ -64,23 +64,23 @@ DECLARE_PROXY(add, CAddProxy)
 class CSubProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* material, const KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, const KVSection& section) override
 	{
-		if(pKeyBase->values.numElem() < 3)
+		if(section.ValueCount() < 3)
 		{
 			MsgError("'sub' proxy in '%s' error: invalid argument count\n Usage: sub v1 v2 out [options]\n", material->GetName());
 			return;
 		}
 
-		ParseVariable(material, in1, KV_GetValueString(pKeyBase, 0) );
-		ParseVariable(material, in2, KV_GetValueString(pKeyBase, 1) );
-		ParseVariable(material, out, KV_GetValueString(pKeyBase, 2) );
+		ParseVariable(material, in1, KV_GetValueString(&section, 0) );
+		ParseVariable(material, in2, KV_GetValueString(&section, 1) );
+		ParseVariable(material, out, KV_GetValueString(&section, 2) );
 
 		useFrameTime = false;
 
-		for(int i = 3; i < pKeyBase->values.numElem(); i++)
+		for(int i = 3; i < section.ValueCount(); i++)
 		{
-			if(!CString::CompareCaseIns(KV_GetValueString(pKeyBase, i), "useftime"))
+			if(!CString::CompareCaseIns(KV_GetValueString(&section, i), "useftime"))
 				useFrameTime = true;
 		}
 	}
@@ -111,23 +111,23 @@ DECLARE_PROXY(subtract, CSubProxy)
 class CMulProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* material, const KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, const KVSection& section) override
 	{
-		if(pKeyBase->values.numElem() < 3)
+		if(section.ValueCount() < 3)
 		{
 			MsgError("'mul' proxy in '%s' error: invalid argument count\n Usage: mul v1 v2 out [options]\n", material->GetName());
 			return;
 		}
 
-		ParseVariable(material, in1, KV_GetValueString(pKeyBase, 0) );
-		ParseVariable(material, in2, KV_GetValueString(pKeyBase, 1) );
-		ParseVariable(material, out, KV_GetValueString(pKeyBase, 2) );
+		ParseVariable(material, in1, KV_GetValueString(&section, 0) );
+		ParseVariable(material, in2, KV_GetValueString(&section, 1) );
+		ParseVariable(material, out, KV_GetValueString(&section, 2) );
 
 		useFrameTime = false;
 
-		for(int i = 3; i < pKeyBase->values.numElem(); i++)
+		for(int i = 3; i < section.ValueCount(); i++)
 		{
-			if(!CString::CompareCaseIns(KV_GetValueString(pKeyBase, i), "useftime"))
+			if(!CString::CompareCaseIns(KV_GetValueString(&section, i), "useftime"))
 				useFrameTime = true;
 		}
 	}
@@ -159,23 +159,23 @@ DECLARE_PROXY(multiply, CMulProxy)
 class CDivProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* material, const KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, const KVSection& section) override
 	{
-		if(pKeyBase->values.numElem() < 3)
+		if(section.ValueCount() < 3)
 		{
 			MsgError("'div' proxy in '%s' error: invalid argument count\n Usage: div v1 v2 out [options]\n", material->GetName());
 			return;
 		}
 
-		ParseVariable(material, in1, KV_GetValueString(pKeyBase, 0) );
-		ParseVariable(material, in2, KV_GetValueString(pKeyBase, 1) );
-		ParseVariable(material, out, KV_GetValueString(pKeyBase, 2) );
+		ParseVariable(material, in1, KV_GetValueString(&section, 0) );
+		ParseVariable(material, in2, KV_GetValueString(&section, 1) );
+		ParseVariable(material, out, KV_GetValueString(&section, 2) );
 
 		useFrameTime = false;
 
-		for(int i = 3; i < pKeyBase->values.numElem(); i++)
+		for(int i = 3; i < section.ValueCount(); i++)
 		{
-			if(!CString::CompareCaseIns(KV_GetValueString(pKeyBase, i), "useftime"))
+			if(!CString::CompareCaseIns(KV_GetValueString(&section, i), "useftime"))
 				useFrameTime = true;
 		}
 	}
@@ -206,16 +206,16 @@ DECLARE_PROXY(divide, CDivProxy)
 class CSinProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* material, const KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, const KVSection& section) override
 	{
-		if(pKeyBase->values.numElem() < 2)
+		if(section.ValueCount() < 2)
 		{
 			MsgError("'sin' proxy in '%s' error: invalid argument count\n Usage: sin v1 out [options]\n", material->GetName());
 			return;
 		}
 
-		ParseVariable(material, in, KV_GetValueString(pKeyBase, 0) );
-		ParseVariable(material, out, KV_GetValueString(pKeyBase, 1) );
+		ParseVariable(material, in, KV_GetValueString(&section, 0) );
+		ParseVariable(material, out, KV_GetValueString(&section, 1) );
 	}
 
 	void UpdateProxy(float dt)
@@ -237,16 +237,16 @@ DECLARE_PROXY(sin, CSinProxy)
 class CAbsProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* material, const KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, const KVSection& section) override
 	{
-		if(pKeyBase->values.numElem() < 2)
+		if(section.ValueCount() < 2)
 		{
 			MsgError("'abs' proxy in '%s' error: invalid argument count\n Usage: abs v1 out [options]\n", material->GetName());
 			return;
 		}
 
-		ParseVariable(material, in, KV_GetValueString(pKeyBase, 0) );
-		ParseVariable(material, out, KV_GetValueString(pKeyBase, 1) );
+		ParseVariable(material, in, KV_GetValueString(&section, 0) );
+		ParseVariable(material, out, KV_GetValueString(&section, 1) );
 	}
 
 	void UpdateProxy(float dt)
@@ -268,17 +268,17 @@ DECLARE_PROXY(abs, CAbsProxy)
 class CAnimatedTextureProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* material, const KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, const KVSection& section) override
 	{
 		KVSection* pair = nullptr;
 
 		// frame count is the only static variable, frame rate is dynamic
-		frameCount = KV_GetValueInt(pKeyBase);
+		frameCount = KV_GetValueInt(&section);
 
-		pair = pKeyBase->FindSection("framerate");
+		pair = section.FindSection("framerate");
 		ParseVariable(material, frameRate, (char*)KV_GetValueString(pair));
 
-		pair = pKeyBase->FindSection("frameVar");
+		pair = section.FindSection("frameVar");
 		ParseVariable(material, out,(char*)KV_GetValueString(pair));
 
 		time = 0.0f;

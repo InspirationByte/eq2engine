@@ -36,7 +36,7 @@ public:
 	virtual ~CEGFGenerator();
 
 	bool		InitFromKeyValues(const char* filename);
-	bool		InitFromKeyValues(const KVSection* kvs);
+	bool		InitFromKeyValues(const KVSection& kvs);
 	void		Cleanup();
 
 	void		SetRefsPath(const char* path);
@@ -52,7 +52,7 @@ protected:
 	struct GenIKLink;
 	struct GenBone;
 	struct GenMaterialDesc;
-	struct GenMaterialGroup;
+	struct GenSkin;
 
 	// helper functions
 	GenBone*				FindBoneByName(const char* pszName) const;
@@ -68,20 +68,20 @@ protected:
 	void					FreeModel(GenModel& mod );
 	bool					PostProcessDSM(GenModel& mod );
 
-	void					LoadModelsFromFBX(const KVSection* pKeyBase);
-	int						ParseAndLoadModels(const KVSection* pKeyBase);
+	void					LoadModelsFromFBX(const KVSection& section);
+	int						ParseAndLoadModels(const KVSection& section);
 
-	bool					ParseModels(const KVSection* pSection);
-	void					ParseLodData(const KVSection* pSection, int lodIdx);
-	void					ParseLods(const KVSection* pSection);
-	bool					ParseBodyGroups(const KVSection* pSection);
-	bool					ParseMaterialGroups(const KVSection* pSection);
-	bool					ParseMaterialPaths(const KVSection* pSection);
-	bool					ParseMotionPackagePaths(const KVSection* pSection);
-	void					ParseIKChain(const KVSection* pSection);
-	void					ParseIKChains(const KVSection* pSection);
-	void					ParseAttachments(const KVSection* pSection);
-	void					ParsePhysModels(const KVSection* pSection);
+	bool					ParseModels(const KVSection& section);
+	void					ParseLodData(const KVSection& section, int lodIdx);
+	void					ParseLods(const KVSection& section);
+	bool					ParseBodyGroups(const KVSection& section);
+	bool					ParseSkins(const KVSection& section);
+	bool					ParseMaterialPaths(const KVSection& section);
+	bool					ParseMotionPackagePaths(const KVSection& section);
+	void					ParseIKChain(const KVSection& section);
+	void					ParseIKChains(const KVSection& section);
+	void					ParseAttachments(const KVSection& section);
+	void					ParsePhysModels(const KVSection& section);
 
 	// preprocessing
 	void					MergeBones();
@@ -110,7 +110,7 @@ protected:
 	Array<GenLODList>			m_modelLodLists{ PP_SL };	// all LOD reference models including main LOD
 	Array<studioLodParams_t>	m_lodparams{ PP_SL };		// lod parameters
 	Array<motionPackageDesc_t>	m_motionpacks{ PP_SL };		// motion packages
-	Array<materialPathDesc_t>	m_matpathes{ PP_SL };		// material paths
+	Array<materialPathDesc_t>	m_matPaths{ PP_SL };		// material paths
 	Array<GenIKChain>			m_ikchains{ PP_SL };		// ik chain list
 	Array<GenBone>				m_bones{ PP_SL };			// bone list
 	Array<studioTransform_t>	m_transforms{ PP_SL };		// attachment list
@@ -119,7 +119,7 @@ protected:
 
 	// only participates in write
 	Array<GenMaterialDesc*>		m_usedMaterials{ PP_SL };	// materials that used by models referenced by body groups
-	Array<GenMaterialGroup*>	m_matGroups{ PP_SL };		// material groups
+	Array<GenSkin*>	m_skins{ PP_SL };		// material groups
 
 	// settings
 	Vector3D					m_modelScale{ 1.0f };
@@ -153,7 +153,7 @@ struct CEGFGenerator::GenIKLink
 struct CEGFGenerator::GenIKChain
 {
 	char		name[44]{ 0 };
-	Array<GenIKLink> link_list{ PP_SL };
+	Array<GenIKLink> links{ PP_SL };
 };
 
 struct CEGFGenerator::GenModel
@@ -181,7 +181,7 @@ struct CEGFGenerator::GenMaterialDesc
 	int			used{ 0 };
 };
 
-struct CEGFGenerator::GenMaterialGroup
+struct CEGFGenerator::GenSkin
 {
 	Array<GenMaterialDesc> materials{ PP_SL };
 };

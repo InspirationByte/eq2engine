@@ -4,7 +4,7 @@ $sdl2_ver = '2.30.2'
 $wx_ver = '3.2.1'
 $ffmpeg_ver = 'master-latest-win64-gpl-shared'
 
-$windows_openal_url = 'https://openal-soft.org/openal-binaries/openal-soft-' + $openal_ver + '-bin.zip'
+$windows_openal_url = 'https://github.com/kcat/openal-soft/releases/download/' + $openal_ver + '/openal-soft-' + $openal_ver + '-bin.zip'
 $windows_sdl2_url = 'https://github.com/libsdl-org/SDL/releases/download/release-' + $sdl2_ver + '/SDL2-devel-' + $sdl2_ver + '-VC.zip'
 $windows_wx_hdrs_url = 'https://github.com/wxWidgets/wxWidgets/releases/download/v' +$wx_ver+ '/wxWidgets-' +$wx_ver+ '-headers.7z'
 $windows_wx_libs_url = 'https://github.com/wxWidgets/wxWidgets/releases/download/v' +$wx_ver+ '/wxMSW-' +$wx_ver+ '_vc14x_x64_Dev.7z'

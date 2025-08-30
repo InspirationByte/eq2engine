@@ -147,7 +147,7 @@ void ComputeSortShader::RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUC
 			const uint innerLastIdx = (mergeGroupSize >> strideTrailingZeros) - 1;
 
 			const uint x = (n + TILE_SIZE - 1) - (n - 1) % TILE_SIZE;
-			ASSERT(x% TILE_SIZE == 0);
+			ASSERT(x % TILE_SIZE == 0);
 
 			ParamsData& data = paramsDataList.append();
 			data.stride = stride;

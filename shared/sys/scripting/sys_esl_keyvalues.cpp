@@ -1,5 +1,6 @@
 
 #include "core/core_common.h"
+#include "core/IFileSystem.h"
 #include "utils/KeyValues.h"
 #include "sys_esl.h"
 #include "sys_esl_keyvalues.h"
@@ -30,7 +31,7 @@ EQSCRIPT_TYPE_END
 
 EQSCRIPT_TYPE_BEGIN(KVSection)
 	EQSCRIPT_BIND_CONSTRUCTOR()
-	EQSCRIPT_BIND_FUNC(Cleanup)
+	EQSCRIPT_BIND_FUNC(Clear)
 	EQSCRIPT_BIND_FUNC(ClearValues)
 
 	EQSCRIPT_BIND_FUNC(SetName)
@@ -91,13 +92,59 @@ EQSCRIPT_TYPE_BEGIN(KVSection)
 	EQSCRIPT_BIND_FUNC(SetType)
 EQSCRIPT_TYPE_END
 
-EQSCRIPT_TYPE_BEGIN(KeyValues)
+// This class only left as lua wrapper
+class LuaKeyValues
+{
+public:
+	void Reset()
+	{
+		m_root.Clear();
+	}
+
+	bool LoadFile(const char* pszFileName, int nSearchFlags)
+	{
+		return KV_LoadFromFile(pszFileName, nSearchFlags, m_root);
+	}
+
+	bool SaveFile(const char* pszFileName, int nSearchFlags)
+	{
+		IFileStreamPtr pStream = g_fileSystem->Open(pszFileName, FS_OPEN_WRITE, nSearchFlags);
+
+		if (pStream)
+		{
+			KeyValues::WriteText(pStream, m_root, 0, true);
+		}
+		else
+		{
+			MsgError("Cannot save keyvalues to file '%s'!\n", pszFileName);
+			return false;
+		}
+		return true;
+	}
+
+	KVSection& GetRoot() { return m_root; }
+private:
+	KVSection				m_root;
+};
+
+EQSCRIPT_TYPE_BEGIN(LuaKeyValues)
 	EQSCRIPT_BIND_CONSTRUCTOR()
-	EQSCRIPT_BIND_FUNC_NAMED("LoadFile", LoadFromFile)
-	EQSCRIPT_BIND_FUNC_NAMED("SaveFile", SaveToFile)
-	EQSCRIPT_BIND_FUNC_NAMED("GetRoot", GetRootSection)
+	EQSCRIPT_BIND_FUNC(LoadFile)
+	EQSCRIPT_BIND_FUNC(SaveFile)
+	EQSCRIPT_BIND_FUNC(GetRoot)
 	EQSCRIPT_BIND_FUNC(Reset)
 EQSCRIPT_TYPE_END
+
+static void KV_PrintSection(const KVSection& base)
+{
+	CMemoryStream stream(nullptr, FS_OPEN_WRITE, 2048, PP_SL);
+	KeyValues::WriteText(&stream, base, 0, true);
+
+	char nullChar = '\0';
+	stream.Write(&nullChar, 1, 1);
+
+	Msg("%s\n", stream.GetBasePointer());
+}
 
 bool eslSysKeyValuesInit(const esl::ScriptState& state)
 {
@@ -114,7 +161,7 @@ bool eslSysKeyValuesInit(const esl::ScriptState& state)
 	// keyvalues related to FS
 	state.RegisterClass<KVPairValue>();
 	state.RegisterClass<KVSection>();
-	state.RegisterClass<KeyValues>();
+	state.RegisterClass<LuaKeyValues>();
 
 	state.SetGlobal("KV_GetValueString", EQSCRIPT_CFUNC(KV_GetValueString));
 	state.SetGlobal("KV_GetValueInt", EQSCRIPT_CFUNC(KV_GetValueInt));

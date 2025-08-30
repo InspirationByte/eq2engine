@@ -35,8 +35,6 @@ public:
 		QUIT_RESTART
 	};
 
-	CGameHost();
-
 	bool				LoadModules();
 	bool				InitSystems();
 	void				ShutdownSystems();

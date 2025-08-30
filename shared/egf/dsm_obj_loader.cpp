@@ -570,7 +570,7 @@ bool SaveOBJ(const DSModel& model, IFileStreamPtr pFile)
 		{
 			mtlFile->Print("newmtl %s\r\n", group->texture.ToCString());
 			KVSection matSection;
-			if (KV_LoadFromFile("materials/" + group->texture + ".mat", SP_MOD, &matSection))
+			if (KV_LoadFromFile("materials/" + group->texture + ".mat", SP_MOD, matSection))
 			{
 				EqString textureName = KV_GetValueString(matSection["basetexture"], 0, group->texture) + _Es(".dds");
 				mtlFile->Print("map_Kd %s\r\n", g_fileSystem->GetAbsolutePath(SP_MOD, "materials/" + textureName).ToCString());

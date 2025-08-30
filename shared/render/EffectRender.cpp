@@ -6,12 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "core/IEqParallelJobs.h"
 #include "core/ConVar.h"
-#include "utils/TextureAtlas.h"
 #include "EffectRender.h"
 
-#include "render/IDebugOverlay.h"
+DECLARE_CVAR(r_maxEffects, "4096", "Maximum effects in pool", CV_ARCHIVE);
 
 using namespace Threading;
 static CEqMutex s_effectRenderMutex;
@@ -38,16 +36,20 @@ void IEffect::InternalInit(const Vector3D& origin, float lifetime, PFXAtlasRef a
 
 //-------------------------------------------------------------------------------------
 
+CEffectRenderer::CEffectRenderer()
+{
+	m_effectList.reserve(r_maxEffects.GetInt());
+}
+
 void CEffectRenderer::AddEffect(IEffect* pEffect)
 {
+	ASSERT_MSG(pEffect, "AddEffect - inserting NULL effect");
+
 	CScopedMutex m(s_effectRenderMutex);
-
-	ASSERT_MSG(pEffect != nullptr, "RegisterEffectForRender - inserting NULL effect");
-
 	if(m_effectList.isFull())
 	{
 		DevMsg(DEVMSG_CORE, "Effect list overflow!\n");
-		delete pEffect;
+		pEffect->Release();
 		return;
 	}
 
@@ -70,12 +72,15 @@ void CEffectRenderer::DrawEffects(float dt)
 	{
         if(!m_effectList[i])
         {
-			RemoveEffect(i--);
+			m_effectList.fastRemoveIndex(i--);
 			continue;
         }
 
 		if(!m_effectList[i]->DrawEffect(dt))
-			RemoveEffect(i--);
+		{
+			m_effectList[i]->Release();
+			m_effectList.fastRemoveIndex(i--);
+		}
 	}
 }
 
@@ -83,22 +88,9 @@ void CEffectRenderer::RemoveAllEffects()
 {
 	CScopedMutex m(s_effectRenderMutex);
 
-	for(int i = 0; i < m_effectList.numElem(); i++)
-		delete m_effectList[i];
-
+	for (IEffect* eff : m_effectList)
+		eff->Release();
 	m_effectList.clear();
-}
-
-void CEffectRenderer::RemoveEffect(int index)
-{
-	if ( index >= m_effectList.numElem() || index < 0)
-		return;
-
-	CScopedMutex m(s_effectRenderMutex);
-
-	IEffect* effect = m_effectList[index];
-	if (m_effectList.fastRemoveIndex(index) && effect)
-		delete effect;
 }
 
 void CEffectRenderer::SetViewSortPosition(const Vector3D& origin)

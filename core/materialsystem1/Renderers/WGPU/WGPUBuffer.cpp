@@ -119,7 +119,7 @@ Future<BufferMapData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 	lockData.offset = lockOfs;
 
 	wgpuBufferAddRef(m_rhiBuffer);
-	WGPUBufferMapCallbackInfo2 rhiMapCbInfo{};
+	WGPUBufferMapCallbackInfo rhiMapCbInfo{};
 	rhiMapCbInfo.callback = [](WGPUMapAsyncStatus status, WGPUStringView message, void* userdata1, void* userdata2) {
 		LockContext* context = reinterpret_cast<LockContext*>(userdata1);
 		defer{
@@ -146,7 +146,7 @@ Future<BufferMapData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 
 	rhiMapCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
 	rhiMapCbInfo.userdata1 = context;
-	wgpuBufferMapAsync2(m_rhiBuffer, WGPUMapMode_Read, lockOfs, sizeToLock, rhiMapCbInfo);
+	wgpuBufferMapAsync(m_rhiBuffer, WGPUMapMode_Read, lockOfs, sizeToLock, rhiMapCbInfo);
 	m_isLocked = true;
 
 	return retFuture;

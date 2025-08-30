@@ -137,13 +137,13 @@ bool CEqRigidBody::TryWake( bool velocityCheck )
 
 void CEqRigidBody::Wake()
 {
-	m_flags &= ~(BODY_FROZEN | BODY_FORCE_FREEZE);
+	m_flags &= ~(BODY_FROZEN | BODY_FORCE_FREEZE | BODY_FREEZE_PRESERVE_FORCES);
 	m_freezeTime = BODY_FREEZE_TIME;
 }
 
-void CEqRigidBody::Freeze()
+void CEqRigidBody::Freeze(bool allowForcePreservation)
 {
-	m_flags |= (BODY_FROZEN | BODY_FORCE_FREEZE);
+	m_flags |= (BODY_FROZEN | BODY_FORCE_FREEZE | (allowForcePreservation ? BODY_FREEZE_PRESERVE_FORCES : 0));
 }
 
 bool CEqRigidBody::IsFrozen() const
@@ -187,7 +187,7 @@ void CEqRigidBody::Integrate(float delta)
 {
 	if( IsFrozen() )
 	{
-		if(!(m_flags & BODY_FORCE_PRESERVEFORCES))
+		if(!(m_flags & BODY_FREEZE_PRESERVE_FORCES))
 		{
 			// zero some forces
 			m_totalTorque = vec3_zero;
@@ -248,13 +248,11 @@ void CEqRigidBody::Integrate(float delta)
 				"Position: [%.2f %.2f %.2f]\n"
 				"Lin. vel: [%.2f %.2f %.2f] (%.2f)\n"
 				"Ang. vel: [%.2f %.2f %.2f]\n"
-				"mass: %g\n"
-				"cell: %d",
+				"mass: %g\n",
 				(float)m_position.x,(float)m_position.y,(float)m_position.z,
 				(float)m_linearVelocity.x,(float)m_linearVelocity.y,(float)m_linearVelocity.z, (float)length(m_linearVelocity),
 				(float)m_angularVelocity.x,(float)m_angularVelocity.y,(float)m_angularVelocity.z,
-				(float)m_mass,
-				m_cell != nullptr);
+				(float)m_mass);
 	}
 #endif // ENABLE_DEBUG_DRAWING
 }
@@ -303,7 +301,6 @@ void CEqRigidBody::AccumulateForces(float time)
 	}
 
 	// gravity to momentum
-	// TODO: gravity vector variable
 	linearVelocity += Vector3D(0, -m_gravity, 0) * time;
 
 	// apply force to momentum
@@ -315,7 +312,7 @@ void CEqRigidBody::AccumulateForces(float time)
 		angularVelocity = clamp(angularVelocity, (-16384.0f), (16384.0f));
 	}
 
-	ASSERT_MSG(!V3IsNaN(m_totalTorque), "Rigid body totalTorque is NaN");
+	ASSERT(vecIsValid(m_totalTorque));
 
 	// apply torque
 	angularVelocity += (m_invInertiaTensor * m_totalTorque) * time;
@@ -334,13 +331,12 @@ void CEqRigidBody::AccumulateForces(float time)
 			angularVelocity = vec3_zero;
 	}
 
-	ASSERT_MSG(!V3IsNaN(angularVelocity), "Rigid body angular velocity is NaN");
+	ASSERT(vecIsValid(angularVelocity));
 
 	// convert angular velocity to spinning
 	// and accumulate
-	Quaternion angVelSpinning = AngularVelocityToSpin(orientation, angularVelocity * m_angularFactor);
-
-	ASSERT_MSG(angVelSpinning.isNan() == false, "Rigid body orientation is NaN");
+	const Quaternion angVelSpinning = AngularVelocityToSpin(orientation, angularVelocity * m_angularFactor);
+	ASSERT(angVelSpinning.isValid());
 
 	orientation += (angVelSpinning * time);
 	orientation.fastNormalize();
@@ -392,8 +388,8 @@ void CEqRigidBody::ApplyImpulse(const FVector3D& rel_pos, const Vector3D& impuls
 	m_linearVelocity += impulse * m_invMass;
 	m_angularVelocity += m_invInertiaTensor * cross(Vector3D(rel_pos + m_centerOfMassTrans), impulse);
 
-	ASSERT_MSG(!V3IsNaN(m_linearVelocity), "Rigid body linearVelocity is NaN");
-	ASSERT_MSG(!V3IsNaN(m_angularVelocity), "Rigid body angularVelocity is NaN");
+	ASSERT(vecIsValid(m_linearVelocity));
+	ASSERT(vecIsValid(m_angularVelocity));
 }
 
 
@@ -403,8 +399,8 @@ void CEqRigidBody::ApplyWorldImpulse(const FVector3D& position, const Vector3D& 
 	m_linearVelocity += impulse * m_invMass;
 	m_angularVelocity += m_invInertiaTensor * cross(Vector3D((m_position - position) + m_centerOfMassTrans), impulse);
 
-	ASSERT_MSG(!V3IsNaN(m_linearVelocity), "Rigid body linearVelocity is NaN");
-	ASSERT_MSG(!V3IsNaN(m_angularVelocity), "Rigid body angularVelocity is NaN");
+	ASSERT(vecIsValid(m_linearVelocity));
+	ASSERT(vecIsValid(m_angularVelocity));
 }
 
 // applies local force
@@ -414,8 +410,8 @@ void CEqRigidBody::ApplyForce(const FVector3D& rel_pos, const Vector3D& force)
 	Vector3D torqueAdd = cross(Vector3D(rel_pos + m_centerOfMassTrans), force);
 	m_totalTorque += torqueAdd;
 
-	ASSERT_MSG(!V3IsNaN(m_totalForce), "Rigid body totalForce is NaN");
-	ASSERT_MSG(!V3IsNaN(m_totalTorque), "Rigid body totalTorque is NaN");
+	ASSERT(vecIsValid(m_totalForce));
+	ASSERT(vecIsValid(m_totalTorque));
 }
 
 // applies world impulse
@@ -425,78 +421,71 @@ void CEqRigidBody::ApplyWorldForce(const FVector3D& position, const Vector3D& fo
 	Vector3D torqueAdd = cross(Vector3D((m_position - position) + m_centerOfMassTrans), force);
 	m_totalTorque += torqueAdd;
 
-	ASSERT_MSG(!V3IsNaN(m_totalForce), "Rigid body totalForce is NaN");
-	ASSERT_MSG(!V3IsNaN(m_totalTorque), "Rigid body totalTorque is NaN");
+	ASSERT(vecIsValid(m_totalForce));
+	ASSERT(vecIsValid(m_totalTorque));
 }
 
 void CEqRigidBody::ApplyAngularImpulse(const Vector3D& impulse)
 {
 	m_angularVelocity += m_invInertiaTensor*impulse;
 
-	ASSERT_MSG(!V3IsNaN(m_angularVelocity), "Rigid body angularVelocity is NaN");
+	ASSERT(vecIsValid(m_angularVelocity));
 }
 
 void CEqRigidBody::ApplyAngularImpulseAt(const FVector3D& rel_pos, const Vector3D& impulse)
 {
 	m_angularVelocity += m_invInertiaTensor * cross(Vector3D(rel_pos), impulse);
 
-	ASSERT_MSG(!V3IsNaN(m_angularVelocity), "Rigid body angularVelocity is NaN");
+	ASSERT(vecIsValid(m_angularVelocity));
 }
 
 void CEqRigidBody::ApplyLinearImpulse(const Vector3D& impulse)
 {
 	m_linearVelocity += impulse * m_invMass;
 
-	ASSERT_MSG(!V3IsNaN(m_linearVelocity), "Rigid body linearVelocity is NaN");
+	ASSERT(vecIsValid(m_linearVelocity));
 }
 
 void CEqRigidBody::ApplyAngularForce(const Vector3D& force)
 {
 	m_totalTorque += force;
 
-	ASSERT_MSG(!V3IsNaN(m_totalTorque), "Rigid body totalTorque is NaN");
+	ASSERT(vecIsValid(m_totalTorque));
 }
 
 void CEqRigidBody::ApplyAngularForceAt(const FVector3D& rel_pos, const Vector3D& force)
 {
 	m_totalTorque += cross(Vector3D(rel_pos), force);
 
-	ASSERT_MSG(!V3IsNaN(m_totalTorque), "Rigid body totalTorque is NaN");
+	ASSERT(vecIsValid(m_totalTorque));
 }
 
 void CEqRigidBody::ApplyLinearForce(const Vector3D& force)
 {
 	m_totalForce += force;
 
-	ASSERT_MSG(!V3IsNaN(m_totalForce), "Rigid body totalForce is NaN");
+	ASSERT(vecIsValid(m_totalForce));
 }
 
 //--------------------
 
 void CEqRigidBody::SetPosition(const FVector3D& position)
 {
-	// explicitly reset previous position
-	m_position = m_prevPosition = position;
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
-
-	UpdateBoundingBoxTransform();
+	m_prevPosition = position;
+	CEqCollisionObject::SetPosition(position);
 }
 
 void CEqRigidBody::SetOrientation(const Quaternion& orient)
 {
-	m_orientation = m_prevOrientation = orient;
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
-
-	UpdateBoundingBoxTransform();
+	m_prevOrientation = orient; 
+	CEqCollisionObject::SetOrientation(orient);
 }
 
 void CEqRigidBody::SetTransform(const Transform3D& trs)
 {
-	m_position = m_prevPosition = trs.t;
-	m_orientation = m_prevOrientation = trs.r;
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
-
-	UpdateBoundingBoxTransform();
+	m_prevPosition = trs.t;
+	m_prevOrientation = trs.r;
+	CEqCollisionObject::SetTransform(trs);
 }
 
 const FVector3D& CEqRigidBody::GetPrevPosition() const

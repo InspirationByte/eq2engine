@@ -170,13 +170,14 @@ void CParticleBatch::Render(const RenderPassContext& passContext, IGPUBufferPtr&
 	g_matSystem->SetupDrawCommand(drawCmd, passContext);
 }
 
-const AtlasEntry* CParticleBatch::GetEntry(int idx) const
+const AtlasEntry& CParticleBatch::GetEntry(int idx) const
 {
+	static AtlasEntry _defaultEntry;
 	const CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
 	{
 		ASSERT_FAIL("No atlas loaded for material %s", m_material->GetName());
-		return nullptr;
+		return _defaultEntry;
 	}
 
 	return atlas->GetEntry(idx);
@@ -268,12 +269,12 @@ CParticleBatch*	CParticleRenderer::CreateBatch(const char* materialName, bool cr
 	batch->Init(materialName, createOwnVBO, maxQuads);
 	for (int i = 0; i < batch->GetEntryCount(); ++i)
 	{
-		const AtlasEntry* atlEntry = batch->GetEntry(i);
-		PFXAtlasRef ref = FindAtlasRef(atlEntry->name);
+		const AtlasEntry& atlEntry = batch->GetEntry(i);
+		PFXAtlasRef ref = FindAtlasRef(atlEntry.name);
 		if (ref != PFX_ATLAS_REF_INVALID)
 		{
 			CParticleBatch* otherBatch = m_batchs[PFXAtlasRefUnpackBatchIdx(ref)];
-			ASSERT_MSG(ref == PFX_ATLAS_REF_INVALID, "Particle atlas' %s' has '%s' which is already found in '%s'", atlEntry->name, batch->GetMaterial()->GetName(), otherBatch->GetMaterial()->GetName());
+			ASSERT_MSG(ref == PFX_ATLAS_REF_INVALID, "Particle atlas' %s' has '%s' which is already found in '%s'", atlEntry.name, batch->GetMaterial()->GetName(), otherBatch->GetMaterial()->GetName());
 		}
 	}
 
@@ -306,7 +307,7 @@ bool CParticleRenderer::GetBatchAndRectangle(PFXAtlasRef atlasRef, CParticleBatc
 	{
 		// return default particle
 		batch = m_batchs[0];
-		rect = batch->GetEntry(0)->rect;
+		rect = batch->GetEntry(0).rect;
 
 		return true;
 	}
@@ -315,7 +316,7 @@ bool CParticleRenderer::GetBatchAndRectangle(PFXAtlasRef atlasRef, CParticleBatc
 	const int atlIdx = PFXAtlasRefUnpackAtlasIdx(atlasRef);
 
 	batch = m_batchs[batchIdx];
-	rect = batch->GetEntry(atlIdx)->rect;
+	rect = batch->GetEntry(atlIdx).rect;
 	return true;
 }
 
@@ -327,7 +328,7 @@ AARectangle CParticleRenderer::GetRectangle(PFXAtlasRef atlasRef) const
 	const int batchIdx = PFXAtlasRefUnpackBatchIdx(atlasRef);
 	const int atlIdx = PFXAtlasRefUnpackAtlasIdx(atlasRef);
 
-	return m_batchs[batchIdx]->GetEntry(atlIdx)->rect;
+	return m_batchs[batchIdx]->GetEntry(atlIdx).rect;
 }
 
 PFXAtlasRef CParticleRenderer::FindAtlasRef(const char* name) const

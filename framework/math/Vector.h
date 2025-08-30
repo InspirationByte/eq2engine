@@ -305,8 +305,8 @@ struct TVec4D
 	operator T* () const { return (T*)&x; }
 	explicit operator const T* () const { return (T*)&x; }
 
-	// TVec3D<T>& xyz() { return *(TVec3D<T>*)&x; }
-	// TVec3D<T>& yzw() { return *(TVec3D<T>*)&y; }
+	TVec3D<T>& xyz() { return *(TVec3D<T>*)&x; }
+	TVec3D<T>& yzw() { return *(TVec3D<T>*)&y; }
 
 	const TVec3D<T>& xyz() const { return *(TVec3D<T>*)&x; }
 	const TVec3D<T>& yzw() const { return *(TVec3D<T>*)&y; }
@@ -876,11 +876,3 @@ static const MColor color_green		= MColor(0xFF00F900, true);
 static const MColor color_cyan		= MColor(0xFF00FFFF, true);
 static const MColor color_brown		= MColor(0xFFA52A2A, true);
 static const MColor color_gray		= MColor(0xFF808080, true);
-
-#ifndef V3IsNaN
-#define V3IsNaN( v )		(fisNan(v.x) || fisNan(v.y) || fisNan(v.z))
-#endif
-
-#ifndef V4IsNaN
-#define V4IsNaN( v )		(fisNan(v.x) || fisNan(v.y) || fisNan(v.z) || fisNan(v.w))
-#endif

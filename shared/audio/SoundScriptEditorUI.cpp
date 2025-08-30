@@ -524,10 +524,10 @@ void CSoundScriptEditor::SerializeScriptParamsToKeyValues(const SoundScriptDesc&
 	//			or at least if using, make sure that SoundScriptDesc nodes are getting updated too
 	//			otherwise, the code stays shitty and harder to undertand!
 
-	KVSection* waveSec = out.CreateSection(soundScript.randomSample ? "rndwave" : "wave");
+	KVSection& waveSec = out.CreateSection(soundScript.randomSample ? "rndwave" : "wave");
 
 	for (const EqString& name: soundScript.soundFileNames)
-		waveSec->AddKey("wave", name);
+		waveSec.AddKey("wave", name);
 
 	ArrayCRef<ChannelDef> channelTypes(g_sounds->m_channelTypes);
 	out.SetKey("channel", channelTypes[soundScript.channelType].name);
@@ -549,14 +549,14 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 	{
 		if (uiNode.type == SOUND_NODE_INPUT)
 		{
-			KVSection* sec = out.CreateSection("input");
-			sec->AddValue(uiNode.name);
+			KVSection& sec = out.CreateSection("input");
+			sec.AddValue(uiNode.name);
 		}
 		else if (uiNode.type == SOUND_NODE_FUNC)
 		{
-			KVSection* sec = out.CreateSection("mixer");
-			sec->AddValue(uiNode.name);
-			sec->AddValue(s_soundFuncTypeDesc[uiNode.func.type].name.ToCString());
+			KVSection& sec = out.CreateSection("mixer");
+			sec.AddValue(uiNode.name);
+			sec.AddValue(s_soundFuncTypeDesc[uiNode.func.type].name.ToCString());
 
 			switch (uiNode.func.type)
 			{
@@ -579,7 +579,7 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 
 						if (!foundLinks.numElem())
 						{
-							sec->AddValue(uiNode.lhsValue[i]);
+							sec.AddValue(uiNode.lhsValue[i]);
 							continue;
 						}
 
@@ -590,9 +590,9 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 
 						const UISoundNodeDesc& conNode = s_uiNodes[nodeId];
 						if (conNode.GetOutputCount(false) > 1 || arrayIdx > 0)
-							sec->AddValue(EqString::Format("%s[%d]", s_uiNodes[nodeId].name, arrayIdx));
+							sec.AddValue(EqString::Format("%s[%d]", s_uiNodes[nodeId].name, arrayIdx));
 						else
-							sec->AddValue(EqString::Format("%s", s_uiNodes[nodeId].name, arrayIdx));
+							sec.AddValue(EqString::Format("%s", s_uiNodes[nodeId].name, arrayIdx));
 					}
 
 					break;
@@ -600,7 +600,7 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 				case SOUND_FUNC_FADE:
 				{
 					// add number of outputs
-					sec->AddValue(uiNode.GetOutputCount(true));
+					sec.AddValue(uiNode.GetOutputCount(true));
 				}
 				case SOUND_FUNC_SPLINE:
 				{
@@ -618,19 +618,19 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 
 							const UISoundNodeDesc& conNode = s_uiNodes[nodeId];
 							if (conNode.GetOutputCount(false) > 1 || arrayIdx > 0)
-								sec->AddValue(EqString::Format("%s[%d]", s_uiNodes[nodeId].name, arrayIdx));
+								sec.AddValue(EqString::Format("%s[%d]", s_uiNodes[nodeId].name, arrayIdx));
 							else
-								sec->AddValue(EqString::Format("%s", s_uiNodes[nodeId].name, arrayIdx));
+								sec.AddValue(EqString::Format("%s", s_uiNodes[nodeId].name, arrayIdx));
 						}
 						else
 						{
-							sec->AddValue(0.0f);
+							sec.AddValue(0.0f);
 						}
 					}
 
 					// add spline values
 					for (int i = 0; i < uiNode.spline.valueCount; ++i)
-						sec->AddValue(uiNode.spline.values[i]);
+						sec.AddValue(uiNode.spline.values[i]);
 
 					break;
 				}
@@ -722,15 +722,15 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 				{
 					if (!fsimilar(s_soundParamDefaults[uiNode.c.paramId], uiNode.lhsValue[i]))
 					{
-						KVSection* sec = out.CreateSection(uiNode.name);
-						sec->AddValue(i);
-						sec->AddValue(uiNode.lhsValue[i]);
+						KVSection& sec = out.CreateSection(uiNode.name);
+						sec.AddValue(i);
+						sec.AddValue(uiNode.lhsValue[i]);
 					}
 				}
 				else if(!fsimilar(s_soundParamDefaults[uiNode.c.paramId], uiNode.lhsValue[i]))
 				{
-					KVSection* sec = out.CreateSection(uiNode.name);
-					sec->AddValue(uiNode.lhsValue[i]);
+					KVSection& sec = out.CreateSection(uiNode.name);
+					sec.AddValue(uiNode.lhsValue[i]);
 				}
 				continue;
 			}
@@ -741,16 +741,16 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 			UnpackAttribId(oppositeAttribId, nodeId, arrayIdx, side);
 
 			{
-				KVSection* sec = out.CreateSection(uiNode.name);
+				KVSection& sec = out.CreateSection(uiNode.name);
 
 				if (uiNode.c.inputCount > 1)
-					sec->AddValue(i);
+					sec.AddValue(i);
 
 				const UISoundNodeDesc& conNode = s_uiNodes[nodeId];
 				if (conNode.GetOutputCount(false) > 1 || arrayIdx > 0)
-					sec->AddValue(EqString::Format("%s[%d]", s_uiNodes[nodeId].name, arrayIdx));
+					sec.AddValue(EqString::Format("%s[%d]", s_uiNodes[nodeId].name, arrayIdx));
 				else
-					sec->AddValue(EqString::Format("%s", s_uiNodes[nodeId].name, arrayIdx));
+					sec.AddValue(EqString::Format("%s", s_uiNodes[nodeId].name, arrayIdx));
 			}
 		}
 	}
@@ -1724,12 +1724,12 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 				if (ImGui::Button("Copy to clipboard"))
 				{
 					KVSection clipboardSec;
-					KVSection* soundSec = clipboardSec.CreateSection(selectedScript->name.ToCString());
-					SerializeScriptParamsToKeyValues(*selectedScript, *soundSec);
-					SerializeNodesToKeyValues(*soundSec);
+					KVSection& soundSec = clipboardSec.CreateSection(selectedScript->name.ToCString());
+					SerializeScriptParamsToKeyValues(*selectedScript, soundSec);
+					SerializeNodesToKeyValues(soundSec);
 
 					CMemoryStream stream(nullptr, FS_OPEN_WRITE, 2048, PP_SL);
-					KV_WriteToStream(&stream, &clipboardSec, 0, true);
+					KeyValues::WriteText(&stream, clipboardSec, 0, true);
 
 					const char nullChar = '\0';
 					stream.Write(&nullChar, 1, 1);

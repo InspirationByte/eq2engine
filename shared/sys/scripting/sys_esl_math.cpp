@@ -239,8 +239,8 @@ EQSCRIPT_TYPE_BEGIN( Vector4D )
 	EQSCRIPT_BIND_FUNC(yw)
 	EQSCRIPT_BIND_FUNC(zw)
 
-	EQSCRIPT_BIND_FUNC(xyz)
-	EQSCRIPT_BIND_FUNC(yzw)
+	EQSCRIPT_BIND_FUNC_OVERLOAD(xyz, const Vector3D&, () const)
+	EQSCRIPT_BIND_FUNC_OVERLOAD(yzw, const Vector3D&, () const)
 
 	EQSCRIPT_BIND_VAR(x)
 	EQSCRIPT_BIND_VAR(y)
@@ -307,7 +307,7 @@ EQSCRIPT_TYPE_BEGIN(Quaternion)
 	EQSCRIPT_BIND_FUNC(normalize)
 	EQSCRIPT_BIND_FUNC(fastNormalize)
 
-	EQSCRIPT_BIND_FUNC(isNan)
+	EQSCRIPT_BIND_FUNC(isValid)
 EQSCRIPT_TYPE_END
 
 EQSCRIPT_TYPE_BEGIN(Matrix3x3)
@@ -471,8 +471,24 @@ EQSCRIPT_TYPE_BEGIN( Plane )
 	EQSCRIPT_BIND_CONSTRUCTOR(const Vector3D&, const Vector3D&, const Vector3D&)
 	
 	EQSCRIPT_BIND_FUNC( Distance )
-	//EQSCRIPT_BIND_FUNC( GetIntersectionWithRay )
-	//EQSCRIPT_BIND_FUNC( GetIntersectionLineFraction )
+	EQSCRIPT_BIND_STATIC_FUNC("GetIntersectionWithRay", +[](const esl::ScriptState& state, const Plane& self, const Vector3D& rayStart, const Vector3D& rayDir) -> esl::Any<3> {
+		Vector3D isectPos;
+		float dist;
+		const bool result = self.GetIntersectionWithRay(rayStart, rayDir, isectPos, dist);
+		state.PushValue(result);
+		state.PushValue(isectPos);
+		state.PushValue(dist);
+		return {};
+	})
+	EQSCRIPT_BIND_STATIC_FUNC("GetIntersectionLine", +[](const esl::ScriptState& state, const Plane& self, const Vector3D& lineBegin, const Vector3D& lineEnd) -> esl::Any<3> {
+		Vector3D isectPos;
+		float fract;
+		const bool result = self.GetIntersectionWithLine(lineBegin, lineEnd, isectPos, fract);
+		state.PushValue(result);
+		state.PushValue(isectPos);
+		state.PushValue(fract);
+		return {};
+	})
 		
 	EQSCRIPT_BIND_VAR( normal )
 	EQSCRIPT_BIND_VAR( offset )
@@ -503,7 +519,15 @@ EQSCRIPT_TYPE_BEGIN( BoundingBox )
 
 	EQSCRIPT_BIND_FUNC(FullyInside)
 	EQSCRIPT_BIND_FUNC(Intersects)
-	//EQSCRIPT_BIND_FUNC(IntersectsRay) // TODO: ESL tuples
+	EQSCRIPT_BIND_STATIC_FUNC("IntersectsRay", +[](const esl::ScriptState& state, const BoundingBox& self, const Vector3D& rayStart, const Vector3D& rayDir) -> esl::Any<3> {
+		float tnear;
+		float tfar;
+		const bool result = self.IntersectsRay(rayStart, rayDir, tnear, tfar);
+		state.PushValue(result);
+		state.PushValue(tnear);
+		state.PushValue(tfar);
+		return {};
+	})
 	EQSCRIPT_BIND_FUNC(IntersectsSphere)
 
 	EQSCRIPT_BIND_FUNC(GetCenter)
@@ -556,7 +580,15 @@ EQSCRIPT_TYPE_BEGIN( AARectangle )
 	EQSCRIPT_BIND_FUNC(Contains)
 	EQSCRIPT_BIND_FUNC(FullyInside)
 	EQSCRIPT_BIND_FUNC(Intersects)
-	// EQSCRIPT_BIND_FUNC(IntersectsRay) // TODO: ESL tuples
+	EQSCRIPT_BIND_STATIC_FUNC("IntersectsRay", +[](const esl::ScriptState& state, const AARectangle& self, const Vector2D& rayStart, const Vector2D& rayDir) -> esl::Any<3> {
+		float tnear;
+		float tfar;
+		const bool result = self.IntersectsRay(rayStart, rayDir, tnear, tfar);
+		state.PushValue(result);
+		state.PushValue(tnear);
+		state.PushValue(tfar);
+		return {};
+	})
 	EQSCRIPT_BIND_FUNC(IntersectsSphere)
 
 	EQSCRIPT_BIND_FUNC(FlipX)
@@ -605,8 +637,6 @@ EQSCRIPT_TYPE_BEGIN( IAARectangle )
 	EQSCRIPT_BIND_FUNC(Contains)
 	EQSCRIPT_BIND_FUNC(FullyInside)
 	EQSCRIPT_BIND_FUNC(Intersects)
-	// EQSCRIPT_BIND_FUNC(IntersectsRay) // TODO: ESL tuples
-	EQSCRIPT_BIND_FUNC(IntersectsSphere)
 
 	EQSCRIPT_BIND_FUNC(FlipX)
 	EQSCRIPT_BIND_FUNC(FlipY)

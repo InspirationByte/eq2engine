@@ -43,7 +43,6 @@ struct EvtHandler
 	int				uid{ 0 };
 };
 
-// TODO: rewrite to make it more compact
 using TransformStack = FixedArray<Matrix4x4, MAX_CONTROL_DEPTH>;
 
 struct RenderContextAbstract
@@ -89,9 +88,9 @@ public:
 	template<typename T>
 	T*							As() { return equi::DynamicCast<T>(this); }
 
-	virtual void				InitFromKeyValues(const KVSection* sec, bool keepElements = false);
+	virtual void				InitFromKeyValues(const KVSection& sec, bool keepElements = false);
 
-	virtual void				Parse(const KVSection* sec);
+	virtual void				Parse(const KVSection& sec);
 
 	// name and type
 	const char*					GetName() const						{return m_name.ToCString();}
@@ -167,6 +166,8 @@ public:
 	void						ForEachChild(const EqFunction<bool(IUIControl* child)>& childFunc);
 
 	IUIControl*					GetParent() const						{ return m_parent; }
+	List<IUIControl*>::Iterator	GetFirstChild() const					{ return m_childs.first(); }
+	List<IUIControl*>::Iterator	GetLastChild() const					{ return m_childs.last(); }
 
 	virtual IEqFont*			GetFont() const;
 
@@ -239,8 +240,8 @@ protected:
 	// rendering
 	virtual void				RenderChilds(int depth, RenderContextAbstract& context);
 
-	void						InitFonts(const KVSection* sec);
-	void						InitChildItems(const KVSection* sec, bool keepElements = false);
+	void						InitFonts(const KVSection& sec);
+	void						InitChildItems(const KVSection& sec, bool keepElements = false);
 
 	void						ResetSizeDiffs();
 	virtual void				DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) = 0;

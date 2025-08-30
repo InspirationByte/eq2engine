@@ -293,7 +293,7 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone>& bones, Array<Vertex
 	}
 }
 
-void ConvertFBXMeshToDSM(int meshId, DSModel& model, DSShapeData* shapeData, Map<int, DSMesh*>& materialGroups, const ofbx::Mesh& mesh, const ofbx::GlobalSettings& settings, bool invertFaces, const Matrix4x4& transform, const Matrix3x3& convertMatrix)
+void ConvertFBXMeshToDSM(int meshId, DSModel& model, DSShapeData* shapeData, Map<int, DSMesh*>& geomSkins, const ofbx::Mesh& mesh, const ofbx::GlobalSettings& settings, bool invertFaces, const Matrix4x4& transform, const Matrix3x3& convertMatrix)
 {
 	Array<VertexWeightData> weightData(PP_SL);
 	GetFBXBonesAsDSM(mesh, model.bones, weightData, transform, convertMatrix);
@@ -358,8 +358,8 @@ void ConvertFBXMeshToDSM(int meshId, DSModel& model, DSShapeData* shapeData, Map
 		DSMesh* dsmGrp = nullptr;
 
 		const int materialIdx = vertMaterials ? vertMaterials[triNum] : 0;
-		const int materialGroupIdx = meshId | (materialIdx << 16);
-		auto found = materialGroups.find(materialGroupIdx);
+		const int skinIdx = meshId | (materialIdx << 16);
+		auto found = geomSkins.find(skinIdx);
 		if (found.atEnd())
 		{
 			dsmGrp = PPNew DSMesh();
@@ -368,7 +368,7 @@ void ConvertFBXMeshToDSM(int meshId, DSModel& model, DSShapeData* shapeData, Map
 			if (material)
 				dsmGrp->texture = material->name;
 
-			materialGroups.insert(materialGroupIdx, dsmGrp);
+			geomSkins.insert(skinIdx, dsmGrp);
 			model.meshes.append(dsmGrp);
 		}
 		else

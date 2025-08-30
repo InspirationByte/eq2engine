@@ -249,12 +249,13 @@ Vector4D& Quaternion::asVector4D() const
 
 Quaternion operator ! (const Quaternion &q)
 {
+	// conjugate
 	return Quaternion(q.w, -q.x, -q.y, -q.z);
 }
 
-bool Quaternion::isNan() const
+bool Quaternion::isValid() const
 {
-	return (fisNan(x) || fisNan(y) || fisNan(z) || fisNan(w) );
+	return vecIsValid(*(Vector4D*)this);
 }
 
 Quaternion operator + (const Quaternion &u, const Quaternion &v)

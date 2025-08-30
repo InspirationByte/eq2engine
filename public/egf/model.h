@@ -13,6 +13,7 @@
 constexpr EqStringRef s_egfGeomExt = "egf";
 constexpr EqStringRef s_egfMotionPackageExt = "mop";
 constexpr EqStringRef s_egfPhysicsObjectExt = "pod";
+constexpr EqStringRef s_egfSkinExt = "skin";
 
 // those are just runtime limits, they don't affect file data.
 static constexpr const int MAX_MOTIONPACKAGES = 8;		// maximum allowed motion packages to be used in model

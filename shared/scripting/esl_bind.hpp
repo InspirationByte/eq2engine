@@ -202,8 +202,6 @@ struct PushGetImpl
 	using UT = StripTraitsT<T>;
 	using BaseUType = BaseType<UT>;
 
-	// TODO: MoveObject()
-
 	static void PushObject(lua_State* L, const T& obj, int flags)
 	{
 		ASSERT_MSG(&obj, "NULL object passed as Ref or Box, use pushnil");
@@ -460,7 +458,6 @@ static decltype(auto) GetValue(lua_State* L, int index)
 {
 	const int top = lua_gettop(L);
 
-	// TODO: ThrowError
 	if (index > top)
 	{
 		if constexpr (!SilentTypeCheck)

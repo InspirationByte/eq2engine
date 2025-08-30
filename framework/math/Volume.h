@@ -48,7 +48,7 @@ public:
 	bool				IsIntersectsRay(const Vector3D &start,const Vector3D &dir, Vector3D &intersectionPos, float eps = 0.0f, int* planeId = nullptr) const;
 
 	const Plane&		GetPlane(const int plane) const { return m_planes[plane]; }
-	ArrayCRef<Plane>	GetPlanes() const { return ArrayCRef(m_planes, VOLUME_PLANE_COUNT); }
+	ArrayCRef<Plane>	GetPlanes() const { return m_planes; }
 
 	void				SetupPlane(const Plane &pl, int n);
 
@@ -66,7 +66,7 @@ public:
 	static bool			IsIntersectsRay(ArrayCRef<Plane> planes, const Vector3D& start, const Vector3D& dir, Vector3D& intersectionPos, float eps = 0.0f, int* planeId = nullptr);
 
 protected:
-	Plane			m_planes[6];
+	Plane			m_planes[VOLUME_PLANE_COUNT];
 };
 
 inline Volume operator * (const Matrix4x4 &m, const Volume &v)

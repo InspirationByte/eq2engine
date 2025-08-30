@@ -279,14 +279,13 @@ void UTIL_GetBindingKeyString(EqString& outStr, const InputBinding* binding, boo
 	for (int i = 0; i < validModifiers; i++)
 	{
 		if(humanReadable)
-			outStr.Append(s_keyMapList[binding->modifierIds[i]].hrname); // TODO: apply localizer
-		else
+			outStr.Append(s_keyMapList[binding->modifierIds[i]].hrname);
 			outStr.Append(s_keyMapList[binding->modifierIds[i]].name);
 		outStr.Append(INPUT_CMD_ACTIVATE_PREFIX);
 	}
 
 	if (humanReadable)
-		outStr.Append(s_keyMapList[binding->keyIdx].hrname); // TODO: apply localizer
+		outStr.Append(s_keyMapList[binding->keyIdx].hrname);
 	else
 		outStr.Append(s_keyMapList[binding->keyIdx].name);
 }
@@ -318,8 +317,16 @@ void UTIL_GetBindingKeyStringLocalized(EqWString& outStr, const InputBinding* bi
 
 //---------------------------------------------------------
 
-CInputCommandBinder::CInputCommandBinder()
+
+InputBinding* CInputCommandBinder::AllocBinding()
 {
+	return new(m_bindingMemPool.allocate()) InputBinding();
+}
+
+void CInputCommandBinder::FreeBinding(InputBinding* binding)
+{
+	binding->~InputBinding();
+	m_bindingMemPool.deallocate(binding);
 }
 
 void CInputCommandBinder::Init()
@@ -356,7 +363,7 @@ void CInputCommandBinder::Shutdown()
 #endif // PLAT_SDL
 
 	for (InputBinding* binding : m_bindings)
-		delete binding;
+		FreeBinding(binding);
 
 	m_bindings.clear(true);
 	m_axisActs.clear(true);
@@ -369,24 +376,24 @@ void CInputCommandBinder::InitTouchZones()
 {
 	m_touchZones.clear(true);
 
-	KeyValues kvs;
-	if(!kvs.LoadFromFile("resources/in_touchzones.res"))
+	KVSection kvs;
+	if(!KV_LoadFromFile("resources/in_touchzones.res", -1, kvs))
 		return;
 
-	KVSection* zones = kvs.GetRootSection()->FindSection("zones");
+	const KVSection* zones = kvs.FindSection("zones");
 	if (!zones)
 	{
 		MsgError("touchzones file is invalid\n");
 		return;
 	}
 
-	for(const KVSection* zoneDef : zones->Keys())
+	for(const KVSection& zoneDef : zones->Keys())
 	{
 		InputTouchZone newZone;
-		newZone.name = zoneDef->GetName();
-		zoneDef->Get("bind").GetValues(newZone.commandString, newZone.argumentString);
-		zoneDef->Get("position").GetValues(newZone.position);
-		zoneDef->Get("size").GetValues(newZone.size);
+		newZone.name = zoneDef.GetName();
+		zoneDef.Get("bind").GetValues(newZone.commandString, newZone.argumentString);
+		zoneDef.Get("position").GetValues(newZone.position);
+		zoneDef.Get("size").GetValues(newZone.size);
 
 		// resolve commands
 
@@ -472,7 +479,7 @@ InputBinding* CInputCommandBinder::CreateCommandBinding( const char* pszKeyStr, 
 		return nullptr;
 
 	// create new binding
-	InputBinding* newBind = PPNew InputBinding;
+	InputBinding* newBind = AllocBinding();
 	newBind->modifierIds[0] = bindingKeyIndices[0];
 	newBind->modifierIds[1] = bindingKeyIndices[1];
 	newBind->keyIdx = bindingKeyIndices[2];
@@ -509,7 +516,7 @@ InputBinding* CInputCommandBinder::AddBinding(const char* pszKeyStr, const char*
 		return nullptr;
 
 	// create new binding
-	InputBinding* newBind = PPNew InputBinding;
+	InputBinding* newBind = AllocBinding();
 	newBind->modifierIds[0] = bindingKeyIndices[0];
 	newBind->modifierIds[1] = bindingKeyIndices[1];
 	newBind->keyIdx = bindingKeyIndices[2];
@@ -638,7 +645,7 @@ void CInputCommandBinder::DeleteBinding( InputBinding* binding )
 		return;
 
 	if(m_bindings.fastRemove(binding))
-		delete binding;
+		FreeBinding(binding);
 }
 
 // removes single binding on specified keychar
@@ -660,7 +667,7 @@ void CInputCommandBinder::UnbindKey(const char* pszKeyStr)
 			binding->keyIdx == bindingKeyIndices[2])
 		{
 			m_bindings.fastRemoveIndex(i--);
-			delete binding;
+			FreeBinding(binding);
 
 			results++;
 		}
@@ -677,6 +684,20 @@ void CInputCommandBinder::UnbindCommandByName(const char* name, const char* argS
 		DeleteBinding(binding);
 }
 
+void CInputCommandBinder::UnregisterCommand(ConCommandBase* cmdBase)
+{
+	InputBinding* binding = nullptr;
+	while (binding = FindBindingByCommand(cmdBase, nullptr, binding))
+	{
+		if (binding->func == InputExecInputCommand)
+		{
+			binding->func = nullptr;
+			binding->activateCmd = nullptr;
+			binding->deactivateCmd = nullptr;
+		}
+	}
+}
+
 // clears and removes all key bindings
 void CInputCommandBinder::UnbindAll()
 {
@@ -685,7 +706,7 @@ void CInputCommandBinder::UnbindAll()
 		InputBinding* binding = m_bindings[i];
 		if (binding->custom)
 			continue;
-		delete binding;
+		FreeBinding(binding);
 		m_bindings.fastRemoveIndex(i--);
 	}
 
@@ -701,7 +722,7 @@ void CInputCommandBinder::UnbindAll_Joystick()
 		if(keyNum >= JOYSTICK_START_KEYS && keyNum < MOU_B1)
 		{
 			m_bindings.fastRemoveIndex(i--);
-			delete binding;
+			FreeBinding(binding);
 		}
 	}
 }
@@ -886,7 +907,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize, IGPURenderPassRe
 		AARectangle rect((tz->position - tz->size * 0.5f) * screenSize, (tz->position + tz->size * 0.5f) * screenSize);
 
 		rects.append(rect);
-		const Vertex2D touchQuad[] = { MAKETEXQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, 0) };
+		const Vertex2D touchQuad[] = { MAKE_QUAD_UVS(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, 0) };
 
 		const float touchColor = tz->finger >= 0 ? 0.25f : 0.85f;
 

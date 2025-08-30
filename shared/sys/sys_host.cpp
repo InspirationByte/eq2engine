@@ -199,7 +199,7 @@ static EQCURSOR s_defaultCursor[20];
 CStaticAutoPtr<CGameHost> g_pHost;
 CStaticAutoPtr<CRenderFullScreenEdgeAA> g_fullScreenEdgeAA;
 
-static DKMODULE*	g_matsysmodule = nullptr;
+static OSModule*	g_matsysmodule = nullptr;
 IMaterialSystem*	g_matSystem = nullptr;
 IShaderAPI*			g_renderAPI = nullptr;
 
@@ -217,7 +217,7 @@ bool CGameHost::LoadModules()
 {
 	// first, load matsystem module
 	EqString loadErr;
-	g_matsysmodule = g_fileSystem->OpenModule("eqMatSystem", &loadErr);
+	g_matsysmodule = g_eqCore->OpenModule("eqMatSystem", &loadErr);
 
 	if(!g_matsysmodule)
 	{
@@ -639,10 +639,6 @@ void InputCommands_SDL(SDL_Event* event)
 
 static DDGraphBucket s_fpsGraph("Frames per sec", ColorRGB(1, 1, 0), 80.0f);
 
-CGameHost::CGameHost()
-{
-}
-
 void CGameHost::ShutdownSystems()
 {
 	Msg("---------  ShutdownSystems ---------\n");
@@ -661,7 +657,7 @@ void CGameHost::ShutdownSystems()
 	g_inputCommandBinder->Shutdown();
 	g_consoleInput->Shutdown();
 	g_matSystem->Shutdown();
-	g_fileSystem->CloseModule( g_matsysmodule );
+	g_eqCore->CloseModule( g_matsysmodule );
 
 	g_parallelJobs->Shutdown();
 
@@ -844,7 +840,7 @@ bool CGameHost::Frame()
 		else
 			s_fpsGraph.color = ColorRGB(1, 0, 0);
 
-		s_fpsGraph.maxValue = sys_maxfps.GetFloat();
+		s_fpsGraph.maxValue = sys_maxfps.GetFloat() <= 0 ? 1000 : sys_maxfps.GetFloat();
 
 		debugoverlay->Graph_AddValue(&s_fpsGraph, gamefps);
 	}

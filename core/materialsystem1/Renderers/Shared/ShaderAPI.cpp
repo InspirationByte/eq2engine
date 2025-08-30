@@ -242,7 +242,7 @@ ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const TextureDesc& texDesc, 
 	}
 	else
 	{
-		MsgError("ERROR -  Cannot create procedural texture '%s', probably bad format\n", texDesc.name);
+		MsgError("ERROR -  Cannot create procedural texture '%s', probably bad format\n", texDesc.name.ToCString());
 		return nullptr;	// don't generate error
 	}
 

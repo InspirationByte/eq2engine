@@ -174,14 +174,14 @@ static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSecti
 		// FORMAT IS:
 		// EBlendMode [optional imageName] [optional transparency] [optional R G B]
 
-		for(const KVSection* kb : kv.Keys())
+		for(const KVSection& kb : kv.Keys())
 		{
 			ImgLayer& layer = dest.layers.append();
-			layer.blendMode = GetBlendmodeByStr( kb->GetName() );
+			layer.blendMode = GetBlendmodeByStr( kb.GetName() );
 			layer.image = nullptr;
 
 			EqStringRef imageFileName;
-			kb->GetValues(imageFileName);
+			kb.GetValues(imageFileName);
 
 			const bool hasImagePath = imageFileName.Length() > 0 && (CType::IsAlphabetic(*imageFileName.ToCString()) || *imageFileName.ToCString() == '_');
 			if(hasImagePath)
@@ -200,14 +200,14 @@ static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSecti
 					layer.image = pImg;
 				}
 
-				layer.transparency = KV_GetValueFloat(kb, 1, 1.0f);
-				layer.color = KV_GetVector3D(kb, 2, Vector3D(1.0f));
+				layer.transparency = KV_GetValueFloat(&kb, 1, 1.0f);
+				layer.color = KV_GetVector3D(&kb, 2, Vector3D(1.0f));
 			}
 			else
 			{
 				// since imageName is optional, we're parsing transparency from 1 value
-				layer.transparency = KV_GetValueFloat(kb, 0, 1.0f);
-				layer.color = KV_GetVector3D(kb, 1, Vector3D(1.0f));
+				layer.transparency = KV_GetValueFloat(&kb, 0, 1.0f);
+				layer.color = KV_GetVector3D(&kb, 1, Vector3D(1.0f));
 			}			
 		}
 	}
@@ -353,11 +353,11 @@ inline static int AtlasPackComparison(PackerRectangle *const &elem0, PackerRecta
 
 static bool CreateAtlasImage(const Array<ImageDesc>& images_list, 
 						const char* materialsPath, const char* outputMaterialName, 
-						KVSection* pParams)
+						const KVSection& pParams)
 {
 	int padding = 0;
 	EqStringRef padModeStr;
-	pParams->Get("padding").GetValues(padding, padModeStr);
+	pParams.Get("padding").GetValues(padding, padModeStr);
 
 	EPaddingMode padMode = PAD_NONE;
 	if(!padModeStr.CompareCaseIns("clamp"))
@@ -381,14 +381,14 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 
 	float wide = 512;
 	float tall = 512;
-	pParams->Get("size").GetValues(wide, tall);
+	pParams.Get("size").GetValues(wide, tall);
 	if(!packer.AssignCoords(wide, tall))
 	{
 		MsgError("Couldn't assign coordinates, too small primary size!!!\n");
 		return false;
 	}
 
-	const KVSection& shaderBase = pParams->Get("shader");
+	const KVSection& shaderBase = pParams.Get("shader");
 
 	EqStringRef shaderName = "Base";
 	shaderBase.GetValues(shaderName);
@@ -413,23 +413,23 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 	g_fileSystem->MakeDir(fnmPathStripName(matFileName), SP_ROOT);
 
 	// save atlas info
-	KeyValues kvs;
-	KVSection* atlasGroupKey = kvs.GetRootSection()->CreateSection("atlasgroup", outputMaterialName);
+	KVSection kvs;
+	KVSection& atlasGroupKey = kvs.CreateSection("atlasgroup", outputMaterialName);
 
-	KeyValues materialKvs;
-	KVSection* pShaderEntry = materialKvs.GetRootSection()->CreateSection(shaderName);
-	pShaderEntry->MergeFrom(shaderBase, true);
+	KVSection materialKvs;
+	KVSection& pShaderEntry = materialKvs.CreateSection(shaderName);
+	pShaderEntry.MergeFrom(shaderBase, true);
 
 	// process setting up
-	for (KVSection* key : pShaderEntry->keys)
+	for (KVSection& key : pShaderEntry.Keys())
 	{
 		EqString value;
-		key->GetValues(value);
+		key.GetValues(value);
 		if (!value.Length())
 			continue;
 
 		if (value.ReplaceSubstr(s_outputTag, outputMaterialName) != -1)
-			key->SetValue(value, 0);
+			key.SetValue(value, 0);
 	}
 
 	Vector2D sizeTexels(1.0f / wide, 1.0f / tall);
@@ -450,22 +450,31 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 		rect.rightBottom *= sizeTexels;
 
 		// add info to keyvalues
-		KVSection* rect_kv = atlasGroupKey->CreateSection(imgDesc->name);
-		rect_kv->AddValue(rect.leftTop.x);
-		rect_kv->AddValue(rect.leftTop.y);
-		rect_kv->AddValue(rect.rightBottom.x);
-		rect_kv->AddValue(rect.rightBottom.y);
+		KVSection& rect_kv = atlasGroupKey.CreateSection(imgDesc->name);
+		rect_kv.AddValue(rect.leftTop.x);
+		rect_kv.AddValue(rect.leftTop.y);
+		rect_kv.AddValue(rect.rightBottom.x);
+		rect_kv.AddValue(rect.rightBottom.y);
 	}
 
 	// save image as DDS, or TGA ???
 	if(destImage.SaveImage(imageFileName, SP_ROOT))
 	{
-		kvs.SaveToFile(atlasFileName);
-		materialKvs.SaveToFile(matFileName);
+		IFileStreamPtr atlasFile = g_fileSystem->Open(atlasFileName, FS_OPEN_WRITE, SP_ROOT);
+		if (atlasFile)
+			KeyValues::WriteText(atlasFile, kvs);
+		else
+			MsgError("Cannot save atlas file '%s'\n", atlasFileName.ToCString());
+
+		IFileStreamPtr matFile = g_fileSystem->Open(matFileName, FS_OPEN_WRITE, SP_ROOT);
+		if(matFile)
+			KeyValues::WriteText(matFile, materialKvs);
+		else
+			MsgError("Cannot save atlas material file '%s'\n", matFileName.ToCString());
 	}
 	else
 	{
-		MsgError("Error while saving '%s' atlas texture...\n", outputMaterialName);
+		MsgError("Cannot save atlas texture '%s'\n", imageFileName.ToCString());
 		return false;
 	}
 
@@ -474,17 +483,14 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 
 void ProcessAtlasFile(const char* atlasSrcFileName, const char* materialsPath)
 {
-	Array<ImageDesc> imageList(PP_SL);
-
-	KeyValues kvs;
-	if( !kvs.LoadFromFile(atlasSrcFileName) )
+	KVSection kvs;
+	if( !KV_LoadFromFile(atlasSrcFileName, -1, kvs) )
 	{
 		MsgError("Can't open '%s'\n", atlasSrcFileName);
 		return;
 	}
 
-	const KVSection* root = kvs.GetRootSection();
-	const char* materialFileName = KV_GetValueString(root->FindSection("material"), 0, nullptr);
+	const char* materialFileName = KV_GetValueString(kvs.FindSection("material"), 0, nullptr);
 	if(!materialFileName)
 	{
 		MsgError("Atlas file %s missing 'material'\n", atlasSrcFileName);
@@ -493,14 +499,16 @@ void ProcessAtlasFile(const char* atlasSrcFileName, const char* materialsPath)
 
 	const EqString atlasDir = fnmPathStripName(atlasSrcFileName);
 
+	Array<ImageDesc> imageList(PP_SL);
+
 	// try loading images
-	for(KVKeyIterator iter(root, "image"); !iter.atEnd(); ++iter)
+	for(const KVSection& imgDescSec : kvs.Keys("image"))
 	{
 		const int idx = imageList.numElem();
-		if (!ParseImageDesc(atlasDir, imageList.append(), *(*iter)))
+		if (!ParseImageDesc(atlasDir, imageList.append(), imgDescSec))
 			imageList.fastRemoveIndex(idx);
 	}
 
 	// pack atlas
-	CreateAtlasImage(imageList, materialsPath, materialFileName, kvs.GetRootSection());
+	CreateAtlasImage(imageList, materialsPath, materialFileName, kvs);
 }

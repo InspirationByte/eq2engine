@@ -45,7 +45,7 @@ class CEmptyRenderPassRecorder : public IGPURenderPassRecorder
 {
 public:
 	IVector2D					GetRenderTargetDimensions() const { return IVector2D(800, 600); }
-	ArrayCRef<ETextureFormat>	GetRenderTargetFormats() const { return ArrayCRef(m_targets, MAX_RENDERTARGETS); }
+	ArrayCRef<ETextureFormat>	GetRenderTargetFormats() const { return m_targets; }
 	ETextureFormat			GetDepthTargetFormat() const {return m_depthFormat;}
 
 	bool					IsDepthReadOnly() const { return true; }
@@ -70,6 +70,9 @@ public:
 	void					DrawIndexed(int indexCount, int firstIndex, int instanceCount, int baseVertex = 0, int firstInstance = 0) {}
 	void					DrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset)  {}
 	void					DrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset) {}
+
+	void					MultiDrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset) {}
+	void					MultiDrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset) {}
 
 	void*					GetUserData() const { return m_userData; }
 	void					Complete() {}
@@ -128,7 +131,6 @@ public:
 	void					ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 size) const {}
 
 	void					CopyTextureToTexture(const TextureCopyInfo& source, const TextureCopyInfo& destination, const TextureExtent& copySize) const  {}
-	void					CopyTextureToBuffer(const TextureCopyInfo& source, const IGPUBuffer* destination, const TextureExtent& copySize) const {}
 
 	void*					GetUserData() const { return m_userData; }
 	IGPUCommandBufferPtr	End() { return IGPUCommandBufferPtr(CRefPtr_new(CEmptyCommandBuffer)); }

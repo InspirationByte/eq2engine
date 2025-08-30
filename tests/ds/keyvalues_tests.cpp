@@ -14,9 +14,7 @@ enum ETestFlags : int
 	TEST_FLAG4 = (1 << 3),
 };
 
-DECLARE_KEYVALUES_FLAGS_DESC(ETestFlagsDesc)
-
-BEGIN_KEYVALUES_FLAGS_DESC(ETestFlagsDesc)
+BEGIN_KEYVALUES_FLAGS_DESC(ETestFlags)
 	KV_FLAG_DESC(ETestFlags::TEST_FLAG1, "flag1")
 	KV_FLAG_DESC(ETestFlags::TEST_FLAG2, "flag2")
 	KV_FLAG_DESC(ETestFlags::TEST_FLAG3, "flag3")
@@ -26,12 +24,11 @@ END_KEYVALUES_FLAGS_DESC
 struct EmbeddedDef
 {
 	DEFINE_KEYVALUES_DESC();
-
 	int embeddedFlags{ TEST_FLAGS_NONE };
 };
 
 BEGIN_KEYVALUES_DESC(EmbeddedDef)
-	KV_DESC_FLAGS(embeddedFlags, ETestFlagsDesc)
+	KV_DESC_FLAGS(embeddedFlags, ETestFlags)
 END_KEYVALUES_DESC
 
 struct GeomInstanceDef
@@ -63,37 +60,37 @@ TEST(KEYVALUES_TESTS, DescParser)
 		.SetKey("castShadow", false)
 		.SetKey("staticShadowmap", true);
 
-	KVSection& embeddedSec = *section.CreateSection("embedded");
+	KVSection& embeddedSec = section.CreateSection("embedded");
 	{
-		KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+		KVSection& flagsSec = embeddedSec.CreateSection("embeddedFlags");
 		flagsSec.AddValue("flag1");
 		flagsSec.AddValue("flag3");
 	}
 
-	KVSection& bodyGroupsSec = *section.CreateSection("bodyGroups");
+	KVSection& bodyGroupsSec = section.CreateSection("bodyGroups");
 	bodyGroupsSec.AddValue("body1");
 	bodyGroupsSec.AddValue("hat");
 	bodyGroupsSec.AddValue("case");
 
-	KVSection& arrayOfEmbeddedSec = *section.CreateSection("arrayOfEmbedded");
+	KVSection& arrayOfEmbeddedSec = section.CreateSection("arrayOfEmbedded");
 	{
-		KVSection& embeddedSec = *arrayOfEmbeddedSec.CreateSection("embed1");
+		KVSection& embeddedSec = arrayOfEmbeddedSec.CreateSection("embed1");
 		{
-			KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+			KVSection& flagsSec = embeddedSec.CreateSection("embeddedFlags");
 			flagsSec.AddValue("flag1");
 			flagsSec.AddValue("flag4");
 		}
 	}
 	{
-		KVSection& embeddedSec = *arrayOfEmbeddedSec.CreateSection("embed2");
+		KVSection& embeddedSec = arrayOfEmbeddedSec.CreateSection("embed2");
 		{
-			KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+			KVSection& flagsSec = embeddedSec.CreateSection("embeddedFlags");
 			flagsSec.AddValue("flag2");
 		}
 	}
 
 	GeomInstanceDef testDesc;
-	KV_ParseDesc(testDesc, section);
+	KeyValues::ParseDesc(testDesc, section);
 
 	EXPECT_EQ(testDesc.castShadow, false);
 	EXPECT_EQ(testDesc.staticShadowmap, true);
@@ -116,46 +113,46 @@ TEST(KEYVALUES_TESTS, SerializeDeserialize)
 			.SetKey("castShadow", false)
 			.SetKey("staticShadowmap", true);
 
-		KVSection& embeddedSec = *section.CreateSection("embedded");
+		KVSection& embeddedSec = section.CreateSection("embedded");
 		{
-			KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+			KVSection& flagsSec = embeddedSec.CreateSection("embeddedFlags");
 			flagsSec.AddValue("flag1");
 			flagsSec.AddValue("flag3");
 		}
 
-		KVSection& bodyGroupsSec = *section.CreateSection("bodyGroups");
+		KVSection& bodyGroupsSec = section.CreateSection("bodyGroups");
 		bodyGroupsSec.AddValue("body1");
 		bodyGroupsSec.AddValue("hat");
 		bodyGroupsSec.AddValue("case");
 
-		KVSection& arrayOfEmbeddedSec = *section.CreateSection("arrayOfEmbedded");
+		KVSection& arrayOfEmbeddedSec = section.CreateSection("arrayOfEmbedded");
 		{
-			KVSection& embeddedSec = *arrayOfEmbeddedSec.CreateSection("embed1");
+			KVSection& embeddedSec = arrayOfEmbeddedSec.CreateSection("embed1");
 			{
-				KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+				KVSection& flagsSec = embeddedSec.CreateSection("embeddedFlags");
 				flagsSec.AddValue("flag1");
 				flagsSec.AddValue("flag4");
 			}
 		}
 		{
-			KVSection& embeddedSec = *arrayOfEmbeddedSec.CreateSection("embed2");
+			KVSection& embeddedSec = arrayOfEmbeddedSec.CreateSection("embed2");
 			{
-				KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+				KVSection& flagsSec = embeddedSec.CreateSection("embeddedFlags");
 				flagsSec.AddValue("flag2");
 			}
 		}
 
-		KV_WriteToStream(&memStreamText, &section);
-		KV_WriteToStreamBinary(&memStreamBin, &section);
+		KeyValues::WriteText(&memStreamText, section);
+		KeyValues::WriteBinary(&memStreamBin, section);
 	}
 
 	// TEST: Deserialize text stream
 	{
 		KVSection deserSection;
-		KV_LoadFromStream(&memStreamText, &deserSection);
+		KeyValues::Parse(&memStreamText, deserSection);
 
 		GeomInstanceDef testDesc;
-		KV_ParseDesc(testDesc, deserSection);
+		KeyValues::ParseDesc(testDesc, deserSection);
 
 		EXPECT_EQ(testDesc.castShadow, false);
 		EXPECT_EQ(testDesc.staticShadowmap, true);
@@ -171,10 +168,10 @@ TEST(KEYVALUES_TESTS, SerializeDeserialize)
 	// TEST: Deserialize binary stream
 	{
 		KVSection deserSection;
-		KV_LoadFromStream(&memStreamBin, &deserSection);
+		KeyValues::Parse(&memStreamBin, deserSection);
 
 		GeomInstanceDef testDesc;
-		KV_ParseDesc(testDesc, deserSection);
+		KeyValues::ParseDesc(testDesc, deserSection);
 
 		EXPECT_EQ(testDesc.castShadow, false);
 		EXPECT_EQ(testDesc.staticShadowmap, true);

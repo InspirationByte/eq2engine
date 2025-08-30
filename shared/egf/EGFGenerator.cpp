@@ -255,20 +255,20 @@ void CEGFGenerator::FreeModel(GenModel& mod )
 	mod.shapeData = nullptr;
 }
 
-void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
+void CEGFGenerator::LoadModelsFromFBX(const KVSection& section)
 {
-	const EqString modelPath = fnmPathCombine(m_refsPath, KV_GetValueString(pKeyBase));
+	const EqString modelPath = fnmPathCombine(m_refsPath, KV_GetValueString(&section));
 
-	Msg("Using FBX Source '%s'\n", KV_GetValueString(pKeyBase));
+	Msg("Using FBX Source '%s'\n", KV_GetValueString(&section));
 
 	Array<DSModelContainer> fbxModels(PP_SL);
 	if (!LoadFBX(fbxModels, modelPath))
 		return;
 
-	for (const KVSection* modelSec : pKeyBase->Keys())
+	for (const KVSection& modelSec : section.Keys())
 	{
-		const char* modelName = modelSec->name;
-		const char* refName = KV_GetValueString(modelSec);
+		const char* modelName = modelSec.GetName();
+		const char* refName = KV_GetValueString(&modelSec);
 
 		const int foundIdx = arrayFindIndexF(fbxModels, [refName](const DSModelContainer& cont) {
 			return !cont.model->name.CompareCaseIns(refName);
@@ -286,9 +286,9 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 		mod.transform = cont.transform;
 
 		// DRVSYN: vertex order for damaged model
-		if (modelSec->values.numElem() > 1 && !CString::CompareCaseIns(KV_GetValueString(modelSec, 1), "shapeBy"))
+		if (modelSec.ValueCount() > 1 && !CString::CompareCaseIns(KV_GetValueString(&modelSec, 1), "shapeBy"))
 		{
-			const char* shapeKeyName = KV_GetValueString(modelSec, 2, nullptr);
+			const char* shapeKeyName = KV_GetValueString(&modelSec, 2, nullptr);
 
 			if (shapeKeyName)
 			{
@@ -324,17 +324,17 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 //************************************
 // Loads reference ESM files
 //************************************
-int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
+int CEGFGenerator::ParseAndLoadModels(const KVSection& section)
 {
 	Array<EqStringRef> modelNames(PP_SL);
 	Array<EqStringRef> shapeByModels(PP_SL);
 
 	EqStringRef refName, modelName, cmdName, shapeName;
-	const int argCount = pKeyBase->GetValues(refName, modelName, cmdName, shapeName);
+	const int argCount = section.GetValues(refName, modelName, cmdName, shapeName);
 
 	if (argCount == 0)
 	{
-		MsgError("Error - model ref name was not specified in %s\n", pKeyBase->GetName());
+		MsgError("Error - model ref name was not specified in %s\n", section.GetName());
 		return -1;
 	}
 
@@ -353,12 +353,12 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 	else
 	{
 		// go through all keys inside model section
-		for (const KVSection* sec : pKeyBase->Keys())
+		for (const KVSection& sec : section.Keys())
 		{
-			modelNames.append(sec->GetName());
+			modelNames.append(sec.GetName());
 			shapeByModels.append(nullptr);
 
-			Msg("Adding model '%s'\n", sec->GetName());
+			Msg("Adding model '%s'\n", sec.GetName());
 		}
 	}
 
@@ -457,27 +457,27 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 //************************************
 // Loads reference models
 //************************************
-bool CEGFGenerator::ParseModels(const KVSection* pSection)
+bool CEGFGenerator::ParseModels(const KVSection& section)
 {
 	MsgWarning("\nLoading models\n");
 
-	for(const KVSection* keyBase : pSection->Keys())
+	for(const KVSection& keyBase : section.Keys())
 	{
-		if(!keyBase->name.CompareCaseIns("global_scale"))
+		if(!CString::CompareCaseIns(keyBase.GetName(), "global_scale"))
 		{
 			// try apply global scale
-			m_modelScale = KV_GetVector3D(keyBase, 0, Vector3D(1.0f));
+			m_modelScale = KV_GetVector3D(&keyBase, 0, Vector3D(1.0f));
 		}
-		if(!keyBase->name.CompareCaseIns("global_offset"))
+		if(!CString::CompareCaseIns(keyBase.GetName(), "global_offset"))
 		{
 			// try apply global offset
-			m_modelOffset = KV_GetVector3D(keyBase, 0, vec3_zero);
+			m_modelOffset = KV_GetVector3D(&keyBase, 0, vec3_zero);
 		}
-		else if (!keyBase->name.CompareCaseIns("FBXSource"))
+		else if (!CString::CompareCaseIns(keyBase.GetName(), "FBXSource"))
 		{
 			LoadModelsFromFBX(keyBase);
 		}
-		else if(!keyBase->name.CompareCaseIns("model"))
+		else if(!CString::CompareCaseIns(keyBase.GetName(), "model"))
 		{
 			// parse and load model
 			ParseAndLoadModels( keyBase );
@@ -508,12 +508,12 @@ bool CEGFGenerator::ParseModels(const KVSection* pSection)
 //************************************
 // Parses LOD data
 //************************************
-void CEGFGenerator::ParseLodData(const KVSection* pSection, int lodIdx)
+void CEGFGenerator::ParseLodData(const KVSection& section, int lodIdx)
 {
-	for(KVSection* lodModelSec : pSection->Keys("replace"))
+	for(KVSection& lodModelSec : section.Keys("replace"))
 	{
 		EqStringRef target, replaceBy;
-		if (lodModelSec->GetValues(target, replaceBy) < 2)
+		if (lodModelSec.GetValues(target, replaceBy) < 2)
 		{
 			MsgError("replace - insufficient args\n  Example: 'replace target_model replace_to'\n");
 			continue;
@@ -530,7 +530,7 @@ void CEGFGenerator::ParseLodData(const KVSection* pSection, int lodIdx)
 		if(replaceByModel == -1)
 		{
 			// try load from file
-			lodModelSec->SetValue(EqString::Format("%s_l%d", target, lodIdx));
+			lodModelSec.SetValue(EqString::Format("%s_l%d", target, lodIdx));
 			replaceByModel = ParseAndLoadModels(lodModelSec);
 		}
 
@@ -543,11 +543,11 @@ void CEGFGenerator::ParseLodData(const KVSection* pSection, int lodIdx)
 		lodgroup->lodmodels.append(replaceByModel);
 	}
 
-	for (const KVSection* lodModelSec : pSection->Keys("simplify"))
+	for (const KVSection& lodModelSec : section.Keys("simplify"))
 	{
 		EqStringRef target;
 		float simplifyThreshold = 0.0f;
-		if (lodModelSec->GetValues(target, simplifyThreshold) < 2)
+		if (lodModelSec.GetValues(target, simplifyThreshold) < 2)
 		{
 			MsgError("simplify - insufficient args\n  Example: 'simplify target_model 0.25'\n");
 			continue;
@@ -572,7 +572,7 @@ void CEGFGenerator::ParseLodData(const KVSection* pSection, int lodIdx)
 //************************************
 // Parses LODs
 //************************************
-void CEGFGenerator::ParseLods(const KVSection* pSection)
+void CEGFGenerator::ParseLods(const KVSection& section)
 {
 	MsgWarning("\nLoading LODs\n");
 
@@ -582,7 +582,7 @@ void CEGFGenerator::ParseLods(const KVSection* pSection)
 	lod.flags = 0;
 	m_lodparams.append(lod);
 
-	for(const KVSection* lodKey : pSection->Keys("lod", KV_FLAG_SECTION))
+	for(const KVSection& lodKey : section.Keys("lod", KV_FLAG_SECTION))
 	{
 		if (m_lodparams.numElem() + 1 >= MAX_MODEL_LODS)
 		{
@@ -590,14 +590,14 @@ void CEGFGenerator::ParseLods(const KVSection* pSection)
 			return;
 		}
 
-		const float lodDist = KV_GetValueFloat(lodKey, 0, 1.0f);
+		const float lodDist = KV_GetValueFloat(&lodKey, 0, 1.0f);
 		const int lodIdx = m_lodparams.numElem();
 
 		studioLodParams_t& newlod = m_lodparams.append();
 		newlod.distance = lodDist;
 		newlod.flags = 0;
 
-		const char* lodFlagStr = KV_GetValueString(lodKey, 1, nullptr);
+		const char* lodFlagStr = KV_GetValueString(&lodKey, 1, nullptr);
 		if (lodFlagStr && !CString::CompareCaseIns(lodFlagStr, "manual"))
 		{
 			newlod.flags |= STUDIO_LOD_FLAG_MANUAL;
@@ -613,11 +613,11 @@ void CEGFGenerator::ParseLods(const KVSection* pSection)
 //************************************
 // Load body groups
 //************************************
-bool CEGFGenerator::ParseBodyGroups(const KVSection* pSection)
+bool CEGFGenerator::ParseBodyGroups(const KVSection& section)
 {
-	for(const KVSection* keyBase : pSection->Keys("bodygroup"))
+	for(const KVSection& keyBase : section.Keys("bodygroup"))
 	{
-		if(keyBase->values.numElem() < 2 && !keyBase->IsSection())
+		if(keyBase.ValueCount() < 2 && !keyBase.IsSection())
 		{
 			MsgError("Invalid body group string format\n");
 			MsgWarning("usage: bodygroup \"(name)\" \"(reference)\"\n");
@@ -625,10 +625,10 @@ bool CEGFGenerator::ParseBodyGroups(const KVSection* pSection)
 			MsgWarning("usage: bodygroup \"(name)\" { <references> }\n");
 		}
 
-		const char* bodyGroupName = KV_GetValueString(keyBase, 0);
-		if(keyBase->values.numElem() > 1)
+		const char* bodyGroupName = KV_GetValueString(&keyBase, 0);
+		if(keyBase.ValueCount() > 1)
 		{
-			const char* refName = KV_GetValueString(keyBase, 1);
+			const char* refName = KV_GetValueString(&keyBase, 1);
 			const int lodIndex = FindModelLodIdGroupByName(refName);
 			if (lodIndex == -1)
 			{
@@ -644,7 +644,7 @@ bool CEGFGenerator::ParseBodyGroups(const KVSection* pSection)
 
 			Msg("Added body group '%s'\n", bodygroup.name);
 		}
-		else if(keyBase->IsSection())
+		else if(keyBase.IsSection())
 		{
 			MsgError("%s error - Multi-model body groups NOT YET SUPPORTED - tell a programmer!\n", bodyGroupName);
 			// TODO: multi-model body groups support
@@ -662,44 +662,41 @@ bool CEGFGenerator::ParseBodyGroups(const KVSection* pSection)
 //************************************
 // Load material groups
 //************************************
-bool CEGFGenerator::ParseMaterialGroups(const KVSection* pSection)
+bool CEGFGenerator::ParseSkins(const KVSection& section)
 {
 	MsgInfo("* Default materialGroup:\n\t");
-	for (int i = 0; i < m_materials.numElem(); i++)
-		MsgInfo("%s ", m_materials[i].materialname);
+	for (GenMaterialDesc& gm : m_materials)
+		MsgInfo("%s ", gm.materialname);
 	MsgInfo("\n");
 
-	for (KVKeyIterator it(pSection, "materialGroup"); !it.atEnd(); ++it)
+	for (const KVSection& keyBase : section.Keys("materialGroup"))
 	{
-		const KVSection* keyBase = *it;
-		if (!keyBase->values.numElem())
+		if (!keyBase.ValueCount())
 		{
 			MsgError("materialGroup: must have material names as values!\n");
 			MsgError("	usage: materialGroup \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");
 			return false;
 		}
 
-		if (keyBase->values.numElem() != m_materials.numElem())
+		if (keyBase.ValueCount() != m_materials.numElem())
 		{
 			MsgError("materialGroup: must have same material count specified (%d)!\n", m_materials.numElem());
 			MsgError("	usage: materialGroup \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");
 			return false;
 		}
 
-		GenMaterialGroup* group = PPNew GenMaterialGroup();
-		m_matGroups.append(group);
+		GenSkin* group = PPNew GenSkin();
+		m_skins.append(group);
 
 		MsgInfo("Added materialGroup: ");
 
-		for (int j = 0; j < keyBase->values.numElem(); j++)
+		for (EqStringRef strValues : keyBase.Values<EqStringRef>())
 		{
 			// create new material
-			GenMaterialDesc desc;
-			strcpy(desc.materialname, KV_GetValueString(keyBase, j));
+			GenMaterialDesc& desc = group->materials.append();
+			strcpy(desc.materialname, strValues);
 
-			MsgInfo("%s ", desc.materialname);
-
-			group->materials.append(desc);
+			MsgInfo("   %s", desc.materialname);
 		}
 
 		MsgInfo("\n");
@@ -841,17 +838,17 @@ void CEGFGenerator::BuildBoneChains()
 //************************************
 // Loads material pathes to use in engine
 //************************************
-bool CEGFGenerator::ParseMaterialPaths(const KVSection* pSection)
+bool CEGFGenerator::ParseMaterialPaths(const KVSection& section)
 {
 	MsgWarning("\nAdding material paths\n");
 
-	for(const KVSection* keyBase : pSection->Keys())
+	for(const KVSection& keyBase : section.Keys())
 	{
-		if(!keyBase->name.CompareCaseIns("materialpath"))
+		if(!CString::CompareCaseIns(keyBase.GetName(), "materialPath"))
 		{
-			materialPathDesc_t& desc = m_matpathes.append();
+			materialPathDesc_t& desc = m_matPaths.append();
 
-			const EqString path = KV_GetValueString(keyBase);
+			const EqString path = KV_GetValueString(&keyBase);
 			const int sp_len = path.Length()-1;
 
 			if(sp_len >= 0 && (path[sp_len] != '/' || path[sp_len] != '\\'))
@@ -862,21 +859,21 @@ bool CEGFGenerator::ParseMaterialPaths(const KVSection* pSection)
 			Msg("   '%s'\n", desc.searchPath);			
 		}
 
-		if(	!keyBase->name.CompareCaseIns("notextures") ||
-			!keyBase->name.CompareCaseIns("nomaterials"))
+		if(	!CString::CompareCaseIns(keyBase.GetName(), "noTextures") ||
+			!CString::CompareCaseIns(keyBase.GetName(), "noMaterials"))
 		{
-			m_notextures = KV_GetValueBool(keyBase);
+			m_notextures = KV_GetValueBool(&keyBase);
 		}
 	}
 
-	if(m_matpathes.isEmpty() && m_notextures == false)
+	if(m_matPaths.isEmpty() && m_notextures == false)
 	{
 		MsgError("Error! Model must have at least one materialpath!\n");
 		return false;
 	}
 
-	if(m_matpathes.numElem() > 0)
-		Msg(" %d material paths total\n", m_matpathes.numElem());
+	if(m_matPaths.numElem() > 0)
+		Msg(" %d material paths total\n", m_matPaths.numElem());
 
 	return true;
 }
@@ -884,9 +881,9 @@ bool CEGFGenerator::ParseMaterialPaths(const KVSection* pSection)
 //************************************
 // Loads material pathes to use in engine
 //************************************
-bool CEGFGenerator::ParseMotionPackagePaths(const KVSection* pSection)
+bool CEGFGenerator::ParseMotionPackagePaths(const KVSection& section)
 {
-	for(const KVSection* keyBase : pSection->Keys("addMotionPackage"))
+	for(const KVSection& keyBase : section.Keys("addMotionPackage"))
 	{
 		if(m_lodparams.numElem() + 1 >= MAX_MOTIONPACKAGES)
 		{
@@ -895,7 +892,7 @@ bool CEGFGenerator::ParseMotionPackagePaths(const KVSection* pSection)
 		}
 
 		motionPackageDesc_t& desc = m_motionpacks.append();
-		strcpy(desc.packageName, KV_GetValueString(keyBase));
+		strcpy(desc.packageName, KV_GetValueString(&keyBase));
 	}
 
 	if(m_motionpacks.numElem() > 0)
@@ -907,9 +904,9 @@ bool CEGFGenerator::ParseMotionPackagePaths(const KVSection* pSection)
 //************************************
 // Parses ik chain info from section
 //************************************
-void CEGFGenerator::ParseIKChain(const KVSection* pSection)
+void CEGFGenerator::ParseIKChain(const KVSection& section)
 {
-	if(pSection->values.numElem() < 2)
+	if(section.ValueCount() < 2)
 	{
 		MsgError("Too few arguments for 'ikchain'\n");
 		MsgWarning("usage: ikchain (bone name) (effector bone name)\n");
@@ -920,8 +917,8 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 
 	char effector_name[44];
 	
-	strcpy(ikCh.name, KV_GetValueString(pSection, 0));
-	strcpy(effector_name, KV_GetValueString(pSection, 1));
+	strcpy(ikCh.name, KV_GetValueString(&section, 0));
+	strcpy(effector_name, KV_GetValueString(&section, 1));
 
 	GenBone* effector_chain = FindBoneByName(effector_name);
 
@@ -935,7 +932,7 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 	GenBone* cparent = effector_chain;
 	do
 	{
-		GenIKLink& link = ikCh.link_list.append();
+		GenIKLink& link = ikCh.links.append();
 
 		link.damping = 1.0f;
 		link.bone = cparent;
@@ -946,11 +943,11 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 		cparent = cparent->parent;
 	} while(cparent != nullptr/* && cparent->parent != nullptr*/);
 
-	for(const KVSection* sec : pSection->Keys())
+	for(const KVSection& sec : section.Keys())
 	{
-		if(!sec->name.CompareCaseIns("damping"))
+		if(!CString::CompareCaseIns(sec.GetName(), "damping"))
 		{
-			if(sec->values.numElem() < 2)
+			if(sec.ValueCount() < 2)
 			{
 				MsgError("Too few arguments for ik parameter 'damping'\n");
 				MsgWarning("usage: damping (bone name) (damping)\n");
@@ -960,22 +957,22 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 			char link_name[44];
 			float fDamp = 1.0f;
 
-			strcpy(link_name, KV_GetValueString(sec, 0));
-			fDamp = KV_GetValueFloat(sec, 1);
+			strcpy(link_name, KV_GetValueString(&sec, 0));
+			fDamp = KV_GetValueFloat(&sec, 1);
 
 			// search for link and apply parameter if found
-			for(int j = 0; j < ikCh.link_list.numElem(); j++)
+			for(int j = 0; j < ikCh.links.numElem(); j++)
 			{
-				if(!ikCh.link_list[j].bone->refBone->name.CompareCaseIns(link_name))
+				if(!ikCh.links[j].bone->refBone->name.CompareCaseIns(link_name))
 				{
-					ikCh.link_list[j].damping = fDamp;
+					ikCh.links[j].damping = fDamp;
 					break;
 				}
 			}
 		}
-		else if(!sec->name.CompareCaseIns("link_limits"))
+		else if(!CString::CompareCaseIns(sec.GetName(), "link_limits"))
 		{
-			if(sec->values.numElem() < 7)
+			if(sec.ValueCount() < 7)
 			{
 				MsgError("Too few arguments for ik parameter 'link_limits'\n");
 				MsgWarning("usage: link_limits (bone name) (MinX MinY MinZ) (MaxX MaxY MaxZ)\n");
@@ -985,19 +982,19 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 			Vector3D mins;
 			Vector3D maxs;
 
-			strcpy(link_name, KV_GetValueString(sec, 0));
-			mins = KV_GetVector3D(sec, 1);
-			maxs = KV_GetVector3D(sec, 4);
+			strcpy(link_name, KV_GetValueString(&sec, 0));
+			mins = KV_GetVector3D(&sec, 1);
+			maxs = KV_GetVector3D(&sec, 4);
 
 			bool bFound = false;
 
 			// search for link and apply parameter if found
-			for(int j = 0; j < ikCh.link_list.numElem(); j++)
+			for(int j = 0; j < ikCh.links.numElem(); j++)
 			{
-				if(!ikCh.link_list[j].bone->refBone->name.CompareCaseIns(link_name))
+				if(!ikCh.links[j].bone->refBone->name.CompareCaseIns(link_name))
 				{
-					ikCh.link_list[j].mins = mins;
-					ikCh.link_list[j].maxs = maxs;
+					ikCh.links[j].mins = mins;
+					ikCh.links[j].maxs = maxs;
 
 					bFound = true;
 
@@ -1016,14 +1013,12 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 //************************************
 // Loads ik chains if available
 //************************************
-void CEGFGenerator::ParseIKChains(const KVSection* pSection)
+void CEGFGenerator::ParseIKChains(const KVSection& section)
 {
 	MsgWarning("\nLoading IK chains\n");
 
-	for(const KVSection* chainSec : pSection->Keys("ikchain", KV_FLAG_SECTION))
-	{
+	for(const KVSection& chainSec : section.Keys("ikchain", KV_FLAG_SECTION))
 		ParseIKChain(chainSec);
-	}
 
 	if(m_ikchains.numElem() > 0)
 		Msg("Parsed %d IK chains\n", m_ikchains.numElem());
@@ -1032,7 +1027,7 @@ void CEGFGenerator::ParseIKChains(const KVSection* pSection)
 //************************************
 // Loads attachments if available
 //************************************
-void CEGFGenerator::ParseAttachments(const KVSection* pSection)
+void CEGFGenerator::ParseAttachments(const KVSection& section)
 {
 #if 0
 	// before we do that we add each used model transform
@@ -1050,17 +1045,17 @@ void CEGFGenerator::ParseAttachments(const KVSection* pSection)
 #endif
 	MsgWarning("\nLoading attachments\n");
 
-	for(const KVSection* attachSec : pSection->Keys("attachment"))
+	for(const KVSection& attachSec : section.Keys("attachment"))
 	{
-		if(attachSec->values.numElem() < 8)
+		if(attachSec.ValueCount() < 8)
 		{
 			MsgError("Invalid attachment definition\n");
 			MsgWarning("usage: attachment (name) (boneName or \"none\") (position x y z) (rotation x y z)\n");
 			continue;
 		}
 
-		const char* attachmentName = KV_GetValueString(attachSec, 0);
-		const char* attachBoneName = KV_GetValueString(attachSec, 1);
+		const char* attachmentName = KV_GetValueString(&attachSec, 0);
+		const char* attachBoneName = KV_GetValueString(&attachSec, 1);
 
 		GenBone* pBone = nullptr;
 		if (CString::CompareCaseIns(attachBoneName, "none"))
@@ -1089,8 +1084,8 @@ void CEGFGenerator::ParseAttachments(const KVSection* pSection)
 		strcpy(attach.name, attachmentName);
 
 		attach.transform = identity4;
-		attach.transform.setRotation(DEG2RAD(KV_GetVector3D(attachSec, 2)));
-		attach.transform.setTranslation(m_modelScale * KV_GetVector3D(attachSec, 5) + m_modelOffset);
+		attach.transform.setRotation(DEG2RAD(KV_GetVector3D(&attachSec, 2)));
+		attach.transform.setTranslation(m_modelScale * KV_GetVector3D(&attachSec, 5) + m_modelOffset);
 		attach.attachBoneIdx = pBone ? pBone->refBone->boneIdx : EGF_INVALID_IDX;
 
 		MsgInfo("Adding custom transform attachment %s\n", attach.name);
@@ -1118,9 +1113,9 @@ bool CEGFGenerator::GeneratePOD()
 
 void CEGFGenerator::Cleanup()
 {
-	for (int i = 0; i < m_matGroups.numElem(); ++i)
-		delete m_matGroups[i];
-	m_matGroups.clear();
+	for (int i = 0; i < m_skins.numElem(); ++i)
+		delete m_skins[i];
+	m_skins.clear();
 
 	for (int i = 0; i < m_modelrefs.numElem(); i++)
 		FreeModel(m_modelrefs[i]);
@@ -1129,7 +1124,7 @@ void CEGFGenerator::Cleanup()
 	m_modelLodLists.clear(true);
 	m_lodparams.clear(true);
 	m_motionpacks.clear(true);
-	m_matpathes.clear(true);
+	m_matPaths.clear(true);
 	m_ikchains.clear(true);
 	m_bones.clear(true);
 	m_transforms.clear(true);
@@ -1150,9 +1145,8 @@ void CEGFGenerator::SetOutputFilename(const char* filename)
 
 bool CEGFGenerator::InitFromKeyValues(const char* filename)
 {
-	KeyValues scriptFile;
-
-	if(scriptFile.LoadFromFile(filename))
+	KVSection scriptFile;
+	if(KV_LoadFromFile(filename, -1, scriptFile))
 	{
 		SetRefsPath(fnmPathStripName(filename));
 
@@ -1160,18 +1154,18 @@ bool CEGFGenerator::InitFromKeyValues(const char* filename)
 		MsgWarning("\nCompiling script \"%s\"\n", filename);
 
 		// load all script data
-		return InitFromKeyValues(scriptFile.GetRootSection());
+		return InitFromKeyValues(scriptFile);
 	}
 
 	MsgError("Can't open %s\n", filename);
 	return false;
 }
 
-void CEGFGenerator::ParsePhysModels(const KVSection* mainsection)
+void CEGFGenerator::ParsePhysModels(const KVSection& mainsection)
 {
-	for(const KVSection* physObjectSec : mainsection->Keys("physics"))
+	for(const KVSection& physObjectSec : mainsection.Keys("physics"))
 	{
-		if(!physObjectSec->IsSection())
+		if(!physObjectSec.IsSection())
 		{
 			MsgError("*ERROR* key 'physics' must be a section\n");
 			continue;
@@ -1179,7 +1173,7 @@ void CEGFGenerator::ParsePhysModels(const KVSection* mainsection)
 
 		DSModel* physModel = nullptr;
 
-		const KVSection* modelNamePair = physObjectSec->FindSection("model");
+		const KVSection* modelNamePair = physObjectSec.FindSection("model");
 		if(modelNamePair)
 		{
 			GenModel* foundRef = FindModelByName( KV_GetValueString(modelNamePair) );
@@ -1211,11 +1205,11 @@ void CEGFGenerator::ParsePhysModels(const KVSection* mainsection)
 		}
 		else
 		{
-			MsgError("*ERROR* no model for physics object '%s' defined\n", KV_GetValueString(physObjectSec, 0, "unnamed"));
+			MsgError("*ERROR* no model for physics object '%s' defined\n", KV_GetValueString(&physObjectSec, 0, "unnamed"));
 			continue;
 		}
 
-		MsgWarning("\nAdding physics object %s...\n", KV_GetValueString(physObjectSec, 0, ""));
+		MsgWarning("\nAdding physics object %s...\n", KV_GetValueString(&physObjectSec, 0, ""));
 
 		// append object
 		m_physModels.GenerateGeometry(physModel, physObjectSec, false);
@@ -1225,16 +1219,16 @@ void CEGFGenerator::ParsePhysModels(const KVSection* mainsection)
 //************************************
 // main function of script compilation
 //************************************
-bool CEGFGenerator::InitFromKeyValues(const KVSection* mainsection)
+bool CEGFGenerator::InitFromKeyValues(const KVSection& mainsection)
 {
-	const KVSection* pSourcePath = mainsection->FindSection("source_path");
+	const KVSection* pSourcePath = mainsection.FindSection("source_path");
 
 	// set source path if defined by script
 	if(pSourcePath)
 		m_refsPath = fnmPathCombine(m_refsPath, KV_GetValueString(pSourcePath, 0, ""));
 
 	// get new model filename
-	SetOutputFilename(KV_GetValueString(mainsection->FindSection("modelfilename")));
+	SetOutputFilename(KV_GetValueString(mainsection.FindSection("modelfilename")));
 
 	if(m_outputFilename.Length() == 0)
 	{
@@ -1253,7 +1247,7 @@ bool CEGFGenerator::InitFromKeyValues(const KVSection* mainsection)
 	if( !ParseBodyGroups( mainsection ) )
 		return false;
 
-	if (!ParseMaterialGroups(mainsection))
+	if (!ParseSkins(mainsection))
 		return false;
 
 	// merge bones first

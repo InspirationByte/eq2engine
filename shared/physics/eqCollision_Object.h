@@ -11,13 +11,13 @@
 class btCollisionShape;
 class btCollisionObject;
 struct btTriangleInfoMap;
+struct btBroadphaseProxy;
+class btBroadphaseInterface;
+
 class CEqBulletIndexedMesh;
-class CEqPhysicsWorld;
-class CEqCollisionObject;
 class IEqPhysCallback;
 struct StudioPhysData;
 struct StudioPhyObjData;
-struct eqPhysGridCell;
 
 const int PHYSICS_COLLISION_LIST_MAX = 8;
 
@@ -40,14 +40,16 @@ enum ECollisionObjectFlags
 	COLLOBJ_ISGHOST					= (1 << 4),
 
 	// game flag that marks static objects as moveable (by scripts etc)
+	// this will also create broadphase grid cells if transform has changed
 	COLLOBJ_MIGHT_MOVE				= (1 << 5),
 
 	//---------------
 	// special flags
 
-	COLLOBJ_IS_PROCESSING			= (1 << 29),
-	COLLOBJ_TRANSFORM_DIRTY			= (1 << 30),
-	COLLOBJ_BOUNDBOX_DIRTY			= (1 << 31)
+	COLLOBJ_IS_PROCESSING			= (1 << 28),
+	COLLOBJ_TRANSFORM_DIRTY			= (1 << 29),
+	COLLOBJ_BOUNDBOX_DIRTY			= (1 << 30),
+	COLLOBJ_BROADPHASE_DIRTY		= (1 << 31),
 };
 
 class CEqCollisionObject
@@ -61,7 +63,7 @@ public:
 
 	static GetSurfaceParamIdFunc GetSurfaceParamId;
 
-	CEqCollisionObject();
+	CEqCollisionObject() = default;
 	virtual ~CEqCollisionObject();
 
 	// objects that will be created
@@ -76,52 +78,49 @@ public:
 
 	virtual void				ClearContacts();
 
-	btCollisionObject*			GetBulletObject() const;											///< returns bullet physics collision object
-	btCollisionShape*			GetCompoundBulletShape() const { return m_shape; };					///< returns bullet physics shape (compound variant if multiple)
+	btCollisionObject*			GetBulletObject() const { return m_collObject; }					///< returns bullet physics collision object
+	btBroadphaseProxy*			GetBulletBroadphaseProxy() const { return m_broadphaseProxy; }
+	btCollisionShape*			GetCompoundBulletShape() const { return m_shape; }					///< returns bullet physics shape (compound variant if multiple)
 	ArrayCRef<btCollisionShape*>	GetBulletCollisionShapes() const;								///< returns bullet physics shape
-	CEqBulletIndexedMesh*		GetMesh() const;													///< returns indexed shape
+	CEqBulletIndexedMesh*		GetMesh() const { return m_mesh; }									///< returns indexed shape
 
-	const Vector3D&				GetShapeCenter() const;
+	const Vector3D&				GetShapeCenter() const { return m_center; }
 
-	void						SetUserData(void* ptr);												///< sets user data (usually it's a pointer to game object)
-	void*						GetUserData() const;												///< returns user data
+	void						SetUserData(void* ptr) { m_userData = ptr; }						///< sets user data (usually it's a pointer to game object)
+	void*						GetUserData() const { return m_userData; }							///< returns user data
 
-	const FVector3D&			GetPosition() const;												///< returns body position
-	const Quaternion&			GetOrientation() const;												///< returns body Quaternion orientation
+	const FVector3D&			GetPosition() const { return m_position; }							///< returns body position
+	const Quaternion&			GetOrientation() const { return m_orientation; }					///< returns body Quaternion orientation
 	const Transform3D			GetTransform() const;
 
 	virtual void				SetPosition(const FVector3D& position);								///< sets new position
 	virtual void				SetOrientation(const Quaternion& orient);							///< sets new orientation and updates inertia tensor
 	virtual void				SetTransform(const Transform3D& trs);
 
-	virtual bool				IsDynamic() const {return false;}									///< is dynamic?
+	virtual bool				IsDynamic() const { return false; }									///< is dynamic?
 
-	eqPhysGridCell*				GetCell() const					{ return m_cell; }					///< returns collision grid cell
-	void						SetCell(eqPhysGridCell* cell)	{ m_cell = cell; }					///< sets collision grid cell
+	float						GetFriction() const { return m_friction; }
+	float						GetRestitution() const { return m_restitution; }
+	float						GetErp() const { return m_erp; }
 
-	float						GetFriction() const;
-	float						GetRestitution() const;
-	float						GetErp() const;
+	void						SetFriction(float value) { m_friction = value; }
+	void						SetRestitution(float value) { m_restitution = value; }
+	void						SetErp(float value) { m_erp = value; }
 
-	void						SetFriction(float value);
-	void						SetRestitution(float value);
-	void						SetErp(float mass);
-
-
-	void						UpdateBoundingBoxTransform();
 
 	//--------------------
 
-	void						SetContents(int contents);											///< sets this object collision contents accessory
-	void						SetCollideMask(int maskContents);									///< sets what collision object contents can collide with this
+	void						SetContents(int contents) { m_contents = contents; }				///< sets this object collision contents accessory
+	void						SetCollideMask(int maskContents) { m_collMask = maskContents; }		///< sets what collision object contents can collide with this
 
-	int							GetContents() const;
-	int							GetCollideMask() const;
+	int							GetContents() const { return m_contents; }
+	int							GetCollideMask() const { return m_collMask; }
 
 	bool						CheckCanCollideWith( CEqCollisionObject* object ) const;					///< just checks possibility of collision, pre-broadphase
 
 	//--------------------
 
+	void						UpdateBoundingBoxTransform();
 	virtual void				ConstructRenderMatrix( Matrix4x4& outMatrix );						///< constructs render matrix
 	void						SetDebugName(const char* name);
 
@@ -134,7 +133,6 @@ public:
 
 	BoundingBox				m_aabb;							///< local shape bounding box
 	BoundingBox				m_aabb_transformed;				///< transformed bounding box, does not updated in dynamic objects
-	IAARectangle			m_cellRange{ 0, 0, 0, 0 };		///< static object cell range for broadphase searching
 
 	int						m_surfParam{ 0 };					///< surface parameters if no CEqBulletIndexedMesh defined
 	int						m_flags{ COLLOBJ_TRANSFORM_DIRTY };	///< collision object flags, ECollisionObjectFlags and EBodyFlags
@@ -158,9 +156,10 @@ protected:
 	void*					m_userData{ nullptr };
 
 	btCollisionObject*		m_collObject{ nullptr };
+	btBroadphaseProxy*		m_broadphaseProxy{ nullptr };
+
 	CEqBulletIndexedMesh*	m_mesh{ nullptr };
 	btTriangleInfoMap*		m_trimap{ nullptr };
-	eqPhysGridCell*			m_cell{ nullptr };
 
 	btCollisionShape*		m_shape{ nullptr };
 	btCollisionShape**		m_shapeList{ nullptr };

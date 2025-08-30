@@ -92,13 +92,13 @@ void CWGPUCommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, c
 	ASSERT_MSG(destination.origin.x + copySize.width <= dstTexture->GetWidth() && destination.origin.y + copySize.height >= dstTexture->GetHeight() && destination.origin.arraySlice + copySize.arraySize <= dstTexture->GetArrayLayersSize(),
 		"dest texture origin and size outside of dest texture size range");
 
-	WGPUImageCopyTexture rhiImageSrc{};
+	WGPUTexelCopyTextureInfo rhiImageSrc{};
 	rhiImageSrc.texture = srcTexture->GetWGPUTexture();
 	rhiImageSrc.aspect = WGPUTextureAspect_All;			// TODO: Aspect specification
 	rhiImageSrc.mipLevel = source.origin.mipLevel;
 	rhiImageSrc.origin = WGPUOrigin3D{ (uint)source.origin.x, (uint)source.origin.y, (uint)source.origin.arraySlice };
 	
-	WGPUImageCopyTexture rhiImageDst{};
+	WGPUTexelCopyTextureInfo rhiImageDst{};
 	rhiImageDst.texture = dstTexture->GetWGPUTexture();
 	rhiImageDst.aspect = WGPUTextureAspect_All;			// TODO: Aspect specification
 	rhiImageDst.mipLevel = destination.origin.mipLevel;
@@ -126,7 +126,7 @@ void CWGPUCommandRecorder::CopyTextureToBuffer(const TextureCopyInfo& source, co
 
 	ASSERT_MSG(dstBufferImpl->GetUsageFlags() & BUFFERUSAGE_COPY_DST, "buffer doesn't have Copy_Dst usage bit");
 
-	WGPUImageCopyTexture rhiImageSrc{};
+	WGPUTexelCopyTextureInfo rhiImageSrc{};
 	rhiImageSrc.texture = srcTexture->GetWGPUTexture();
 	rhiImageSrc.aspect = WGPUTextureAspect_All;			// TODO: Aspect specification
 	rhiImageSrc.mipLevel = source.origin.mipLevel;
@@ -139,7 +139,7 @@ void CWGPUCommandRecorder::CopyTextureToBuffer(const TextureCopyInfo& source, co
 	
 	// TODO: account arraySize in bytesPerRow
 	ASSERT_MSG(copySize.arraySize == 1, "array size > 1 is unsupported yet");
-	WGPUImageCopyBuffer rhiBufferDst;
+	WGPUTexelCopyBufferInfo rhiBufferDst;
 	rhiBufferDst.buffer = dstBufferImpl->GetWGPUBuffer();
 	rhiBufferDst.layout.offset = 0;
 	rhiBufferDst.layout.bytesPerRow = copySize.width * GetBytesPerPixel(srcTexture->GetFormat());

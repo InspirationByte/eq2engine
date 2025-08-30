@@ -20,15 +20,14 @@
 #define F_OK		0       // Test for existence.
 #else
 #include <unistd.h> // rmdir(), access()
-#include <dlfcn.h>	// dlopen()
 #include <dirent.h> // opendir, readdir
 #endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include "core/IDkCore.h"
 #include "core/ICommandLine.h"
-#include "core/ILocalize.h"
 #include "core/platform/OSFindData.h"
 #include "utils/CRC32.h"
 
@@ -48,10 +47,6 @@ static int FSStringId(const char *str)
 
 	return hash;
 }
-
-#ifndef _WIN32
-using HMODULE = void*;
-#endif
 
 using namespace Threading;
 static CEqMutex	s_FSMutex;
@@ -167,13 +162,7 @@ bool CFlatFileReader::FileExist(const char* filename) const
 // Main filesystem code
 //------------------------------------------------------------------------------
 
-struct DKMODULE
-{
-	EqString	name;
-	HMODULE		module;
-};
-
-struct DKFINDDATA
+struct FSFindData
 {
 	OSFindData	osFind;
 	EqString	wildcard;
@@ -182,7 +171,7 @@ struct DKFINDDATA
 	bool		singleDir{ false };
 };
 
-struct SearchPathInfo
+struct FSSearchPathInfo
 {
 #ifndef _WIN32
 	// name hash to file path mapping (case-insensitive support)
@@ -190,7 +179,7 @@ struct SearchPathInfo
 #endif
 	EqString	id;
 	EqString	path;
-	bool		mainWritePath;
+	bool		writePath{ false };
 };
 
 //--------------------------------------------------
@@ -265,7 +254,7 @@ bool CFileSystem::Init(bool editorMode)
 {
 	Msg("\n-------- Filesystem Init --------\n");
 
-	const KVSection* fsConfig = g_eqCore->GetConfig()->FindSection("FileSystem", KV_FLAG_SECTION);
+	const KVSection* fsConfig = g_eqCore->GetConfig().FindSection("FileSystem", KV_FLAG_SECTION);
 	if (!fsConfig)
 	{
 		Msg("E2.CONFIG missing FileSystemDirectories section!\n");
@@ -317,12 +306,12 @@ bool CFileSystem::Init(bool editorMode)
 		}
 	}
 
-	for(const KVSection* pkgSec : fsConfig->Keys("AddPackage"))
+	for(const KVSection& pkgSec : fsConfig->Keys("AddPackage"))
 	{
 		EqStringRef packageName;
 		EqStringRef pathType = "SP_MOD";
 		EqStringRef mountPath;
-		if (pkgSec->GetValues(packageName, pathType, mountPath) < 1)
+		if (pkgSec.GetValues(packageName, pathType, mountPath) < 1)
 			continue;
 
 		const ESearchPath type = GetSearchPathByName(pathType);
@@ -336,19 +325,8 @@ bool CFileSystem::Init(bool editorMode)
 void CFileSystem::Shutdown()
 {
 	m_isInit = false;
-
-	for(int i = 0; i < m_modules.numElem(); i++)
-	{
-		CloseModule(m_modules[i]);
-		i--;
-	}
-
 	m_fsPackages.clear(true);
 	m_findDatas.clear(true);
-
-	for(int i = 0; i < m_directories.numElem(); i++)
-		delete m_directories[i];
-
 	m_directories.clear(true);
 }
 
@@ -365,7 +343,7 @@ EqString CFileSystem::FindFilePath(const char* filename, int searchFlags /*= -1*
 {
 	EqString existingFilePath;
 
-	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
+	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
 	{
 		if (access(filePath, F_OK) != -1)
 		{
@@ -402,9 +380,9 @@ IFileStreamPtr CFileSystem::Open(const char* filename, int openFlags, int search
 	const bool isWrite = osModeFlags & (COSFile::APPEND | COSFile::WRITE);
 
 	IFileStreamPtr fileHandle;
-	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
+	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
 	{
-		if (isWrite && !writePath)
+		if (isWrite && !spInfo.writePath)
 			return false;
 
 		COSFile osFile;
@@ -526,7 +504,7 @@ bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool ove
 
 bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 {
-	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
+	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
 	{
 		if (access(filePath, F_OK) != -1)
 			return true;
@@ -568,7 +546,7 @@ EqString CFileSystem::GetSearchPath(ESearchPath search, int directoryId) const
 			if(directoryId == -1) // default write path
 				searchPath = fnmPathCombine(m_basePath, GetCurrentGameDirectory());
 			else
-				searchPath = fnmPathCombine(m_basePath, m_directories[directoryId]->path);
+				searchPath = fnmPathCombine(m_basePath, m_directories[directoryId].path);
 			break;
 		case SP_ROOT:
 			searchPath = m_basePath;
@@ -648,12 +626,12 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	// First we checking mod directory
 	if (flags & SP_MOD)
 	{
-		for (const SearchPathInfo* spInfo : m_directories)
+		for (const FSSearchPathInfo& spInfo : m_directories)
 		{
-			filePath = fnmPathCombine(m_basePath, spInfo->path, fileName);
+			filePath = fnmPathCombine(m_basePath, spInfo.path, fileName);
 #ifndef _WIN32
 			const int nameHash = FSStringId(filePath);
-			const auto it = spInfo->pathToFileMapping.find(nameHash);
+			const auto it = spInfo.pathToFileMapping.find(nameHash);
 			if (!it.atEnd())
 			{
 				// apply correct filepath
@@ -661,7 +639,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 			}
 #endif
 
-			if (func(filePath, SP_MOD, flags, spInfo->mainWritePath))
+			if (func(filePath, SP_MOD, spInfo, flags))
 				return true;
 		}
 	}
@@ -669,8 +647,9 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	//Then we checking data directory
 	if (flags & SP_DATA)
 	{
+		FSSearchPathInfo dataSpInfo;
 		filePath = fnmPathCombine(m_basePath, m_dataDir, fileName);
-		if (func(filePath, SP_DATA, flags, false))
+		if (func(filePath, SP_DATA, dataSpInfo, flags))
 			return true;
 	}
 
@@ -678,6 +657,9 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	// not adding basepath to this
 	if (flags & SP_ROOT)
 	{
+		FSSearchPathInfo rootSpInfo;
+		rootSpInfo.writePath = true;
+
 		if(isAbsolutePath)
 		{
 			filePath = fileName;
@@ -687,7 +669,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 			filePath = fnmPathCombine(m_basePath, fileName);
 		
 		// TODO: write path detection if it's same as ones from m_directories or m_dataDir
-		if (func(filePath, SP_ROOT, flags, true))
+		if (func(filePath, SP_ROOT, rootSpInfo, flags))
 			return true;
 	}
 
@@ -752,7 +734,7 @@ IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchF
 {
 	CRefPtr<CBasePackageReader> reader = CBasePackageReader::CreateReaderByExtension(packageName);
 
-	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
+	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
 	{
 		if (reader->InitPackage(filePath, nullptr))
 			return true;
@@ -798,7 +780,7 @@ IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchF
 	return IPackFileReaderPtr(reader);
 }
 
-void CFileSystem::MapFiles(SearchPathInfo& pathInfo)
+void CFileSystem::MapFiles(FSSearchPathInfo& pathInfo)
 {
 #ifndef _WIN32
 	Array<EqString> openSet(PP_SL);
@@ -851,8 +833,8 @@ void CFileSystem::MapFiles(SearchPathInfo& pathInfo)
 // sets fallback directory for mod
 void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 {
-	const int idx = arrayFindIndexF(m_directories, [=](const SearchPathInfo* spInfo) {
-		return spInfo->id == pathId;
+	const int idx = arrayFindIndexF(m_directories, [=](const FSSearchPathInfo& spInfo) {
+		return spInfo.id == pathId;
 	});
 	if (idx != -1)
 	{
@@ -865,30 +847,29 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 	const bool isReadPriorityPath = CString::SubString(pathId, "$MOD$") || CString::SubString(pathId, "$LOCALIZE$");
 	const bool isWriteablePath = CString::SubString(pathId, "$WRITE$");
 
-	SearchPathInfo* pathInfo = PPNew SearchPathInfo;
-	pathInfo->id = pathId;
-	pathInfo->path = pszDir;
-	pathInfo->mainWritePath = !isReadPriorityPath || isWriteablePath;
+	FSSearchPathInfo pathInfo;
+	pathInfo.id = pathId;
+	pathInfo.path = pszDir;
+	pathInfo.writePath = !isReadPriorityPath || isWriteablePath;
 
 	if(isReadPriorityPath)
 		m_directories.insert(pathInfo, 0);
 	else
 		m_directories.append(pathInfo);
 
-	if(!pathInfo->mainWritePath)
-		MapFiles(*pathInfo);
+	if(!pathInfo.writePath)
+		MapFiles(pathInfo);
 }
 
 void CFileSystem::RemoveSearchPath(const char* pathId)
 {
 	for(int i = 0; i < m_directories.numElem(); i++)
 	{
-		if(m_directories[i]->id == EqStringRef(pathId))
+		if(m_directories[i].id == EqStringRef(pathId))
 		{
 			DevMsg(DEVMSG_FS, "Removing search path '%s'\n", pathId);
-			delete m_directories[i];
 			m_directories.removeIndex(i);
-			break;
+			return;
 		}
 	}
 }
@@ -896,11 +877,11 @@ void CFileSystem::RemoveSearchPath(const char* pathId)
 // Returns current game path
 const char* CFileSystem::GetCurrentGameDirectory() const
 {
-	// return first directory with 'mainWritePath' attribute set
-	for (const SearchPathInfo* spInfo : m_directories)
+	// return first directory with 'writePath' attribute set
+	for (const FSSearchPathInfo& spInfo : m_directories)
 	{
-		if (spInfo->mainWritePath)
-			return spInfo->path;
+		if (spInfo.writePath)
+			return spInfo.path;
 	}
 
     return m_dataDir.GetData();
@@ -912,7 +893,7 @@ const char* CFileSystem::GetCurrentDataDirectory() const
     return m_dataDir.GetData();
 }
 
-bool CFileSystem::InitNextPath(DKFINDDATA* findData) const
+bool CFileSystem::InitNextPath(FSFindData* findData) const
 {
 	EqString fsBaseDir;
 	EqString searchWildcard;
@@ -957,7 +938,7 @@ bool CFileSystem::InitNextPath(DKFINDDATA* findData) const
 }
 
 // opens directory for search props
-const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPath, int dirIndex)
+const char* CFileSystem::FindFirst(const char* wildcard, FSFindData** findData, int searchPath, int dirIndex)
 {
 	ASSERT(findData != nullptr);
 
@@ -966,7 +947,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 
 	ASSERT_MSG(searchPath, "searchPath flags must be specified");
 
-	DKFINDDATA* newFind = PPNew DKFINDDATA;
+	FSFindData* newFind = PPNew FSFindData;
 	newFind->searchPaths = searchPath;
 	newFind->wildcard = wildcard;
 	fnmPathFixSeparators(newFind->wildcard);
@@ -985,7 +966,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	return newFind->osFind.GetCurrentPath();
 }
 
-const char* CFileSystem::FindNext(DKFINDDATA* findData) const
+const char* CFileSystem::FindNext(FSFindData* findData) const
 {
 	if(!findData)
 		return nullptr;
@@ -1000,7 +981,7 @@ const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 	return findData->osFind.GetCurrentPath();
 }
 
-void CFileSystem::FindClose(DKFINDDATA* findData)
+void CFileSystem::FindClose(FSFindData* findData)
 {
 	if(!findData)
 		return;
@@ -1008,106 +989,16 @@ void CFileSystem::FindClose(DKFINDDATA* findData)
 		delete findData;
 }
 
-bool CFileSystem::FindIsDirectory(DKFINDDATA* findData) const
+bool CFileSystem::FindIsDirectory(FSFindData* findData) const
 {
 	if(!findData)
 		return false;
 	return findData->osFind.IsDirectory();
 }
 
-int	CFileSystem::FindGetDirIndex(DKFINDDATA* findData) const
+int	CFileSystem::FindGetDirIndex(FSFindData* findData) const
 {
 	if(!findData)
 		return -1;
 	return findData->dirIndex - 1;
-}
-
-// loads module
-DKMODULE* CFileSystem::OpenModule(const char* mod_name, EqString* outError)
-{
-	EqString moduleFileName = mod_name;
-	EqString modExt = fnmPathExtractExt(moduleFileName);
-
-#ifdef _WIN32
-	// make default module extension
-	if(modExt.Length() == 0)
-		moduleFileName = moduleFileName + ".dll";
-
-	HMODULE mod = LoadLibraryA( moduleFileName );
-	DWORD lastErr = GetLastError();
-
-	char err[256] = {'\0'};
-	if(lastErr != 0)
-	{
-		FormatMessageA(	FORMAT_MESSAGE_FROM_SYSTEM,
-						nullptr,
-						lastErr,
-						MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT),
-						err,
-						255,
-						nullptr);
-	}
-
-#else
-	// make default module extension
-	if(modExt.Length() == 0)
-		moduleFileName = moduleFileName + ".so";
-
-	HMODULE mod = dlopen( moduleFileName, RTLD_LAZY | RTLD_LOCAL );
-	if( !mod )
-	{
-		moduleFileName = "lib" + moduleFileName;
-		mod = dlopen( moduleFileName, RTLD_LAZY | RTLD_LOCAL );
-	}
-
-	const char* err = dlerror();
-	int lastErr = 0;
-#endif // _WIN32 && MEMDLL
-
-	if( !mod )
-	{
-		if(outError)
-			*outError = err;
-
-		return nullptr;
-	}
-
-	g_eqCore->OnModuleLoaded(moduleFileName);
-
-	MsgInfo("Loaded module '%s'\n", moduleFileName.ToCString());
-
-	DKMODULE* pModule = PPNew DKMODULE;
-	pModule->name = moduleFileName;
-	pModule->module = (HMODULE)mod;
-
-	return pModule;
-}
-
-// frees module
-void CFileSystem::CloseModule( DKMODULE* pModule )
-{
-	if(!pModule)
-		return;
-
-	g_eqCore->OnModuleUnloaded(pModule->name);
-
-	// don't unload any modules if we prining a leaklog
-#ifdef _WIN32
-	FreeLibrary(pModule->module);
-#else
-	dlclose(pModule->module);
-#endif // _WIN32 && MEMDLL
-
-	delete pModule;
-	m_modules.remove(pModule);
-}
-
-// returns procedure address of the loaded module
-void* CFileSystem::GetProcedureAddress(DKMODULE* pModule, const char* pszProc)
-{
-#ifdef _WIN32
-	return GetProcAddress( pModule->module, pszProc );
-#else
-	return dlsym( pModule->module, pszProc );
-#endif // _WIN32 && MEMDLL
 }

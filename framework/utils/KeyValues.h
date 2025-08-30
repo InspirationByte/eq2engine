@@ -62,14 +62,14 @@ struct KVKeyIterator
 	struct Init;
 
 	KVKeyIterator() = default;
-	KVKeyIterator(const KVSection* section);
-	KVKeyIterator(const KVSection* section, const char* nameFilter, int searchFlags = 0, int index = 0);
+	KVKeyIterator(const KVSection& section);
+	KVKeyIterator(const KVSection& section, const char* nameFilter, int searchFlags = 0, int index = 0);
 
 	operator	int() const;
 	operator	const char* () const;
 
-	operator	KVSection*() const;
-	KVSection*	operator*() const;
+	operator	KVSection&() const;
+	KVSection&	operator*() const;
 	void		operator++();
 
 	bool		operator==(KVKeyIterator& it) const { return it.index == index; }
@@ -203,6 +203,9 @@ KVValues<Args...> KV_TryGetValues(const KVSection* key, Args&... outArgs);
 struct KVPairValue
 {
 	~KVPairValue();
+	KVPairValue() = default;
+
+	KVPairValue(const KVPairValue& other) = delete;
 
 	KVSection*	section{ nullptr };
 	char*		value{ nullptr };
@@ -215,21 +218,23 @@ struct KVPairValue
 		float	fValue;
 	};
 
+	// TODO: Clone
+
 	// sets string value
-	void				SetStringValue(const char* pszValue, int len = -1);
-	void				SetFromString(const char* pszValue);
-	void				SetFrom(const KVPairValue& from);
+	void		SetStringValue(const char* pszValue, int len = -1);
+	void		SetFromString(const char* pszValue);
+	void		SetFrom(const KVPairValue& from);
 
 	// get/set
-	const char*			GetString() const;
-	int					GetInt() const;
-	float				GetFloat() const;
-	bool				GetBool() const;
+	const char*	GetString() const;
+	int			GetInt() const;
+	float		GetFloat() const;
+	bool		GetBool() const;
 
-	void				SetString(const char* value);
-	void				SetInt(int nValue);
-	void				SetFloat(float fValue);
-	void				SetBool(bool bValue);
+	void		SetString(const char* value);
+	void		SetInt(int nValue);
+	void		SetFloat(float fValue);
+	void		SetBool(bool bValue);
 };
 
 //
@@ -237,10 +242,15 @@ struct KVPairValue
 //
 struct KVSection
 {
-	KVSection();
+	friend struct KVKeyIterator;
+	friend class KeyValues;
+
 	~KVSection();
 
-	void				Cleanup();
+	KVSection() = default;
+	KVSection(const KVSection& other) = delete;
+
+	void				Clear();
 	void				ClearValues();
 
 	// sets section name
@@ -255,7 +265,7 @@ struct KVSection
 	inline typename KVValueIterator<T>::Init	Values() const { return { KVValueIterator<T>(this) }; }
 
 	// Array keys iterator
-	inline KVKeyIterator::Init	Keys(const char* nameFilter = nullptr, int searchFlags = 0) const { return { KVKeyIterator(this, nameFilter, searchFlags) }; }
+	inline KVKeyIterator::Init	Keys(const char* nameFilter = nullptr, int searchFlags = 0) const { return { KVKeyIterator(*this, nameFilter, searchFlags) }; }
 
 	// Key values getter
 	template<typename ...Args>
@@ -284,7 +294,7 @@ struct KVSection
 	KVSection*			FindSection(const char* pszName, int nFlags = 0) const;
 
 	// adds new section
-	KVSection*			CreateSection(const char* pszName, const char* pszValue = nullptr, EKVPairType pairType = KVPAIR_STRING);
+	KVSection&			CreateSection(const char* pszName, const char* pszValue = nullptr, EKVPairType pairType = KVPAIR_STRING);
 
 	// adds existing section. You should set it's name manually. It should not be allocated by other section
 	void				AddSection(KVSection* keyBase);
@@ -319,14 +329,14 @@ struct KVSection
 	// The self-key functions
 	//----------------------------------------------
 
-	void				SetValueFrom( KVSection* pOther );
+	void				SetValueFrom(KVSection& pOther);
 
 	KVPairValue&		CreateValue();
 	KVSection*			CreateSectionValue();
 
-	KVSection*			Clone() const;
-	void				CopyTo(KVSection* dest) const;
-	void				CopyValuesTo(KVSection* dest) const;
+	KVSection&			Clone() const;
+	void				CopyTo(KVSection& dest) const;
+	void				CopyValuesTo(KVSection& dest) const;
 
 	// adds value to key
 	void				AddValue(const char* value);
@@ -361,6 +371,7 @@ struct KVSection
 	const KVSection*	operator[](const char* pszName) const;
 	const KVPairValue&	operator[](int index) const;
 
+	Array<KVSection*>::Iterator		Begin() const { return keys.begin(); }
 
 	//----------------------------------------------
 
@@ -381,7 +392,7 @@ struct KVSection
 	void				SetType(int newType);
 	int					GetType() const;
 
-	// TODO: private
+// TODO: private:
 	EqString			name;
 	int					nameHash{ 0 };
 	int					line{ 0 };				// the line that the key is on
@@ -392,78 +403,69 @@ struct KVSection
 	bool				unicode{ false };
 };
 
-// special wrapper class
-// for better compatiblity of new class
-class KeyValues
-{
-public:
-	KeyValues() = default;
-	~KeyValues() = default;
-
-	void			Reset();
-
-	KVKeyIterator::Init		Keys(const char* nameFilter = nullptr, int searchFlags = 0) const;
-	const KVSection&		Get(const char* pszName, int nFlags = 0) const;
-	KVSection*				FindSection(const char* pszName, int nFlags = 0) const;
-
-	// loads from file
-	bool				LoadFromFile(const char* pszFileName, int nSearchFlags = -1);
-	bool				LoadFromStream(IFileStream* stream);
-
-	bool				SaveToFile(const char* pszFileName, int nSearchFlags = -1);
-
-	KVSection*			GetRootSection();
-
-	KVSection*			operator[](const char* pszName);
-
-private:
-	KVSection	m_root;
-};
-
 //---------------------------------------------------------------------------------------------------------
 // KEYVALUES API Functions
 //---------------------------------------------------------------------------------------------------------
 
-/*
-	KV parse token function callback
-		signature might be:
-			c  <string>	- default mode character parsed
-			s+ <int>	- section depth increase
-			s- <int>	- section depth decrease
-			b			- break
-			t  <string>	- text token
-			u			- unquoted text token character
-*/
-
-enum EKVTokenState
+class KeyValues
 {
-	KV_PARSE_ERROR = -1,
-	KV_PARSE_RESUME = 0,
-	KV_PARSE_SKIP,
+public:
+	enum EKVTokenState
+	{
+		KV_PARSE_ERROR = -1,
+		KV_PARSE_RESUME = 0,
+		KV_PARSE_SKIP,
 
-	KV_PARSE_BREAK_TOKEN,	// for unquoted strings
+		KV_PARSE_BREAK_TOKEN,	// for unquoted strings
+	};
+
+	using KVTokenFunc = EqFunction<EKVTokenState(int line, const char* curPtr, const char* sig, va_list& arg)>;
+
+	//	KV parse token function
+	//	callback signature might be:
+	//		c  <string>	- default mode character parsed
+	//		s+ <int>	- section depth increase
+	//		s- <int>	- section depth decrease
+	//		b			- break
+	//		t  <string>	- text token
+	//		u			- unquoted text token character
+	//
+	static bool	Tokenizer(const char* buffer, int bufferSize, const char* fileName, int startLine, const KVTokenFunc tokenFunc);
+
+	static bool	Parse(IFileStream* stream, KVSection& outSection);
+	static bool	ParseText(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName = nullptr, int startLine = 1);
+	static bool	ParseBinary(IFileStream* stream, KVSection& outSection);
+
+	template<typename T>
+	static bool ParseDesc(T& descData, const KVSection& section);
+
+	static void	WriteText(IFileStream* outStream, const KVSection& section, int nTabs = 0, bool pretty = true);
+	static void	WriteBinary(IFileStream* outStream, const KVSection& base);
+
+protected:
+	static bool ParseTextV2(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName, int startLine);
+	static bool ParseTextV3(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName, int startLine);
+	static void ReadBinaryValue(IFileStream* stream, KVSection& addTo);
+
+	static EKVPairType ResolvePairType(const char* name);
+	static int	ReadProcessString(const char* pszStr, char* dest, int maxLength = COM_INT_MAX);
+	static int	CountSpecialSymbols(const char* pszStr);
+	static void PreProcessStringValue(char* out, const char* pszStr);
+
+	static void WriteSelectQuotedString(IFileStream* out, const char* pszString);
+	static void WriteValue(IFileStream* out, const KVPairValue& val, int depth);
+	static void WriteValueV3(IFileStream* outStream, const KVSection& key, int nTabs);
+	static void WriteValueBinary(IFileStream* outStream, const KVPairValue& value);
+	static void WriteToStreamV3(IFileStream* outStream, const KVSection& section, int nTabs, bool pretty);
 };
 
-using KVTokenFunc = EqFunction<EKVTokenState(int line, const char* curPtr, const char* sig, va_list& arg)>;
-
-bool			KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, const KVTokenFunc tokenFunc);
-KVSection*		KV_LoadFromStream(IFileStream* stream, KVSection* pParseTo = nullptr);
-KVSection*		KV_LoadFromFile( const char* pszFileName, int nSearchFlags = -1, KVSection* pParseTo = nullptr);
-
-KVSection*		KV_ParseSection(const char* pszBuffer, int bufferSize, const char* pszFileName = nullptr, KVSection* pParseTo = nullptr, int nStartLine = 0);
-KVSection*		KV_ReadBinaryBase(IFileStream* stream, KVSection* pParseTo = nullptr);
-KVSection*		KV_ParseBinary(const char* pszBuffer, int bufferSize, KVSection* pParseTo = nullptr);
-
-void			KV_PrintSection(const KVSection* base);
-
-void			KV_WriteToStream(IFileStream* outStream, const KVSection* section, int nTabs = 0, bool pretty = true);
-void			KV_WriteToStreamV3(IFileStream* outStream, const KVSection* section, int nTabs = 0, bool pretty = true);
-
-void			KV_WriteToStreamBinary(IFileStream* outStream, const KVSection* base);
 
 //-----------------------------------------------------------------------------------------------------
-// KeyValues value helpers
+// KeyValues helpers
 //-----------------------------------------------------------------------------------------------------
+
+// DEPRECATED
+bool			KV_LoadFromFile(const char* pszFileName, int nSearchFlags, KVSection& outSection);
 
 // DEPRECATED for direct use. Use KVSection::GetValues / KVSection::GetValuesAt
 const char*		KV_GetValueString(const KVSection* pBase, int nIndex = 0, const char* pszDefault = "" );
@@ -673,7 +675,7 @@ struct DescFieldEmbedded : public KVDescFieldInfo
 	DescFieldEmbedded(int offset, const char* name) : KVDescFieldInfo(offset, name, &Parse) {}
 	static bool Parse(const KVSection& section, const char* name, void* outPtr)
 	{
-		return KV_ParseDesc<T>(*reinterpret_cast<T*>(outPtr), section.Get(name));
+		return KeyValues::ParseDesc<T>(*reinterpret_cast<T*>(outPtr), section.Get(name));
 	}
 };
 
@@ -717,7 +719,7 @@ struct DescFieldEmbeddedArray : public KVDescFieldInfo
 		{
 			T& arrayRef = *reinterpret_cast<T*>(outPtr);
 			for (int i = 0; i < min(static_cast<int>(CArrayLenGetter<T>::len), sec.KeyCount()); ++i)
-				KV_ParseDesc(arrayRef[i], *sec.KeyAt(i));
+				KeyValues::ParseDesc(arrayRef[i], *sec.KeyAt(i));
 		}
 		else
 		{
@@ -725,8 +727,8 @@ struct DescFieldEmbeddedArray : public KVDescFieldInfo
 			Array<ITEM>& arrayRef = *reinterpret_cast<T*>(outPtr);
 
 			arrayRef.reserve(arrayRef.numElem() + sec.KeyCount());
-			for (const KVSection* embSec : sec.Keys())
-				KV_ParseDesc(arrayRef.append(), *embSec);
+			for (const KVSection& embSec : sec.Keys())
+				KeyValues::ParseDesc(arrayRef.append(), embSec);
 		}
 		return true;
 	}
@@ -759,6 +761,16 @@ struct DescFieldFlags : public KVDescFieldInfo
 };
 } // namespace kvdetail
 
+template<typename T>
+inline bool KeyValues::ParseDesc(T& descData, const KVSection& section)
+{
+	using Desc = typename T::Desc;
+	for (const KVDescFieldInfo& info : Desc::GetFields())
+		info.parseFunc(section, info.name, reinterpret_cast<ubyte*>(&descData) + info.offset);
+	return true;
+}
+
+
 #define BEGIN_KEYVALUES_DESC_TYPE(classname, descName) \
 	const char* descName::GetTypeName() { return #classname; } \
 	ArrayCRef<KVDescFieldInfo> descName::GetFields() { \
@@ -785,13 +797,13 @@ struct DescFieldFlags : public KVDescFieldInfo
 #define KV_DESC_ARRAY_EMBEDDED(name) \
 	kvdetail::DescFieldEmbeddedArray<decltype(DescType::name)>{offsetOf(DescType, name), #name},
 
-#define KV_DESC_FLAGS(name, flagsType) \
-	kvdetail::DescFieldFlags<decltype(DescType::name), flagsType>{offsetOf(DescType, name), #name},
+#define KV_DESC_FLAGS(name, enumType) \
+	kvdetail::DescFieldFlags<decltype(DescType::name), KVFlagsEnumDesc<enumType>>{offsetOf(DescType, name), #name},
 
 //------------------
 
-#define BEGIN_KEYVALUES_FLAGS_DESC(enumDescName) \
-	ArrayCRef<KVDescFlagInfo> enumDescName::GetFlags() { \
+#define BEGIN_KEYVALUES_FLAGS_DESC(enumType) \
+	template<> ArrayCRef<KVDescFlagInfo> KVFlagsEnumDesc<enumType>::GetFlags() { \
 		static KVDescFlagInfo descFlags[] = {
 
 #define END_KEYVALUES_FLAGS_DESC \

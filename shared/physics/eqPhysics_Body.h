@@ -16,31 +16,28 @@ class IEqPhysicsConstraint;
 enum EBodyFlags
 {
 	// body is temporary frozen and can woke up
-	BODY_FROZEN					= (1 << 16),
+	BODY_FROZEN					= (1 << 8),
 
 	// body is constantly frozen and can't woke up unless this flag active
-	BODY_FORCE_FREEZE			= (1 << 17),
+	BODY_FORCE_FREEZE			= (1 << 9),
 
 	// when object is frozen, it will preserve the forces
-	BODY_FORCE_PRESERVEFORCES	= (1 << 18),
+	BODY_FREEZE_PRESERVE_FORCES	= (1 << 10),
 
 	// disables angular damping of body
-	BODY_DISABLE_DAMPING		= (1 << 19),
+	BODY_DISABLE_DAMPING		= (1 << 11),
 
 	// disables body freezing
-	BODY_NO_AUTO_FREEZE			= (1 << 20),
+	BODY_NO_AUTO_FREEZE			= (1 << 12),
 
 	// don't take response from all bodies (good for trains)
-	BODY_INFINITEMASS			= (1 << 21),
+	BODY_INFINITEMASS			= (1 << 13),
 
 	// cars have some specials like "Car vs Car" is a "Box vs Box" collision detection and faster game object detection
-	BODY_ISCAR					= (1 << 22),
-
-	//---------------
-	// special flags
+	BODY_ISCAR					= (1 << 14),
 
 	// appears in moveable list
-	BODY_MOVEABLE				= (1 << 24),
+	BODY_MOVEABLE				= (1 << 15),
 };
 
 ///
@@ -127,7 +124,7 @@ public:
 
 	bool				TryWake( bool velocityCheck = true );										///< tries to wake the body up
 	void				Wake();																		///< unfreezes the body even if it was forced to freeze
-	void				Freeze();																	///< force freezes body and external powers will not wake it up
+	void				Freeze( bool allowForcePreservation = false );										///< force freezes body and external powers will not wake it up
 	bool				IsFrozen() const;															///< indicates that body has been frozen (forced or timed out)
 
 	void				SetMinFrameTime( float time, bool ignoreMotion = true );					///< sets minimal frame time for collision detections

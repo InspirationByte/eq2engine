@@ -53,7 +53,7 @@ bool Button::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mous
 		else if(flags & UI_EVENT_UP)
 		{
 			if(m_state)
-				RaiseEvent( "click", nullptr ); // TODO: ButtonClickEventData
+				RaiseEvent( "click", nullptr );
 
 			m_state = false;
 		}
