@@ -55,6 +55,12 @@ CEmptyRenderLib::~CEmptyRenderLib()
 
 bool CEmptyRenderLib::InitCaps()
 {
+	for (int i = 0; i < FORMAT_COUNT; ++i)
+		s_renderApi.m_caps.textureFormatsSupported[i] = true;
+
+	for (int i = 0; i < FORMAT_COUNT; ++i)
+		s_renderApi.m_caps.renderTargetFormatsSupported[i] = true;
+
 	return true;
 }
 
