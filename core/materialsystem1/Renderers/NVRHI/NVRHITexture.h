@@ -7,7 +7,7 @@
 
 #pragma once
 #include <nvrhi/nvrhi.h>
-#include "CTexture.h"
+#include "Texture.h"
 
 class CNVRHITexture : public CTexture
 {

@@ -133,6 +133,24 @@ void CNVRHIRenderAPI::Shutdown()
 	m_rhiDevice = nullptr;
 }
 
+void CNVRHIRenderAPI::FreeShaderPackage(int id)
+{
+	if (id == 0)
+		return;
+
+	auto it = m_shaderCache.find(id);
+	if (it.atEnd())
+		return;
+
+	DevMsg(DEVMSG_RENDER, "Freed shader package %s\n", it->shaderName.ToCString());
+	m_shaderCache.remove(it);
+}
+
+void CNVRHIRenderAPI::ClearShaderPackages()
+{
+	m_shaderCache.clear(true);
+}
+
 int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 {
 	IPackFileReaderPtr shaderPackFile = g_fileSystem->OpenPackage(filename, SP_MOD | SP_DATA);
@@ -141,8 +159,8 @@ int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 
 	KVSection shaderInfoKvs;
 	{
-		IFilePtr file = shaderPackFile->Open("ShaderInfo", VS_OPEN_READ);
-		if (!KV_LoadFromStream(file, &shaderInfoKvs))
+		IFileStreamPtr file = shaderPackFile->Open("ShaderInfo", FS_OPEN_READ);
+		if (!KeyValues::Parse(file, shaderInfoKvs))
 		{
 			Msg("No ShaderInfo in file %s\n", filename);
 			return 0;
@@ -181,17 +199,17 @@ int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 			shaderInfo.defines.append(def);
 	}
 
-	for (const KVSection* key : shaderInfoKvs.Get("VertexLayouts").Keys())
+	for (const KVSection& key : shaderInfoKvs.Get("VertexLayouts").Keys())
 	{
 		ShaderInfoNVRHIImpl::VertLayout& layout = shaderInfo.vertexLayouts.append();
-		layout.name = key->GetName();
+		layout.name = key.GetName();
 		if (layout.name != s_DefaultVertexLayoutName)
 			layout.nameHash = StringId24(layout.name);
 		
-		if (!CString::CompareCaseIns(KV_GetValueString(key, 0), "aliasOf"))
+		if (!CString::CompareCaseIns(KV_GetValueString(&key, 0), "aliasOf"))
 		{
 			layout.aliasOf = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoNVRHIImpl::VertLayout& layout) {
-				return layout.name == EqStringRef(KV_GetValueString(key, 1));
+				return layout.name == EqStringRef(KV_GetValueString(&key, 1));
 			});
 		}
 	}
@@ -218,13 +236,13 @@ int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 
 	int filesFound = 0;
 	const KVSection* fileListSec = shaderInfoKvs["FileList"];
-	for (const KVSection* itemSec : fileListSec->Keys("spv"))
+	for (const KVSection& itemSec : fileListSec->Keys("spv"))
 	{
 		int vertLayoutIdx = -1;
 		EqStringRef kindStr;
 		EqStringRef entryPointName;
 		EqStringRef queryStr;
-		if (itemSec->GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr) < 4)
+		if (itemSec.GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr) < 4)
 		{
 			ASSERT_FAIL("Shader %s 'spv' does not have 4 values");
 			break;
@@ -263,14 +281,14 @@ int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 
 	// we need to validate references so collect refs in second pass
 	int refIdx = 0;
-	for (const KVSection* itemSec : fileListSec->Keys("ref"))
+	for (const KVSection& itemSec : fileListSec->Keys("ref"))
 	{
 		int vertLayoutIdx = -1;
 		EqStringRef kindStr;
 		EqStringRef entryPointName;
 		EqStringRef queryStr;
 		int refSpvIndex = -1;
-		if (itemSec->GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr, refSpvIndex) < 5)
+		if (itemSec.GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr, refSpvIndex) < 5)
 		{
 			ASSERT_FAIL("Shader %s 'ref' does not have 5 values (old shader version?)");
 			break;
@@ -323,9 +341,9 @@ bool CNVRHIRenderAPI::IsDeviceActive() const
 	return !m_deviceLost;
 }
 
-IVertexFormat* CNVRHIRenderAPI::CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc)
+IVertexFormatPtr CNVRHIRenderAPI::CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc)
 {
-	IVertexFormat* pVF = PPNew CNVRHIVertexFormat(name, formatDesc);
+	IVertexFormatPtr pVF = IVertexFormatPtr(CRefPtr_new(CNVRHIVertexFormat, name, formatDesc));
 	m_VFList.append(pVF);
 	return pVF;
 }
@@ -678,14 +696,14 @@ nvrhi::ShaderHandle CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInfoNVRHI
 
 	CMemoryStream shaderData(PP_SL);
 	{
-		IFilePtr shaderFile = shaderInfo.shaderPackFile->Open(mod.fileIndex, VS_OPEN_READ);
+		IFileStreamPtr shaderFile = shaderInfo.shaderPackFile->Open(mod.fileIndex, FS_OPEN_READ);
 		if (!shaderFile)
 		{
 			ASSERT_FAIL("Unable to open file in shader package!");
 			return nullptr;
 		}
 
-		shaderData.Open(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, shaderFile->GetSize());
+		shaderData.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, shaderFile->GetSize());
 		shaderData.AppendStream(shaderFile);
 	}
 
@@ -755,7 +773,7 @@ void CNVRHIRenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqStri
 		if (layout.aliasOf != -1)
 			continue;
 
-		if(shaderInfo.shaderKinds & SHADERKIND_FRAGMENT)
+		if (shaderInfo.shaderKinds & SHADERKIND_FRAGMENT)
 		{
 			const uint shaderModuleId = PackShaderModuleId(queryStrHash, i, SHADERKIND_FRAGMENT, entryPointStrHash);
 			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
@@ -1022,7 +1040,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	rhiGraphicsPipelineDesc.setInputLayout(rhiInputLayout);
 
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString());
-
+	
 	{
 		PROF_EVENT(EqString::Format("CreateRenderPipeline for %s", pipelineName.ToCString()));
 		nvrhi::GraphicsPipelineHandle rhiRenderPipeline = m_rhiDevice->createGraphicsPipeline(rhiGraphicsPipelineDesc, rhiFramebufferInfo);

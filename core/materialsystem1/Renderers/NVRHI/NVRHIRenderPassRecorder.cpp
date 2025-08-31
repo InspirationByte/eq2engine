@@ -186,6 +186,17 @@ void CNVRHIRenderPassRecorder::DrawIndirect(IGPUBuffer* indirectBuffer, int indi
 	m_rhiCommandList->drawIndirect(indirectOffset);
 }
 
+
+void CNVRHIRenderPassRecorder::MultiDrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset)
+{
+	ASSERT_FAIL("Unsupported on this RHI");
+}
+
+void CNVRHIRenderPassRecorder::MultiDrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset)
+{
+	ASSERT_FAIL("Unsupported on this RHI");
+}
+
 static void NVRHIBeginRenderPass(const RenderPassDesc& renderPassDesc, nvrhi::CommandListHandle rhiCmdList)
 {
 	auto rhiFramebufferDesc = nvrhi::FramebufferDesc();

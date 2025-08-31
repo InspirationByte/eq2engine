@@ -8,7 +8,7 @@
 #pragma once
 #include <nvrhi/nvrhi.h>
 
-#include "ShaderAPI_Base.h"
+#include "ShaderAPI.h"
 #include "NVRHITexture.h"
 #include "NVRHIBuffer.h"
 #include "NVRHIVertexFormat.h"
@@ -32,6 +32,7 @@ public:
 	// Init + Shurdown
 	void						Init(const ShaderAPIParams& params);
 	void						Shutdown();
+	bool						IsDeviceValidationActive() const { return m_isValidationActive; }
 
 //-------------------------------------------------------------
 // Renderer information
@@ -39,16 +40,22 @@ public:
 	bool						IsDeviceActive() const;
 
 	// shader API class type for shader developers.
-	EShaderAPIType				GetShaderAPIClass()		{ return SHADERAPI_WEBGPU; }
+	EShaderAPIType				GetShaderAPIClass()		{ return SHADERAPI_D3D12; }
 
 	// Renderer string (ex: OpenGL, D3D9)
-	const char*					GetRendererName() const { return "WebGPU"; }
+	const char*					GetRendererName() const { return "D3D12"; }
 
 //-------------------------------------------------------------
 // MT Synchronization
 
 	// Synchronization
 	void						Flush();
+
+//-------------------------------------------------------------
+// Shaders
+	int							LoadShaderPackage(const char* filename);
+	void						FreeShaderPackage(int id);
+	void						ClearShaderPackages();
 
 //-------------------------------------------------------------
 // Textures
@@ -90,7 +97,7 @@ public:
 	Future<bool>				SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const;
 
 // DEPRECATED
-	IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc);
+	IVertexFormatPtr			CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc);
 	void						DestroyVertexFormat(IVertexFormat* pFormat);
 
 //-------------------------------------------------------------
@@ -102,9 +109,9 @@ protected:
 	IGPUBindGroupPtr			CreateBindGroupImpl(const NVRHIBindingLayoutList& rhiBindingLayouts, const BindGroupDesc& bindGroupDesc) const;
 
 	nvrhi::ShaderHandle			GetOrLoadShaderModule(const ShaderInfoNVRHIImpl& shaderInfo, int shaderModuleIdx) const;
-	int							LoadShaderPackage(const char* filename);
 
 	Map<int, ShaderInfoNVRHIImpl>	m_shaderCache{ PP_SL };
 	nvrhi::DeviceHandle			m_rhiDevice{ nullptr };
 	bool						m_deviceLost{ false };
+	bool						m_isValidationActive{ false };
 };

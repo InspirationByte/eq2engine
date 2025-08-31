@@ -233,7 +233,7 @@ static nvrhi::StencilOp g_nvrhiStencilOp[] = {
 // EBlendFunc
 static nvrhi::BlendOp g_nvrhiBlendOp[] = {
 	nvrhi::BlendOp::Add,
-	nvrhi::BlendOp::Subrtact,			// NOTE: A typo
+	nvrhi::BlendOp::Subtract,
 	nvrhi::BlendOp::ReverseSubtract,
 	nvrhi::BlendOp::Min,			
 	nvrhi::BlendOp::Max,			
