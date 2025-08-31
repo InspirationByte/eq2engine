@@ -13,30 +13,30 @@
 
 constexpr int TOGGLE_BIT = 0x80000000;
 
-CNVRHISwapChain::CNVRHISwapChain(CNVRHIRenderLib* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture)
+CNVRHISwapChainDXGI::CNVRHISwapChainDXGI(CNVRHIRenderLib* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture)
 	: m_host(host)
 	, m_winInfo(windowInfo)
 {
 	m_textureRef = CRefPtr<CNVRHITexture>(static_cast<CNVRHITexture*>(swapChainTexture.Ptr()));
 }
 
-CNVRHISwapChain::~CNVRHISwapChain()
+CNVRHISwapChainDXGI::~CNVRHISwapChainDXGI()
 {
 	if(m_surface)
 		NVRHISurfaceRelease(m_surface);
 }
 
-void* CNVRHISwapChain::GetWindow() const
+void* CNVRHISwapChainDXGI::GetWindow() const
 {
 	return m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
 }
 
-ITexturePtr CNVRHISwapChain::GetBackbuffer() const
+ITexturePtr CNVRHISwapChainDXGI::GetBackbuffer() const
 {
 	return ITexturePtr(m_textureRef);
 }
 
-void CNVRHISwapChain::UpdateBackbufferView() const
+void CNVRHISwapChainDXGI::UpdateBackbufferView() const
 {
 	WGPUSurfaceTexture rhiSurfTex{};
 	wgpuSurfaceGetCurrentTexture(m_surface, &rhiSurfTex);
@@ -80,19 +80,19 @@ void CNVRHISwapChain::UpdateBackbufferView() const
 	}
 }
 
-void CNVRHISwapChain::GetBackbufferSize(int& wide, int& tall) const
+void CNVRHISwapChainDXGI::GetBackbufferSize(int& wide, int& tall) const
 {	 
 	wide = m_backbufferSize.x;
 	tall = m_backbufferSize.y;
 }
 
-void CNVRHISwapChain::SetVSync(bool enable)
+void CNVRHISwapChainDXGI::SetVSync(bool enable)
 {
 	if((m_vSync > 0) != enable)
 		m_vSync = TOGGLE_BIT | (int)enable;
 }
 
-bool CNVRHISwapChain::UpdateResize()
+bool CNVRHISwapChainDXGI::UpdateResize()
 {
 	if ((m_vSync & TOGGLE_BIT) == 0 && m_textureRef->GetWidth() == m_backbufferSize.x && m_textureRef->GetHeight() == m_backbufferSize.y)
 		return true;
@@ -194,13 +194,13 @@ bool CNVRHISwapChain::UpdateResize()
 	return m_surface;
 }
 
-bool CNVRHISwapChain::SetBackbufferSize(int wide, int tall)
+bool CNVRHISwapChainDXGI::SetBackbufferSize(int wide, int tall)
 {	 
 	m_backbufferSize = IVector2D(wide, tall);
 	return true;
 }
 	 
-bool CNVRHISwapChain::SwapBuffers()
+bool CNVRHISwapChainDXGI::SwapBuffers()
 {
 	if (m_surface)
 		wgpuSurfacePresent(m_surface);

@@ -15,7 +15,6 @@ public:
 	void						ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 size) const;
 	
 	void						CopyTextureToTexture(const TextureCopyInfo& source, const TextureCopyInfo& destination, const TextureExtent& copySize) const;
-	void						CopyTextureToBuffer(const TextureCopyInfo& source, const IGPUBuffer* destination, const TextureExtent& copySize) const;
 
 	// ResolveQuerySet(WGPUQuerySet querySet, uint32_t firstQuery, uint32_t queryCount, WGPUBuffer destination, uint64_t destinationOffset);
 	// WriteTimestamp(WGPUQuerySet querySet, uint32_t queryIndex);

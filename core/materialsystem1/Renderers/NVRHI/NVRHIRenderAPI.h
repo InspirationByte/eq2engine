@@ -25,7 +25,10 @@ extern CEqMutex	g_sapi_Mutex;
 
 class CNVRHIRenderAPI : public ShaderAPI_Base
 {
-	friend class CNVRHIRenderLib;
+	friend class CNVRHIRenderLibD3D11;
+	friend class CNVRHIRenderLibD3D12;
+	friend class CNVRHIRenderLibVK;
+
 public:
 	static CNVRHIRenderAPI Instance;
 

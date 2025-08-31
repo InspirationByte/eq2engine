@@ -135,6 +135,12 @@ project "eqNVRHI"
 		"materialsystem1/Renderers/NVRHI/**.cpp",
 		"materialsystem1/Renderers/NVRHI/**.h"
 	}
+	removefiles {
+		"materialsystem1/Renderers/NVRHI/**D3D11.cpp",
+		"materialsystem1/Renderers/NVRHI/**D3D11.h",
+		"materialsystem1/Renderers/NVRHI/**VK.cpp",
+		"materialsystem1/Renderers/NVRHI/**VK.h"
+	}
 	
 -- WebGPU renderer
 project "eqWGPURHI"

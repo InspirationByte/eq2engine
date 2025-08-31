@@ -22,161 +22,37 @@
 #include "NVRHISwapChainDXGI.h"
 #include "NVRHIRenderAPI.h"
 
-DECLARE_CVAR(wgpu_report_errors, "0", nullptr, 0);
-DECLARE_CVAR(wgpu_break_on_error, "0", nullptr, 0);
-DECLARE_CVAR(wgpu_backend, "", "Specifies which WebGPU backend is going to be used", CV_ARCHIVE);
+DECLARE_CVAR(d3d12_validation, "0", nullptr, CV_UNREGISTERED);
+DECLARE_CVAR(d3d12_break_on_error, "0", nullptr, CV_UNREGISTERED);
 
-static const char* s_wgpuErrorTypesStr[] = {
-	"(null)"
-	"NoError",
-	"Validation",
-	"OutOfMemory",
-	"Internal",
-	"Unknown",
-	"DeviceLost",
-};
-
-static const char* s_wgpuDeviceLostReasonStr[] = {
-	"(null)",
-    "Unknown",
-    "Destroyed",
-    "InstanceDropped",
-    "FailedCreation",
-};
-
-static void OnWGPUDeviceError(WGPUErrorType type, struct WGPUStringView message, void* userdata)
-{
-	if (wgpu_break_on_error.GetBool())
-	{
-		ASSERT_FAIL("WGPU device %s error:\n\n%s", s_wgpuErrorTypesStr[type], message.data);
-	}
-
-	if (wgpu_report_errors.GetBool())
-		MsgError("[WGPU]: %s - %s\n", s_wgpuErrorTypesStr[type], message.data);
-}
-
-static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reason, struct WGPUStringView message, void* userdata)
-{
-	if(reason == WGPUDeviceLostReason_Destroyed)
-		return;
-
-	ASSERT_FAIL("WGPU device lost reason %s (%d)\n\n%s", s_wgpuDeviceLostReasonStr[reason], reason, message.data);
-	MsgError("[WGPU] device lost reason %s, %s\n", s_wgpuDeviceLostReasonStr[reason], message.data);
-}
-
-static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapter adapter, struct WGPUStringView message, void* userdata)
-{
-	if (status != WGPURequestAdapterStatus_Success)
-	{
-		// cannot find adapter?
-		ErrorMsg("%s", message.data);
-	}
-	else
-	{
-		// use first adapter provided
-		WGPUAdapter* result = static_cast<WGPUAdapter*>(userdata);
-		if (*result == nullptr)
-			*result = adapter;
-	}
-}
-
-CNVRHIRenderLib::CNVRHIRenderLib()
+CNVRHIRenderLibD3D12::CNVRHIRenderLibD3D12()
 {
 	m_windowed = true;
 	m_endFrameWait.Raise();
 }
 
-CNVRHIRenderLib::~CNVRHIRenderLib()
+CNVRHIRenderLibD3D12::~CNVRHIRenderLibD3D12()
 {
 }
 
-bool CNVRHIRenderLib::InitCaps()
+bool CNVRHIRenderLibD3D12::InitCaps()
 {
 	m_mainThreadId = Threading::GetCurrentThreadID();
 
-	// optionally use WGPUInstanceDescriptor::nextInChain for WGPUDawnTogglesDescriptor
-	// with various toggles enabled or disabled: https://dawn.googlesource.com/dawn/+/refs/heads/main/src/dawn/native/Toggles.cpp
-
-	m_instance = wgpuCreateInstance(nullptr);
-	if (!m_instance)
-		return false;
+	CNVRHIRenderLibDXGIBase::InitCaps();
 
 	return true;
 }
 
-IShaderAPI* CNVRHIRenderLib::GetRenderer() const
+IShaderAPI* CNVRHIRenderLibD3D12::GetRenderer() const
 {
 	return &CNVRHIRenderAPI::Instance;
 }
 
-static const char* GetWGPUBackendTypeStr(WGPUBackendType backendType)
+bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 {
-	switch (backendType)
-	{
-		case WGPUBackendType_D3D11:
-			return "D3D11";
-		case WGPUBackendType_D3D12:
-			return "D3D12";
-		case WGPUBackendType_Metal:
-			return "Metal";
-		case WGPUBackendType_Vulkan:
-			return "Vulkan";
-		case WGPUBackendType_OpenGL:
-			return "OpenGL";
-		case WGPUBackendType_OpenGLES:
-			return "OpenGLES";
-	}
-	return "Unknown";
-}
+	CNVRHIRenderLibDXGIBase::InitAPI(params);
 
-static const char* GetWGPUAdapterTypeStr(WGPUAdapterType adapterType)
-{
-	switch (adapterType)
-	{
-	case WGPUAdapterType_DiscreteGPU:
-		return "Discrete GPU";
-	case WGPUAdapterType_IntegratedGPU:
-		return "Integrated GPU";
-	case WGPUAdapterType_CPU:
-		return "Software";
-	}
-	return "Unknown";
-}
-
-static size_t wgpuLoadCacheDataFunction(void const* key, size_t keySize, void* value, size_t valueSize, void* userdata)
-{
-	const uint32 keyChecksum = CRC32_BlockChecksum(key, keySize);
-	static thread_local IFilePtr file;
-	
-	if (!value)
-	{
-		file = g_fileSystem->Open(EqString::Format("PSOCache/%u.psoc", keyChecksum), FS_OPEN_READ, SP_ROOT);
-		if (!file)
-			return 0;
-
-		return file->GetSize();
-	}
-
-	if (!file)
-		return 0;
-
-	size_t readSize = file->Read(value, 1, valueSize);
-	file = nullptr;
-
-	return readSize;
-}
-
-static void wgpuStoreCacheDataFunction(void const* key, size_t keySize, void const* value, size_t valueSize, void* userdata)
-{
-	const uint32 keyChecksum = CRC32_BlockChecksum(key, keySize);
-
-	g_fileSystem->MakeDir("PSOCache", SP_ROOT);
-	IFilePtr file = g_fileSystem->Open(EqString::Format("PSOCache/%u.psoc", keyChecksum), FS_OPEN_WRITE, SP_ROOT);
-	file->Write(value, 1, valueSize);
-}
-
-bool CNVRHIRenderLib::InitAPI(const ShaderAPIParams& params)
-{
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;
 	
@@ -353,12 +229,14 @@ bool CNVRHIRenderLib::InitAPI(const ShaderAPIParams& params)
 	return true;
 }
 
-void CNVRHIRenderLib::ExitAPI()
+void CNVRHIRenderLibD3D12::ExitAPI()
 {
+	CNVRHIRenderLibDXGIBase::ExitAPI();
+
 	m_endFrameWait.Wait(500);
 	g_renderWorker.Shutdown();
 
-	for (CNVRHISwapChain* swapChain : m_swapChains)
+	for (CNVRHISwapChainDXGI* swapChain : m_swapChains)
 		delete swapChain;
 
 	m_swapChains.clear();
@@ -380,8 +258,10 @@ void CNVRHIRenderLib::ExitAPI()
 	m_deviceQueue = nullptr;
 }
 
-void CNVRHIRenderLib::BeginFrame(ISwapChain* swapChain)
+void CNVRHIRenderLibD3D12::BeginFrame(ISwapChain* swapChain)
 {
+	CNVRHIRenderLibDXGIBase::BeginFrame(swapChain);
+
 	m_endFrameWait.Wait();
 
 	CNVRHIRenderAPI::Instance.m_deviceLost = false;
@@ -395,8 +275,10 @@ void CNVRHIRenderLib::BeginFrame(ISwapChain* swapChain)
 	});
 }
 
-void CNVRHIRenderLib::EndFrame()
+void CNVRHIRenderLibD3D12::EndFrame()
 {
+	CNVRHIRenderLibDXGIBase::EndFrame();
+
 	g_renderWorker.Execute(__func__, [this]() {
 		m_currentSwapChain->SwapBuffers();
 		m_endFrameWait.Raise();
@@ -404,12 +286,12 @@ void CNVRHIRenderLib::EndFrame()
 	});
 }
 
-ITexturePtr	CNVRHIRenderLib::GetCurrentBackbuffer() const
+ITexturePtr	CNVRHIRenderLibD3D12::GetCurrentBackbuffer() const
 {
 	return m_currentSwapChain->GetBackbuffer();
 }
 
-ISwapChain* CNVRHIRenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
+ISwapChain* CNVRHIRenderLibD3D12::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	bool justCreated = false;
 
@@ -419,24 +301,24 @@ ISwapChain* CNVRHIRenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
 
 	ASSERT_MSG(justCreated, "%s texture already has been created", texName.ToCString());
 
-	CNVRHISwapChain* swapChain = PPNew CNVRHISwapChain(this, windowInfo, swapChainTexture);
+	CNVRHISwapChainDXGI* swapChain = PPNew CNVRHISwapChainDXGI(this, windowInfo, swapChainTexture);
 
 	m_swapChains.append(swapChain);
 	return swapChain;
 }
 
-void CNVRHIRenderLib::DestroySwapChain(ISwapChain* swapChain)
+void CNVRHIRenderLibD3D12::DestroySwapChain(ISwapChain* swapChain)
 {
-	if (m_swapChains.fastRemove(static_cast<CNVRHISwapChain*>(swapChain)))
+	if (m_swapChains.fastRemove(static_cast<CNVRHISwapChainDXGI*>(swapChain)))
 		delete swapChain;
 }
 
-void CNVRHIRenderLib::SetVSync(bool enable)
+void CNVRHIRenderLibD3D12::SetVSync(bool enable)
 {
 	m_swapChains[0]->SetVSync(enable);
 }
 
-void CNVRHIRenderLib::SetBackbufferSize(const int w, const int h)
+void CNVRHIRenderLibD3D12::SetBackbufferSize(const int w, const int h)
 {
 	int oldW, oldH;
 	m_swapChains[0]->GetBackbufferSize(oldW, oldH);
@@ -448,7 +330,7 @@ void CNVRHIRenderLib::SetBackbufferSize(const int w, const int h)
 }
 
 // changes fullscreen mode
-bool CNVRHIRenderLib::SetWindowed(bool enabled)
+bool CNVRHIRenderLibD3D12::SetWindowed(bool enabled)
 {
 	// FIXME: currently switching to exclusive fullscreen will guarantee device lost
 	// need to handle it somehow...
@@ -457,12 +339,12 @@ bool CNVRHIRenderLib::SetWindowed(bool enabled)
 }
 
 // speaks for itself
-bool CNVRHIRenderLib::IsWindowed() const
+bool CNVRHIRenderLibD3D12::IsWindowed() const
 {
 	return m_windowed;
 }
 
-bool CNVRHIRenderLib::CaptureScreenshot(CImage &img)
+bool CNVRHIRenderLibD3D12::CaptureScreenshot(CImage &img)
 {
 	ITexturePtr currentTexture = m_currentSwapChain->GetBackbuffer();
 
@@ -519,7 +401,7 @@ bool CNVRHIRenderLib::CaptureScreenshot(CImage &img)
 	return true;
 }
 
-bool CNVRHIRenderLib::IsMainThread(uintptr_t threadId) const
+bool CNVRHIRenderLibD3D12::IsMainThread(uintptr_t threadId) const
 {
 	return g_renderWorker.GetThreadID() == threadId; // always run in separate thread
 }

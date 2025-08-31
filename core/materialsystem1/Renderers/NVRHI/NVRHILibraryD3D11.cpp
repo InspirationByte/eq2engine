@@ -22,10 +22,6 @@
 #include "NVRHISwapChainDXGI.h"
 #include "NVRHIRenderAPI.h"
 
-DECLARE_CVAR(wgpu_report_errors, "0", nullptr, 0);
-DECLARE_CVAR(wgpu_break_on_error, "0", nullptr, 0);
-DECLARE_CVAR(wgpu_backend, "", "Specifies which WebGPU backend is going to be used", CV_ARCHIVE);
-
 static const char* s_wgpuErrorTypesStr[] = {
 	"(null)"
 	"NoError",
@@ -80,17 +76,17 @@ static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapt
 	}
 }
 
-CNVRHIRenderLib::CNVRHIRenderLib()
+CNVRHIRenderLibD3D11::CNVRHIRenderLibD3D11()
 {
 	m_windowed = true;
 	m_endFrameWait.Raise();
 }
 
-CNVRHIRenderLib::~CNVRHIRenderLib()
+CNVRHIRenderLibD3D11::~CNVRHIRenderLibD3D11()
 {
 }
 
-bool CNVRHIRenderLib::InitCaps()
+bool CNVRHIRenderLibD3D11::InitCaps()
 {
 	m_mainThreadId = Threading::GetCurrentThreadID();
 
@@ -104,7 +100,7 @@ bool CNVRHIRenderLib::InitCaps()
 	return true;
 }
 
-IShaderAPI* CNVRHIRenderLib::GetRenderer() const
+IShaderAPI* CNVRHIRenderLibD3D11::GetRenderer() const
 {
 	return &CNVRHIRenderAPI::Instance;
 }
@@ -175,7 +171,7 @@ static void wgpuStoreCacheDataFunction(void const* key, size_t keySize, void con
 	file->Write(value, 1, valueSize);
 }
 
-bool CNVRHIRenderLib::InitAPI(const ShaderAPIParams& params)
+bool CNVRHIRenderLibD3D11::InitAPI(const ShaderAPIParams& params)
 {
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;
@@ -353,7 +349,7 @@ bool CNVRHIRenderLib::InitAPI(const ShaderAPIParams& params)
 	return true;
 }
 
-void CNVRHIRenderLib::ExitAPI()
+void CNVRHIRenderLibD3D11::ExitAPI()
 {
 	m_endFrameWait.Wait(500);
 	g_renderWorker.Shutdown();
@@ -380,7 +376,7 @@ void CNVRHIRenderLib::ExitAPI()
 	m_deviceQueue = nullptr;
 }
 
-void CNVRHIRenderLib::BeginFrame(ISwapChain* swapChain)
+void CNVRHIRenderLibD3D11::BeginFrame(ISwapChain* swapChain)
 {
 	m_endFrameWait.Wait();
 
@@ -395,7 +391,7 @@ void CNVRHIRenderLib::BeginFrame(ISwapChain* swapChain)
 	});
 }
 
-void CNVRHIRenderLib::EndFrame()
+void CNVRHIRenderLibD3D11::EndFrame()
 {
 	g_renderWorker.Execute(__func__, [this]() {
 		m_currentSwapChain->SwapBuffers();
@@ -404,12 +400,12 @@ void CNVRHIRenderLib::EndFrame()
 	});
 }
 
-ITexturePtr	CNVRHIRenderLib::GetCurrentBackbuffer() const
+ITexturePtr	CNVRHIRenderLibD3D11::GetCurrentBackbuffer() const
 {
 	return m_currentSwapChain->GetBackbuffer();
 }
 
-ISwapChain* CNVRHIRenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
+ISwapChain* CNVRHIRenderLibD3D11::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	bool justCreated = false;
 
@@ -425,18 +421,18 @@ ISwapChain* CNVRHIRenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
 	return swapChain;
 }
 
-void CNVRHIRenderLib::DestroySwapChain(ISwapChain* swapChain)
+void CNVRHIRenderLibD3D11::DestroySwapChain(ISwapChain* swapChain)
 {
 	if (m_swapChains.fastRemove(static_cast<CNVRHISwapChain*>(swapChain)))
 		delete swapChain;
 }
 
-void CNVRHIRenderLib::SetVSync(bool enable)
+void CNVRHIRenderLibD3D11::SetVSync(bool enable)
 {
 	m_swapChains[0]->SetVSync(enable);
 }
 
-void CNVRHIRenderLib::SetBackbufferSize(const int w, const int h)
+void CNVRHIRenderLibD3D11::SetBackbufferSize(const int w, const int h)
 {
 	int oldW, oldH;
 	m_swapChains[0]->GetBackbufferSize(oldW, oldH);
@@ -448,7 +444,7 @@ void CNVRHIRenderLib::SetBackbufferSize(const int w, const int h)
 }
 
 // changes fullscreen mode
-bool CNVRHIRenderLib::SetWindowed(bool enabled)
+bool CNVRHIRenderLibD3D11::SetWindowed(bool enabled)
 {
 	// FIXME: currently switching to exclusive fullscreen will guarantee device lost
 	// need to handle it somehow...
@@ -457,12 +453,12 @@ bool CNVRHIRenderLib::SetWindowed(bool enabled)
 }
 
 // speaks for itself
-bool CNVRHIRenderLib::IsWindowed() const
+bool CNVRHIRenderLibD3D11::IsWindowed() const
 {
 	return m_windowed;
 }
 
-bool CNVRHIRenderLib::CaptureScreenshot(CImage &img)
+bool CNVRHIRenderLibD3D11::CaptureScreenshot(CImage &img)
 {
 	ITexturePtr currentTexture = m_currentSwapChain->GetBackbuffer();
 
@@ -519,7 +515,7 @@ bool CNVRHIRenderLib::CaptureScreenshot(CImage &img)
 	return true;
 }
 
-bool CNVRHIRenderLib::IsMainThread(uintptr_t threadId) const
+bool CNVRHIRenderLibD3D11::IsMainThread(uintptr_t threadId) const
 {
 	return g_renderWorker.GetThreadID() == threadId; // always run in separate thread
 }

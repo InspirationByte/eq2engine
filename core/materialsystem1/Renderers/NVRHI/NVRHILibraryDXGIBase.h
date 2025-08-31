@@ -2,24 +2,22 @@
 // Copyright (C) Inspiration Byte
 // 2009-2024
 //////////////////////////////////////////////////////////////////////////////////
-// Description: NVRHI renderer
+// Description: NVRHI renderer (base for D3D11 & D3D12)
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 #include <nvrhi/nvrhi.h>
 #include "../IRenderLibrary.h"
-#include "../RenderWorker.h"
 
-class CNVRHISwapChainVK;
+class CNVRHISwapChainDXGI;
 
-class CNVRHIRenderLibVK
+class CNVRHIRenderLibDXGIBase
 	: public IRenderLibrary
-	, public RenderWorkerHandler
 {
-	friend class CNVRHISwapChainVK;
+	friend class CNVRHISwapChainDXGI;
 public:
-	CNVRHIRenderLibVK();
-	~CNVRHIRenderLibVK();
+	CNVRHIRenderLibDXGIBase();
+	~CNVRHIRenderLibDXGIBase();
 
 	bool			InitCaps();
 
@@ -45,24 +43,11 @@ public:
 	void			DestroySwapChain(ISwapChain* swapChain);
 protected:
 
-	const char*		GetAsyncThreadName() const { return "EqRenderThread"; }
-	void			BeginAsyncOperation(uintptr_t threadId) {}
-	void			EndAsyncOperation() {}
-	bool			IsMainThread(uintptr_t threadId) const;
-
-	uintptr_t					m_mainThreadId{ 0 };
-	WGPUInstance				m_instance{ nullptr };
-
-	WGPUBackendType				m_rhiBackendType{ WGPUBackendType_Null };
-	WGPUAdapter					m_rhiAdapter{ nullptr };
-	WGPUDevice					m_rhiDevice{ nullptr };
-	WGPUQueue					m_deviceQueue{ nullptr };
-
 	Threading::CEqSignal		m_endFrameWait;
 
-	Array<CNVRHISwapChainVK*>	m_swapChains{ PP_SL };
+	Array<CNVRHISwapChainDXGI*>	m_swapChains{ PP_SL };
 	int							m_swapChainCounter{ 0 };
-	CNVRHISwapChainVK*			m_currentSwapChain{ nullptr };
+	CNVRHISwapChainDXGI*		m_currentSwapChain{ nullptr };
 	bool						m_windowed{ false };
 };
 

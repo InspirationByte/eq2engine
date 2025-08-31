@@ -2,19 +2,22 @@
 // Copyright (C) Inspiration Byte
 // 2009-2024
 //////////////////////////////////////////////////////////////////////////////////
-// Description: NVRHI renderer
+// Description: NVRHI renderer D3D12
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 #include <nvrhi/nvrhi.h>
+#include <nvrhi/d3d12.h>
 #include "../IRenderLibrary.h"
 #include "../RenderWorker.h"
+#include "NVRHILibraryDXGIBase.h"
 
-class CNVRHISwapChainDXGI;
+using nvrhi::RefCountPtr;
 
-class CNVRHIRenderLibD3D12 : public IRenderLibrary, public RenderWorkerHandler
+class CNVRHIRenderLibD3D12
+	: public CNVRHIRenderLibDXGIBase
+	, public RenderWorkerHandler		// might be not needed
 {
-	friend class CNVRHISwapChain;
 public:
 	CNVRHIRenderLibD3D12();
 	~CNVRHIRenderLibD3D12();
@@ -49,18 +52,9 @@ protected:
 	bool			IsMainThread(uintptr_t threadId) const;
 
 	uintptr_t				m_mainThreadId{ 0 };
-	WGPUInstance			m_instance{ nullptr };
-
-	WGPUBackendType			m_rhiBackendType{ WGPUBackendType_Null };
-	WGPUAdapter				m_rhiAdapter{ nullptr };
-	WGPUDevice				m_rhiDevice{ nullptr };
-	WGPUQueue				m_deviceQueue{ nullptr };
-
-	Threading::CEqSignal	m_endFrameWait;
-
-	Array<CNVRHISwapChain*>	m_swapChains{ PP_SL };
-	int						m_swapChainCounter{ 0 };
-	CNVRHISwapChain*		m_currentSwapChain{ nullptr };
-	bool					m_windowed{ false };
+	RefCountPtr<ID3D12Device>		m_rhiDevice12;
+	RefCountPtr<ID3D12CommandQueue>	m_rhiGraphicsQueue;
+	RefCountPtr<ID3D12CommandQueue>	m_rhiComputeQueue;
+	RefCountPtr<ID3D12CommandQueue>	m_rhiCopyQueue;
 };
 
