@@ -75,8 +75,7 @@ public:
 	void						SetDeviceBackbufferSize(int wide, int tall);
 	void						SetDeviceFocused(bool inFocus);
 
-	ISwapChain*					CreateSwapChain(const RenderWindowInfo& windowInfo);
-	void						DestroySwapChain(ISwapChain* chain);
+	ISwapChainPtr				CreateSwapChain(const RenderWindowInfo& windowInfo);
 
 	bool						SetWindowed(bool enable);
 	bool						IsWindowed() const;

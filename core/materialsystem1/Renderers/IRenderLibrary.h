@@ -9,6 +9,8 @@
 #include "core/InterfaceManager.h"
 
 class ISwapChain;
+using ISwapChainPtr = CRefPtr<ISwapChain>;
+
 class IShaderAPI;
 class CImage;
 class IRenderLibrary;
@@ -56,6 +58,5 @@ public:
 
 	virtual	bool			CaptureScreenshot(CImage &img) = 0;
 
-	virtual ISwapChain*		CreateSwapChain(const RenderWindowInfo& windowInfo) = 0;
-	virtual void			DestroySwapChain(ISwapChain* swapChain) = 0;
+	virtual ISwapChainPtr	CreateSwapChain(const RenderWindowInfo& windowInfo) = 0;
 };

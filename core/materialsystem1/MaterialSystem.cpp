@@ -1270,18 +1270,12 @@ void CMaterialSystem::SetDeviceFocused(bool inFocus)
 	m_renderLibrary->SetFocused(inFocus);
 }
 
-ISwapChain* CMaterialSystem::CreateSwapChain(const RenderWindowInfo& windowInfo)
+ISwapChainPtr CMaterialSystem::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	if (!m_renderLibrary)
 		return nullptr;
 
 	return m_renderLibrary->CreateSwapChain(windowInfo);
-}
-
-void CMaterialSystem::DestroySwapChain(ISwapChain* swapChain)
-{
-	if(m_renderLibrary)
-		m_renderLibrary->DestroySwapChain(swapChain);
 }
 
 // fullscreen mode changing

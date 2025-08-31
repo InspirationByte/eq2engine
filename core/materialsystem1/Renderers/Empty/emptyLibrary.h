@@ -22,13 +22,13 @@ public:
 	void			ExitAPI();
 
 	void			BeginFrame(ISwapChain* swapChain = nullptr);
-	void			EndFrame();
+	void			EndFrame() {}
 	ITexturePtr		GetCurrentBackbuffer() const;
 
 	IShaderAPI*		GetRenderer() const;
 
 	void			SetVSync(bool enable) {}
-	void			SetBackbufferSize(int w, int h);
+	void			SetBackbufferSize(int w, int h) {}
 	void			SetFocused(bool inFocus) {}
 
 	bool			SetWindowed(bool enabled);
@@ -36,15 +36,14 @@ public:
 
 	bool			CaptureScreenshot(CImage &img);
 
-	ISwapChain*		CreateSwapChain(const RenderWindowInfo& windowInfo);
-	void			DestroySwapChain(ISwapChain* swapChain);
+	ISwapChainPtr	CreateSwapChain(const RenderWindowInfo& windowInfo);
 
 protected:
 	EQWNDHANDLE		hwnd;
 
 	int				m_swapChainCounter{ 0 };
-	ISwapChain*		m_currentSwapChain{ nullptr };
-	Array<CEmptySwapChain*>	m_swapChains{ PP_SL };
+	ISwapChainPtr	m_currentSwapChain;
+	ISwapChainPtr	m_defaultSwapChain;
 
 	int				width, height;
 	bool			bHasWireframeRendering;

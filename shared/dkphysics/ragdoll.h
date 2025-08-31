@@ -43,7 +43,7 @@ public:
 	void				Translate(const Vector3D &move);
 	void				ResetVelocities();
 
-	const Matrix4x4&	GetJointTransformA(int idx) const;
+	Matrix4x4			GetJointTransformA(int idx) const;
 	int					GetBoneIdx(int jointIdx) const;
 	int					GetJointIdx(int boneIdx) const;
 
