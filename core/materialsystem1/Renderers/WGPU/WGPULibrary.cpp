@@ -362,8 +362,8 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		return 0;
 	}, jobQueueSize);
 
-	// create default swap chain
-	m_currentSwapChain = static_cast<CWGPUSwapChain*>(CreateSwapChain(params.windowInfo));
+	m_defaultSwapChain = CRefPtr<CWGPUSwapChain>(static_cast<CWGPUSwapChain*>(CreateSwapChain(params.windowInfo).Ptr()));
+	m_currentSwapChain = m_defaultSwapChain;
 
 	CWGPURenderAPI::Instance.m_rhiInstance = m_instance;
 	CWGPURenderAPI::Instance.m_rhiDevice = m_rhiDevice;
@@ -377,10 +377,7 @@ void CWGPURenderLib::ExitAPI()
 	m_endFrameWait.Wait(500);
 	g_renderWorker.Shutdown();
 
-	for (CWGPUSwapChain* swapChain : m_swapChains)
-		delete swapChain;
-
-	m_swapChains.clear();
+	m_defaultSwapChain = nullptr;
 	m_currentSwapChain = nullptr;
 
 	m_rhiBackendType = WGPUBackendType_Null;
@@ -404,7 +401,7 @@ void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 	m_endFrameWait.Wait();
 
 	CWGPURenderAPI::Instance.m_deviceLost = false;
-	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
+	m_currentSwapChain.Assign(swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_defaultSwapChain);
 
 	// must obtain valid texture view upon Present
 	g_renderWorker.WaitForExecute(__func__, [this]() {
@@ -428,7 +425,7 @@ ITexturePtr	CWGPURenderLib::GetCurrentBackbuffer() const
 	return m_currentSwapChain->GetBackbuffer();
 }
 
-ISwapChain* CWGPURenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
+ISwapChainPtr CWGPURenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	bool justCreated = false;
 
@@ -438,32 +435,23 @@ ISwapChain* CWGPURenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
 
 	ASSERT_MSG(justCreated, "%s texture already has been created", texName.ToCString());
 
-	CWGPUSwapChain* swapChain = PPNew CWGPUSwapChain(this, windowInfo, swapChainTexture);
-
-	m_swapChains.append(swapChain);
-	return swapChain;
-}
-
-void CWGPURenderLib::DestroySwapChain(ISwapChain* swapChain)
-{
-	if (m_swapChains.fastRemove(static_cast<CWGPUSwapChain*>(swapChain)))
-		delete swapChain;
+	return ISwapChainPtr(CRefPtr_new(CWGPUSwapChain, this, windowInfo, swapChainTexture));
 }
 
 void CWGPURenderLib::SetVSync(bool enable)
 {
-	m_swapChains[0]->SetVSync(enable);
+	m_defaultSwapChain->SetVSync(enable);
 }
 
 void CWGPURenderLib::SetBackbufferSize(const int w, const int h)
 {
 	int oldW, oldH;
-	m_swapChains[0]->GetBackbufferSize(oldW, oldH);
+	m_defaultSwapChain->GetBackbufferSize(oldW, oldH);
 
 	if(w != oldW || h != oldH)
 		CWGPURenderAPI::Instance.m_deviceLost = true;
 
-	m_swapChains[0]->SetBackbufferSize(w, h);
+	m_defaultSwapChain->SetBackbufferSize(w, h);
 }
 
 // changes fullscreen mode

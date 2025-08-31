@@ -12,7 +12,7 @@ struct RenderWindowInfo;
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 
-class ISwapChain
+class ISwapChain : public RefCountedObject<ISwapChain>
 {
 public:
 	virtual ~ISwapChain() = default;
@@ -26,3 +26,4 @@ public:
 	virtual bool		SetBackbufferSize(int wide, int tall) = 0;
 };
 
+using ISwapChainPtr = CRefPtr<ISwapChain>;

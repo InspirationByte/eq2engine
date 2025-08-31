@@ -12,7 +12,9 @@
 
 class CWGPUSwapChain;
 
-class CWGPURenderLib : public IRenderLibrary, public RenderWorkerHandler
+class CWGPURenderLib
+	: public IRenderLibrary
+	, public RenderWorkerHandler
 {
 	friend class CWGPUSwapChain;
 public:
@@ -39,8 +41,8 @@ public:
 
 	bool			CaptureScreenshot(CImage &img);
 
-	ISwapChain*		CreateSwapChain(const RenderWindowInfo& windowInfo);
-	void			DestroySwapChain(ISwapChain* swapChain);
+	ISwapChainPtr	CreateSwapChain(const RenderWindowInfo& windowInfo);
+
 protected:
 
 	const char*		GetAsyncThreadName() const { return "EqRenderThread"; }
@@ -58,9 +60,9 @@ protected:
 
 	Threading::CEqSignal	m_endFrameWait;
 
-	Array<CWGPUSwapChain*>	m_swapChains{ PP_SL };
+	CRefPtr<CWGPUSwapChain>	m_defaultSwapChain;
+	CRefPtr<CWGPUSwapChain>	m_currentSwapChain;
 	int						m_swapChainCounter{ 0 };
-	CWGPUSwapChain*			m_currentSwapChain{ nullptr };
 	bool					m_windowed{ false };
 };
 

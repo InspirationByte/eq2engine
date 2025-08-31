@@ -24,22 +24,9 @@ class CEmptySwapChain : public ISwapChain
 public:
 	void		SetVSync(bool enable) {}
 	void*		GetWindow()  const { return nullptr; }
-	
-	ITexturePtr	GetBackbuffer() const 
-	{
-		return m_backbuffer;
-	}
-
-	void		GetBackbufferSize(int& wide, int& tall) const
-	{
-		wide = 800;
-		tall = 600;
-	}
-
-	bool		SetBackbufferSize(int wide, int tall)
-	{
-		return true;
-	}
+	ITexturePtr	GetBackbuffer() const { return m_backbuffer; }
+	void		GetBackbufferSize(int& wide, int& tall) const { wide = 800; tall = 600; }
+	bool		SetBackbufferSize(int wide, int tall) { return true; }
 
 	ITexturePtr	m_backbuffer;
 };
@@ -71,7 +58,7 @@ IShaderAPI* CEmptyRenderLib::GetRenderer() const
 
 bool CEmptyRenderLib::InitAPI( const ShaderAPIParams &params)
 {
-	CreateSwapChain({});
+	m_defaultSwapChain = CreateSwapChain({});
 
 	s_renderApi.Init(params);
 	return true;
@@ -79,23 +66,12 @@ bool CEmptyRenderLib::InitAPI( const ShaderAPIParams &params)
 
 void CEmptyRenderLib::ExitAPI()
 {
-	for(CEmptySwapChain* swapChain : m_swapChains)
-		delete swapChain;
-	m_swapChains.clear();
+	m_currentSwapChain = nullptr;
 }
 
 void CEmptyRenderLib::BeginFrame(ISwapChain* swapChain)
 {
-	m_currentSwapChain = swapChain ? swapChain : m_swapChains.front();
-}
-
-void CEmptyRenderLib::EndFrame()
-{
-}
-
-void CEmptyRenderLib::SetBackbufferSize(const int w, const int h)
-{
-
+	m_currentSwapChain.Assign(swapChain ? swapChain : m_defaultSwapChain);
 }
 
 // changes fullscreen mode
@@ -121,7 +97,7 @@ ITexturePtr CEmptyRenderLib::GetCurrentBackbuffer() const
 	return m_currentSwapChain->GetBackbuffer();
 }
 
-ISwapChain*	CEmptyRenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
+ISwapChainPtr CEmptyRenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	bool justCreated = false;
 
@@ -131,18 +107,8 @@ ISwapChain*	CEmptyRenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
 
 	ASSERT_MSG(justCreated, "%s texture already has been created", texName.ToCString());
 
-	CEmptySwapChain* swapChain = PPNew CEmptySwapChain();
+	CRefPtr<CEmptySwapChain> swapChain = CRefPtr_new(CEmptySwapChain);
 	swapChain->m_backbuffer = swapChainTexture;
 
-	m_swapChains.append(swapChain);
-
-	return swapChain;
-}
-
-void CEmptyRenderLib::DestroySwapChain(ISwapChain* swapChain)
-{
-	if(m_swapChains.remove(static_cast<CEmptySwapChain*>(swapChain)))
-	{
-		SAFE_DELETE(swapChain);
-	}	
+	return ISwapChainPtr(swapChain);
 }
