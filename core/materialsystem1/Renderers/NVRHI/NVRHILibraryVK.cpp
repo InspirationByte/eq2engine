@@ -18,9 +18,9 @@
 #include "imaging/ImageLoader.h"
 
 #include "NVRHIBackend.h"
-#include "NVRHILibrary.h"
+#include "NVRHILibraryVK.h"
+#include "NVRHISwapChainVK.h"
 #include "NVRHIRenderAPI.h"
-#include "NVRHISwapChain.h"
 
 DECLARE_CVAR(wgpu_report_errors, "0", nullptr, 0);
 DECLARE_CVAR(wgpu_break_on_error, "0", nullptr, 0);

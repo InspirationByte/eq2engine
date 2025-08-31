@@ -11,15 +11,15 @@
 #include "renderers/ShaderAPI_defs.h"
 #include "NVRHITexture.h"
 
-class CNVRHIRenderLib;
+class CNVRHIRenderLibVK;
 
-class CNVRHISwapChain : public ISwapChain
+class CNVRHISwapChainVK : public ISwapChain
 {
 public:
 	friend class CNVRHIRenderLib;
 
-	~CNVRHISwapChain();
-	CNVRHISwapChain(CNVRHIRenderLib* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture);
+	~CNVRHISwapChainVK();
+	CNVRHISwapChainVK(CNVRHIRenderLib* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture);
 
 	void			SetVSync(bool enable);
 

@@ -14,14 +14,24 @@
 
 #include "Empty/emptyLibrary.h"
 static CEmptyRenderLib  s_EmptyRenderLib;
+
 #elif RENDERER_TYPE == RHI_NVRHI
 
-#include "NVRHI/NVRHILibrary.h"
-static CWGPURenderLib  s_NVRHIRenderLib;
+#ifdef _WIN32
+#include "NVRHI/NVRHILibraryD3D11.h"
+#include "NVRHI/NVRHILibraryD3D12.h"
+static CNVRHIRenderLibD3D11  s_NVRHIRenderLibD3D11;
+static CNVRHIRenderLibD3D12  s_NVRHIRenderLibD3D12;
+#endif
+
+#include "NVRHI/NVRHILibraryVK.h"
+static CNVRHIRenderLibVK	s_NVRHIRenderLibVK;
+
 #elif RENDERER_TYPE == RHI_WGPU
 
 #include "WGPU/WGPULibrary.h"
 static CWGPURenderLib  s_WGPURenderLib;
+
 #endif
 
 static CEqRenderManager g_renderManager;
@@ -43,7 +53,7 @@ IRenderLibrary* CEqRenderManager::CreateRenderer(const ShaderAPIParams& params) 
 	s_currentRenderLib = &s_EmptyRenderLib;
 	return s_currentRenderLib;
 #elif RENDERER_TYPE == RHI_NVRHI
-	s_currentRenderLib = &s_NVRHIRenderLib;
+	s_currentRenderLib = &s_NVRHIRenderLibD3D11;
 	return s_currentRenderLib;
 #elif RENDERER_TYPE == RHI_WGPU
 	s_currentRenderLib = &s_WGPURenderLib;

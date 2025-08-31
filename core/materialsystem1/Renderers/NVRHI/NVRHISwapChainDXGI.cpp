@@ -7,8 +7,8 @@
 
 #include "core/core_common.h"
 #include "NVRHIBackend.h"
-#include "NVRHISwapChain.h"
-#include "NVRHILibrary.h"
+#include "NVRHISwapChainDXGI.h"
+#include "NVRHILibraryD3D11.h"
 #include "NVRHIRenderDefs.h"
 
 constexpr int TOGGLE_BIT = 0x80000000;

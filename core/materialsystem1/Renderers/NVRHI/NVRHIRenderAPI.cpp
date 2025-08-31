@@ -1041,6 +1041,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString());
 	
+#if 0
 	{
 		PROF_EVENT(EqString::Format("CreateRenderPipeline for %s", pipelineName.ToCString()));
 		nvrhi::GraphicsPipelineHandle rhiRenderPipeline = m_rhiDevice->createGraphicsPipeline(rhiGraphicsPipelineDesc, rhiFramebufferInfo);
@@ -1057,6 +1058,9 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 
 		return IGPURenderPipelinePtr(renderPipeline);
 	}
+#endif
+	ASSERT_FAIL("createGraphicsPipeline must be in CommitGraphicsState");
+	return nullptr;
 }
 
 IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout) const

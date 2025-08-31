@@ -10,14 +10,14 @@
 #include "../IRenderLibrary.h"
 #include "../RenderWorker.h"
 
-class CNVRHISwapChain;
+class CNVRHISwapChainDXGI;
 
-class CNVRHIRenderLib : public IRenderLibrary, public RenderWorkerHandler
+class CNVRHIRenderLibD3D12 : public IRenderLibrary, public RenderWorkerHandler
 {
 	friend class CNVRHISwapChain;
 public:
-	CNVRHIRenderLib();
-	~CNVRHIRenderLib();
+	CNVRHIRenderLibD3D12();
+	~CNVRHIRenderLibD3D12();
 
 	bool			InitCaps();
 
