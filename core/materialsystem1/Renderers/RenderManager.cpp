@@ -2,6 +2,7 @@
 #include "core/core_common.h"
 #include "core/IDkCore.h"
 #include "core/ICommandLine.h"
+#include "core/ConVar.h"
 
 #include "RenderManager.h"
 #include "renderers/IShaderAPI.h"
@@ -16,6 +17,8 @@
 static CEmptyRenderLib  s_EmptyRenderLib;
 
 #elif RENDERER_TYPE == RHI_NVRHI
+
+DECLARE_CVAR(r_backend, "d3d11", "Rendering backend to use", CV_ARCHIVE);
 
 #ifdef _WIN32
 #include "NVRHI/NVRHILibraryD3D11.h"
@@ -50,14 +53,24 @@ CEqRenderManager::~CEqRenderManager()
 IRenderLibrary* CEqRenderManager::CreateRenderer(const ShaderAPIParams& params) const
 {
 #if RENDERER_TYPE == RHI_NULL
+
 	s_currentRenderLib = &s_EmptyRenderLib;
-	return s_currentRenderLib;
+
 #elif RENDERER_TYPE == RHI_NVRHI
-	s_currentRenderLib = &s_NVRHIRenderLibD3D11;
-	return s_currentRenderLib;
+
+	EqStringRef backendName = r_backend.GetString();
+
+	if (backendName.CompareCaseIns("D3D11"))
+		s_currentRenderLib = &s_NVRHIRenderLibD3D11;
+	else if (backendName.CompareCaseIns("D3D12"))
+		s_currentRenderLib = &s_NVRHIRenderLibD3D12;
+	else if (backendName.CompareCaseIns("Vulkan"))
+		s_currentRenderLib = &s_NVRHIRenderLibVK;
+
 #elif RENDERER_TYPE == RHI_WGPU
+
 	s_currentRenderLib = &s_WGPURenderLib;
-	return s_currentRenderLib;
+
 #endif
 	return s_currentRenderLib;
 }
