@@ -234,7 +234,7 @@ void CPhysRagdollData::ResetVelocities()
 	});
 }
 
-const Matrix4x4& CPhysRagdollData::GetJointTransformA(int idx) const
+Matrix4x4 CPhysRagdollData::GetJointTransformA(int idx) const
 {
 	return m_physJoints[idx]->GetFrameTransformA();
 }
