@@ -7,9 +7,13 @@
 
 #pragma once
 #include <nvrhi/nvrhi.h>
+#include <dxgi1_4.h>
+#include "NVRHISwapChainDXGI.h"
 #include "../IRenderLibrary.h"
 
 class CNVRHISwapChainDXGI;
+struct IDXGIAdapter;
+using nvrhi::RefCountPtr;
 
 class CNVRHIRenderLibDXGIBase
 	: public IRenderLibrary
@@ -17,15 +21,13 @@ class CNVRHIRenderLibDXGIBase
 	friend class CNVRHISwapChainDXGI;
 public:
 	CNVRHIRenderLibDXGIBase();
-	~CNVRHIRenderLibDXGIBase();
 
-	bool			InitCaps();
-
-	bool			InitAPI(const ShaderAPIParams& params);
 	void			ExitAPI();
 
 	void			BeginFrame(ISwapChain* swapChain = nullptr);
 	void			EndFrame();
+
+	IShaderAPI*		GetRenderer() const;
 	ITexturePtr		GetCurrentBackbuffer() const;
 
 	void			SetVSync(bool enable);
@@ -40,11 +42,16 @@ public:
 	ISwapChainPtr	CreateSwapChain(const RenderWindowInfo& windowInfo);
 protected:
 
-	Threading::CEqSignal		m_endFrameWait;
+	// Find an adapter whose name contains the given string.
+	static RefCountPtr<IDXGIAdapter> FindAdapter(const wchar_t* targetName);
 
-	Array<CNVRHISwapChainDXGI*>	m_swapChains{ PP_SL };
-	int							m_swapChainCounter{ 0 };
-	CNVRHISwapChainDXGI*		m_currentSwapChain{ nullptr };
-	bool						m_windowed{ false };
+	RefCountPtr<IDXGIAdapter3>		m_rhiDxgiAdapter;
+	
+	Threading::CEqSignal			m_endFrameWait;
+
+	int								m_swapChainCounter{ 0 };
+	CRefPtr<CNVRHISwapChainDXGI>	m_currentSwapChain;
+	CRefPtr<CNVRHISwapChainDXGI>	m_defaultSwapChain;
+	bool							m_windowed{ true };
 };
 

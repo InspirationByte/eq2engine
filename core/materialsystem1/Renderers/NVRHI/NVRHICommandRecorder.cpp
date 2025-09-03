@@ -121,45 +121,6 @@ void CNVRHICommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, 
 	}
 }
 
-void CNVRHICommandRecorder::CopyTextureToBuffer(const TextureCopyInfo& source, const IGPUBuffer* destination, const TextureExtent& copySize) const
-{
-	ASSERT_FAIL("Unimplemented");
-	/*
-	ASSERT(source.origin.x >= 0 && source.origin.y >= 0 && source.origin.arraySlice >= 0);
-	CWGPUTexture* srcTexture = static_cast<CWGPUTexture*>(source.texture);
-	const CWGPUBuffer* dstBufferImpl = static_cast<const CWGPUBuffer*>(destination);
-
-	if (!srcTexture)
-		return;
-
-	if (!dstBufferImpl)
-		return;
-
-	ASSERT_MSG(dstBufferImpl->GetUsageFlags() & BUFFERUSAGE_COPY_DST, "buffer doesn't have Copy_Dst usage bit");
-
-	WGPUImageCopyTexture rhiImageSrc{};
-	rhiImageSrc.texture = srcTexture->GetWGPUTexture();
-	rhiImageSrc.aspect = WGPUTextureAspect_All;			// TODO: Aspect specification
-	rhiImageSrc.mipLevel = source.origin.mipLevel;
-	rhiImageSrc.origin = WGPUOrigin3D{ (uint)source.origin.x, (uint)source.origin.y, (uint)source.origin.arraySlice };
-
-	WGPUExtent3D rhiCopySize;
-	rhiCopySize.depthOrArrayLayers = copySize.arraySize;
-	rhiCopySize.width = copySize.width;
-	rhiCopySize.height = copySize.height;
-	
-	// TODO: account arraySize in bytesPerRow
-	ASSERT_MSG(copySize.arraySize == 1, "array size > 1 is unsupported yet");
-	WGPUImageCopyBuffer rhiBufferDst;
-	rhiBufferDst.buffer = dstBufferImpl->GetWGPUBuffer();
-	rhiBufferDst.layout.offset = 0;
-	rhiBufferDst.layout.bytesPerRow = copySize.width * GetBytesPerPixel(srcTexture->GetFormat());
-	rhiBufferDst.layout.rowsPerImage = rhiBufferDst.layout.bytesPerRow * copySize.height;
-
-	wgpuCommandEncoderCopyTextureToBuffer(m_rhiCommandEncoder, &rhiImageSrc, &rhiBufferDst, &rhiCopySize);
-	*/
-}
-
 void CNVRHICommandRecorder::DbgPopGroup() const
 {
 	m_rhiCommandList->endMarker();

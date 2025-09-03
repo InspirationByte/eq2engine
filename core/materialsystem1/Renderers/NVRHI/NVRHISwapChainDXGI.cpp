@@ -8,12 +8,11 @@
 #include "core/core_common.h"
 #include "NVRHIBackend.h"
 #include "NVRHISwapChainDXGI.h"
-#include "NVRHILibraryD3D11.h"
 #include "NVRHIRenderDefs.h"
 
 constexpr int TOGGLE_BIT = 0x80000000;
 
-CNVRHISwapChainDXGI::CNVRHISwapChainDXGI(CNVRHIRenderLib* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture)
+CNVRHISwapChainDXGI::CNVRHISwapChainDXGI(CNVRHIRenderLibDXGIBase* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture)
 	: m_host(host)
 	, m_winInfo(windowInfo)
 {
@@ -22,8 +21,8 @@ CNVRHISwapChainDXGI::CNVRHISwapChainDXGI(CNVRHIRenderLib* host, const RenderWind
 
 CNVRHISwapChainDXGI::~CNVRHISwapChainDXGI()
 {
-	if(m_surface)
-		NVRHISurfaceRelease(m_surface);
+	//if(m_surface)
+	//	NVRHISurfaceRelease(m_surface);
 }
 
 void* CNVRHISwapChainDXGI::GetWindow() const
@@ -38,6 +37,7 @@ ITexturePtr CNVRHISwapChainDXGI::GetBackbuffer() const
 
 void CNVRHISwapChainDXGI::UpdateBackbufferView() const
 {
+	/*
 	WGPUSurfaceTexture rhiSurfTex{};
 	wgpuSurfaceGetCurrentTexture(m_surface, &rhiSurfTex);
 
@@ -78,6 +78,7 @@ void CNVRHISwapChainDXGI::UpdateBackbufferView() const
 			m_textureRef->m_rhiViews.setNum(1);
 		m_textureRef->m_rhiViews[0] = wgpuTextureCreateView(rhiSurfTex.texture, nullptr);
 	}
+	*/
 }
 
 void CNVRHISwapChainDXGI::GetBackbufferSize(int& wide, int& tall) const
@@ -94,6 +95,7 @@ void CNVRHISwapChainDXGI::SetVSync(bool enable)
 
 bool CNVRHISwapChainDXGI::UpdateResize()
 {
+	/*
 	if ((m_vSync & TOGGLE_BIT) == 0 && m_textureRef->GetWidth() == m_backbufferSize.x && m_textureRef->GetHeight() == m_backbufferSize.y)
 		return true;
 
@@ -192,6 +194,8 @@ bool CNVRHISwapChainDXGI::UpdateResize()
 
 	wgpuSurfaceConfigure(m_surface, &rhiSurfaceConfig);
 	return m_surface;
+	*/
+	return true;
 }
 
 bool CNVRHISwapChainDXGI::SetBackbufferSize(int wide, int tall)
@@ -202,7 +206,7 @@ bool CNVRHISwapChainDXGI::SetBackbufferSize(int wide, int tall)
 	 
 bool CNVRHISwapChainDXGI::SwapBuffers()
 {
-	if (m_surface)
-		wgpuSurfacePresent(m_surface);
+	//if (m_surface)
+	//	wgpuSurfacePresent(m_surface);
 	return true;
 }

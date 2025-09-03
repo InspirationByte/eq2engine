@@ -6,7 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include <nvrhi/vulkan.h>
 #include "renderers/ISwapChain.h"
 #include "renderers/ShaderAPI_defs.h"
 #include "NVRHITexture.h"

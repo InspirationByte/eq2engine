@@ -6,7 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include <nvrhi/nvrhi.h>
 #include <nvrhi/d3d12.h>
 #include "../IRenderLibrary.h"
 #include "../RenderWorker.h"

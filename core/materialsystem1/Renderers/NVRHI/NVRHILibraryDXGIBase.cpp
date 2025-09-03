@@ -6,6 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include <nvrhi/nvrhi.h>
+#include <dxgi.h>
+#include <dxgi1_6.h>
 
 #include "core/core_common.h"
 #include "core/IConsoleCommands.h"
@@ -18,25 +20,67 @@
 #include "imaging/ImageLoader.h"
 
 #include "NVRHIBackend.h"
-#include "NVRHILibraryD3D11.h"
-#include "NVRHISwapChainDXGI.h"
+#include "NVRHILibraryDXGIBase.h"
 #include "NVRHIRenderAPI.h"
+
+#pragma comment(lib, "dxgi.lib")
+
+DECLARE_CVAR(dxgi_adapter, "", "Graphics adapter to use", CV_ARCHIVE);
+
+RefCountPtr<IDXGIAdapter> CNVRHIRenderLibDXGIBase::FindAdapter(const wchar_t* targetName)
+{
+	RefCountPtr<IDXGIAdapter> rhiTargetAdapter;
+	RefCountPtr<IDXGIFactory1> rhiDxgiFactory;
+	HRESULT result = CreateDXGIFactory1(IID_PPV_ARGS(&rhiDxgiFactory));
+	if (result != S_OK)
+	{
+		MsgError("CreateDXGIFactory failed (%x)", result);
+		return rhiTargetAdapter;
+	}
+
+	RefCountPtr<IDXGIFactory6> rhiDxgiFactory6;
+
+	int adapterId = 0;
+	while (SUCCEEDED(result))
+	{
+		RefCountPtr<IDXGIAdapter> rhiAdapter;
+
+		// Try to use EnumAdapterByGpuPreference method to get the better performing GPU.
+		if (rhiDxgiFactory->QueryInterface(IID_PPV_ARGS(&rhiDxgiFactory6)) == S_OK)
+			result = rhiDxgiFactory6->EnumAdapterByGpuPreference(adapterId, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&rhiAdapter));
+		else
+			result = rhiDxgiFactory->EnumAdapters(adapterId, &rhiAdapter);
+
+		if (SUCCEEDED(result))
+		{
+			DXGI_ADAPTER_DESC rhiAdapterDesc;
+			rhiAdapter->GetDesc(&rhiAdapterDesc);
+
+			// If no name is specified, return the first adapater.  
+			// This is the same behaviour as the default specified for 
+			// D3D11CreateDevice when no adapter is specified.
+			if (!targetName || *targetName == 0)
+			{
+				rhiTargetAdapter = rhiAdapter;
+				break;
+			}
+
+			if (EqWStringRef(rhiAdapterDesc.Description).Find(targetName) != -1)
+			{
+				rhiTargetAdapter = rhiAdapter;
+				break;
+			}
+		}
+
+		adapterId++;
+	}
+
+	return rhiTargetAdapter;
+}
 
 CNVRHIRenderLibDXGIBase::CNVRHIRenderLibDXGIBase()
 {
-	m_windowed = true;
 	m_endFrameWait.Raise();
-}
-
-CNVRHIRenderLibDXGIBase::~CNVRHIRenderLibDXGIBase()
-{
-}
-
-bool CNVRHIRenderLibDXGIBase::InitCaps()
-{
-
-
-	return true;
 }
 
 IShaderAPI* CNVRHIRenderLibDXGIBase::GetRenderer() const
@@ -44,22 +88,11 @@ IShaderAPI* CNVRHIRenderLibDXGIBase::GetRenderer() const
 	return &CNVRHIRenderAPI::Instance;
 }
 
-bool CNVRHIRenderLibDXGIBase::InitAPI(const ShaderAPIParams& params)
-{
-
-
-	return true;
-}
-
 void CNVRHIRenderLibDXGIBase::ExitAPI()
 {
 	m_endFrameWait.Wait(500);
-	g_renderWorker.Shutdown();
 
-	for (CNVRHISwapChainDXGI* swapChain : m_swapChains)
-		delete swapChain;
-
-	m_swapChains.clear();
+	m_defaultSwapChain = nullptr;
 	m_currentSwapChain = nullptr;
 }
 
@@ -68,23 +101,23 @@ void CNVRHIRenderLibDXGIBase::BeginFrame(ISwapChain* swapChain)
 	m_endFrameWait.Wait();
 
 	CNVRHIRenderAPI::Instance.m_deviceLost = false;
-	m_currentSwapChain = swapChain ? static_cast<CNVRHISwapChainDXGI*>(swapChain) : m_swapChains[0];
+	m_currentSwapChain.Assign(swapChain ? static_cast<CNVRHISwapChainDXGI*>(swapChain) : m_defaultSwapChain);
 
 	// must obtain valid texture view upon Present
-	g_renderWorker.WaitForExecute(__func__, [this]() {
+	//g_renderWorker.WaitForExecute(__func__, [this]() {
 		m_currentSwapChain->UpdateResize();
 		m_currentSwapChain->UpdateBackbufferView();
-		return 0;
-	});
+	//	return 0;
+	//});
 }
 
 void CNVRHIRenderLibDXGIBase::EndFrame()
 {
-	g_renderWorker.Execute(__func__, [this]() {
+	//g_renderWorker.Execute(__func__, [this]() {
 		m_currentSwapChain->SwapBuffers();
 		m_endFrameWait.Raise();
-		return 0;
-	});
+	//	return 0;
+	//});
 }
 
 ITexturePtr	CNVRHIRenderLibDXGIBase::GetCurrentBackbuffer() const
@@ -102,26 +135,25 @@ ISwapChainPtr CNVRHIRenderLibDXGIBase::CreateSwapChain(const RenderWindowInfo& w
 
 	ASSERT_MSG(justCreated, "%s texture already has been created", texName.ToCString());
 
-	CNVRHISwapChainDXGI* swapChain = PPNew CNVRHISwapChainDXGI(this, windowInfo, swapChainTexture);
+	CRefPtr<CNVRHISwapChainDXGI> swapChain = CRefPtr_new(CNVRHISwapChainDXGI, this, windowInfo, swapChainTexture);
 
-	m_swapChains.append(swapChain);
-	return swapChain;
+	return ISwapChainPtr(swapChain);
 }
 
 void CNVRHIRenderLibDXGIBase::SetVSync(bool enable)
 {
-	m_swapChains[0]->SetVSync(enable);
+	m_defaultSwapChain->SetVSync(enable);
 }
 
 void CNVRHIRenderLibDXGIBase::SetBackbufferSize(const int w, const int h)
 {
 	int oldW, oldH;
-	m_swapChains[0]->GetBackbufferSize(oldW, oldH);
+	m_defaultSwapChain->GetBackbufferSize(oldW, oldH);
 
 	if(w != oldW || h != oldH)
 		CNVRHIRenderAPI::Instance.m_deviceLost = true;
 
-	m_swapChains[0]->SetBackbufferSize(w, h);
+	m_defaultSwapChain->SetBackbufferSize(w, h);
 }
 
 // changes fullscreen mode
@@ -141,6 +173,7 @@ bool CNVRHIRenderLibDXGIBase::IsWindowed() const
 
 bool CNVRHIRenderLibDXGIBase::CaptureScreenshot(CImage &img)
 {
+	/*
 	ITexturePtr currentTexture = m_currentSwapChain->GetBackbuffer();
 
 	const int bytesPerPixel = GetBytesPerPixel(GetTexFormat(currentTexture->GetFormat()));
@@ -193,6 +226,9 @@ bool CNVRHIRenderLibDXGIBase::CaptureScreenshot(CImage &img)
 		WGPU_INSTANCE_SPIN
 	}
 
+	return true;
+
+	*/
 	return false;
 }
 

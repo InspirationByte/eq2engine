@@ -30,6 +30,7 @@ constexpr EqStringRef s_DefaultVertexLayoutName = "Default";
 DECLARE_CVAR(nvrhi_preload_shaders, "0", "Preload all shaders during startup. This affects engine startup time but allows name display.", CV_ARCHIVE);
 
 CNVRHIRenderAPI CNVRHIRenderAPI::Instance;
+ShaderAPI_Base& ShaderAPI_Base::Instance = CNVRHIRenderAPI::Instance;
 IShaderAPI* g_renderAPI = &CNVRHIRenderAPI::Instance;
 
 static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, int entryPointStrHash)
