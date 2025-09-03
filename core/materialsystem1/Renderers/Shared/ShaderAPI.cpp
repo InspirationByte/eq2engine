@@ -27,10 +27,6 @@
 using namespace Threading;
 
 CEqMutex g_sapi_TextureMutex;
-CEqMutex g_sapi_ShaderMutex;
-CEqMutex g_sapi_VBMutex;
-CEqMutex g_sapi_IBMutex;
-CEqMutex g_sapi_Mutex;
 
 DECLARE_CMD(r_info, "Prints renderer info", 0)
 {

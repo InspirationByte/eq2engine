@@ -25,59 +25,6 @@
 DECLARE_CVAR(vulkan_validation, "0", nullptr, CV_UNREGISTERED);
 DECLARE_CVAR(vulkan_break_on_error, "0", nullptr, CV_UNREGISTERED);
 
-static const char* s_wgpuErrorTypesStr[] = {
-	"(null)"
-	"NoError",
-	"Validation",
-	"OutOfMemory",
-	"Internal",
-	"Unknown",
-	"DeviceLost",
-};
-
-static const char* s_wgpuDeviceLostReasonStr[] = {
-	"(null)",
-    "Unknown",
-    "Destroyed",
-    "InstanceDropped",
-    "FailedCreation",
-};
-
-static void OnWGPUDeviceError(WGPUErrorType type, struct WGPUStringView message, void* userdata)
-{
-	if (wgpu_break_on_error.GetBool())
-	{
-		ASSERT_FAIL("WGPU device %s error:\n\n%s", s_wgpuErrorTypesStr[type], message.data);
-	}
-
-	if (wgpu_report_errors.GetBool())
-		MsgError("[WGPU]: %s - %s\n", s_wgpuErrorTypesStr[type], message.data);
-}
-
-static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reason, struct WGPUStringView message, void* userdata)
-{
-	if(reason == WGPUDeviceLostReason_Destroyed)
-		return;
-
-	ASSERT_FAIL("WGPU device lost reason %s (%d)\n\n%s", s_wgpuDeviceLostReasonStr[reason], reason, message.data);
-	MsgError("[WGPU] device lost reason %s, %s\n", s_wgpuDeviceLostReasonStr[reason], message.data);
-}
-
-static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapter adapter, struct WGPUStringView message, void* userdata)
-{
-	if (status != WGPURequestAdapterStatus_Success)
-	{
-		// cannot find adapter?
-		ErrorMsg("%s", message.data);
-	}
-	else
-	{
-		// use first adapter provided
-		WGPUAdapter* result = static_cast<WGPUAdapter*>(userdata);
-		if (*result == nullptr)
-			*result = adapter;
-	}
-}
 
 CNVRHIRenderLibVK::CNVRHIRenderLibVK()
 {
@@ -108,135 +55,33 @@ IShaderAPI* CNVRHIRenderLibVK::GetRenderer() const
 	return &CNVRHIRenderAPI::Instance;
 }
 
-static const char* GetWGPUBackendTypeStr(WGPUBackendType backendType)
-{
-	switch (backendType)
-	{
-		case WGPUBackendType_D3D11:
-			return "D3D11";
-		case WGPUBackendType_D3D12:
-			return "D3D12";
-		case WGPUBackendType_Metal:
-			return "Metal";
-		case WGPUBackendType_Vulkan:
-			return "Vulkan";
-		case WGPUBackendType_OpenGL:
-			return "OpenGL";
-		case WGPUBackendType_OpenGLES:
-			return "OpenGLES";
-	}
-	return "Unknown";
-}
-
-static const char* GetWGPUAdapterTypeStr(WGPUAdapterType adapterType)
-{
-	switch (adapterType)
-	{
-	case WGPUAdapterType_DiscreteGPU:
-		return "Discrete GPU";
-	case WGPUAdapterType_IntegratedGPU:
-		return "Integrated GPU";
-	case WGPUAdapterType_CPU:
-		return "Software";
-	}
-	return "Unknown";
-}
-
-static size_t wgpuLoadCacheDataFunction(void const* key, size_t keySize, void* value, size_t valueSize, void* userdata)
-{
-	const uint32 keyChecksum = CRC32_BlockChecksum(key, keySize);
-	static thread_local IFilePtr file;
-	
-	if (!value)
-	{
-		file = g_fileSystem->Open(EqString::Format("PSOCache/%u.psoc", keyChecksum), FS_OPEN_READ, SP_ROOT);
-		if (!file)
-			return 0;
-
-		return file->GetSize();
-	}
-
-	if (!file)
-		return 0;
-
-	size_t readSize = file->Read(value, 1, valueSize);
-	file = nullptr;
-
-	return readSize;
-}
-
-static void wgpuStoreCacheDataFunction(void const* key, size_t keySize, void const* value, size_t valueSize, void* userdata)
-{
-	const uint32 keyChecksum = CRC32_BlockChecksum(key, keySize);
-
-	g_fileSystem->MakeDir("PSOCache", SP_ROOT);
-	IFilePtr file = g_fileSystem->Open(EqString::Format("PSOCache/%u.psoc", keyChecksum), FS_OPEN_WRITE, SP_ROOT);
-	file->Write(value, 1, valueSize);
-}
-
 bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 {
-	WGPURequestAdapterOptions options{};
-	options.powerPreference = WGPUPowerPreference_HighPerformance;
-	
-	EqStringRef backendName = wgpu_backend.GetString();
-
-	if (!backendName.CompareCaseIns("D3D11"))
-		options.backendType = WGPUBackendType_D3D11;
-	else if(!backendName.CompareCaseIns("D3D12"))
-		options.backendType = WGPUBackendType_D3D12;
-	else if (!backendName.CompareCaseIns("Vulkan"))
-		options.backendType = WGPUBackendType_Vulkan;
-	else if (!backendName.CompareCaseIns("OpenGL"))
-		options.backendType = WGPUBackendType_OpenGL;
-	else if (!backendName.CompareCaseIns("OpenGLES"))
-		options.backendType = WGPUBackendType_OpenGLES;
-
-	wgpuInstanceRequestAdapter(m_instance, &options, &OnWGPUAdapterRequestEnded, &m_rhiAdapter);
-
-	if (!m_rhiAdapter)
-	{
-		MsgError("No WGPU supported adapter found\n");
-		return false;
-	}
 
 	{
-		WGPUAdapterInfo rhiAdapterInfo = {};
-		wgpuAdapterGetInfo(m_rhiAdapter, &rhiAdapterInfo);
-
-		Msg("* WGPU Adapter: %s on %s (%s)\n", GetWGPUBackendTypeStr(rhiAdapterInfo.backendType), EqString(rhiAdapterInfo.device.data, rhiAdapterInfo.device.length).ToCString(), GetWGPUAdapterTypeStr(rhiAdapterInfo.adapterType));
-	}
-
-	{
-		WGPUSupportedLimits supLimits = {};
-		wgpuAdapterGetLimits(m_rhiAdapter, &supLimits);
-
-		WGPULimits requiredLimits = supLimits.limits;
-
 		// fill ShaderAPI capabilities
-		ShaderAPICapabilities& caps = CWGPURenderAPI::Instance.m_caps;
-		caps.isInstancingSupported = true;
-		caps.isHardwareOcclusionQuerySupported = true;
-		caps.minUniformBufferOffsetAlignment = supLimits.limits.minUniformBufferOffsetAlignment;
-		caps.minStorageBufferOffsetAlignment = supLimits.limits.minStorageBufferOffsetAlignment;
-		caps.maxDynamicUniformBuffersPerPipelineLayout = supLimits.limits.maxDynamicUniformBuffersPerPipelineLayout;
-		caps.maxDynamicStorageBuffersPerPipelineLayout = supLimits.limits.maxDynamicStorageBuffersPerPipelineLayout;
-		caps.maxVertexStreams = supLimits.limits.maxVertexBuffers;
-		caps.maxVertexAttributes = supLimits.limits.maxVertexAttributes;
-		caps.maxTextureSize = supLimits.limits.maxTextureDimension2D;
-		caps.maxTextureArrayLayers = supLimits.limits.maxTextureArrayLayers;
-		caps.maxTextureUnits = supLimits.limits.maxSampledTexturesPerShaderStage;
-		caps.maxVertexTextureUnits = supLimits.limits.maxSampledTexturesPerShaderStage;
-		caps.maxBindGroups = supLimits.limits.maxBindGroups;
-		caps.maxBindingsPerBindGroup = supLimits.limits.maxBindingsPerBindGroup;
+		ShaderAPICapabilities& caps = CNVRHIRenderAPI::Instance.m_caps;
+		caps.minUniformBufferOffsetAlignment = supLimits.minUniformBufferOffsetAlignment;
+		caps.minStorageBufferOffsetAlignment = supLimits.minStorageBufferOffsetAlignment;
+		caps.maxDynamicUniformBuffersPerPipelineLayout = supLimits.maxDynamicUniformBuffersPerPipelineLayout;
+		caps.maxDynamicStorageBuffersPerPipelineLayout = supLimits.maxDynamicStorageBuffersPerPipelineLayout;
+		caps.maxVertexStreams = supLimits.maxVertexBuffers;
+		caps.maxVertexAttributes = supLimits.maxVertexAttributes;
+		caps.maxTextureSize = supLimits.maxTextureDimension2D;
+		caps.maxTextureArrayLayers = supLimits.maxTextureArrayLayers;
+		caps.maxTextureUnits = supLimits.maxSampledTexturesPerShaderStage;
+		caps.maxVertexTextureUnits = supLimits.maxSampledTexturesPerShaderStage;
+		caps.maxBindGroups = supLimits.maxBindGroups;
+		caps.maxBindingsPerBindGroup = supLimits.maxBindingsPerBindGroup;
 		caps.maxTextureAnisotropicLevel = 16;
-		caps.maxRenderTargets = supLimits.limits.maxColorAttachments;
+		caps.maxRenderTargets = supLimits.maxColorAttachments;
 
-		caps.maxComputeInvocationsPerWorkgroup = supLimits.limits.maxComputeInvocationsPerWorkgroup;
-		caps.maxComputeWorkgroupSizeX = supLimits.limits.maxComputeWorkgroupSizeX;
-		caps.maxComputeWorkgroupSizeY = supLimits.limits.maxComputeWorkgroupSizeY;
-		caps.maxComputeWorkgroupSizeZ = supLimits.limits.maxComputeWorkgroupSizeZ;
-		caps.maxComputeWorkgroupsPerDimension = supLimits.limits.maxComputeWorkgroupsPerDimension;
+		caps.maxComputeInvocationsPerWorkgroup = supLimits.maxComputeInvocationsPerWorkgroup;
+		caps.maxComputeWorkgroupSizeX = supLimits.maxComputeWorkgroupSizeX;
+		caps.maxComputeWorkgroupSizeY = supLimits.maxComputeWorkgroupSizeY;
+		caps.maxComputeWorkgroupSizeZ = supLimits.maxComputeWorkgroupSizeZ;
+		caps.maxComputeWorkgroupsPerDimension = supLimits.maxComputeWorkgroupsPerDimension;
+		caps.multiDrawIndirectSupport = false;	// NVRHI doesn't support this currently
 
 		caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED
 									| SHADER_CAPS_PIXEL_SUPPORTED
@@ -255,99 +100,20 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 		}
 
 		caps.textureFormatsSupported[FORMAT_D32F] =
-		caps.renderTargetFormatsSupported[FORMAT_D32F] = true;
+			caps.renderTargetFormatsSupported[FORMAT_D32F] = true;
 
 		for (int i = FORMAT_DXT1; i <= FORMAT_ATI2N; i++)
 			caps.textureFormatsSupported[i] = true;
 
 		caps.textureFormatsSupported[FORMAT_ATI1N] = false;
 
-		WGPUDeviceDescriptor rhiDeviceDesc{};
-
-		FixedArray<const char*, 32> enabledToggles;
-		FixedArray<const char*, 32> disabledToggles;
-
-		enabledToggles.append("allow_unsafe_apis");
-		disabledToggles.append("lazy_clear_resource_on_first_use");	// this switch requires us to clear buffers and render targets
-		enabledToggles.append("use_user_defined_labels_in_backend");
-		if(g_cmdLine->FindArgument("-debugwgpu") != -1)
-		{
-			enabledToggles.append("enable_immediate_error_handling");
-			enabledToggles.append("disable_symbol_renaming");
-			wgpu_report_errors.SetBool(true);
-			wgpu_break_on_error.SetBool(true);
-		}
-		else
-		{
-			enabledToggles.append("skip_validation");
-			enabledToggles.append("fxc_optimizations");
-		}
-
-		WGPUDawnCacheDeviceDescriptor rhiDawnCache{};
-		rhiDawnCache.chain.sType = WGPUSType_DawnCacheDeviceDescriptor;
-		rhiDawnCache.isolationKey = _WSTR("E2Render");
-		rhiDawnCache.loadDataFunction = wgpuLoadCacheDataFunction;
-		rhiDawnCache.storeDataFunction = wgpuStoreCacheDataFunction;
-
-		WGPUDawnTogglesDescriptor rhiDeviceTogglesDesc{};
-		rhiDeviceTogglesDesc.chain.next = &rhiDawnCache.chain;
-		rhiDeviceTogglesDesc.enabledToggles = enabledToggles.ptr();
-		rhiDeviceTogglesDesc.enabledToggleCount = enabledToggles.numElem();
-
-		rhiDeviceTogglesDesc.disabledToggles = disabledToggles.ptr();
-		rhiDeviceTogglesDesc.disabledToggleCount = disabledToggles.numElem();
-
-		rhiDeviceTogglesDesc.chain.sType = WGPUSType_DawnTogglesDescriptor;
-		rhiDeviceDesc.nextInChain = &rhiDeviceTogglesDesc.chain;
-
-		FixedArray<WGPUFeatureName, 32> requiredFeatures;
-		requiredFeatures.append(WGPUFeatureName_TextureCompressionBC);
-		requiredFeatures.append(WGPUFeatureName_BGRA8UnormStorage);
-		//requiredFeatures.append(WGPUFeatureName_SurfaceCapabilities);
-		requiredFeatures.append(WGPUFeatureName_Norm16TextureFormats);
-		// TODO: android
-		//requiredFeatures.append(WGPUFeatureName_TextureCompressionETC2),
-		//requiredFeatures.append(WGPUFeatureName_TextureCompressionASTC),
-		//requiredFeatures.append(WGPUFeatureName_ShaderF16),
-
-		rhiDeviceDesc.requiredFeatures = requiredFeatures.ptr();
-		rhiDeviceDesc.requiredFeatureCount = requiredFeatures.numElem();
-		rhiDeviceDesc.uncapturedErrorCallbackInfo.callback = OnWGPUDeviceError;
-
-		// setup required limits
-		WGPURequiredLimits reqLimits{};
-		reqLimits.limits = requiredLimits;
-
-		rhiDeviceDesc.requiredLimits = &reqLimits;
-		WGPUDeviceLostCallbackInfo& rhiLostCbInfo = rhiDeviceDesc.deviceLostCallbackInfo;
-		rhiLostCbInfo.callback = OnWGPUDeviceLost;
-		rhiLostCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
-
-		m_rhiDevice = wgpuAdapterCreateDevice(m_rhiAdapter, &rhiDeviceDesc);
-
-		if (!m_rhiDevice)
-		{
-			MsgError("Failed to create WebGPU device\n");
-			g_renderWorker.Shutdown();
-			return false;
-		}
-
-		m_deviceQueue = wgpuDeviceGetQueue(m_rhiDevice);
 	}
 
-	constexpr int jobQueueSize = 1024;
-
-	g_renderWorker.Init(this, [this]() {
-		// process all internal async events or error callbacks
-		wgpuInstanceProcessEvents(m_instance);
-		return 0;
-	}, jobQueueSize);
-
 	// create default swap chain
-	m_currentSwapChain = static_cast<CWGPUSwapChain*>(CreateSwapChain(params.windowInfo));
+	m_currentSwapChain = static_cast<CNVRHISwapChainVK*>(CreateSwapChain(params.windowInfo));
 
-	CWGPURenderAPI::Instance.m_rhiDevice = m_rhiDevice;
-	CWGPURenderAPI::Instance.m_rhiQueue = m_deviceQueue;
+	CNVRHIRenderAPI::Instance.m_rhiDevice = m_rhiDevice;
+	CNVRHIRenderAPI::Instance.m_rhiQueue = m_deviceQueue;
 
 	return true;
 }
@@ -357,26 +123,10 @@ void CNVRHIRenderLibVK::ExitAPI()
 	m_endFrameWait.Wait(500);
 	g_renderWorker.Shutdown();
 
-	for (CNVRHISwapChain* swapChain : m_swapChains)
-		delete swapChain;
-
 	m_swapChains.clear();
 	m_currentSwapChain = nullptr;
 
-	m_rhiBackendType = WGPUBackendType_Null;
 
-	if (m_deviceQueue)
-		wgpuQueueRelease(m_deviceQueue);
-
-	if(m_rhiDevice)
-		wgpuDeviceRelease(m_rhiDevice);
-
-	if(m_instance)
-		wgpuInstanceRelease(m_instance);
-
-	m_instance = nullptr;
-	m_rhiDevice = nullptr;
-	m_deviceQueue = nullptr;
 }
 
 void CNVRHIRenderLibVK::BeginFrame(ISwapChain* swapChain)

@@ -7,6 +7,7 @@
 
 #pragma once
 #include <nvrhi/nvrhi.h>
+#include <nvrhi/d3d11.h>
 #include "../IRenderLibrary.h"
 #include "../RenderWorker.h"
 #include "NVRHILibraryDXGIBase.h"
@@ -16,9 +17,6 @@ class CNVRHIRenderLibD3D11
 	, public RenderWorkerHandler
 {
 public:
-	CNVRHIRenderLibD3D11();
-	~CNVRHIRenderLibD3D11();
-
 	bool			InitCaps();
 
 	bool			InitAPI(const ShaderAPIParams& params);
@@ -26,21 +24,8 @@ public:
 
 	void			BeginFrame(ISwapChain* swapChain = nullptr);
 	void			EndFrame();
-	ITexturePtr		GetCurrentBackbuffer() const;
 
 	IShaderAPI*		GetRenderer() const;
-
-	void			SetVSync(bool enable);
-	void			SetBackbufferSize(int w, int h);
-	void			SetFocused(bool inFocus) {}
-
-	bool			SetWindowed(bool enabled);
-	bool			IsWindowed() const;
-
-	bool			CaptureScreenshot(CImage &img);
-
-	ISwapChain*		CreateSwapChain(const RenderWindowInfo& windowInfo);
-	void			DestroySwapChain(ISwapChain* swapChain);
 protected:
 
 	const char*		GetAsyncThreadName() const { return "EqRenderThread"; }
@@ -48,12 +33,9 @@ protected:
 	void			EndAsyncOperation() {}
 	bool			IsMainThread(uintptr_t threadId) const;
 
-	uintptr_t				m_mainThreadId{ 0 };
-	WGPUInstance			m_instance{ nullptr };
-
-	WGPUBackendType			m_rhiBackendType{ WGPUBackendType_Null };
-	WGPUAdapter				m_rhiAdapter{ nullptr };
-	WGPUDevice				m_rhiDevice{ nullptr };
-	WGPUQueue				m_deviceQueue{ nullptr };
+	RefCountPtr<ID3D11Device>		m_rhiDevice12;
+	RefCountPtr<ID3D11CommandQueue>	m_rhiGraphicsQueue;
+	RefCountPtr<ID3D11CommandQueue>	m_rhiComputeQueue;
+	RefCountPtr<ID3D11CommandQueue>	m_rhiCopyQueue;
 };
 

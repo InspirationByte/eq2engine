@@ -18,13 +18,10 @@
 using namespace Threading;
 
 extern CEqMutex	g_sapi_TextureMutex;
-extern CEqMutex	g_sapi_ShaderMutex;
-extern CEqMutex	g_sapi_VBMutex;
-extern CEqMutex	g_sapi_IBMutex;
-extern CEqMutex	g_sapi_Mutex;
 
 class CNVRHIRenderAPI : public ShaderAPI_Base
 {
+	friend class CNVRHIRenderLibDXGIBase;
 	friend class CNVRHIRenderLibD3D11;
 	friend class CNVRHIRenderLibD3D12;
 	friend class CNVRHIRenderLibVK;

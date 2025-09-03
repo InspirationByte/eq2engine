@@ -11,15 +11,15 @@
 #include "renderers/ShaderAPI_defs.h"
 #include "NVRHITexture.h"
 
-class CNVRHIRenderLibD3D11;
+class CNVRHIRenderLibDXGIBase;
 
 class CNVRHISwapChainDXGI : public ISwapChain
 {
 public:
-	friend class CNVRHIRenderLib;
+	friend class CNVRHIRenderLibDXGIBase;
 
 	~CNVRHISwapChainDXGI();
-	CNVRHISwapChainDXGI(CNVRHIRenderLib* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture);
+	CNVRHISwapChainDXGI(CNVRHIRenderLibDXGIBase* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture);
 
 	void			SetVSync(bool enable);
 
@@ -37,12 +37,12 @@ protected:
 
 	void			UpdateBackbufferView() const;
 
-	CRefPtr<CNVRHITexture>	m_textureRef;
+	CRefPtr<CNVRHITexture>		m_textureRef;
 
-	CNVRHIRenderLibD3D11*	m_host{ nullptr };
-	RenderWindowInfo		m_winInfo;
+	CNVRHIRenderLibDXGIBase*	m_host{ nullptr };
+	RenderWindowInfo			m_winInfo;
 
-	//WGPUSurface			m_surface{ nullptr };
-	IVector2D				m_backbufferSize{ 0 };
-	int						m_vSync{ -1 };
+	//WGPUSurface				m_surface{ nullptr };
+	IVector2D					m_backbufferSize{ 0 };
+	int							m_vSync{ -1 };
 };

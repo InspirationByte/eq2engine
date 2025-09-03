@@ -28,8 +28,6 @@ public:
 	void			EndFrame();
 	ITexturePtr		GetCurrentBackbuffer() const;
 
-	IShaderAPI*		GetRenderer() const;
-
 	void			SetVSync(bool enable);
 	void			SetBackbufferSize(int w, int h);
 	void			SetFocused(bool inFocus) {}
@@ -39,8 +37,7 @@ public:
 
 	bool			CaptureScreenshot(CImage &img);
 
-	ISwapChain*		CreateSwapChain(const RenderWindowInfo& windowInfo);
-	void			DestroySwapChain(ISwapChain* swapChain);
+	ISwapChainPtr	CreateSwapChain(const RenderWindowInfo& windowInfo);
 protected:
 
 	Threading::CEqSignal		m_endFrameWait;

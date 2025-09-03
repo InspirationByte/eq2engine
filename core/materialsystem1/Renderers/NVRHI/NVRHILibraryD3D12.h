@@ -19,9 +19,6 @@ class CNVRHIRenderLibD3D12
 	, public RenderWorkerHandler		// might be not needed
 {
 public:
-	CNVRHIRenderLibD3D12();
-	~CNVRHIRenderLibD3D12();
-
 	bool			InitCaps();
 
 	bool			InitAPI(const ShaderAPIParams& params);
@@ -29,21 +26,8 @@ public:
 
 	void			BeginFrame(ISwapChain* swapChain = nullptr);
 	void			EndFrame();
-	ITexturePtr		GetCurrentBackbuffer() const;
 
 	IShaderAPI*		GetRenderer() const;
-
-	void			SetVSync(bool enable);
-	void			SetBackbufferSize(int w, int h);
-	void			SetFocused(bool inFocus) {}
-
-	bool			SetWindowed(bool enabled);
-	bool			IsWindowed() const;
-
-	bool			CaptureScreenshot(CImage &img);
-
-	ISwapChain*		CreateSwapChain(const RenderWindowInfo& windowInfo);
-	void			DestroySwapChain(ISwapChain* swapChain);
 protected:
 
 	const char*		GetAsyncThreadName() const { return "EqRenderThread"; }

@@ -15,10 +15,6 @@
 using namespace Threading;
 
 extern CEqMutex	g_sapi_TextureMutex;
-extern CEqMutex	g_sapi_ShaderMutex;
-extern CEqMutex	g_sapi_VBMutex;
-extern CEqMutex	g_sapi_IBMutex;
-extern CEqMutex	g_sapi_Mutex;
 
 #define WGPU_INSTANCE_SPIN { g_renderWorker.SignalWork(); Platform_Sleep(0); }
 

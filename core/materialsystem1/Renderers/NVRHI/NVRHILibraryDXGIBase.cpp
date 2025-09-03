@@ -92,7 +92,7 @@ ITexturePtr	CNVRHIRenderLibDXGIBase::GetCurrentBackbuffer() const
 	return m_currentSwapChain->GetBackbuffer();
 }
 
-ISwapChain* CNVRHIRenderLibDXGIBase::CreateSwapChain(const RenderWindowInfo& windowInfo)
+ISwapChainPtr CNVRHIRenderLibDXGIBase::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	bool justCreated = false;
 
@@ -106,12 +106,6 @@ ISwapChain* CNVRHIRenderLibDXGIBase::CreateSwapChain(const RenderWindowInfo& win
 
 	m_swapChains.append(swapChain);
 	return swapChain;
-}
-
-void CNVRHIRenderLibDXGIBase::DestroySwapChain(ISwapChain* swapChain)
-{
-	if (m_swapChains.fastRemove(static_cast<CNVRHISwapChainDXGI*>(swapChain)))
-		delete swapChain;
 }
 
 void CNVRHIRenderLibDXGIBase::SetVSync(bool enable)
