@@ -30,7 +30,6 @@ public:
 	static CNVRHIRenderAPI Instance;
 
 	// Init + Shurdown
-	void						Init(const ShaderAPIParams& params);
 	void						Shutdown();
 	bool						IsDeviceValidationActive() const { return m_isValidationActive; }
 

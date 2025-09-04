@@ -145,6 +145,8 @@ IGPUCommandBufferPtr CNVRHICommandRecorder::End()
 		return nullptr;
 	}
 
+	m_rhiCommandList->close();
+
 	// simply transfer command list
 	CRefPtr<CNVRHICommandBuffer> commandBuffer = CRefPtr_new(CNVRHICommandBuffer);
 	commandBuffer->m_rhiCommandList = m_rhiCommandList;

@@ -105,28 +105,6 @@ bool ShaderInfoNVRHIImpl::GetShaderQueryHash(ArrayCRef<EqString> findDefines, in
 
 //------------------------------------------
 
-void CNVRHIRenderAPI::Init(const ShaderAPIParams& params)
-{
-	ShaderAPI_Base::Init(params);
-
-	int shaderPackCount = 0;
-	int shaderModCount = 0;
-	EqString shaderPackPath;
-	CFileSystemFind fsFind("shaders/*.shd", SP_MOD | SP_DATA);
-	while (fsFind.Next())
-	{
-		if (fsFind.IsDirectory())
-			continue;
-
-		fnmPathCombine(shaderPackPath, "shaders", fsFind.GetPath());
-
-		shaderModCount += LoadShaderPackage(shaderPackPath);
-		++shaderPackCount;
-	}
-
-	Msg("* Found %d shader packages, %d modules loaded\n", shaderPackCount, shaderModCount);
-}
-
 void CNVRHIRenderAPI::Shutdown()
 {
 	ShaderAPI_Base::Shutdown();
@@ -1125,6 +1103,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 	auto rhiComputePipelineDesc = nvrhi::ComputePipelineDesc()
 		.setComputeShader(rhiComputeShaderModule);
 
+	// TODO: retrieve pipeline layout from shader
 	const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(pipelineLayout);
 	ASSERT(pipelineLayoutImpl);
 

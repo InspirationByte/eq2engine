@@ -142,6 +142,8 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 	// TODO: create individual array views
 
 	nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList();
+	writeCmd->open();
+	writeCmd->beginTrackingTextureState(rhiTexture, nvrhi::AllSubresources, nvrhi::ResourceStates::Common);
 	for (int arrIdx = 0; arrIdx < arraySize; ++arrIdx)
 	{
 		int mipMapLevel = image->GetMipMapCount() - 1;
@@ -176,6 +178,9 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 			--mipMapLevel;
 		}
 	}
+	//writeCmd->setPermanentTextureState(rhiTexture, nvrhi::ResourceStates::ShaderResource);
+	writeCmd->commitBarriers();
+	writeCmd->close();
 	rhiDevice->executeCommandList(writeCmd);
 
 	return true;
@@ -273,7 +278,9 @@ bool CNVRHITexture::Lock(LockInOutData& data)
 		rhiSrcSlice.height = data.lockSize.height;
 
 		nvrhi::CommandListHandle copyCmd = rhiDevice->createCommandList();
+		copyCmd->open();
 		copyCmd->copyTexture(rhiStagingTexture, rhiDstSlice, m_rhiTexture, rhiSrcSlice);
+		copyCmd->close();
 		rhiDevice->executeCommandList(copyCmd);
 
 		size_t rowPitch = 0;
@@ -309,7 +316,9 @@ void CNVRHITexture::Unlock(IGPUCommandRecorder* writeCmdRecorder)
 		else
 		{
 			nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList();
+			writeCmd->open();
 			writeCmd->writeTexture(m_rhiTexture, data.lockOrigin.arraySlice, data.lockOrigin.mipLevel, data.lockData, data.lockPitch);
+			writeCmd->close();
 			rhiDevice->executeCommandList(writeCmd);
 		}
 	}

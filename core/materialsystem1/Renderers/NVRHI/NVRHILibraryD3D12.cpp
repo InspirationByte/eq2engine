@@ -29,16 +29,14 @@
 #pragma comment(lib, "d3d12.lib")
 
 DECLARE_CVAR(d3d12_adapter, "", "Adapter to use", CV_UNREGISTERED);
-DECLARE_CVAR(d3d12_validation, "0", nullptr, CV_UNREGISTERED);
-DECLARE_CVAR(d3d12_break_on_error, "0", nullptr, CV_UNREGISTERED);
+DECLARE_CVAR(d3d12_validation, "1", nullptr, CV_UNREGISTERED);
 
-#define HR_RETURN(hr, fmt, ...) if(FAILED(hr)) { MsgError(fmt, __VA_ARGS__); return false; }
+#define HR_RETURN(hr, fmt, ...) if(FAILED(hr)) { MsgError("ERROR: D3D12 failure - " fmt "\n", __VA_ARGS__); return false; }
 
 bool CNVRHIRenderLibD3D12::InitCaps()
 {
 	g_consoleCommands->RegisterCommand(&d3d12_adapter);
 	g_consoleCommands->RegisterCommand(&d3d12_validation);
-	g_consoleCommands->RegisterCommand(&d3d12_break_on_error);
 
 	m_mainThreadId = Threading::GetCurrentThreadID();
 
@@ -198,11 +196,18 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 		caps.textureFormatsSupported[FORMAT_ATI1N] = false;
 	}
 
-
 	// create default swap chain
-	m_currentSwapChain = CRefPtr<CNVRHISwapChainDXGI>(static_cast<CNVRHISwapChainDXGI*>(CreateSwapChain(params.windowInfo).Ptr()));
+	m_defaultSwapChain = CRefPtr<CNVRHISwapChainDXGI>(static_cast<CNVRHISwapChainDXGI*>(CreateSwapChain(params.windowInfo).Ptr()));
 
-	//CNVRHIRenderAPI::Instance.m_rhiDevice = m_rhiDevice;
+	nvrhi::d3d12::DeviceDesc deviceDesc;
+	deviceDesc.errorCB = &CNVRHIMessageCallback::Instance;
+	deviceDesc.pDevice = m_rhiDevice12;
+	deviceDesc.pGraphicsCommandQueue = m_rhiGraphicsQueue;
+	deviceDesc.pComputeCommandQueue = m_rhiComputeQueue;
+	deviceDesc.pCopyCommandQueue = m_rhiCopyQueue;
+	m_nvrhiDevice = nvrhi::d3d12::createDevice(deviceDesc);
+
+	CNVRHIRenderAPI::Instance.m_rhiDevice = m_nvrhiDevice;
 
 	return true;
 }
@@ -211,7 +216,6 @@ void CNVRHIRenderLibD3D12::ExitAPI()
 {
 	g_consoleCommands->UnregisterCommand(&d3d12_adapter);
 	g_consoleCommands->UnregisterCommand(&d3d12_validation);
-	g_consoleCommands->UnregisterCommand(&d3d12_break_on_error);
 
 	CNVRHIRenderLibDXGIBase::ExitAPI();
 

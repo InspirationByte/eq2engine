@@ -45,7 +45,7 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 	if (bufferUsageFlags & BUFFERUSAGE_VERTEX)	rhiBufferDesc.setIsVertexBuffer(true);
 	if (bufferUsageFlags & BUFFERUSAGE_INDEX)	rhiBufferDesc.setIsIndexBuffer(true);
 	if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)rhiBufferDesc.setIsDrawIndirectArgs(true);
-	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)	rhiBufferDesc.setCanHaveUAVs(true);
+	//if (bufferUsageFlags & BUFFERUSAGE_STORAGE)	rhiBufferDesc.setCanHaveUAVs(true);
 
 	rhiBufferDesc.debugName = label;
 	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
@@ -77,7 +77,10 @@ void CNVRHIBuffer::Update(const void* data, int64 size, int64 offset)
 	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
 
 	nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList();
+	writeCmd->open();
 	writeCmd->writeBuffer(m_rhiBuffer, data, writeDataSize, offset);
+
+	writeCmd->close();
 	rhiDevice->executeCommandList(writeCmd);
 }
 
