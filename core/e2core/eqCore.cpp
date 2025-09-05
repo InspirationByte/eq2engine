@@ -471,7 +471,8 @@ void CDkCore::CloseModule(OSModule* pModule)
 
 	g_eqCore->OnModuleUnloaded(pModule->name);
 
-	// don't unload any modules if we prining a leaklog
+	MsgInfo("Unloaded module '%s'\n", pModule->name.ToCString());
+
 #ifdef _WIN32
 	FreeLibrary(pModule->module);
 #else
