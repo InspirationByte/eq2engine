@@ -184,7 +184,7 @@ int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 		layout.name = key.GetName();
 		if (layout.name != s_DefaultVertexLayoutName)
 			layout.nameHash = StringId24(layout.name);
-		
+
 		if (!CString::CompareCaseIns(KV_GetValueString(&key, 0), "aliasOf"))
 		{
 			layout.aliasOf = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoNVRHIImpl::VertLayout& layout) {
@@ -217,6 +217,8 @@ int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 	const KVSection* fileListSec = shaderInfoKvs["FileList"];
 	for (const KVSection& itemSec : fileListSec->Keys("spv"))
 	{
+		// TODO: support both spv, dxc loading
+
 		int vertLayoutIdx = -1;
 		EqStringRef kindStr;
 		EqStringRef entryPointName;
@@ -839,9 +841,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 
 	auto rhiGraphicsPipelineDesc = nvrhi::GraphicsPipelineDesc();
 
-	const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(pipelineLayout);
-	ASSERT(pipelineLayoutImpl);
-
+	const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(pipelineLayout ? pipelineLayout : shaderInfo.pipelineLayout);
 	for (nvrhi::BindingLayoutHandle& rhiLayout : pipelineLayoutImpl->m_rhiBindingLayout)
 		rhiGraphicsPipelineDesc.addBindingLayout(rhiLayout);
 
@@ -1103,10 +1103,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 	auto rhiComputePipelineDesc = nvrhi::ComputePipelineDesc()
 		.setComputeShader(rhiComputeShaderModule);
 
-	// TODO: retrieve pipeline layout from shader
-	const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(pipelineLayout);
-	ASSERT(pipelineLayoutImpl);
-
+	const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(pipelineLayout ? pipelineLayout : shaderInfo.pipelineLayout);
 	for (nvrhi::BindingLayoutHandle& rhiLayout : pipelineLayoutImpl->m_rhiBindingLayout)
 		rhiComputePipelineDesc.addBindingLayout(rhiLayout);
 

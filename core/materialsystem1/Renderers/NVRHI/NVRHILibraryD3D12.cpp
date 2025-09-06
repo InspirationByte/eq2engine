@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include <nvrhi/nvrhi.h>
+#include <nvrhi/validation.h>
 #include <dxgi.h>
 #include <dxgi1_5.h>
 #include <dxgi1_6.h>
@@ -29,7 +30,8 @@
 #pragma comment(lib, "d3d12.lib")
 
 DECLARE_CVAR(d3d12_adapter, "", "Adapter to use", CV_UNREGISTERED);
-DECLARE_CVAR(d3d12_validation, "1", nullptr, CV_UNREGISTERED);
+DECLARE_CVAR(d3d12_validation, "0", nullptr, CV_UNREGISTERED);
+DECLARE_CVAR_F(nvrhi_validation);
 
 #define HR_RETURN(hr, fmt, ...) if(FAILED(hr)) { MsgError("ERROR: D3D12 failure - " fmt "\n", __VA_ARGS__); return false; }
 
@@ -73,13 +75,13 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	{
 		RefCountPtr<ID3D12Debug> pDebug;
 		hr = D3D12GetDebugInterface(IID_PPV_ARGS(&pDebug));
-		HR_RETURN(hr, "Can't get ID3D12Debug interface");
-		pDebug->EnableDebugLayer();
+		if (hr == S_OK && pDebug)
+			pDebug->EnableDebugLayer();
 	}
 
-	RefCountPtr<IDXGIFactory2> pDxgiFactory;
+	RefCountPtr<IDXGIFactory2> rhiDxgiFactory;
 	UINT dxgiFactoryFlags = debugRuntimeLayer ? DXGI_CREATE_FACTORY_DEBUG : 0;
-	hr = CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&pDxgiFactory));
+	hr = CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&rhiDxgiFactory));
 	HR_RETURN(hr, "Cannot create IDXGIFactory2 interface");
 
 	hr = D3D12CreateDevice(
@@ -90,40 +92,40 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 
 	if (debugRuntimeLayer)
 	{
-		RefCountPtr<ID3D12InfoQueue> pInfoQueue;
-		m_rhiDevice12->QueryInterface(&pInfoQueue);
+		RefCountPtr<ID3D12InfoQueue> rhiInfoQueue;
+		m_rhiDevice12->QueryInterface(&rhiInfoQueue);
 
-		if (pInfoQueue)
+		if (rhiInfoQueue)
 		{
 #ifdef _DEBUG
-			pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
-			pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+			rhiInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+			rhiInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
 #endif
 
 			D3D12_MESSAGE_ID disableMessageIDs[] =
 			{
 				D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE,
 				D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
-				D3D12_MESSAGE_ID_COMMAND_LIST_STATIC_DESCRIPTOR_RESOURCE_DIMENSION_MISMATCH, // descriptor validation doesn't understand acceleration structures
-				D3D12_MESSAGE_ID_CREATEGRAPHICSPIPELINESTATE_RENDERTARGETVIEW_NOT_SET, // disable warning when there is no color attachment (e.g. shadow atlas)
-				D3D12_MESSAGE_ID_RESOURCE_BARRIER_BEFORE_AFTER_MISMATCH // barrier validation error caused by cinematics - not sure how to fix, suppress for now
+				D3D12_MESSAGE_ID_COMMAND_LIST_STATIC_DESCRIPTOR_RESOURCE_DIMENSION_MISMATCH,
+				D3D12_MESSAGE_ID_CREATEGRAPHICSPIPELINESTATE_RENDERTARGETVIEW_NOT_SET,
+				D3D12_MESSAGE_ID_RESOURCE_BARRIER_BEFORE_AFTER_MISMATCH
 			};
 
 			D3D12_INFO_QUEUE_FILTER filter = {};
 			filter.DenyList.pIDList = disableMessageIDs;
-			filter.DenyList.NumIDs = sizeof(disableMessageIDs) / sizeof(disableMessageIDs[0]);
-			pInfoQueue->AddStorageFilterEntries(&filter);
+			filter.DenyList.NumIDs = elementsOf(disableMessageIDs);
+			rhiInfoQueue->AddStorageFilterEntries(&filter);
 		}
 	}
 
 	rhiAdapter->QueryInterface(IID_PPV_ARGS(&m_rhiDxgiAdapter));
 
-	D3D12_COMMAND_QUEUE_DESC queueDesc;
-	ZeroMemory(&queueDesc, sizeof(queueDesc));
-	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-	queueDesc.NodeMask = 1;
-	hr = m_rhiDevice12->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_rhiGraphicsQueue));
+	D3D12_COMMAND_QUEUE_DESC rhiQueueDesc;
+	ZeroMemory(&rhiQueueDesc, sizeof(rhiQueueDesc));
+	rhiQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	rhiQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+	rhiQueueDesc.NodeMask = 1;
+	hr = m_rhiDevice12->CreateCommandQueue(&rhiQueueDesc, IID_PPV_ARGS(&m_rhiGraphicsQueue));
 	HR_RETURN(hr, "Can't create D3D12 graphics queue");
 	m_rhiGraphicsQueue->SetName(L"Graphics Queue");
 
@@ -132,16 +134,16 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	const bool enableCopyQueue = false;
 	if (enableComputeQueue)
 	{
-		queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-		hr = m_rhiDevice12->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_rhiComputeQueue));
+		rhiQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+		hr = m_rhiDevice12->CreateCommandQueue(&rhiQueueDesc, IID_PPV_ARGS(&m_rhiComputeQueue));
 		HR_RETURN(hr, "Can't create D3D12 compute queue");
 		m_rhiComputeQueue->SetName(L"Compute Queue");
 	}
 
 	if (enableCopyQueue)
 	{
-		queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
-		hr = m_rhiDevice12->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_rhiCopyQueue));
+		rhiQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
+		hr = m_rhiDevice12->CreateCommandQueue(&rhiQueueDesc, IID_PPV_ARGS(&m_rhiCopyQueue));
 		HR_RETURN(hr, "Can't create D3D12 copy queue");
 		m_rhiCopyQueue->SetName(L"Copy Queue");
 	}
@@ -205,9 +207,12 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	deviceDesc.pGraphicsCommandQueue = m_rhiGraphicsQueue;
 	deviceDesc.pComputeCommandQueue = m_rhiComputeQueue;
 	deviceDesc.pCopyCommandQueue = m_rhiCopyQueue;
-	m_nvrhiDevice = nvrhi::d3d12::createDevice(deviceDesc);
 
-	CNVRHIRenderAPI::Instance.m_rhiDevice = m_nvrhiDevice;
+	m_nvrhiDevice = nvrhi::d3d12::createDevice(deviceDesc);
+	if (nvrhi_validation.GetBool())
+		CNVRHIRenderAPI::Instance.m_rhiDevice = nvrhi::validation::createValidationLayer(m_nvrhiDevice);
+	else
+		CNVRHIRenderAPI::Instance.m_rhiDevice = m_nvrhiDevice;
 
 	return true;
 }
@@ -218,6 +223,9 @@ void CNVRHIRenderLibD3D12::ExitAPI()
 	g_consoleCommands->UnregisterCommand(&d3d12_validation);
 
 	CNVRHIRenderLibDXGIBase::ExitAPI();
+
+	CNVRHIRenderAPI::Instance.m_rhiDevice = nullptr;
+	m_nvrhiDevice = nullptr;
 
 	g_renderWorker.Shutdown();
 }

@@ -115,6 +115,7 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 		break;
 	case IMAGE_TYPE_CUBE:
 		rhiTextureDesc.dimension = (arraySize > 1) ? nvrhi::TextureDimension::TextureCubeArray : nvrhi::TextureDimension::TextureCube;
+		rhiTextureDesc.arraySize *= 6;
 		break;
 	default:
 		ASSERT_FAIL("Invalid image type of %s", image->GetName());

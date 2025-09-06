@@ -43,6 +43,8 @@ struct ShaderInfoNVRHIImpl
 
 	EqString				shaderName;
 	IPackFileReaderPtr		shaderPackFile{ nullptr };
+
+	IGPUPipelineLayoutPtr	pipelineLayout;
 	Array<VertLayout>		vertexLayouts{ PP_SL };
 	Array<EqString>			defines{ PP_SL };
 	Array<Module>			modules{ PP_SL };
