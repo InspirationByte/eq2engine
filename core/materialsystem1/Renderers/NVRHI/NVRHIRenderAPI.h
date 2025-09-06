@@ -12,8 +12,8 @@
 #include "NVRHITexture.h"
 #include "NVRHIBuffer.h"
 #include "NVRHIVertexFormat.h"
-#include "NVRHIShader.h"
 #include "NVRHIStates.h"
+#include "ShaderInfo.h"
 
 using namespace Threading;
 
@@ -107,9 +107,9 @@ public:
 protected:
 	IGPUBindGroupPtr			CreateBindGroupImpl(const NVRHIBindingLayoutList& rhiBindingLayouts, const BindGroupDesc& bindGroupDesc) const;
 
-	nvrhi::ShaderHandle			GetOrLoadShaderModule(const ShaderInfoNVRHIImpl& shaderInfo, int shaderModuleIdx) const;
+	nvrhi::ShaderHandle			GetOrLoadShaderModule(const ShaderInfo& shaderInfo, int shaderModuleIdx) const;
 
-	Map<int, ShaderInfoNVRHIImpl>	m_shaderCache{ PP_SL };
+	Map<int, ShaderInfo>		m_shaderCache{ PP_SL };
 	nvrhi::DeviceHandle			m_rhiDevice{ nullptr };
 	bool						m_deviceLost{ false };
 	bool						m_isValidationActive{ false };

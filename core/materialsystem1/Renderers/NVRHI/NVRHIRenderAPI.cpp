@@ -33,76 +33,6 @@ CNVRHIRenderAPI CNVRHIRenderAPI::Instance;
 ShaderAPI_Base& ShaderAPI_Base::Instance = CNVRHIRenderAPI::Instance;
 IShaderAPI* g_renderAPI = &CNVRHIRenderAPI::Instance;
 
-static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, int entryPointStrHash)
-{
-	uint hash = queryStrHash | (static_cast<uint>(vertexLayoutIdx) << StringId24Bits) | (static_cast<uint>(kind) << (StringId24Bits + 4));
-	hash *= 31;
-	hash += entryPointStrHash;
-	return hash;
-}
-
-ShaderInfoNVRHIImpl::~ShaderInfoNVRHIImpl()
-{
-}
-
-ShaderInfoNVRHIImpl::ShaderInfoNVRHIImpl(ShaderInfoNVRHIImpl&& other) noexcept
-	: shaderName(std::move(other.shaderName))
-	, shaderPackFile(std::move(other.shaderPackFile))
-	, vertexLayouts(std::move(other.vertexLayouts))
-	, defines(std::move(other.defines))
-	, modules(std::move(other.modules))
-	, modulesMap(std::move(other.modulesMap))
-	, shaderKinds(other.shaderKinds)
-
-{
-	other.shaderPackFile = nullptr;
-}
-
-ShaderInfoNVRHIImpl& ShaderInfoNVRHIImpl::operator=(ShaderInfoNVRHIImpl&& other) noexcept
-{
-	shaderName = std::move(other.shaderName);
-	shaderPackFile = std::move(other.shaderPackFile);
-	vertexLayouts = std::move(other.vertexLayouts);
-	defines = std::move(other.defines);
-	modules = std::move(other.modules);
-	modulesMap = std::move(other.modulesMap);
-	shaderKinds = other.shaderKinds;
-	other.shaderPackFile = nullptr;
-	return *this;
-}
-
-void ShaderInfoNVRHIImpl::Release()
-{
-	for (Module& module : modules)
-		module.rhiModule = nullptr;
-}
-
-bool ShaderInfoNVRHIImpl::GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const
-{
-	Array<int> defineIds(PP_SL);
-	for (const EqString& define : findDefines)
-	{
-		const int defineId = arrayFindIndex(defines, define);
-		if (defineId == -1)
-			return false;
-		defineIds.append(defineId);
-	}
-
-	arraySort(defineIds, [](int a, int b) {
-		return a - b;
-	});
-
-	EqString queryStr;
-	for (int id : defineIds)
-	{
-		if (queryStr.Length())
-			queryStr.Append("|");
-		queryStr.Append(defines[id]);
-	}
-	outHash = StringId24(queryStr, true);
-	return true;
-}
-
 //------------------------------------------
 
 void CNVRHIRenderAPI::Shutdown()
@@ -121,12 +51,20 @@ void CNVRHIRenderAPI::FreeShaderPackage(int id)
 	if (it.atEnd())
 		return;
 
+	for (ShaderInfo::Module module : it->modules)
+		reinterpret_cast<nvrhi::IShader*>(module.rhiModule)->Release();
+
 	DevMsg(DEVMSG_RENDER, "Freed shader package %s\n", it->shaderName.ToCString());
 	m_shaderCache.remove(it);
 }
 
 void CNVRHIRenderAPI::ClearShaderPackages()
 {
+	for (auto it = m_shaderCache.begin(); !it.atEnd(); ++it)
+	{
+		for (ShaderInfo::Module module : it->modules)
+			reinterpret_cast<nvrhi::IShader*>(module.rhiModule)->Release();
+	}
 	m_shaderCache.clear(true);
 }
 
@@ -134,7 +72,10 @@ int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 {
 	IPackFileReaderPtr shaderPackFile = g_fileSystem->OpenPackage(filename, SP_MOD | SP_DATA);
 	if (!shaderPackFile)
+	{
+		MsgError("Cannot open shader package '%s'\n", filename);
 		return 0;
+	}
 
 	KVSection shaderInfoKvs;
 	{
@@ -146,156 +87,41 @@ int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 		}
 	}
 
-	defer{
-		if (shaderPackFile)
-			m_shaderCache.remove(StringId24(shaderInfoKvs.GetName()));
-	};
-
+	DevMsg(DEVMSG_RENDER, "Loading shader package %s\n", shaderInfoKvs.GetName());
 	if (!CString::SubString(filename, shaderInfoKvs.GetName()))
 	{
 		ASSERT_FAIL("Shader package '%s' file name doesn't match it's name '%s' in desc", filename, shaderInfoKvs.GetName());
 		return 0;
 	}
 
-	auto it = m_shaderCache.find(StringId24(shaderInfoKvs.GetName()));
+	const int shaderNameId = StringId24(shaderInfoKvs.GetName());
+	auto it = m_shaderCache.find(shaderNameId);
 	if (!it.atEnd())
 	{
 		ASSERT_FAIL("Shader '%s' has been already loaded from different package", shaderInfoKvs.GetName());
 		return 0;
 	}
 
-	it = m_shaderCache.insert(StringId24(shaderInfoKvs.GetName()));
+	it = m_shaderCache.insert(shaderNameId);
 
-	ShaderInfoNVRHIImpl& shaderInfo = *it;
-	shaderInfo.shaderPackFile = shaderPackFile;
-	shaderInfo.shaderName = shaderInfoKvs.GetName();
-
-	const KVSection* defines = shaderInfoKvs["Defines"];
-	if (defines)
-	{
-		shaderInfo.defines.reserve(defines->ValueCount());
-		for (const EqStringRef def : defines->Values<EqStringRef>())
-			shaderInfo.defines.append(def);
-	}
-
-	for (const KVSection& key : shaderInfoKvs.Get("VertexLayouts").Keys())
-	{
-		ShaderInfoNVRHIImpl::VertLayout& layout = shaderInfo.vertexLayouts.append();
-		layout.name = key.GetName();
-		if (layout.name != s_DefaultVertexLayoutName)
-			layout.nameHash = StringId24(layout.name);
-
-		if (!CString::CompareCaseIns(KV_GetValueString(&key, 0), "aliasOf"))
-		{
-			layout.aliasOf = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoNVRHIImpl::VertLayout& layout) {
-				return layout.name == EqStringRef(KV_GetValueString(&key, 1));
-			});
-		}
-	}
-
-	auto getKind = [](const EqStringRef& kindStr) -> int {
-		if (!kindStr.CompareCaseIns(s_shaderKindVertexName))
-			return SHADERKIND_VERTEX;
-		else if (!kindStr.CompareCaseIns(s_shaderKindFragmentName))
-			return SHADERKIND_FRAGMENT;
-		else if (!kindStr.CompareCaseIns(s_shaderKindComputeName))
-			return SHADERKIND_COMPUTE;
-		return 0;
-	};
-
-	auto getKindExt = [](int kind) -> char* {
-		if (kind == SHADERKIND_VERTEX)
-			return ".vert";
-		if (kind == SHADERKIND_FRAGMENT)
-			return ".frag";
-		if (kind == SHADERKIND_COMPUTE)
-			return ".comp";
-		return nullptr;
-	};
+	ShaderInfo& shaderInfo = *it;
 
 	int filesFound = 0;
-	const KVSection* fileListSec = shaderInfoKvs["FileList"];
-	for (const KVSection& itemSec : fileListSec->Keys("spv"))
+	if (!ShaderInfo::ParseShaderInfo(shaderInfo, shaderPackFile, shaderInfoKvs, filesFound))
 	{
-		// TODO: support both spv, dxc loading
-
-		int vertLayoutIdx = -1;
-		EqStringRef kindStr;
-		EqStringRef entryPointName;
-		EqStringRef queryStr;
-		if (itemSec.GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr) < 4)
-		{
-			ASSERT_FAIL("Shader %s 'spv' does not have 4 values");
-			break;
-		}
-
-		const int kind = getKind(kindStr);
-		ASSERT_MSG(kind != 0, "Shader kind is not valid");
-
-		shaderInfo.shaderKinds |= kind;
-
-		const int moduleIndex = shaderInfo.modules.numElem();
-		{
-			const EqString shaderFileName = EqString::Format("%s-%s%s", shaderInfo.vertexLayouts[vertLayoutIdx].name, queryStr, getKindExt(kind));
-			
-			ShaderInfoNVRHIImpl::Module& modInfo = shaderInfo.modules.append();
-			modInfo.fileIndex = shaderInfo.shaderPackFile->FindFileIndex(shaderFileName);
-			modInfo.type = SHADERMODULE_SPIRV;
-			modInfo.kind = static_cast<EShaderKind>(kind);
-			modInfo.entryPoint = entryPointName;
-		}
-		{
-			const int queryStrHash = StringId24(queryStr, true);
-			const int entryPointStrHash = StringId24(entryPointName);
-			const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertLayoutIdx, kind, entryPointStrHash);
-
-			auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
-			ASSERT_MSG(exIt.atEnd(), "%s-%s%s module already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), queryStr, kindStr.ToCString(), exIt.value());
-
-			shaderInfo.modulesMap.insert(shaderModuleId, moduleIndex);
-		}
-		++filesFound;
-
-		if (nvrhi_preload_shaders.GetBool())
-			GetOrLoadShaderModule(shaderInfo, moduleIndex);
+		m_shaderCache.remove(it);
+		return 0;
 	}
 
-	// we need to validate references so collect refs in second pass
-	int refIdx = 0;
-	for (const KVSection& itemSec : fileListSec->Keys("ref"))
+	if (nvrhi_preload_shaders.GetBool())
 	{
-		int vertLayoutIdx = -1;
-		EqStringRef kindStr;
-		EqStringRef entryPointName;
-		EqStringRef queryStr;
-		int refSpvIndex = -1;
-		if (itemSec.GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr, refSpvIndex) < 5)
-		{
-			ASSERT_FAIL("Shader %s 'ref' does not have 5 values (old shader version?)");
-			break;
-		}
-
-		const int kind = getKind(kindStr);
-
-		ASSERT_MSG(kind != 0, "Shader kind is not valid");
-		const int queryStrHash = StringId24(queryStr, true);
-		const int entryPointStrHash = StringId24(entryPointName);
-		const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertLayoutIdx, kind, entryPointStrHash);
-		ASSERT_MSG(shaderInfo.modules[refSpvIndex].kind == static_cast<EShaderKind>(kind), "%s ref %d (%s-%s) points to invalid shader kind", shaderInfo.shaderName.ToCString(), refSpvIndex, kindStr, queryStr);
-
-		auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
-		if (!exIt.atEnd())
-		{
-			ASSERT_FAIL("%s %s-%s module reference already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), kindStr, queryStr, exIt.value());
-		}
-
-		shaderInfo.modulesMap.insert(shaderModuleId, refSpvIndex);
-		++refIdx;
+		for (int i = 0; i < shaderInfo.modules.numElem(); ++i)
+			GetOrLoadShaderModule(shaderInfo, i);
 	}
 
-	shaderPackFile = nullptr;
+	DevMsg(DEVMSG_RENDER, "Loaded %d shader modules from %s package\n", filesFound, shaderInfoKvs.GetName());
 
-	return filesFound;
+	return shaderNameId;
 }
 
 void CNVRHIRenderAPI::PrintAPIInfo() const
@@ -669,11 +495,11 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUComputePipeline* com
 	return CreateBindGroupImpl(computePipelineImpl->m_rhiBindingLayout, bindGroupDesc);
 }
 
-nvrhi::ShaderHandle CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInfoNVRHIImpl& shaderInfo, int shaderModuleIdx) const
+nvrhi::ShaderHandle CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInfo& shaderInfo, int shaderModuleIdx) const
 {
-	ShaderInfoNVRHIImpl::Module& mod = const_cast<ShaderInfoNVRHIImpl::Module&>(shaderInfo.modules[shaderModuleIdx]);
+	ShaderInfo::Module& mod = const_cast<ShaderInfo::Module&>(shaderInfo.modules[shaderModuleIdx]);
 	if (mod.rhiModule)
-		return mod.rhiModule;
+		return reinterpret_cast<nvrhi::IShader*>(mod.rhiModule);
 
 	CMemoryStream shaderData(PP_SL);
 	{
@@ -723,6 +549,8 @@ nvrhi::ShaderHandle CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInfoNVRHI
 		MsgError("Can't create shader module %s!\n", shaderModuleName.ToCString());
 		return nullptr;
 	}
+
+	rhiShaderModule->AddRef();
 	mod.rhiModule = rhiShaderModule;
 
 	return rhiShaderModule;
@@ -738,7 +566,7 @@ void CNVRHIRenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqStri
 		return;
 	}
 
-	const ShaderInfoNVRHIImpl& shaderInfo = *shaderIt;
+	const ShaderInfo& shaderInfo = *shaderIt;
 	int queryStrHash = 0;
 	if (!shaderInfo.GetShaderQueryHash(defines, queryStrHash))
 	{
@@ -750,27 +578,27 @@ void CNVRHIRenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqStri
 
 	for (int i = 0; i < shaderInfo.vertexLayouts.numElem(); ++i)
 	{
-		const ShaderInfoNVRHIImpl::VertLayout& layout = shaderInfo.vertexLayouts[i];
+		const ShaderInfo::VertLayout& layout = shaderInfo.vertexLayouts[i];
 		if (layout.aliasOf != -1)
 			continue;
 
 		if (shaderInfo.shaderKinds & SHADERKIND_FRAGMENT)
 		{
-			const uint shaderModuleId = PackShaderModuleId(queryStrHash, i, SHADERKIND_FRAGMENT, entryPointStrHash);
+			const uint shaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, i, SHADERKIND_FRAGMENT, entryPointStrHash);
 			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 			if (!itShaderModuleId.atEnd())
 				GetOrLoadShaderModule(shaderInfo, *itShaderModuleId);
 		}
 		if (shaderInfo.shaderKinds & SHADERKIND_VERTEX)
 		{
-			const uint shaderModuleId = PackShaderModuleId(queryStrHash, i, SHADERKIND_VERTEX, entryPointStrHash);
+			const uint shaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, i, SHADERKIND_VERTEX, entryPointStrHash);
 			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 			if (!itShaderModuleId.atEnd())
 				GetOrLoadShaderModule(shaderInfo, *itShaderModuleId);
 		}
 		if (shaderInfo.shaderKinds & SHADERKIND_COMPUTE)
 		{
-			const uint shaderModuleId = PackShaderModuleId(queryStrHash, i, SHADERKIND_COMPUTE, entryPointStrHash);
+			const uint shaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, i, SHADERKIND_COMPUTE, entryPointStrHash);
 			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 			if (!itShaderModuleId.atEnd())
 				GetOrLoadShaderModule(shaderInfo, *itShaderModuleId);
@@ -790,7 +618,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 		return nullptr;
 	}
 
-	const ShaderInfoNVRHIImpl& shaderInfo = *shaderIt;
+	const ShaderInfo& shaderInfo = *shaderIt;
 	ASSERT_MSG(shaderInfo.shaderName == pipelineDesc.shaderName, "Shader name mismatch, requested '%s' got '%s' (hash collision?)", pipelineDesc.shaderName.ToCString(), shaderInfo.shaderName.ToCString());
 
 	if (!(shaderInfo.shaderKinds & (SHADERKIND_VERTEX | SHADERKIND_FRAGMENT)))
@@ -806,7 +634,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 		return nullptr;
 	}
 
-	int vertexLayoutIdx = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoNVRHIImpl::VertLayout& layout) {
+	int vertexLayoutIdx = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfo::VertLayout& layout) {
 		return layout.nameHash == pipelineDesc.shaderVertexLayoutId;
 	});
 
@@ -872,7 +700,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 		nvrhi::ShaderHandle rhiVertexShaderModule = nullptr;
 		{
 			const int entryPointStrHash = StringId24(pipelineDesc.vertex.shaderEntryPoint);
-			const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_VERTEX, entryPointStrHash);
+			const uint shaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_VERTEX, entryPointStrHash);
 			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 
 			if (!itShaderModuleId.atEnd())
@@ -970,7 +798,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 		nvrhi::ShaderHandle rhiFragmentShaderModule = nullptr; // TODO: fetch from cache of fragment modules?
 		{
 			const int entryPointStrHash = StringId24(pipelineDesc.fragment.shaderEntryPoint);
-			const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_FRAGMENT, entryPointStrHash);
+			const uint shaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_FRAGMENT, entryPointStrHash);
 			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 
 			if (!itShaderModuleId.atEnd())
@@ -1052,7 +880,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		return nullptr;
 	}
 
-	const ShaderInfoNVRHIImpl& shaderInfo = *shaderIt;
+	const ShaderInfo& shaderInfo = *shaderIt;
 	ASSERT_MSG(shaderInfo.shaderName == pipelineDesc.shaderName, "Shader name mismatch, requested '%s' got '%s' (hash collision?)", pipelineDesc.shaderName.ToCString(), shaderInfo.shaderName.ToCString());
 
 	if (!(shaderInfo.shaderKinds & SHADERKIND_COMPUTE))
@@ -1068,7 +896,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		return nullptr;
 	}
 
-	int layoutIdx = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoNVRHIImpl::VertLayout& layout) {
+	int layoutIdx = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfo::VertLayout& layout) {
 		return layout.nameHash == pipelineDesc.shaderLayoutId;
 	});
 
@@ -1083,7 +911,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 	nvrhi::ShaderHandle rhiComputeShaderModule = nullptr;
 	{
 		const int entryPointStrHash = StringId24(pipelineDesc.shaderEntryPoint);
-		const uint shaderModuleId = PackShaderModuleId(queryStrHash, layoutIdx, SHADERKIND_COMPUTE, entryPointStrHash);
+		const uint shaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, layoutIdx, SHADERKIND_COMPUTE, entryPointStrHash);
 		auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 
 		if (!itShaderModuleId.atEnd())
