@@ -130,7 +130,7 @@ project "eqWGPURHI"
 	}
 	defines{
 		"EQRHI_WGPU",
-		"RENDERER_TYPE=4"
+		"RENDERER_TYPE=2"
 	}
 	files {
 		"materialsystem1/Renderers/WGPU/**",
