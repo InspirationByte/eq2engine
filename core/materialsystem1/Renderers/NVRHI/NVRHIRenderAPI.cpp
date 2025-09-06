@@ -52,7 +52,10 @@ void CNVRHIRenderAPI::FreeShaderPackage(int id)
 		return;
 
 	for (ShaderInfo::Module module : it->modules)
-		reinterpret_cast<nvrhi::IShader*>(module.rhiModule)->Release();
+	{
+		if(module.rhiModule)
+			reinterpret_cast<nvrhi::IShader*>(module.rhiModule)->Release();
+	}
 
 	DevMsg(DEVMSG_RENDER, "Freed shader package %s\n", it->shaderName.ToCString());
 	m_shaderCache.remove(it);
@@ -63,7 +66,10 @@ void CNVRHIRenderAPI::ClearShaderPackages()
 	for (auto it = m_shaderCache.begin(); !it.atEnd(); ++it)
 	{
 		for (ShaderInfo::Module module : it->modules)
-			reinterpret_cast<nvrhi::IShader*>(module.rhiModule)->Release();
+		{
+			if (module.rhiModule)
+				reinterpret_cast<nvrhi::IShader*>(module.rhiModule)->Release();
+		}
 	}
 	m_shaderCache.clear(true);
 }
