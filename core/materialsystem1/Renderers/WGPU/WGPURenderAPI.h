@@ -10,7 +10,7 @@
 #include "WGPUBackend.h"
 #include "WGPUTexture.h"
 #include "WGPUBuffer.h"
-#include "WGPUShader.h"
+#include "ShaderInfo.h"
 
 using namespace Threading;
 
@@ -104,9 +104,9 @@ protected:
 	WGPUShaderModule			CreateShaderSPIRV(const uint32* code, uint32 size, const char* name = nullptr) const;
 	WGPUShaderModule			CreateShaderWGSL(const char* szText, const char* name = nullptr) const;
 
-	WGPUShaderModule			GetOrLoadShaderModule(const ShaderInfoWGPUImpl& shaderInfo, int shaderModuleIdx) const;
+	WGPUShaderModule			GetOrLoadShaderModule(const ShaderInfo& shaderInfo, int shaderModuleIdx) const;
 
-	Map<int, ShaderInfoWGPUImpl>	m_shaderCache{ PP_SL };
+	Map<int, ShaderInfo>		m_shaderCache{ PP_SL };
 	WGPUInstance				m_rhiInstance{ nullptr };
 	WGPUDevice					m_rhiDevice{ nullptr };
 	WGPUQueue					m_rhiQueue{ nullptr };

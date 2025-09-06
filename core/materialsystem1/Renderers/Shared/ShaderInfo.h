@@ -1,24 +1,24 @@
 #pragma once
-#include "WGPUBackend.h"
 
-class IPackFileReader;
-using IPackFileReaderPtr = CRefPtr<IPackFileReader>;
+#include "renderers/IShaderAPI.h"
+#include "core/IPackFileReader.h"
 
 enum EShaderModuleType
 {
 	SHADERMODULE_SPIRV,
-	SHADERMODULE_WGSL,
+	SHADERMODULE_DXBC,
+	SHADERMODULE_WGSL,		// WGPU only
 };
 
-struct ShaderInfoWGPUImpl
+struct ShaderInfo
 {
-	~ShaderInfoWGPUImpl();
+	static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, int entryPointStrHash);
+	static bool ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shaderPackFile, const KVSection& shaderInfoKvs, int& filesFound);
 
-	ShaderInfoWGPUImpl() = default;
-	ShaderInfoWGPUImpl(ShaderInfoWGPUImpl&& other) noexcept;
-	ShaderInfoWGPUImpl& operator=(ShaderInfoWGPUImpl&& other) noexcept;
+	ShaderInfo() = default;
+	ShaderInfo(ShaderInfo&& other) noexcept;
+	ShaderInfo& operator=(ShaderInfo&& other) noexcept;
 
-	void Release();
 	bool GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const;
 
 	struct VertLayout
@@ -30,8 +30,9 @@ struct ShaderInfoWGPUImpl
 
 	struct Module
 	{
-		WGPUShaderModule	rhiModule{ nullptr };
+		void*				rhiModule{ nullptr };
 		EShaderKind			kind;
+		EqString			entryPoint;
 		int					fileIndex{ -1 };
 		EShaderModuleType	type{};
 	};
@@ -44,6 +45,7 @@ struct ShaderInfoWGPUImpl
 
 	EqString				shaderName;
 	IPackFileReaderPtr		shaderPackFile{ nullptr };
+	IGPUPipelineLayoutPtr	pipelineLayout;				// needed for NVRHI
 	Array<VertLayout>		vertexLayouts{ PP_SL };
 	Array<EqString>			defines{ PP_SL };
 	Array<Module>			modules{ PP_SL };
