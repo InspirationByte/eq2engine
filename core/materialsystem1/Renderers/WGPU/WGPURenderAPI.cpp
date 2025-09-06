@@ -48,7 +48,10 @@ void CWGPURenderAPI::FreeShaderPackage(int id)
 		return;
 
 	for (ShaderInfo::Module module : it->modules)
-		wgpuShaderModuleRelease(reinterpret_cast<WGPUShaderModule>(module.rhiModule));
+	{
+		if (module.rhiModule)
+			wgpuShaderModuleRelease(reinterpret_cast<WGPUShaderModule>(module.rhiModule));
+	}
 
 	DevMsg(DEVMSG_RENDER, "Freed shader package %s\n", it->shaderName.ToCString());
 	m_shaderCache.remove(it);
@@ -59,7 +62,10 @@ void CWGPURenderAPI::ClearShaderPackages()
 	for (auto it = m_shaderCache.begin(); !it.atEnd(); ++it)
 	{
 		for (ShaderInfo::Module module : it->modules)
-			wgpuShaderModuleRelease(reinterpret_cast<WGPUShaderModule>(module.rhiModule));
+		{
+			if(module.rhiModule)
+				wgpuShaderModuleRelease(reinterpret_cast<WGPUShaderModule>(module.rhiModule));
+		}
 	}
 	m_shaderCache.clear(true);
 }
