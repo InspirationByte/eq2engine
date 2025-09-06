@@ -14,10 +14,6 @@
 using namespace Threading;
 
 extern CEqMutex	g_sapi_TextureMutex;
-extern CEqMutex	g_sapi_ShaderMutex;
-extern CEqMutex	g_sapi_VBMutex;
-extern CEqMutex	g_sapi_IBMutex;
-extern CEqMutex	g_sapi_Mutex;
 
 class CEmptyBindGroup : public IGPUBindGroup {};
 class CEmptyIPipelineLayout : public IGPUPipelineLayout {};

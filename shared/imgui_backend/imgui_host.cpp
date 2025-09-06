@@ -205,9 +205,6 @@ void CEqImGuiHost::EndFrame(int width, int height, IGPURenderPassRecorder* rendP
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		io.DisplaySize = ImVec2((float)width, (float)height);
 
-		//static bool show_demo_window = true;
-		//ImGui::ShowDemoWindow(&show_demo_window);
-
 		// Rendering
 		ImGui::EndFrame();
 
