@@ -8,23 +8,21 @@
 #pragma once
 #include "textureformats.h"
 
-class IFileStream;
-
-// Image loading flags
-enum EImageLoadingFlags
-{
-	DONT_LOAD_MIPMAPS = 0x1
-};
-
-#define ALL_MIPMAPS				127
-#define IMAGE_DEPTH_CUBEMAP		0
-
-const char* GetFormatString(const ETextureFormat format);
-ETextureFormat	GetFormatFromString(const char* string);
-
 class CImage : public RefCountedObject<CImage>
 {
 public:
+	// Image loading flags
+	enum ELoadFlags
+	{
+		SKIP_MIPMAPS = 0x1
+	};
+
+	static constexpr int ALL_MIPMAPS = 127;
+	static constexpr int IMAGE_DEPTH_CUBEMAP = 0;
+
+	static const char*		GetFormatString(const ETextureFormat format);
+	static ETextureFormat	GetFormatFromString(const char* string);
+
 	CImage();
 	CImage(const CImage& img);
 	~CImage();

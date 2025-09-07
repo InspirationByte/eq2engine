@@ -19,38 +19,37 @@ public:
 	static bool isNewLine(const char ch);
 	static bool isNumericSpecial(const char ch);
 
-	typedef bool (*BOOLFUNC)(const char ch);
+	using TestFunc = bool(const char ch);
 
-	Tokenizer(int nBuffers = 1);
+	Tokenizer(int bufferCount = 1);
 	~Tokenizer();
 
-	void	setString(const char* string);
-	bool	setFile(IFileStreamPtr file);
-	void	reset();
+	void			setString(const char* string);
+	bool			setFile(IFileStreamPtr file);
+	void			reset();
 
-	bool	goToNext(BOOLFUNC isAlpha = isAlphabetical);
-	bool	goToNextLine();
-	char*	next(BOOLFUNC isAlpha = isAlphabetical);
-	char*	nextAfterToken(const char* token, BOOLFUNC isAlpha = isAlphabetical);
-	char*	nextLine();
+	bool			goToNext(TestFunc isAlpha = isAlphabetical);
+	bool			goToNextLine();
 
-	//uint	getCurLine();
+	char*			next(TestFunc isAlpha = isAlphabetical);
+	char*			nextAfterToken(const char* token, TestFunc isAlpha = isAlphabetical);
+	char*			nextLine();
+
 private:
-	char*	str{ nullptr };
-	int		length{ 0 };
-	int		start{ 0 };
-	int		end{ 0 };
-	int		capacity{ 0 };
+	char*			getBuffer(int size);
 
-	int currentBuffer{ 0 };
-
-	struct TokBuffer
+	struct Buffer
 	{
-		char* buffer{ nullptr };
-		int bufferSize{ 0 };
+		char*	data{ nullptr };
+		int		size{ 0 };
 	};
+	char*			m_str{ nullptr };
 
-	Array<TokBuffer> buffers{ PP_SL };
+	Array<Buffer>	m_buffers{ PP_SL };
+	int				m_currentBuffer{ 0 };
 
-	char* getBuffer(int size);
+	int				m_length{ 0 };
+	int				m_start{ 0 };
+	int				m_end{ 0 };
+	int				m_capacity{ 0 };
 };

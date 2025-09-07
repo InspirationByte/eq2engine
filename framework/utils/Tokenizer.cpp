@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "core/IFileSystem.h"
+#include "ds/IFileStream.h"
 #include "Tokenizer.h"
 
 bool Tokenizer::isWhiteSpace(const char ch)
@@ -34,57 +34,53 @@ bool Tokenizer::isNewLine(const char ch)
 	return (ch == '\r' || ch == '\n');
 }
 
-Tokenizer::Tokenizer(int nBuffers)
+Tokenizer::Tokenizer(int bufferCount)
 {
-	buffers.setNum(nBuffers);
+	m_buffers.setNum(bufferCount);
 	reset();
 }
 
 Tokenizer::~Tokenizer()
 {
-	for (int i = 0; i < buffers.numElem(); i++)
-	{
-		if (buffers[i].buffer)
-			delete[] buffers[i].buffer;
-	}
-	delete[] str;
+	for (Buffer& buffer : m_buffers)
+		SAFE_DELETE_ARRAY(buffer.data);
+
+	SAFE_DELETE_ARRAY(m_str);
 }
 
 void Tokenizer::setString(const char* string)
 {
-	length = CString::Length(string);
+	m_length = CString::Length(string);
 
 	// Increase capacity if necessary
-	if (length >= capacity) {
-		delete[] str;
+	if (m_length >= m_capacity) {
+		delete[] m_str;
 
-		capacity = length + 1;
-		str = PPNew char[capacity];
+		m_capacity = m_length + 1;
+		m_str = PPNew char[m_capacity];
 	}
 
-	currentBuffer = 0;
+	m_currentBuffer = 0;
 
-	strcpy(str, string);
+	strcpy(m_str, string);
 
 	reset();
 }
 
 bool Tokenizer::setFile(IFileStreamPtr file)
 {
-	delete[] str;
-	str = nullptr;
-
+	SAFE_DELETE_ARRAY(m_str);
 	if (!file)
 	{
-		currentBuffer = 0;
+		m_currentBuffer = 0;
 		return false;
 	}
 
-	length = file->GetSize();
+	m_length = file->GetSize();
+	m_str = PPNew char[m_length + 1];
 
-	str = PPNew char[(length + 1) * sizeof(char)];
-	file->Read(str, length, 1);
-	str[length] = '\0';
+	file->Read(m_str, m_length, 1);
+	m_str[m_length] = 0;
 
 	reset();
 	return true;
@@ -92,29 +88,29 @@ bool Tokenizer::setFile(IFileStreamPtr file)
 
 void Tokenizer::reset()
 {
-	end = 0;
+	m_end = 0;
 }
 
-bool Tokenizer::goToNext(BOOLFUNC isAlpha)
+bool Tokenizer::goToNext(TestFunc isAlpha)
 {
-	start = end;
+	m_start = m_end;
 
-	while (start < length && isWhiteSpace(str[start]))
-		start++;
+	while (m_start < m_length && isWhiteSpace(m_str[m_start]))
+		m_start++;
 
-	end = start + 1;
+	m_end = m_start + 1;
 
-	if (start < length)
+	if (m_start < m_length)
 	{
-		if (isNumeric(str[start]))
+		if (isNumeric(m_str[m_start]))
 		{
-			while (isNumericSpecial(str[end]))
-				end++;
+			while (isNumericSpecial(m_str[m_end]))
+				m_end++;
 		}
-		else if (isAlpha(str[start]))
+		else if (isAlpha(m_str[m_start]))
 		{
-			while (isAlpha(str[end]) || isNumeric(str[end]))
-				end++;
+			while (isAlpha(m_str[m_end]) || isNumeric(m_str[m_end]))
+				m_end++;
 		}
 		return true;
 	}
@@ -123,46 +119,46 @@ bool Tokenizer::goToNext(BOOLFUNC isAlpha)
 
 bool Tokenizer::goToNextLine()
 {
-	if (end < length)
+	const int length = m_length;
+	if (m_end < length)
 	{
-		start = end;
+		const char* str = m_str;
 
-		while (end < length - 1 && !isNewLine(str[end]))
-			end++;
+		m_start = m_end;
+		while (m_end < length && !isNewLine(str[m_end]))
+			m_end++;
 
-		if (isNewLine(str[end + 1]) && str[end] != str[end + 1])
-			end += 2;
+		if (isNewLine(str[m_end + 1]) && str[m_end] != str[m_end + 1])
+			m_end += 2;
 		else
-			end++;
+			m_end++;
 
 		return true;
 	}
-
 	return false;
 }
 
 
-char* Tokenizer::next(BOOLFUNC isAlpha)
+char* Tokenizer::next(TestFunc isAlpha)
 {
-	if (goToNext(isAlpha))
-	{
-		int size = end - start;
-		char* buffer = getBuffer(size + 1);
-		strncpy(buffer, str + start, size);
-		buffer[size] = '\0';
-		return buffer;
-	}
-	return nullptr;
+	if (!goToNext(isAlpha))
+		return nullptr;
+
+	const int size = m_end - m_start;
+
+	char* buffer = getBuffer(size + 1);
+	strncpy(buffer, m_str + m_start, size);
+	buffer[size] = 0;
+
+	return buffer;
 }
 
-char* Tokenizer::nextAfterToken(const char* token, BOOLFUNC isAlpha)
+char* Tokenizer::nextAfterToken(const char* token, TestFunc isAlpha)
 {
 	while (goToNext(isAlpha))
 	{
-		if (strncmp(str + start, token, end - start) == 0)
-		{
+		if (strncmp(m_str + m_start, token, m_end - m_start) == 0)
 			return next();
-		}
 	}
 
 	return nullptr;
@@ -170,28 +166,29 @@ char* Tokenizer::nextAfterToken(const char* token, BOOLFUNC isAlpha)
 
 char* Tokenizer::nextLine()
 {
-	if (goToNextLine())
-	{
-		int size = end - start;
-		char* buffer = getBuffer(size + 1);
-		strncpy(buffer, str + start, size);
-		buffer[size] = '\0';
-		return buffer;
-	}
-	return nullptr;
+	if (!goToNextLine())
+		return nullptr;
+
+	const int size = m_end - m_start;
+
+	char* buffer = getBuffer(size + 1);
+	strncpy(buffer, m_str + m_start, size);
+	buffer[size] = 0;
+
+	return buffer;
 }
 
 char* Tokenizer::getBuffer(int size)
 {
-	currentBuffer++;
-	if (currentBuffer >= buffers.numElem())
-		currentBuffer = 0;
+	m_currentBuffer = (m_currentBuffer + 1) % m_buffers.numElem();
 
-	if (size > buffers[currentBuffer].bufferSize)
+	Buffer& buf = m_buffers[m_currentBuffer];
+	if (size > buf.size)
 	{
-		delete buffers[currentBuffer].buffer;
-		buffers[currentBuffer].buffer = PPNew char[buffers[currentBuffer].bufferSize = size];
-	}
+		if(buf.data)
+			delete [] buf.data;
 
-	return buffers[currentBuffer].buffer;
+		buf.data = PPNew char[buf.size = size];
+	}
+	return buf.data;
 }

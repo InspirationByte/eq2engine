@@ -465,7 +465,7 @@ void CMaterialSystem::CreateWhiteTexture()
 	{
 		CImagePtr img = CRefPtr_new(CImage);
 
-		ubyte* texData = img->Create(FORMAT_RGBA8, nWidth, nHeight, IMAGE_DEPTH_CUBEMAP, 1);
+		ubyte* texData = img->Create(FORMAT_RGBA8, nWidth, nHeight, CImage::IMAGE_DEPTH_CUBEMAP, 1);
 		const int dataSize = img->GetMipMappedSize(0, 1) * img->GetArraySize();
 		memset(texData, 0xffffffff, dataSize);
 
