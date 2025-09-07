@@ -178,7 +178,7 @@ bool CDkCore::Init(const CoreAppInitParameters& initParams)
 	if (initParams.commandLine.ptr())
 		g_cmdLine->Init(initParams.commandLine);
 
-	const int nWorkdirIndex = g_cmdLine->FindArgument("-workdir");
+	const int nWorkdirIndex = g_cmdLine->Find("-workdir");
 	const char* newWorkDir = g_cmdLine->GetArgumentsOf(nWorkdirIndex);
 	if (newWorkDir)
 	{
@@ -305,10 +305,10 @@ bool CDkCore::Init(const CoreAppInitParameters& initParams)
 	}
 #endif
 
-	if (g_cmdLine->FindArgument("-nolog") != -1)
+	if (g_cmdLine->Find("-nolog") != -1)
 		logEnabled = false;
 
-	if (g_cmdLine->FindArgument("-log") != -1)
+	if (g_cmdLine->Find("-log") != -1)
 		logEnabled = true;
 
 	{
@@ -340,7 +340,7 @@ bool CDkCore::Init(const CoreAppInitParameters& initParams)
 	c_log_flush = PPNew ConCommand("log_flush", CONCOMMAND_FN(log_flush));
 
 	// Install exception handler
-	if (g_cmdLine->FindArgument("-nocrashdump") == -1)
+	if (g_cmdLine->Find("-nocrashdump") == -1)
 		InstallExceptionHandler();
 
 	if (logEnabled)

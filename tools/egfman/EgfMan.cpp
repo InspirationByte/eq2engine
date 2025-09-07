@@ -440,7 +440,7 @@ void CEGFViewFrame::InitializeEq()
 	InitMatSystem(m_pRenderPanel->GetHandle());
 #endif
 
-	const int modelArgIdx = g_cmdLine->FindArgument("-model");
+	const int modelArgIdx = g_cmdLine->Find("-model");
 	if (modelArgIdx != -1)
 	{
 		EqString modelPath(g_cmdLine->GetArgumentsOf(modelArgIdx));

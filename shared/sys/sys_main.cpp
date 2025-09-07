@@ -104,7 +104,7 @@ static int EQSDLMessageBoxCallback(const char* messageStr, const char* titleStr,
 
 static void Sys_InitConfiguration()
 {
-	const int userCfgIdx = g_cmdLine->FindArgument("-user_cfg");
+	const int userCfgIdx = g_cmdLine->Find("-user_cfg");
 	if (userCfgIdx != -1)
 	{
 		extern ConVar user_cfg;

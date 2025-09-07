@@ -154,10 +154,20 @@ EQSCRIPT_TYPE_BEGIN(ConVar)
 	EQSCRIPT_BIND_STATIC_FUNC("SetChangeCallback", S_ConVar_SetChangeCallback)
 EQSCRIPT_TYPE_END
 
+static const char* S_ICommandLine_GetArgumentString(ICommandLine* self, int idx)
+{
+	return self->GetParameters()[idx];
+}
+
+static int S_ICommandLine_GetArgumentCount(ICommandLine* self)
+{
+	return self->GetParameters().numElem();
+}
+
 EQSCRIPT_TYPE_BEGIN(ICommandLine)
-	EQSCRIPT_BIND_FUNC(FindArgument)
-	EQSCRIPT_BIND_FUNC(GetArgumentString)
-	EQSCRIPT_BIND_FUNC(GetArgumentCount)
+	EQSCRIPT_BIND_FUNC(Find)
+	EQSCRIPT_BIND_STATIC_FUNC("GetArgumentString", S_ICommandLine_GetArgumentString)
+	EQSCRIPT_BIND_STATIC_FUNC("GetArgumentCount", S_ICommandLine_GetArgumentCount)
 EQSCRIPT_TYPE_END
 
 EQSCRIPT_TYPE_BEGIN(ILocToken)

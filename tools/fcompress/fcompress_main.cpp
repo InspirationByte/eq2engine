@@ -595,7 +595,9 @@ int main(int argc, char **argv)
 		return 0;
 
 	g_cmdLine->ExecuteCommandLine();
-	if(g_cmdLine->GetArgumentCount() <= 1)
+
+	ArrayCRef<EqString> args = g_cmdLine->GetParameters();
+	if (args.numElem() <= 1)
 	{
 		Usage();
 
@@ -605,19 +607,19 @@ int main(int argc, char **argv)
 
 	EqString outFileName = "";
 
-	for (int i = 0; i < g_cmdLine->GetArgumentCount(); i++)
+	for (int i = 0; i < args.numElem(); i++)
 	{
-		EqString argStr = g_cmdLine->GetArgumentString(i);
-
+		EqStringRef argStr = args[i];
 		if (!argStr.CompareCaseIns("-target"))
 		{
 			CookPackageTarget(g_cmdLine->GetArgumentsOf(i));
 		}
-		else if (!argStr.CompareCaseIns("-set") && g_cmdLine->GetArgumentCount())
+		else if (!argStr.CompareCaseIns("-set"))
 		{
 			const char* keyValue[2];
 			const int numValues = g_cmdLine->GetArgumentsOf(i, keyValue, elementsOf(keyValue));
-			if (numValues != 2) {
+			if (numValues != 2) 
+			{
 				Msg("-set: key and value are required\n");
 				continue;
 			}

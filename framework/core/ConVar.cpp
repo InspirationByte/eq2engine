@@ -150,7 +150,7 @@ void ConVar::SetBool(const bool newvalue)
 
 bool ConVar::CheckCommandLine(int startAt/* = 0 */)
 {
-	int indx = g_cmdLine->FindArgument(EqString::Format("+%s",GetName()).ToCString(),startAt);
+	int indx = g_cmdLine->Find(EqString::Format("+%s",GetName()).ToCString(),startAt);
 	if(indx != -1)
 		return true;
 	else

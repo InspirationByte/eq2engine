@@ -62,7 +62,7 @@ CEqAudioSystemAL::~CEqAudioSystemAL()
 // init AL context
 bool CEqAudioSystemAL::InitContext()
 {
-	if (g_cmdLine->FindArgument("-noaudio") != -1)
+	if (g_cmdLine->Find("-noaudio") != -1)
 		return false;
 
 	Msg(" \n--------- AudioSystem Init --------- \n");

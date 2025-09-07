@@ -182,7 +182,7 @@ static void wgpuStoreCacheDataFunction(void const* key, size_t keySize, void con
 
 bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 {
-	const bool isDeviceValidationEnabled = (g_cmdLine->FindArgument("-rhivalidation") != -1);
+	const bool isDeviceValidationEnabled = (g_cmdLine->Find("-rhivalidation") != -1);
 
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;

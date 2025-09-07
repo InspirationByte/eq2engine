@@ -826,7 +826,7 @@ void CMotionPackageGenerator::LoadSequence(const KVSection& section, const char*
 	// length alignment, for differrent animation lengths, takes the first animation as etalon
 	bool alignAnimationLengths = KV_GetValueBool(section.FindSection("alignLengths"));
 
-	if(g_cmdLine->FindArgument("-forceAlign") != -1)
+	if(g_cmdLine->Find("-forceAlign") != -1)
 		alignAnimationLengths = true;
 
 	// parse default parameters
@@ -1175,7 +1175,7 @@ void CMotionPackageGenerator::WriteAnimationPackage(const char* packageOutputFil
 	int compressStatus = Z_ERRNO;
 
 	// do not compress animation frames if option found
-	if(g_cmdLine->FindArgument("-nocompress") == -1)
+	if(g_cmdLine->Find("-nocompress") == -1)
 		compressStatus = compress2(pCompressedFrames, &nCompressedFramesSize, (ubyte*)m_animframes.ptr(), framesLumpSize, 9);
 
 	if(compressStatus == Z_OK)

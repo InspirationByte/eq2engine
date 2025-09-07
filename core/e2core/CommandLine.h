@@ -12,21 +12,18 @@ class CCommandLine : public ICommandLine
 {
 public:
 	CCommandLine();
-	~CCommandLine();
 
 	void				Init(ArrayCRef<const char*> args);
 	void				DeInit();
 
 	void				ExecuteCommandLine(CommandFilterFn func = nullptr) const;
 
-	const char*			GetArgumentString(int index) const;
-	int					FindArgument(const char* arg, int startfrom = 0)  const;
+	ArrayCRef<EqString>	GetParameters() const { return m_args; }
+	int					Find(const char* arg, int startfrom = 0)  const;
 
 	const char*			GetArgumentsOf(int paramIndex) const;
 	int					GetArgumentsOf(int paramIndex, const char** values, int maxValues) const;
-	int					GetArgumentCount()  const;
 
-	//-------------------------
 	bool				IsInitialized() const		{return true;}
 
 protected:
