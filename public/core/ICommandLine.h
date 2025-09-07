@@ -19,20 +19,18 @@ using CommandFilterFn = bool (*)(const ConCommandBase* pCmd, ArrayCRef<EqString>
 class ICommandLine : public IEqCoreModule
 {
 public:
-	CORE_INTERFACE("CORE_CommandLine_004")
+	CORE_INTERFACE("CORE_CommandLine_005")
 
-	virtual void			Init(ArrayCRef<const char*> commandLine) = 0;
-	virtual void			DeInit() = 0;
+	virtual void				Init(ArrayCRef<const char*> commandLine) = 0;
+	virtual void				DeInit() = 0;
 
-	virtual void			ExecuteCommandLine(CommandFilterFn func = nullptr) const = 0;
+	virtual void				ExecuteCommandLine(CommandFilterFn func = nullptr) const = 0;
 
-	virtual int				FindArgument(const char* arg, int startfrom = 0) const = 0;
+	virtual int					Find(const char* arg, int startfrom = 0) const = 0;
+	virtual ArrayCRef<EqString>	GetParameters() const = 0;
 
-	virtual const char*		GetArgumentString(int index) const = 0;
-
-	virtual const char*		GetArgumentsOf(int paramIndex) const = 0;
-	virtual int				GetArgumentsOf(int paramIndex, const char** values, int maxValues) const = 0;
-	virtual int				GetArgumentCount() const = 0;
+	virtual const char*			GetArgumentsOf(int paramIndex) const = 0;
+	virtual int					GetArgumentsOf(int paramIndex, const char** values, int maxValues) const = 0;
 };
 
 INTERFACE_SINGLETON(ICommandLine, CCommandLine, g_cmdLine )

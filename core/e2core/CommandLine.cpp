@@ -17,10 +17,6 @@ CCommandLine::CCommandLine()
 	g_eqCore->RegisterInterface(this);
 }
 
-CCommandLine::~CCommandLine()
-{
-}
-
 void CCommandLine::Init(ArrayCRef<const char*> args)
 {
 	m_args.clear();
@@ -104,11 +100,6 @@ void CCommandLine::AddArgument( const char *pFirst, const char *pLast )
 	m_args.append(_Es(pFirst, (pLast - pFirst)));
 }
 
-int	CCommandLine::GetArgumentCount() const
-{
-	return m_args.numElem();
-}
-
 void CCommandLine::ExecuteCommandLine(CommandFilterFn filterFn /*= nullptr*/) const
 {
 	if(!m_args.numElem())
@@ -116,27 +107,18 @@ void CCommandLine::ExecuteCommandLine(CommandFilterFn filterFn /*= nullptr*/) co
 
 	g_consoleCommands->ClearCommandBuffer();
 
-	for (int i = 0; i < GetArgumentCount(); i++ )
+	for (int i = 0; i < m_args.numElem(); i++)
 	{
 		const char* cmdOrCvarStr = m_args[i];
-
 		if (*cmdOrCvarStr != '+')
 			continue;
 
-		g_consoleCommands->SetCommandBuffer(EqString::Format("%s %s", cmdOrCvarStr + 1, GetArgumentsOf(i)));
-		g_consoleCommands->ExecuteCommandBuffer(filterFn);
+		g_consoleCommands->AppendToCommandBuffer(EqString::Format("%s %s;", cmdOrCvarStr + 1, GetArgumentsOf(i)));
 	}
+	g_consoleCommands->ExecuteCommandBuffer(filterFn);
 }
 
-const char* CCommandLine::GetArgumentString(int index) const
-{
-	if(!m_args.inRange(index))
-		return nullptr;
-
-	return m_args[index];
-}
-
-int CCommandLine::FindArgument(const char* arg, int startfrom /* = 0 */) const
+int CCommandLine::Find(const char* arg, int startfrom /* = 0 */) const
 {
 	if(!m_args.inRange(startfrom))
 		return -1;
@@ -159,14 +141,13 @@ const char* CCommandLine::GetArgumentsOf(int paramIndex) const
 	static EqString _tmpArguments;
 	_tmpArguments.Empty();
 
-	for (int i = paramIndex+1; i < m_args.numElem(); i++ )
+	for (int i = paramIndex + 1; i < m_args.numElem(); i++)
 	{
 		const char* argStr = m_args[i];
-
 		if (*argStr == '+' || *argStr == '-')
 			break;
 
-		if(i > paramIndex+1)
+		if (i > paramIndex + 1)
 			_tmpArguments.Append(' ');
 
 		bool hasSpaces = strchr(argStr, ' ') || strchr(argStr, '\t');
@@ -188,8 +169,7 @@ int	CCommandLine::GetArgumentsOf(int paramIndex, const char** values, int maxVal
 	int numArgs = 0;
 	for (int i = paramIndex + 1; i < m_args.numElem() && maxValues > 0; ++i, --maxValues)
 	{
-		const char* argStr = m_args[i].ToCString();
-
+		const char* argStr = m_args[i];
 		if (*argStr == '+' || *argStr == '-')
 			break;
 

@@ -324,10 +324,10 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 	// try explicitly set renderer
 	EqString rendererName = config.rendererName;
 
-	const int rendererCmdLine = g_cmdLine->FindArgument("-renderer");
+	const int rendererCmdLine = g_cmdLine->Find("-renderer");
 	if (rendererCmdLine != -1)
 		rendererName = g_cmdLine->GetArgumentsOf(rendererCmdLine);
-	else if(g_cmdLine->FindArgument("-norender") != -1)
+	else if(g_cmdLine->Find("-norender") != -1)
 		rendererName = "eqNullRHI";
 
 	if (rendererName.Length())

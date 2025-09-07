@@ -1,5 +1,7 @@
 #pragma once
 
+class CEqJobManager;
+
 static constexpr EqStringRef s_outputTag = "%OUTPUT%";
 static constexpr EqStringRef s_argumentsTag = "%ARGS%";
 static constexpr EqStringRef s_inputFileNameTag = "%INPUT_FILENAME%";
@@ -14,4 +16,4 @@ static constexpr EqStringRef s_materialFileExt = "mat";
 static constexpr EqStringRef s_atlasFileExt = "atl";
 
 void ProcessAtlasFile(const char* atlasSrcFileName, const char* materialsPath);
-void CookTarget(const char* pszTargetName);;
+void CookTarget(const char* pszTargetName, CEqJobManager& jobMng);

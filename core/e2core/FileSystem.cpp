@@ -288,7 +288,7 @@ bool CFileSystem::Init(bool editorMode)
 		EqStringRef gamePath = g_eqCore->GetApplicationName();
 		fsConfig->Get("DefaultGameDir").GetValues(gamePath);
 
-		const int gamePathArg = g_cmdLine->FindArgument("-game");
+		const int gamePathArg = g_cmdLine->Find("-game");
 		if(gamePathArg != -1)
 			gamePath = g_cmdLine->GetArgumentsOf(gamePathArg);
 
@@ -297,7 +297,7 @@ bool CFileSystem::Init(bool editorMode)
 		MsgInfo("* Content data directory: %s\n", GetCurrentGameDirectory());
 
 		// FS dev addon for game tools
-		const int iDevAddonPathArg = g_cmdLine->FindArgument("-devAddon");
+		const int iDevAddonPathArg = g_cmdLine->Find("-devAddon");
 		const char* devAddonPath = g_cmdLine->GetArgumentsOf(iDevAddonPathArg);
 		if (devAddonPath)
 		{

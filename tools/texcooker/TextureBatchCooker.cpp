@@ -7,6 +7,7 @@
 
 #include "core/core_common.h"
 #include "core/IFileSystem.h"
+#include "core/platform/eqjobmanager.h"
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
 #include "utils/KeyValues.h"
@@ -105,6 +106,7 @@ struct TargetProperties
 // CRC pairs
 struct TexInfo
 {
+	EqString			sourceMaterialName;
 	EqString			sourcePath;
 	UsageProperties*	usage{ nullptr };
 	uint32				crc32{ 0 };
@@ -116,13 +118,13 @@ class CTextureCooker
 {
 public:
 	bool				Init(const char* confFileName, const char* targetName);
-	void				Execute();
+	void				Execute(CEqJobManager& jobMng);
 
 private:
 	void				LoadBatchConfig(const KVSection* batchSec);
-	bool				AddTexture(const EqString& texturePath, const EqString& imageUsage, bool isArray = false);
-	bool				CreateArrayImageFile(const Array<EqString>& textureNames, const char* outputFileName, const char* imageUsage);
-	void				LoadMaterialImages(const KVSection& kvMaterial);
+	bool				AddTexture(const char* sourceMaterialName, const char* texturePath, const char* imageUsage, bool isArray = false);
+	bool				CreateArrayImageFile(const char* sourceMaterialName, const Array<EqString>& textureNames, const char* outputFileName, const char* imageUsage);
+	void				LoadMaterialImages(const char* sourceMaterialName, const KVSection& kvMaterial);
 
 	void				SearchFolderForMaterialsAndGetTextures(const char* wildcard);
 	void				SearchFolderForAtlasesAndConvert(const char* wildcard);
@@ -205,7 +207,7 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 	}
 }
 
-bool CTextureCooker::AddTexture(const EqString& texturePath, const EqString& imageUsage, bool isArray)
+bool CTextureCooker::AddTexture(const char* sourceMaterialName, const char* texturePath, const char* imageUsage, bool isArray)
 {
 	EqString filename = fnmPathCombine(m_targetProps.sourceMaterialPath, texturePath);
 	if (!fnmPathHasExt(filename))
@@ -217,20 +219,31 @@ bool CTextureCooker::AddTexture(const EqString& texturePath, const EqString& ima
 		return false;
 	}
 
-	TexInfo& newInfo = m_textureList.append();
-	newInfo.sourcePath = texturePath;
-	newInfo.usage = FindUsage(imageUsage);
-	newInfo.isArray = isArray;
+	UsageProperties* usage = FindUsage(imageUsage);
+	if (usage == &m_batchConfig.defaultUsage)
+		MsgWarning("%s: invalid usage '%s'\n", filename.ToCString(), imageUsage);
 
-	if (newInfo.usage == &m_batchConfig.defaultUsage)
+	// find conflicting usage and warn user
+	const int foundIdx = arrayFindIndexF(m_textureList, [&](const TexInfo& texInfo) {
+		return texInfo.sourcePath == texturePath && (texInfo.usage != usage || texInfo.isArray != isArray);
+	});
+
+	if (foundIdx != -1)
 	{
-		MsgWarning("%s: invalid usage '%s'\n", filename.ToCString(), imageUsage.ToCString());
+		MsgError("ERROR %s:\n  Conflicting usages '%s' vs '%s'\n  with material '%s' - SKIPPING!\n", filename.ToCString(), m_textureList[foundIdx].usage->usageName.ToCString(), imageUsage, m_textureList[foundIdx].sourceMaterialName.ToCString());
+		return false;
 	}
+
+	TexInfo& newInfo = m_textureList.append();
+	newInfo.sourceMaterialName = sourceMaterialName;
+	newInfo.sourcePath = texturePath;
+	newInfo.usage = usage;
+	newInfo.isArray = isArray;
 
 	return true;
 }
 
-bool CTextureCooker::CreateArrayImageFile(const Array<EqString>& textureNames, const char* outputFileName, const char* imageUsage)
+bool CTextureCooker::CreateArrayImageFile(const char* sourceMaterialName, const Array<EqString>& textureNames, const char* outputFileName, const char* imageUsage)
 {
 	Array<CImage::PTR_T> imgFrames(PP_SL);
 
@@ -289,11 +302,11 @@ bool CTextureCooker::CreateArrayImageFile(const Array<EqString>& textureNames, c
 		return false;
 	}
 
-	AddTexture(fnmPathApplyExt(outputFileName, "dds"), imageUsage, true);
+	AddTexture(sourceMaterialName, fnmPathApplyExt(outputFileName, "dds"), imageUsage, true);
 	return true;
 }
 
-void CTextureCooker::LoadMaterialImages(const KVSection& kvMaterial)
+void CTextureCooker::LoadMaterialImages(const char* sourceMaterialName, const KVSection& kvMaterial)
 {
 	int textures = 0;
 	for (KVSection& key : kvMaterial.Keys())
@@ -322,7 +335,7 @@ void CTextureCooker::LoadMaterialImages(const KVSection& kvMaterial)
 				textureNames.append(EqString::Format(textureWildcard, i));
 
 			EqString newTextureName = EqString::Format(textureWildcard, numFrames);
-			if (CreateArrayImageFile(textureNames, newTextureName, imageUsage))
+			if (CreateArrayImageFile(sourceMaterialName, textureNames, newTextureName, imageUsage))
 				textures++;
 
 			// change wildcard to the generated array image
@@ -330,7 +343,7 @@ void CTextureCooker::LoadMaterialImages(const KVSection& kvMaterial)
 		}
 		else
 		{
-			if(AddTexture(texturePath, imageUsage))
+			if(AddTexture(sourceMaterialName, texturePath, imageUsage))
 				textures++;
 		}
 	}
@@ -427,7 +440,7 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 
 	MsgInfo("Material: '%s'\n", localMaterialFileName.ToCString()); 
 
-	LoadMaterialImages(*kvMaterial);
+	LoadMaterialImages(localMaterialFileName, *kvMaterial);
 
 	const EqString atlasFileName = fnmPathApplyExt(localMaterialFileName, s_materialAtlasFileExt);
 	const EqString sourceAtlasFileName = fnmPathCombine(m_targetProps.sourceMaterialPath, atlasFileName);
@@ -456,9 +469,11 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 
 void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 {
+	using namespace Threading;
+	static CEqMutex crcMutex;
+
 	// before this, create folders...
 	EqString sourceFilename = fnmPathCombine(m_targetProps.sourceMaterialPath, textureInfo.sourcePath);
-	
 	if (!fnmPathHasExt(sourceFilename))
 		sourceFilename = fnmPathApplyExt(sourceFilename, m_targetProps.sourceImageExt);
 
@@ -478,7 +493,10 @@ void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 	CRC32_UpdateChecksum(srcCRC, arguments, arguments.Length());
 
 	// store new CRC
-	m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC), sourceFilename);
+	{
+		CScopedMutex m(crcMutex);
+		m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC), sourceFilename);
+	}
 
 	// now check CRC from loaded file
 	if (HasMatchingCRC(srcCRC))
@@ -502,11 +520,19 @@ void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 	EqString cmdLine(EqString::Format("%s %s", g_fileSystem->GetAbsolutePath(SP_ROOT, m_batchConfig.applicationName), arguments));
 	fnmPathFixSeparators(cmdLine);
 
-	DevMsg(DEVMSG_CORE, "*RUN '%s'\n", cmdLine.GetData());
-	int result = system(cmdLine.GetData());
-	if (result != 0)
+	DevMsg(DEVMSG_CORE, "*RUN '%s'", cmdLine.ToCString());
+
 	{
-		MsgError("Error running command\n");
+		FILE* outFile = _popen(cmdLine, "rt");
+		if (outFile)
+		{
+			const int closeReturnVal = _pclose(outFile);
+			DevMsg(DEVMSG_CORE, ": %x\n", closeReturnVal);
+		}
+		else
+		{
+			MsgError("error running command %s\n", cmdLine.ToCString());
+		}
 	}
 }
 
@@ -607,7 +633,7 @@ bool CTextureCooker::Init(const char* confFileName, const char* targetName)
 	return true;
 }
 
-void CTextureCooker::Execute()
+void CTextureCooker::Execute(CEqJobManager& jobMng)
 {
 	// perform batch conversion
 	Msg("Material source path: '%s'\n", m_targetProps.sourceMaterialPath.ToCString());
@@ -627,13 +653,29 @@ void CTextureCooker::Execute()
 	// load CRC list, check for existing DDS files, and skip if necessary
 	KV_LoadFromFile(crcFileName, SP_ROOT, m_batchConfig.crcSec);
 
+	SyncJob syncJob("WaitForTextures");
+	syncJob.InitSignal();
+	syncJob.InitJob();
+
 	// do conversion
-	for (int i = 0; i < m_textureList.numElem(); i++)
+	//int idx = 0;
+	for (TexInfo& tex : m_textureList)
 	{
-		TexInfo& tex = m_textureList[i];
-		Msg("[%d / %d] ", i + 1, m_textureList.numElem());
-		ProcessTexture(tex);
+		FunctionJob* texConvJob = PPNew FunctionJob("TexConvJob", [&](void*, int) {
+			ProcessTexture(tex);
+		});
+		texConvJob->DeleteOnFinish();
+
+		syncJob.AddWait(texConvJob);
+		jobMng.InitStartJob(texConvJob);
+
+		//Msg("[%d / %d] ", idx, m_textureList.numElem());
+		//ProcessTexture(tex);
+		//++idx;
 	}
+
+	jobMng.StartJob(&syncJob);
+	syncJob.GetSignal()->Wait();
 
 	// save CRC list file
 	IFileStreamPtr pStream = g_fileSystem->Open(crcFileName, FS_OPEN_WRITE, SP_ROOT);
@@ -641,10 +683,10 @@ void CTextureCooker::Execute()
 		KeyValues::WriteText(pStream, m_batchConfig.newCRCSec);
 }
 
-void CookTarget(const char* pszTargetName)
+void CookTarget(const char* pszTargetName, CEqJobManager& jobMng)
 {
 	CTextureCooker cooker;
 	if (!cooker.Init("TextureCooker.CONFIG", pszTargetName))
 		return;
-	cooker.Execute();
+	cooker.Execute(jobMng);
 }

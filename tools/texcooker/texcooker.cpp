@@ -9,6 +9,8 @@
 #include "core/IDkCore.h"
 #include "core/ICommandLine.h"
 #include "core/IFileSystem.h"
+#include "core/IEqCPUServices.h"
+#include "core/platform/eqjobmanager.h"
 #include "texcooker_defs.h"
 
 void Usage()
@@ -30,19 +32,15 @@ int main(int argc, char* argv[])
 
 	MsgInfo("TexCooker - Platform-Specific material/texture converter utility\n\n\n");
 
-	if(g_cmdLine->GetArgumentCount() <= 1)
-	{
+	ArrayCRef<EqString> args = g_cmdLine->GetParameters();
+	if(args.numElem() <= 1)
 		Usage();
-	}
 
-	for (int i = 0; i < g_cmdLine->GetArgumentCount(); i++)
+	CEqJobManager jobMng("shadersJobs", max(4, g_cpuCaps->GetCPUCount()), 16384);
+	for (int i = 0; i < args.numElem(); i++)
 	{
-		EqString argStr = g_cmdLine->GetArgumentString(i);
-
-		if (!argStr.CompareCaseIns("-target"))
-		{
-			CookTarget(g_cmdLine->GetArgumentsOf(i));
-		}
+		if (!args[i].CompareCaseIns("-target"))
+			CookTarget(g_cmdLine->GetArgumentsOf(i), jobMng);
 	}
 
 	g_eqCore->Shutdown();
