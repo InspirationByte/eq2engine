@@ -16,8 +16,6 @@ enum EImageType : int
 	IMAGE_TYPE_CUBE
 };
 
-// TODO: RENAME MEMBERS TO TEXFORMAT_***
-
 enum ETextureFormat : int
 {
 	FORMAT_NONE     	= 0,
@@ -109,6 +107,15 @@ enum ETextureFormat : int
 	FORMAT_COUNT,
 };
 
+static constexpr ETextureFormat FORMAT_I8		= FORMAT_R8;
+static constexpr ETextureFormat FORMAT_IA8		= FORMAT_RG8;
+static constexpr ETextureFormat FORMAT_I16		= FORMAT_R16;
+static constexpr ETextureFormat FORMAT_IA16		= FORMAT_RG16;
+static constexpr ETextureFormat FORMAT_I16F		= FORMAT_R16F;
+static constexpr ETextureFormat FORMAT_IA16F	= FORMAT_RG16F;
+static constexpr ETextureFormat FORMAT_I32F		= FORMAT_R32F;
+static constexpr ETextureFormat FORMAT_IA32F	= FORMAT_RG32F;
+
 static constexpr const int TEXFORMAT_MASK = (1 << 10) - 1;
 
 enum ETextureFormatFlags
@@ -131,15 +138,6 @@ inline static int HasTexFormatFlags(ETextureFormat formatWithFlags, int flags)
 {
 	return static_cast<int>(formatWithFlags) & flags;
 }
-
-#define FORMAT_I8    FORMAT_R8
-#define FORMAT_IA8   FORMAT_RG8
-#define FORMAT_I16   FORMAT_R16
-#define FORMAT_IA16  FORMAT_RG16
-#define FORMAT_I16F  FORMAT_R16F
-#define FORMAT_IA16F FORMAT_RG16F
-#define FORMAT_I32F  FORMAT_R32F
-#define FORMAT_IA32F FORMAT_RG32F
 
 inline bool IsPlainFormat(const ETextureFormat format)
 {

@@ -278,46 +278,96 @@ struct TGAHeader
 
 struct FormatString
 {
+	const char*		name;
 	ETextureFormat	format;
-	EqStringRef		name;
 };
+
+#define FORMAT_STR(x) { #x, FORMAT_ ## x },
 
 static const FormatString formatStrings[] = {
-	{ FORMAT_NONE,   "NONE"  },
+	FORMAT_STR(NONE)
 
-	{ FORMAT_R8,     "R8"    },
-	{ FORMAT_RG8,    "RG8"   },
-	{ FORMAT_RGB8,   "RGB8"  },
-	{ FORMAT_RGBA8,  "RGBA8" },
+	// Unsigned formats
+	FORMAT_STR(R8)
+	FORMAT_STR(RG8)
+	FORMAT_STR(RGB8)
+	FORMAT_STR(RGBA8)
 
-	{ FORMAT_R16,    "R16"   },
-	{ FORMAT_RG16,   "RG16"  },
-	{ FORMAT_RGB16,  "RGB16" },
-	{ FORMAT_RGBA16, "RGBA16"},
+	FORMAT_STR(R16)
+	FORMAT_STR(RG16)
+	FORMAT_STR(RGB16)
+	FORMAT_STR(RGBA16)
 
-	{ FORMAT_R16F,   "R16F"    },
-	{ FORMAT_RG16F,  "RG16F"   },
-	{ FORMAT_RGB16F, "RGB16F"  },
-	{ FORMAT_RGBA16F,"RGBA16F" },
+	FORMAT_STR(R8S)
+	FORMAT_STR(RG8S)
+	FORMAT_STR(RGB8S)
+	FORMAT_STR(RGBA8S)
 
-	{ FORMAT_R32F,   "R32F"    },
-	{ FORMAT_RG32F,  "RG32F"   },
-	{ FORMAT_RGB32F, "RGB32F"  },
-	{ FORMAT_RGBA32F,"RGBA32F" },
+	FORMAT_STR(R16S )
+	FORMAT_STR(RG16S)
+	FORMAT_STR(RGB16S)
+	FORMAT_STR(RGBA16S)
 
-	{ FORMAT_RGBE8,  "RGBE8"   },
-	{ FORMAT_RGB565, "RGB565"  },
-	{ FORMAT_RGBA4,  "RGBA4"   },
-	{ FORMAT_RGB10A2,"RGB10A2" },
+	FORMAT_STR(R16F)
+	FORMAT_STR(RG16F)
+	FORMAT_STR(RGB16F)
+	FORMAT_STR(RGBA16F)
 
-	{ FORMAT_DXT1,   "DXT1"  },
-	{ FORMAT_DXT3,   "DXT3"  },
-	{ FORMAT_DXT5,   "DXT5"  },
-	{ FORMAT_ATI1N,  "ATI1N" },
-	{ FORMAT_ATI2N,  "ATI2N" },
+	FORMAT_STR(R32F)
+	FORMAT_STR(RG32F)
+	FORMAT_STR(RGB32F)
+	FORMAT_STR(RGBA32F)
+
+	FORMAT_STR(R16I)
+	FORMAT_STR(RG16I)
+	FORMAT_STR(RGB16I)
+	FORMAT_STR(RGBA16I)
+
+	FORMAT_STR(R32I)
+	FORMAT_STR(RG32I)
+	FORMAT_STR(RGB32I)
+	FORMAT_STR(RGBA32I)
+
+	FORMAT_STR(R16UI)
+	FORMAT_STR(RG16UI)
+	FORMAT_STR(RGB16UI)
+	FORMAT_STR(RGBA16UI)
+
+	FORMAT_STR(R32UI)
+	FORMAT_STR(RG32UI)
+	FORMAT_STR(RGB32UI)
+	FORMAT_STR(RGBA32UI)
+
+	FORMAT_STR(RGBE8)
+	FORMAT_STR(RGB9E5)
+	FORMAT_STR(RG11B10F)
+	FORMAT_STR(RGB565)
+	FORMAT_STR(RGBA4)
+	FORMAT_STR(RGB10A2)
+
+	FORMAT_STR(D16)
+	FORMAT_STR(D24)
+	FORMAT_STR(D24S8)
+	FORMAT_STR(D32F)
+
+	FORMAT_STR(DXT1 )
+	FORMAT_STR(DXT3 )
+	FORMAT_STR(DXT5 )
+	FORMAT_STR(ATI1N)
+	FORMAT_STR(ATI2N)
+	FORMAT_STR(ETC1	)
+	FORMAT_STR(ETC2	)
+	FORMAT_STR(ETC2A1)
+	FORMAT_STR(ETC2A8)
+	FORMAT_STR(PVRTC_2BPP)
+	FORMAT_STR(PVRTC_4BPP)
+	FORMAT_STR(PVRTC_A_2BPP)
+	FORMAT_STR(PVRTC_A_4BPP)
 };
 
-const char* GetFormatString(const ETextureFormat format)
+#undef FORMAT_STR
+
+const char* CImage::GetFormatString(const ETextureFormat format)
 {
 	for (unsigned int i = 0; i < elementsOf(formatStrings); i++) {
 		if (format == formatStrings[i].format) 
@@ -326,10 +376,10 @@ const char* GetFormatString(const ETextureFormat format)
 	return nullptr;
 }
 
-ETextureFormat GetFormatFromString(const char* string)
+ETextureFormat CImage::GetFormatFromString(const char* string)
 {
 	for (unsigned int i = 0; i < elementsOf(formatStrings); i++) {
-		if (!formatStrings[i].name.CompareCaseIns(string))
+		if (!CString::CompareCaseIns(formatStrings[i].name, string))
 			return formatStrings[i].format;
 	}
 	return FORMAT_NONE;
@@ -584,7 +634,7 @@ bool CImage::LoadDDS(IFileStreamPtr fileHandle, uint flags)
 	m_nWidth = header.dwWidth;
 	m_nHeight = header.dwHeight;
 	m_nDepth = (header.ddsCaps.dwCaps2 & DDSCAPS2_CUBEMAP) ? IMAGE_DEPTH_CUBEMAP : (header.dwDepth == 0) ? 1 : header.dwDepth;
-	m_nMipMaps = ((flags & DONT_LOAD_MIPMAPS) || (header.dwMipMapCount == 0)) ? 1 : header.dwMipMapCount;
+	m_nMipMaps = ((flags & SKIP_MIPMAPS) || (header.dwMipMapCount == 0)) ? 1 : header.dwMipMapCount;
 	m_nArraySize = 1;
 
 	if (header.ddpfPixelFormat.dwFourCC == MAKECHAR4('D', 'X', '1', '0'))
@@ -693,7 +743,7 @@ bool CImage::LoadDDS(IFileStreamPtr fileHandle, uint flags)
 					fileHandle->Read(src, 1, faceSize);
 				}
 
-				if ((flags & DONT_LOAD_MIPMAPS) && header.dwMipMapCount > 1)
+				if ((flags & SKIP_MIPMAPS) && header.dwMipMapCount > 1)
 				{
 					fileHandle->Seek(GetMipMappedSize(1, header.dwMipMapCount - 1) / 6, FS_SEEK_CUR);
 				}
