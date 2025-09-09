@@ -32,7 +32,7 @@ static locale_t xgetlocale()
 
 //------------------------------------------
 
-static char* xstrupr(char* str)
+static char* x_strupr(char* str)
 {
 	char* it = str;
 
@@ -41,7 +41,7 @@ static char* xstrupr(char* str)
 	return str;
 }
 
-static char* xstrlwr(char* str)
+static char* x_strlwr(char* str)
 {
 	char* it = str;
 
@@ -50,7 +50,7 @@ static char* xstrlwr(char* str)
 	return str;
 }
 
-static wchar_t* xwcslwr(wchar_t* str)
+static wchar_t* x_wcslwr(wchar_t* str)
 {
 	wchar_t* it = str;
 
@@ -63,7 +63,7 @@ static wchar_t* xwcslwr(wchar_t* str)
 	return str;
 }
 
-static wchar_t* xwcsupr(wchar_t* str)
+static wchar_t* x_wcsupr(wchar_t* str)
 {
 	wchar_t* it = str;
 
@@ -76,13 +76,8 @@ static wchar_t* xwcsupr(wchar_t* str)
 	return str;
 }
 
-static char* xstrstr(  const char* s1, const char* search )
-{
-	return strstr( (char* )s1, search );
-}
-
 // Finds a string in another string with a case insensitive test
-static char* xstristr( char* pStr, const char* pSearch )
+static char* x_stristr( char* pStr, const char* pSearch )
 {
 	char* pLetter = pStr;
 
@@ -124,7 +119,7 @@ static char* xstristr( char* pStr, const char* pSearch )
 //------------------------------------------------------
 
 // compares two strings
-static int xwcscmp( const wchar_t *s1, const wchar_t *s2)
+static int x_wcscmp( const wchar_t *s1, const wchar_t *s2)
 {
 	while (1)
 	{
@@ -140,7 +135,7 @@ static int xwcscmp( const wchar_t *s1, const wchar_t *s2)
 }
 
 // compares two strings case-insensetive
-static int xwcsicmp( const wchar_t* s1, const wchar_t* s2 )
+static int x_wcsicmp( const wchar_t* s1, const wchar_t* s2 )
 {
 	while (1)
 	{
@@ -157,7 +152,7 @@ static int xwcsicmp( const wchar_t* s1, const wchar_t* s2 )
 }
 
 // finds substring in string case insensetive
-static wchar_t* xwcsistr(wchar_t* pStr, const wchar_t* pSearch )
+static wchar_t* x_wcsistr(wchar_t* pStr, const wchar_t* pSearch )
 {
 	ASSERT(pStr);
 	ASSERT(pSearch);
@@ -259,7 +254,7 @@ template<> char* SubString(char* str, const char* search)
 template<> char* SubStringCaseIns(char* str, const char* search)
 {
 	ASSERT(str && search);
-	return xstristr(str, search);
+	return x_stristr(str, search);
 }
 
 template<> wchar_t* SubString(wchar_t* str, const wchar_t* search)
@@ -271,31 +266,31 @@ template<> wchar_t* SubString(wchar_t* str, const wchar_t* search)
 template<> wchar_t* SubStringCaseIns(wchar_t* str, const wchar_t* search)
 {
 	ASSERT(str && search);
-	return xwcsistr(str, search);
+	return x_wcsistr(str, search);
 }
 
 template<> char* LowerCase(char* str)
 {
 	ASSERT(str);
-	return xstrlwr(str);
+	return x_strlwr(str);
 }
 
 template<> wchar_t* LowerCase(wchar_t* str)
 {
 	ASSERT(str);
-	return xwcslwr(str);
+	return x_wcslwr(str);
 }
 
 template<> char* UpperCase(char* str)
 {
 	ASSERT(str);
-	return xstrupr(str);
+	return x_strupr(str);
 }
 
 template<> wchar_t* UpperCase(wchar_t* str)
 {
 	ASSERT(str);
-	return xwcsupr(str);
+	return x_wcsupr(str);
 }
 
 template<> int Compare(const char* strA, const char* strB)
@@ -319,7 +314,7 @@ template<> int CompareCaseIns(const char* strA, const char* strB)
 template<> int CompareCaseIns(const wchar_t* strA, const wchar_t* strB)
 {
 	ASSERT(strA && strB);
-	return xwcsicmp(strA, strB);
+	return x_wcsicmp(strA, strB);
 }
 
 template<> int PrintFV(char* buffer, int bufferCnt, const char* fmt, va_list argList)

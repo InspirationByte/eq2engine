@@ -574,7 +574,7 @@ enum EShaderKind : int
 	SHADERKIND_COMPUTE	= (1 << 2),
 };
 
-enum EBindEntryType
+enum EBindEntryType : int
 {
 	BINDENTRY_BUFFER = 0,
 	BINDENTRY_SAMPLER,

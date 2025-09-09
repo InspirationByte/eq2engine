@@ -72,8 +72,9 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 			result->includeName = shaderSourceName;
 		}
 	}
+
 	result->resultData.content = (const char*)result->includeContent.GetBasePointer();
-	result->resultData.content_length = result->includeContent.GetSize();
+	result->resultData.content_length = result->includeContent.Tell();
 	result->resultData.source_name = result->includeName;
 	result->resultData.source_name_length = result->includeName.Length();
 	return &result->resultData;
@@ -111,6 +112,11 @@ bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fil
 	result->includeName = fullPath;
 	result->includeContent.Open(nullptr, FS_OPEN_READ | FS_OPEN_WRITE, openFile->GetSize());
 	result->includeContent.AppendStream(openFile);
+
+	const char _zero = 0;
+	result->includeContent.WriteObj(_zero);
+	result->includeContent.Seek(-1, FS_SEEK_CUR);
+
 	return true;
 }
 

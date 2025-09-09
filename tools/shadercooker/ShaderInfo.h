@@ -1,10 +1,10 @@
 #pragma once
 
-enum EShaderKindFlags : int
+enum EShaderKind : int
 {
-	SHADERKIND_VERTEX = (1 << 0),
-	SHADERKIND_FRAGMENT = (1 << 1),
-	SHADERKIND_COMPUTE = (1 << 2),
+	SHADERKIND_VERTEX	= (1 << 0),
+	SHADERKIND_FRAGMENT	= (1 << 1),
+	SHADERKIND_COMPUTE	= (1 << 2),
 };
 
 enum EShaderConvStatus : int
@@ -24,6 +24,45 @@ enum EShaderSourceType : int
 	//SHADERSOURCE_WGSL,
 };
 
+enum EBindGroupId : int
+{
+	BINDGROUP_UNKNOWN = -1,
+
+	BINDGROUP_CONSTANT = 0,
+	BINDGROUP_RENDERPASS = 1,
+	BINDGROUP_TRANSIENT = 2,
+	BINDGROUP_INSTANCES = 3,
+};
+
+static const char* s_bindGroupNames[] = {
+	"CONSTANT",
+	"RENDERPASS",
+	"TRANSIENT",
+	"INSTANCES",
+};
+
+enum EBindEntryType
+{
+	BINDENTRY_BUFFER = 0,
+	BINDENTRY_SAMPLER,
+	BINDENTRY_TEXTURE,
+	BINDENTRY_STORAGETEXTURE
+};
+
+static const char* s_bindingTypeNames[] = {
+	"buffer",
+	"sampler",
+	"texture",
+	"storagetexture",
+};
+
+enum ERWFlags : int
+{
+	RWFLAG_UNIFORM	= (1 << 0),
+	RWFLAG_READ		= (1 << 1),
+	RWFLAG_WRITE	= (1 << 2),
+};
+
 static shaderc_source_language s_sourceLanguage[] = {
 	shaderc_source_language_hlsl,
 	shaderc_source_language_glsl,
@@ -38,6 +77,15 @@ struct ShaderInfo
 		SHADER_PACKAGE
 	};
 
+	struct Binding
+	{
+		EqString		name;
+		EBindGroupId	bindGroupId{ BINDGROUP_UNKNOWN };
+		int				index{ -1 };
+		EBindEntryType	type{ BINDENTRY_BUFFER };
+		int				rwFlags{ RWFLAG_READ | RWFLAG_WRITE };
+		int				shaderKind{ 0 };
+	};
 	struct VertLayout
 	{
 		EqString name;
@@ -59,6 +107,7 @@ struct ShaderInfo
 		int				refResult{ -1 };
 		int				vertLayoutIdx{ -1 };
 		uint32			crc32{ 0 };
+		Array<Binding>	bindings{ PP_SL };
 	};
 	struct SkipCombo
 	{
@@ -67,7 +116,7 @@ struct ShaderInfo
 	struct EntryPoint
 	{
 		EqString		name;
-		int				kind{ 0 };
+		EShaderKind		kind{ };
 	};
 	struct AddFile
 	{
@@ -93,4 +142,5 @@ struct ShaderInfo
 	int					totalVariationCount{ 0 };
 
 	EType				type{ SHADER_BASE };
+	bool				debugInfo{ false };
 };
