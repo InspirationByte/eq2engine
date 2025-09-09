@@ -10,6 +10,13 @@ enum EShaderModuleType
 	SHADERMODULE_WGSL,		// WGPU only
 };
 
+enum ERWFlags : int
+{
+	RWFLAG_UNIFORM	= (1 << 0),
+	RWFLAG_READ		= (1 << 1),
+	RWFLAG_WRITE	= (1 << 2),
+};
+
 struct ShaderInfo
 {
 	static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, int entryPointStrHash);
@@ -28,13 +35,24 @@ struct ShaderInfo
 		int			aliasOf{ -1 };
 	};
 
+	struct Binding
+	{
+		EqString		name{ 0 };
+		int				bindGroupId{ -1 };
+		int				index{ 0 };
+		int				rwFlags{ RWFLAG_READ | RWFLAG_WRITE };
+		EBindEntryType	type{};
+	};
+
 	struct Module
 	{
-		void*				rhiModule{ nullptr };
-		EShaderKind			kind;
-		EqString			entryPoint;
-		int					fileIndex{ -1 };
-		EShaderModuleType	type{};
+		void*					rhiModule{ nullptr };
+		EShaderKind				kind;
+		EqString				entryPoint;
+		int						fileIndex{ -1 };
+		Array<Binding>			bindings{ PP_SL };
+		IGPUPipelineLayoutPtr	pipelineLayout;				// needed for NVRHI
+		EShaderModuleType		type{};
 	};
 
 	struct EntryPoint
@@ -45,7 +63,6 @@ struct ShaderInfo
 
 	EqString				shaderName;
 	IPackFileReaderPtr		shaderPackFile{ nullptr };
-	IGPUPipelineLayoutPtr	pipelineLayout;				// needed for NVRHI
 	Array<VertLayout>		vertexLayouts{ PP_SL };
 	Array<EqString>			defines{ PP_SL };
 	Array<Module>			modules{ PP_SL };

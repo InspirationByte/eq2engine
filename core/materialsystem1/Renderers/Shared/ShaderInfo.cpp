@@ -184,7 +184,27 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 			modInfo.fileIndex = shaderInfo.shaderPackFile->FindFileIndex(shaderFileName);
 			modInfo.type = SHADERMODULE_SPIRV;
 			modInfo.kind = static_cast<EShaderKind>(kind);
+
+			// parse module pipeline layout
+			for (const KVSection& bindingSec : itemSec.Keys())
+			{
+				Binding& binding = modInfo.bindings.append();
+
+				EqStringRef name;
+				bindingSec.GetValues(binding.bindGroupId, binding.index, name);
+				binding.name = name;
+
+				EqStringRef flag;
+				bindingSec.GetValuesAt(3, flag);
+				if (flag == "readonly")
+					binding.rwFlags = RWFLAG_READ;
+				else if (flag == "writeonly")
+					binding.rwFlags = RWFLAG_WRITE;
+				else if (flag == "uniform")
+					binding.rwFlags = RWFLAG_UNIFORM;
+			}
 		}
+
 		{
 			const int queryStrHash = StringId24(queryStr, true);
 			const int entryPointStrHash = StringId24(entryPointName);
