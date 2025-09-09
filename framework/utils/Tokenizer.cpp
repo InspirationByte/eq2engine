@@ -48,12 +48,13 @@ Tokenizer::~Tokenizer()
 	SAFE_DELETE_ARRAY(m_str);
 }
 
-void Tokenizer::setString(const char* string)
+void Tokenizer::setString(const char* string, int length)
 {
-	m_length = CString::Length(string);
+	m_length = length == -1 ? CString::Length(string) : length;
 
 	// Increase capacity if necessary
-	if (m_length >= m_capacity) {
+	if (m_length >= m_capacity)
+	{
 		delete[] m_str;
 
 		m_capacity = m_length + 1;
@@ -62,7 +63,8 @@ void Tokenizer::setString(const char* string)
 
 	m_currentBuffer = 0;
 
-	strcpy(m_str, string);
+	strncpy(m_str, string, m_length);
+	m_str[m_length] = 0;
 
 	reset();
 }

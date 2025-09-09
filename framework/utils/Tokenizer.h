@@ -24,7 +24,7 @@ public:
 	Tokenizer(int bufferCount = 1);
 	~Tokenizer();
 
-	void			setString(const char* string);
+	void			setString(const char* string, int length = -1);
 	bool			setFile(IFileStreamPtr file);
 	void			reset();
 
@@ -34,6 +34,8 @@ public:
 	char*			next(TestFunc isAlpha = isAlphabetical);
 	char*			nextAfterToken(const char* token, TestFunc isAlpha = isAlphabetical);
 	char*			nextLine();
+
+	int				getPos() const { return m_start; }
 
 private:
 	char*			getBuffer(int size);
