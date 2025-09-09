@@ -12,6 +12,7 @@
 #include "ds/MemoryStream.h"
 #include "utils/KeyValues.h"
 #include "utils/CRC32.h"
+#include "utils/Tokenizer.h"
 #include "dpk/DPKFileWriter.h"
 
 #include "ShaderInfo.h"
@@ -218,11 +219,12 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 	shaderInfo.sourceFilename = sourceFileName;
 	shaderInfo.sourceText = sourceText;
 	shaderInfo.type = isExt ? ShaderInfo::SHADER_EXT : ShaderInfo::SHADER_BASE;
+	shaderSection.Get("DebugInfo").GetValues(shaderInfo.debugInfo);
 
 	for (const KVSection& kindSec : kinds->Keys())
 	{
 		EqStringRef kindName(kindSec.GetName());
-		int kind = 0;
+		EShaderKind kind = {};
 		if (!kindName.CompareCaseIns("Vertex"))
 			kind = SHADERKIND_VERTEX;
 		else if (!kindName.CompareCaseIns("Fragment"))
@@ -486,7 +488,7 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 }
 
 template<typename Processor>
-static void ProcessShaderIncludes(const char* fileName, const char* source, int length, EqShaderIncluder& includer, Processor& processor, int depth = 0)
+static void ProcessIncludesRecursively(const char* fileName, const char* source, int length, EqShaderIncluder& includer, Processor& processor, int depth = 0)
 {
 	const char* srcBegin = source;
 	const char* srcEnd = source + length;
@@ -536,19 +538,117 @@ static void ProcessShaderIncludes(const char* fileName, const char* source, int 
 				return;
 			}
 
-			EqString name(nameStart, nameEnd - nameStart);
+			const EqString name(nameStart, nameEnd - nameStart);
+			const bool relativePath = *nameEnd == '"';
 
-			processor.Process(fileName, includer, name, *nameEnd == '"', depth);
+			processor.Process(fileName, includer, name, relativePath, depth);
 			nameStart = nullptr;
 			sp = nameEnd;
 		}
 	}
 }
 
-struct ShaderIncludeCRCProcessor 
+// this build root signature
+static void ParseShaderResourceBindings(Array<ShaderInfo::Binding>& bindings, EShaderKind shaderKind, const char* name, char* source, int length)
+{
+	if (CString::CompareCaseIns(name, "ShaderCooker") == 0)
+		return;
+
+	Tokenizer tokenizer(2);
+	static const char BIND_MARKER[] = "__sc_bind__";
+
+	char* bindBegin = CString::SubString((char*)source, BIND_MARKER);
+	while (bindBegin)
+	{
+		tokenizer.setString(bindBegin);
+		char* tok = tokenizer.next();
+
+		ShaderInfo::Binding& newBinding = bindings.append();
+		newBinding.shaderKind = shaderKind;
+
+		tok = tokenizer.next();
+		if (*tok == '(')
+		{
+			tok = tokenizer.next();
+
+			{
+				newBinding.bindGroupId = (EBindGroupId)atoi(tok);
+				tok = tokenizer.next();
+				if (*tok != ',')
+				{
+					ASSERT_FAIL("%s* expects value after comma\n", BIND_MARKER, name);
+					bindBegin = CString::SubString(bindBegin + sizeof(BIND_MARKER), BIND_MARKER);
+					continue;
+				}
+				tok = tokenizer.next();
+			}
+
+			newBinding.index = atoi(tok);
+
+			tok = tokenizer.next();
+
+			// skip extra arguments (image formats etc)
+			while (*tok != ')')
+				tok = tokenizer.next();
+
+			// replace bind decl with spaces to make valid source file again (see GLSLBoilerPlate/HLSLBoilerPlate)
+			{
+				const int tokPos = tokenizer.getPos();
+				for (int i = 0; i <= tokPos; ++i)
+					bindBegin[i] = ' ';
+			}
+
+			tok = tokenizer.next();
+
+			// skip this pointless keyword
+			if (!CString::Compare(tok, "uniform"))
+				tok = tokenizer.next();
+
+			if (!CString::Compare(tok, "readonly"))
+			{
+				newBinding.rwFlags = RWFLAG_READ;
+				tok = tokenizer.next();
+			}
+			else if (!CString::Compare(tok, "writeonly"))
+			{
+				newBinding.rwFlags = RWFLAG_WRITE;
+				tok = tokenizer.next();
+			}
+
+			// skip this pointless keyword
+			if (!CString::Compare(tok, "uniform"))
+				tok = tokenizer.next();
+
+			if (!CString::Compare(tok, "image1D") || !CString::Compare(tok, "image2D") || !CString::Compare(tok, "image3D") || !CString::Compare(tok, "imageCube")
+				|| !CString::Compare(tok, "image1DArray") || !CString::Compare(tok, "image2DArray") || !CString::Compare(tok, "image3DArray") || !CString::Compare(tok, "imageCubeArray"))
+				newBinding.type = BINDENTRY_STORAGETEXTURE;
+			else if (!CString::Compare(tok, "texture1D") || !CString::Compare(tok, "texture2D") || !CString::Compare(tok, "texture3D") || !CString::Compare(tok, "textureCube")
+				|| !CString::Compare(tok, "texture1DArray") || !CString::Compare(tok, "texture2DArray") || !CString::Compare(tok, "texture3DArray") || !CString::Compare(tok, "textureCubeArray"))
+				newBinding.type = BINDENTRY_TEXTURE;
+			else if (!CString::Compare(tok, "sampler"))
+				newBinding.type = BINDENTRY_SAMPLER;
+			else if (!CString::Compare(tok, "buffer"))
+				newBinding.type = BINDENTRY_BUFFER;
+			else // everything else is a uniform buffer
+			{
+				newBinding.type = BINDENTRY_BUFFER;
+				newBinding.rwFlags = RWFLAG_UNIFORM;
+			}
+
+			if(newBinding.type != BINDENTRY_BUFFER)
+				tok = tokenizer.next();
+
+			newBinding.name = tok;
+		}
+
+		bindBegin = CString::SubString(bindBegin + sizeof(BIND_MARKER), BIND_MARKER);
+	}
+}
+
+struct IncludeCRCProcessor
 {
 	ShaderInfo&	shaderInfo;
-	Set<uint>	processed{ PP_SL };
+	Set<uint>	crcProcessed{ PP_SL };
 
 	void Process(const char* currentSource, EqShaderIncluder& includer, const EqString& name, bool relative, int depth)
 	{
@@ -569,13 +669,13 @@ struct ShaderIncludeCRCProcessor
 					CRC32_UpdateChecksum(checkCrc, includeResult->source_name, includeResult->source_name_length);
 					CRC32_FinishChecksum(checkCrc);
 
-					if (processed.find(checkCrc).atEnd())
+					if (crcProcessed.find(checkCrc).atEnd())
 					{
 						EqString sourceNameFull(includeResult->source_name, includeResult->source_name_length);
 
-						processed.insert(checkCrc);
+						crcProcessed.insert(checkCrc);
 						CRC32_UpdateChecksum(shaderInfo.crc32, includeResult->content, includeResult->content_length);
-						ProcessShaderIncludes(sourceNameFull, includeResult->content, static_cast<int>(includeResult->content_length), includer, *this, depth + 1);
+						ProcessIncludesRecursively(sourceNameFull, includeResult->content, static_cast<int>(includeResult->content_length), includer, *this, depth + 1);
 					}
 					//else
 					//{
@@ -593,7 +693,6 @@ struct ShaderIncludeCRCProcessor
 		}
 
 		shaderc_include_result* includeResult = includer.GetInclude(name, relative ? shaderc_include_type_relative : shaderc_include_type_standard, currentSource, depth);
-
 		if (includeResult->source_name_length)
 		{
 			uint checkCrc;
@@ -601,13 +700,13 @@ struct ShaderIncludeCRCProcessor
 			CRC32_UpdateChecksum(checkCrc, includeResult->source_name, includeResult->source_name_length);
 			CRC32_FinishChecksum(checkCrc);
 
-			if (processed.find(checkCrc).atEnd())
+			if (crcProcessed.find(checkCrc).atEnd())
 			{
 				EqString sourceNameFull(includeResult->source_name, includeResult->source_name_length);
 
-				processed.insert(checkCrc);
+				crcProcessed.insert(checkCrc);
 				CRC32_UpdateChecksum(shaderInfo.crc32, includeResult->content, includeResult->content_length);
-				ProcessShaderIncludes(sourceNameFull, includeResult->content, static_cast<int>(includeResult->content_length), includer, *this, depth + 1);
+				ProcessIncludesRecursively(sourceNameFull, includeResult->content, static_cast<int>(includeResult->content_length), includer, *this, depth + 1);
 			}
 			//else
 			//{
@@ -675,13 +774,16 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 
 	ArrayCRef<EqString> includePaths(m_targetProps.includePaths);
 
-	// process includes CRC
+	// process all includes CRCs
+	// also collect pipeline layouts
 	{
 		EqShaderIncluder includer(shaderInfo, includePaths);
-		ShaderIncludeCRCProcessor processor{ shaderInfo };
+		IncludeCRCProcessor processor{ shaderInfo };
 
-		ProcessShaderIncludes(
-			shaderInfo.sourceFilename.Length() ? shaderInfo.sourceFilename : shaderInfo.name, 
+		EqStringRef sourceName = shaderInfo.sourceFilename.Length() ? shaderInfo.sourceFilename : shaderInfo.name;
+
+		ProcessIncludesRecursively(
+			sourceName,
 			(const char*)shaderSourceString.GetBasePointer(), shaderSourceString.GetSize(), 
 			includer, processor);
 	}
@@ -813,44 +915,59 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 						options.SetIncluder(std::move(includer));
 						options.AddMacroDefinition(kindMacroStr.ToCString());			
 						options.SetTargetEnvironment(shaderc_target_env_webgpu, 0);
-						//options.SetGenerateDebugInfo();
-
-						fillMacros(options);
-						shaderc::SpvCompilationResult compilationResult;
+	
+						if(shaderInfo.debugInfo)
+							options.SetGenerateDebugInfo();
 
 						if (shaderInfo.sourceType == SHADERSOURCE_GLSL)
-						{
 							options.SetForcedVersionProfile(450, shaderc_profile_none);
 
-							compilationResult = compiler.CompileGlslToSpv(
-								(const char*)shaderSourceString.GetBasePointer(),
-								shaderSourceString.GetSize(),
-								shaderCKind,
-								shaderSourceName,
-								entryPoint.name,
-								options
-							);
-						}
-						else if (shaderInfo.sourceType == SHADERSOURCE_HLSL)
+						fillMacros(options);
+
+						// first we need to pre-process our file and collect bindings for pipeline layouts
+						shaderc::PreprocessedSourceCompilationResult preprocessResult = compiler.PreprocessGlsl(
+							(const char*)shaderSourceString.GetBasePointer(),
+							shaderSourceString.GetSize(),
+							shaderCKind,
+							shaderSourceName,
+							options);			
+
+						const shaderc_compilation_status preprocessStatus = preprocessResult.GetCompilationStatus();
+						if (preprocessStatus != shaderc_compilation_status_success)
 						{
-							compilationResult = compiler.CompileGlslToSpv(
-								(const char*)shaderSourceString.GetBasePointer(),
-								shaderSourceString.GetSize(),
-								shaderCKind,
-								shaderSourceName,
-								entryPoint.name,
-								options
-							);
+							MsgError("Failed pre-processing %s %s\n%s\n", vertexLayout.name.ToCString(), queryStr.ToCString(), preprocessResult.GetErrorMessage().c_str());
+							if (preprocessStatus == shaderc_compilation_status_compilation_error)
+								compileErrors = true;
+							return;
 						}
+
+						Array<ShaderInfo::Binding> bindings(PP_SL);
+
+						// we need to parse shader resources
+						ParseShaderResourceBindings(bindings, entryPoint.kind, shaderSourceName, const_cast<char*>(preprocessResult.begin()), preprocessResult.end() - preprocessResult.begin());
+
+						shaderc::SpvCompilationResult compilationResult = compiler.CompileGlslToSpv(
+							preprocessResult.begin(),
+							preprocessResult.end() - preprocessResult.begin(),
+							shaderCKind,
+							shaderSourceName,
+							entryPoint.name,
+							options
+						);
 
 						const shaderc_compilation_status compileStatus = compilationResult.GetCompilationStatus();
-
-						if (compileStatus == shaderc_compilation_status_success)
+						if (compileStatus != shaderc_compilation_status_success)
 						{
-							uint32 resultCRC = 0;
-							CRC32_InitChecksum(resultCRC);
-							CRC32_UpdateChecksum(resultCRC, compilationResult.begin(), (compilationResult.end() - compilationResult.begin()) * sizeof(compilationResult.begin()[0]));
+							MsgError("Failed compiling %s %s\n%s\n", vertexLayout.name.ToCString(), queryStr.ToCString(), compilationResult.GetErrorMessage().c_str());
+							if (compileStatus == shaderc_compilation_status_compilation_error)
+								compileErrors = true;
+							return;
+						}
 
+						uint32 resultCRC = 0;
+						CRC32_InitChecksum(resultCRC);
+						CRC32_UpdateChecksum(resultCRC, compilationResult.begin(), (compilationResult.end() - compilationResult.begin()) * sizeof(compilationResult.begin()[0]));
+						{
 							CScopedMutex m(resultsMutex);
 
 							// Reference shaders if they have same output
@@ -861,27 +978,22 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 
 							// store result
 							ShaderInfo::Result& result = shaderInfo.results.append();
+							result.crc32 = resultCRC;
+							result.queryStr = queryStr;
+							result.vertLayoutIdx = vertLayoutIdx;
+							result.entryPointId = entryPointId;
+							result.kindFlag = entryPoint.kind;
+
 							if (refIdx == -1)
 							{
 								result.data = std::move(compilationResult);
+								result.bindings = std::move(bindings);
 							}
 							else
 							{
 								ASSERT_MSG(entryPoint.kind == shaderInfo.results[refIdx].kindFlag, "Referenced shader kind is invalid (checksum collision?)");
 								result.refResult = refIdx;
 							}
-
-							result.queryStr = queryStr;
-							result.vertLayoutIdx = vertLayoutIdx;
-							result.entryPointId = entryPointId;
-							result.kindFlag = entryPoint.kind;
-							result.crc32 = resultCRC;
-						}
-						else
-						{
-							MsgError("Failed compiling %s %s\n%s\n", vertexLayout.name.ToCString(), queryStr.ToCString(), compilationResult.GetErrorMessage().c_str());
-							if (compileStatus == shaderc_compilation_status_compilation_error)
-								compileErrors = true;
 						}
 					};
 
@@ -981,6 +1093,21 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 
 			spvSec.AddValue(shaderInfo.entryPoints[result.entryPointId].name);
 			spvSec.AddValue(result.queryStr);
+
+			for (ShaderInfo::Binding& binding : result.bindings)
+			{
+				KVSection& bindingSec = spvSec.CreateSection(binding.name.ToCString());
+				bindingSec.AddValue(binding.bindGroupId);
+				bindingSec.AddValue(binding.index);
+				bindingSec.AddValue(s_bindingTypeNames[binding.type]);
+
+				if (binding.rwFlags & (RWFLAG_READ | RWFLAG_WRITE))
+					bindingSec.AddValue(binding.rwFlags == RWFLAG_READ ? "readonly " : (binding.rwFlags == RWFLAG_WRITE ? "writeonly " : ""));
+				else if(binding.rwFlags & RWFLAG_UNIFORM)
+					bindingSec.AddValue("uniform");
+				
+				//Msg("layout(set = %d, binding = %d) %s%s %s\n", binding.bindGroupId, binding.index, binding.RWFlags == FLAG_READ ? "readonly " : (binding.RWFlags == FLAG_WRITE ? "writeonly " : ""), s_bindingTypeNames[binding.type], binding.name.ToCString());
+			}
 
 			// Write shader bytecode file
 			const uint32* shaderData = result.data.begin();

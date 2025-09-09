@@ -51,6 +51,19 @@ static const char s_boilerPlateStrHLSL[] = R"(
 #define BIND_TRANSIENT( N )		register(N, BINDGROUP_TRANSIENT)
 #define BIND_INSTANCES( N )		register(N, BINDGROUP_INSTANCES)
 
+// See BaseShader and shaders layouts
+#define BIND_E( S, N, E )			register(N, S) __sc_bind__(S,N)
+#define BIND_CONSTANT_E( N, E )		BIND_E( BINDGROUP_CONSTANT, N, E)
+#define BIND_RENDERPASS_E( N, E )	BIND_E( BINDGROUP_RENDERPASS, N, E)
+#define BIND_TRANSIENT_E( N, E )	BIND_E( BINDGROUP_TRANSIENT, N, E)
+#define BIND_INSTANCES_E( N, E )	BIND_E( BINDGROUP_INSTANCES, N, E)
+
+#define BIND( S, N )				register(N, S) __sc_bind__(S,N)
+#define BIND_CONSTANT( N )			BIND( BINDGROUP_CONSTANT, N )
+#define BIND_RENDERPASS( N )		BIND( BINDGROUP_RENDERPASS, N )
+#define BIND_TRANSIENT( N )			BIND( BINDGROUP_TRANSIENT, N )
+#define BIND_INSTANCES( N )			BIND( BINDGROUP_INSTANCES, N )
+
 #define VERTEX_ID( name ) (VID_ ## name)
 
 #endif // _HLSL_BOILERPLATE_INCLUDE
