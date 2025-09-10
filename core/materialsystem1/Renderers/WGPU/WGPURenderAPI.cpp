@@ -613,31 +613,43 @@ WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfo& shaderI
 	if (mod.rhiModule)
 		return reinterpret_cast<WGPUShaderModule>(mod.rhiModule);
 
-	CMemoryStream shaderData(PP_SL);
+	CMemoryStream shaderBlobData(PP_SL);
+	auto loadShaderBlob = [&](EShaderModuleType type)
 	{
-		IFileStreamPtr shaderFile = shaderInfo.shaderPackFile->Open(mod.fileIndex, FS_OPEN_READ);
+		IFileStreamPtr shaderFile = shaderInfo.shaderPackFile->Open(mod.fileIndex[type], FS_OPEN_READ);
 		if (!shaderFile)
-		{
-			ASSERT_FAIL("Unable to open file in shader package!");
 			return nullptr;
-		}
 
-		shaderData.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, shaderFile->GetSize());
-		shaderData.AppendStream(shaderFile);
-	}
+		shaderBlobData.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, shaderFile->GetSize());
+		shaderBlobData.AppendStream(shaderFile);
+	};
 
 	const EqString shaderModuleName = EqString::Format("%s-%d", shaderInfo.shaderName.ToCString(), shaderModuleIdx);
 
 	WGPUShaderModule rhiShaderModule = nullptr;
-	if (mod.type == SHADERMODULE_SPIRV)
+	if (mod.fileIndex[SHADERMODULE_SPIRV] != -1)
 	{
-		rhiShaderModule = CreateShaderSPIRV(reinterpret_cast<uint32*>(shaderData.GetBasePointer()), shaderData.GetSize(), shaderModuleName);
+		loadShaderBlob(SHADERMODULE_SPIRV);
+		if(!shaderBlobData.IsValid())
+		{
+			ASSERT_FAIL("Shader module %s (found in package %s) not found for specific backend", shaderModuleName.ToCString(), shaderInfo.shaderName.ToCString());
+			return nullptr;
+		}
+
+		rhiShaderModule = CreateShaderSPIRV(reinterpret_cast<uint32*>(shaderBlobData.GetBasePointer()), shaderBlobData.GetSize(), shaderModuleName);
 	}
-	else if(mod.type == SHADERMODULE_WGSL)
+	else if(mod.fileIndex[SHADERMODULE_WGSL] != -1)
 	{
+		loadShaderBlob(SHADERMODULE_WGSL);
+		if (!shaderBlobData.IsValid())
+		{
+			ASSERT_FAIL("Shader module %s (found in package %s) not found for specific backend", shaderModuleName.ToCString(), shaderInfo.shaderName.ToCString());
+			return nullptr;
+		}
+
 		const int _zero = 0;
-		shaderData.Write(&_zero, 1, sizeof(_zero));
-		rhiShaderModule = CreateShaderWGSL(reinterpret_cast<char*>(shaderData.GetBasePointer()), shaderModuleName);
+		shaderBlobData.Write(&_zero, 1, sizeof(_zero));
+		rhiShaderModule = CreateShaderWGSL(reinterpret_cast<char*>(shaderBlobData.GetBasePointer()), shaderModuleName);
 	}
 	
 	if (!rhiShaderModule)

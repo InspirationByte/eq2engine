@@ -143,8 +143,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 			const EqString shaderFileName = EqString::Format("%s%s", shaderInfo.vertexLayouts[vertLayoutIdx].name, getKindExt(kind));
 
 			ShaderInfo::Module& modInfo = shaderInfo.modules.append();
-			modInfo.fileIndex = shaderInfo.shaderPackFile->FindFileIndex(shaderFileName);
-			modInfo.type = SHADERMODULE_WGSL;
+			modInfo.fileIndex[SHADERMODULE_WGSL] = shaderInfo.shaderPackFile->FindFileIndex(shaderFileName);
 			modInfo.kind = static_cast<EShaderKind>(kind);
 		}
 		{
@@ -159,7 +158,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 		++filesFound;
 	}
 
-	for (const KVSection& itemSec : fileListSec->Keys("spv"))
+	for (const KVSection& itemSec : fileListSec->Keys("blob"))
 	{
 		int vertLayoutIdx = -1;
 		EqStringRef kindStr;
@@ -167,7 +166,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 		EqStringRef queryStr;
 		if (itemSec.GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr) < 4)
 		{
-			ASSERT_FAIL("Shader %s 'spv' does not have 4 values");
+			ASSERT_FAIL("Shader %s 'blob' does not have 4 values");
 			break;
 		}
 
@@ -181,8 +180,9 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 			const EqString shaderFileName = EqString::Format("%s-%s%s", shaderInfo.vertexLayouts[vertLayoutIdx].name, queryStr, getKindExt(kind));
 			
 			ShaderInfo::Module& modInfo = shaderInfo.modules.append();
-			modInfo.fileIndex = shaderInfo.shaderPackFile->FindFileIndex(shaderFileName);
-			modInfo.type = SHADERMODULE_SPIRV;
+			modInfo.fileIndex[SHADERMODULE_SPIRV] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".spv"));
+			modInfo.fileIndex[SHADERMODULE_DXBC] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".dxbc"));
+			modInfo.fileIndex[SHADERMODULE_DXIL] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".dxil"));
 			modInfo.kind = static_cast<EShaderKind>(kind);
 
 			// parse module pipeline layout

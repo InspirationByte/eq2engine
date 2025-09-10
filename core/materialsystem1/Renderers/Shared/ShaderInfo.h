@@ -7,7 +7,10 @@ enum EShaderModuleType
 {
 	SHADERMODULE_SPIRV,
 	SHADERMODULE_DXBC,
+	SHADERMODULE_DXIL,
 	SHADERMODULE_WGSL,		// WGPU only
+
+	SHADERMODULE_TYPES,
 };
 
 enum ERWFlags : int
@@ -49,10 +52,9 @@ struct ShaderInfo
 		void*					rhiModule{ nullptr };
 		EShaderKind				kind;
 		EqString				entryPoint;
-		int						fileIndex{ -1 };
+		int						fileIndex[SHADERMODULE_TYPES]{ -1 };
 		Array<Binding>			bindings{ PP_SL };
 		IGPUPipelineLayoutPtr	pipelineLayout;				// needed for NVRHI
-		EShaderModuleType		type{};
 	};
 
 	struct EntryPoint

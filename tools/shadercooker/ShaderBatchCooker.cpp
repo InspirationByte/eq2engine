@@ -6,6 +6,14 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include <shaderc/shaderc.hpp>
+#ifdef _WIN32
+#include <d3dcompiler.h> // FXC
+#include <dxcapi.h> // DXC
+
+#include <wrl/client.h>
+using Microsoft::WRL::ComPtr;
+#endif
+
 #include "core/core_common.h"
 #include "core/IFileSystem.h"
 #include "core/platform/eqjobmanager.h"
@@ -61,7 +69,7 @@ private:
 	void				ParseFileList(ShaderInfo& shaderInfo, const KVSection* fileListSec);
 
 	void				InitShaderVariants(ShaderInfo& shaderInfo, int baseVariant, const KVSection& section);
-	void				ProcessShader(ShaderInfo& shaderInfo);
+	void				ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob);
 
 	struct BatchConfig
 	{
@@ -722,69 +730,231 @@ struct IncludeCRCProcessor
 	}
 };
 
-void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
+#pragma optimize("", off)
+
+struct ShaderPackageCompileData
+	: public RefCountedObject<ShaderPackageCompileData>
+{
+	ShaderPackageCompileData(ShaderInfo& shaderInfo, const char* targetFileName, const char* shaderSourceName, CMemoryStream&& shaderSourceString, ArrayCRef<EqString> includePaths)
+		: shaderInfo(shaderInfo)
+		, targetFileName(targetFileName)
+		, shaderSourceName(shaderSourceName)
+		, shaderSourceString(std::move(shaderSourceString))
+		, includePaths(includePaths)
+	{
+	}
+
+	ShaderInfo&			shaderInfo;
+	EqString			targetFileName;
+	EqString			shaderSourceName;
+	CMemoryStream		shaderSourceString;
+	ArrayCRef<EqString> includePaths;
+	Array<EqString>		switchDefines{ PP_SL };
+	bool				compileErrors{ false };
+};
+
+static Threading::CEqMutex s_resultsMutex;
+
+bool CompileShaderSpirV(ShaderPackageCompileData& compileData, int entryPointIdx, int vertLayoutIdx, EqStringRef queryStr)
 {
 	using namespace Threading;
 
-	const EqString targetFileName = fnmPathCombine(m_targetProps.targetFolder, EqString::Format("%s.shd", shaderInfo.name.ToCString()));
-	EqString shaderSourceName;
+	ShaderInfo& shaderInfo = compileData.shaderInfo;
+	const ShaderInfo::EntryPoint& entryPoint = shaderInfo.entryPoints[entryPointIdx];
+	const ShaderInfo::VertLayout& vertexLayout = shaderInfo.vertexLayouts[vertLayoutIdx];
 
-	CMemoryStream shaderSourceString(PP_SL);
-	if (shaderInfo.type != ShaderInfo::SHADER_PACKAGE)
+	EqStringRef kindMacroStr;
+	shaderc_shader_kind shaderCKind;
+	if (entryPoint.kind == SHADERKIND_VERTEX)
 	{
-		if (shaderInfo.sourceFilename.Length())
-		{
-			if (shaderInfo.type == ShaderInfo::SHADER_EXT)
-			{
-				for (const EqString& path : m_targetProps.includePaths)
-				{
-					shaderSourceName = fnmPathCombine(path, shaderInfo.sourceFilename);
-					if (g_fileSystem->FileExist(shaderSourceName, SP_ROOT))
-						break;
-				}
-			}
-			else
-				shaderSourceName = fnmPathCombine(m_targetProps.sourceShaderPath, shaderInfo.sourceFilename);
+		kindMacroStr = "VERTEX";
+		shaderCKind = shaderc_vertex_shader;
+	}
+	else if (entryPoint.kind == SHADERKIND_FRAGMENT)
+	{
+		kindMacroStr = "FRAGMENT";
+		shaderCKind = shaderc_fragment_shader;
+	}
+	else if (entryPoint.kind == SHADERKIND_COMPUTE)
+	{
+		kindMacroStr = "COMPUTE";
+		shaderCKind = shaderc_compute_shader;
+	}
+	
+	shaderc::CompileOptions options;
+	{
+		std::unique_ptr<EqShaderIncluder> includer = std::make_unique<EqShaderIncluder>(shaderInfo, compileData.includePaths);
+		includer->SetVertexLayout(vertexLayout.name);
+		options.SetIncluder(std::move(includer));
+	}
+	options.SetSourceLanguage(s_sourceLanguage[shaderInfo.sourceType]);
+	options.AddMacroDefinition(kindMacroStr.ToCString());
+	options.SetOptimizationLevel(shaderc_optimization_level_performance);
 
-			IFileStreamPtr file = g_fileSystem->Open(shaderSourceName, FS_OPEN_READ, SP_ROOT);
-			if (!file)
-			{
-				MsgError("Unable to open source file for %s\n", shaderInfo.name.ToCString());
-				return;
-			}
-			shaderSourceString.Open(nullptr, FS_OPEN_READ | FS_OPEN_WRITE, file->GetSize());
-			shaderSourceString.AppendStream(file);
+	// add macros from query string
+	if (queryStr)
+	{
+		char* macros = const_cast<char*>(queryStr.GetData());
+		char* macrosEnd = macros + queryStr.Length();
+		while (macros < macrosEnd)
+		{
+			char* next = strchr(macros, '|');
+			if (!next)
+				next = macrosEnd;
 
-			// generate CRC from shader source file and append to the shader desc CRC
-			CRC32_UpdateChecksum(shaderInfo.crc32, shaderSourceString.GetBasePointer(), shaderSourceString.GetSize());
-		}
-		else if (shaderInfo.sourceText.Length())
-		{
-			const int _zero = 0;
-			shaderSourceString.Open(nullptr, FS_OPEN_READ | FS_OPEN_WRITE, shaderInfo.sourceText.Length() + 1);
-			shaderSourceString.Write(shaderInfo.sourceText.GetData(), shaderInfo.sourceText.Length(), 1);
-			// CRC is already computed for source
-		}
-		else
-		{
-			ASSERT_FAIL("SourceFile or SourceText contains zero characters or programmer error");
-			return;
+			options.AddMacroDefinition(macros, next - macros, nullptr, 0u);
+			macros = next + 1;
 		}
 	}
 
-	ArrayCRef<EqString> includePaths(m_targetProps.includePaths);
+	if (shaderInfo.debugInfo)
+		options.SetGenerateDebugInfo();
+
+	if (shaderInfo.sourceType == SHADERSOURCE_GLSL)
+	{
+		options.SetForcedVersionProfile(450, shaderc_profile_none);
+		options.SetTargetEnvironment(shaderc_target_env_webgpu, 0);
+	}
+
+	// first we need to pre-process our file and collect bindings for pipeline layouts
+	shaderc::Compiler compiler;
+	shaderc::PreprocessedSourceCompilationResult preprocessResult = compiler.PreprocessGlsl(
+		(const char*)compileData.shaderSourceString.GetBasePointer(),
+		compileData.shaderSourceString.GetSize(),
+		shaderCKind,
+		compileData.shaderSourceName,
+		options);			
+
+	const shaderc_compilation_status preprocessStatus = preprocessResult.GetCompilationStatus();
+	if (preprocessStatus != shaderc_compilation_status_success)
+	{
+		MsgError("Failed pre-processing %s %s\n%s\n", vertexLayout.name.ToCString(), queryStr.ToCString(), preprocessResult.GetErrorMessage().c_str());
+		if (preprocessStatus == shaderc_compilation_status_compilation_error)
+			compileData.compileErrors = true;
+		return false;
+	}
+
+	Array<ShaderInfo::Binding> bindings(PP_SL);
+
+	// we need to parse shader resources
+	ParseShaderResourceBindings(bindings, entryPoint.kind, compileData.shaderSourceName, const_cast<char*>(preprocessResult.begin()), preprocessResult.end() - preprocessResult.begin());
+
+	shaderc::SpvCompilationResult spvCompilationResult = compiler.CompileGlslToSpv(
+		preprocessResult.begin(),
+		preprocessResult.end() - preprocessResult.begin(),
+		shaderCKind,
+		compileData.shaderSourceName,
+		entryPoint.name,
+		options
+	);
+
+	const shaderc_compilation_status compileStatus = spvCompilationResult.GetCompilationStatus();
+	if (compileStatus != shaderc_compilation_status_success)
+	{
+		MsgError("Failed compiling %s %s\n%s\n", vertexLayout.name.ToCString(), queryStr.ToCString(), spvCompilationResult.GetErrorMessage().c_str());
+		if (compileStatus == shaderc_compilation_status_compilation_error)
+			compileData.compileErrors = true;
+		return false;
+	}
+
+	uint32 resultCRC = 0;
+	CRC32_InitChecksum(resultCRC);
+	CRC32_UpdateChecksum(resultCRC, spvCompilationResult.begin(), (spvCompilationResult.end() - spvCompilationResult.begin()) * sizeof(spvCompilationResult.begin()[0]));
+	{
+		CScopedMutex m(s_resultsMutex);
+
+		// Reference shaders if they have same output
+		// TODO: make it so defines are detected for Vertex or Fragment.
+		const int refIdx = arrayFindIndexF(shaderInfo.results, [resultCRC](const ShaderInfo::Result& result) {
+			return resultCRC == result.crc32;
+		});
+
+		// store result
+		ShaderInfo::Result& result = shaderInfo.results.append();
+		result.crc32 = resultCRC;
+		result.queryStr = queryStr;
+		result.vertLayoutIdx = vertLayoutIdx;
+		result.entryPointIdx = entryPointIdx;
+		result.kindFlag = entryPoint.kind;
+
+		if (refIdx == -1)
+		{
+			result.data[SHADERMODULE_SPIRV] = std::move(spvCompilationResult);
+			result.bindings = std::move(bindings);
+		}
+		else
+		{
+			ASSERT_MSG(entryPoint.kind == shaderInfo.results[refIdx].kindFlag, "Referenced shader kind is invalid (checksum collision?)");
+			result.refResult = refIdx;
+		}
+	}
+};
+
+void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
+{
+	using namespace Threading;
+
+	const EqString targetFileName = fnmPathCombine(m_targetProps.targetFolder, EqString::Format("%s.shd", shaderInfo.name));
+
+	CRefPtr<ShaderPackageCompileData> compileData;
+	{
+		CMemoryStream shaderSourceString{ PP_SL };
+		EqString shaderSourceName;
+		if (shaderInfo.type != ShaderInfo::SHADER_PACKAGE)
+		{
+			if (shaderInfo.sourceFilename.Length())
+			{
+				if (shaderInfo.type == ShaderInfo::SHADER_EXT)
+				{
+					for (const EqString& path : m_targetProps.includePaths)
+					{
+						shaderSourceName = fnmPathCombine(path, shaderInfo.sourceFilename);
+						if (g_fileSystem->FileExist(shaderSourceName, SP_ROOT))
+							break;
+					}
+				}
+				else
+					shaderSourceName = fnmPathCombine(m_targetProps.sourceShaderPath, shaderInfo.sourceFilename);
+
+				IFileStreamPtr file = g_fileSystem->Open(shaderSourceName, FS_OPEN_READ, SP_ROOT);
+				if (!file)
+				{
+					MsgError("Unable to open source file for %s\n", shaderInfo.name.ToCString());
+					return;
+				}
+				shaderSourceString.Open(nullptr, FS_OPEN_READ | FS_OPEN_WRITE, file->GetSize());
+				shaderSourceString.AppendStream(file);
+
+				// generate CRC from shader source file and append to the shader desc CRC
+				CRC32_UpdateChecksum(shaderInfo.crc32, shaderSourceString.GetBasePointer(), shaderSourceString.GetSize());
+			}
+			else if (shaderInfo.sourceText.Length())
+			{
+				const int _zero = 0;
+				shaderSourceString.Open(nullptr, FS_OPEN_READ | FS_OPEN_WRITE, shaderInfo.sourceText.Length() + 1);
+				shaderSourceString.Write(shaderInfo.sourceText.GetData(), shaderInfo.sourceText.Length(), 1);
+				// CRC is already computed for source
+			}
+			else
+			{
+				ASSERT_FAIL("SourceFile or SourceText contains zero characters or programmer error");
+				return;
+			}
+		}
+		compileData = CRefPtr_new(ShaderPackageCompileData, shaderInfo, targetFileName, shaderSourceName, std::move(shaderSourceString), m_targetProps.includePaths);
+	}
 
 	// process all includes CRCs
 	// also collect pipeline layouts
 	{
-		EqShaderIncluder includer(shaderInfo, includePaths);
+		EqShaderIncluder includer(shaderInfo, m_targetProps.includePaths);
 		IncludeCRCProcessor processor{ shaderInfo };
 
 		EqStringRef sourceName = shaderInfo.sourceFilename.Length() ? shaderInfo.sourceFilename : shaderInfo.name;
 
 		ProcessIncludesRecursively(
 			sourceName,
-			(const char*)shaderSourceString.GetBasePointer(), shaderSourceString.GetSize(), 
+			(const char*)compileData->shaderSourceString.GetBasePointer(), compileData->shaderSourceString.GetSize(),
 			includer, processor);
 	}
 
@@ -798,8 +968,162 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 		return;
 	}
 
-	bool compileErrors = false;
-	Array<EqString> switchDefines(PP_SL);
+	FunctionJob* completeJob = PPNew FunctionJob("ShaderCompleteJob", [this, compileData](void*, int) {
+		ShaderInfo& shaderInfo = compileData->shaderInfo;
+		// Store files
+		if (!compileData->compileErrors && (shaderInfo.results.numElem() || shaderInfo.addedFiles.numElem()))
+		{
+			CDPKFileWriter shaderPackFile("shaders", 4);
+			if (!shaderPackFile.Begin(compileData->targetFileName))
+			{
+				MsgError("Unable to create pack file %s\n", compileData->targetFileName.ToCString());
+				return;
+			}
+
+			// store new CRC
+			m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", shaderInfo.crc32), shaderInfo.name);
+
+			// Store shader info
+			KVSection shaderInfoKvs;
+			shaderInfoKvs.SetName(shaderInfo.name);
+			{
+				KVSection& definesSec = shaderInfoKvs.CreateSection("Defines");
+				for (EqString& defineStr : compileData->switchDefines)
+					definesSec.AddValue(defineStr);
+			}
+
+			// store vertex layout info
+			{
+				KVSection& vertexLayoutsSec = shaderInfoKvs.CreateSection("VertexLayouts");
+				for (ShaderInfo::VertLayout& vertLayout : shaderInfo.vertexLayouts)
+				{
+					KVSection& layoutSec = vertexLayoutsSec.CreateSection(vertLayout.name);
+					if (vertLayout.aliasOf != -1)
+					{
+						layoutSec.AddValue("aliasOf");
+						layoutSec.AddValue(shaderInfo.vertexLayouts[vertLayout.aliasOf].name);
+					}
+				}
+			}
+
+			KVSection& fileListSec = shaderInfoKvs.CreateSection("FileList");
+
+			int shaderFileCount = 0;
+			Array<int> referenceRemap(PP_SL);
+			referenceRemap.setNum(shaderInfo.results.numElem());
+
+			// Store shader outputs in separate files
+			for (int i = 0; i < shaderInfo.results.numElem(); ++i)
+			{
+				const ShaderInfo::Result& result = shaderInfo.results[i];
+				const ShaderInfo::VertLayout& layout = shaderInfo.vertexLayouts[result.vertLayoutIdx];
+
+				if (result.refResult != -1)
+					continue;
+
+				EqString shaderFileName = EqString::Format("%s-%s", layout.name.ToCString(), result.queryStr.ToCString());
+
+				KVSection& shaderBlobSec = fileListSec.CreateSection("blob");
+				shaderBlobSec.AddValue(result.vertLayoutIdx);
+			
+				if (result.kindFlag == SHADERKIND_VERTEX)
+				{
+					shaderBlobSec.AddValue("Vertex");
+					shaderFileName.Append(".vert");
+				}
+				else if (result.kindFlag == SHADERKIND_FRAGMENT)
+				{
+					shaderBlobSec.AddValue("Fragment");
+					shaderFileName.Append(".frag");
+				}
+				else if (result.kindFlag == SHADERKIND_COMPUTE)
+				{
+					shaderBlobSec.AddValue("Compute");
+					shaderFileName.Append(".comp");
+				}
+
+				shaderBlobSec.AddValue(shaderInfo.entryPoints[result.entryPointIdx].name);
+				shaderBlobSec.AddValue(result.queryStr);
+
+				for (ShaderInfo::Binding& binding : result.bindings)
+				{
+					KVSection& bindingSec = shaderBlobSec.CreateSection(binding.name.ToCString());
+					bindingSec.AddValue(binding.bindGroupId);
+					bindingSec.AddValue(binding.index);
+					bindingSec.AddValue(s_bindingTypeNames[binding.type]);
+
+					if (binding.rwFlags & (RWFLAG_READ | RWFLAG_WRITE))
+						bindingSec.AddValue(binding.rwFlags == RWFLAG_READ ? "readonly " : (binding.rwFlags == RWFLAG_WRITE ? "writeonly " : ""));
+					else if(binding.rwFlags & RWFLAG_UNIFORM)
+						bindingSec.AddValue("uniform");
+				}
+
+				auto writeBytecodeFile = [&](EShaderModuleType type) {
+					const ubyte* data = (ubyte*)result.data[type].begin();
+					if (!data)
+						return;
+					const VSSize size = (result.data[type].end() - result.data[type].begin()) * sizeof(uint32);
+
+					CMemoryStream spvBytecodeStream(data, size, PP_SL);
+					shaderPackFile.Add(&spvBytecodeStream, shaderFileName + s_shaderModuleTypeExt[static_cast<int>(type)]);
+				};
+
+				// Write shader bytecode files
+				writeBytecodeFile(SHADERMODULE_SPIRV);
+				writeBytecodeFile(SHADERMODULE_DXBC);
+				writeBytecodeFile(SHADERMODULE_DXIL);
+
+				referenceRemap[i] = shaderFileCount++;
+			}
+
+			for (const ShaderInfo::Result& result : shaderInfo.results)
+			{
+				const ShaderInfo::VertLayout& layout = shaderInfo.vertexLayouts[result.vertLayoutIdx];
+
+				if (result.refResult == -1)
+					continue;
+
+				ASSERT_MSG(result.refResult != -1, "Something went wrong, got empty shader and no reference id");
+				ASSERT(shaderInfo.results[result.refResult].kindFlag == result.kindFlag);
+
+				// Reference shader bytecode file
+				KVSection& refSec = fileListSec.CreateSection("ref");
+				refSec.AddValue(result.vertLayoutIdx);
+
+				if (result.kindFlag == SHADERKIND_VERTEX)
+					refSec.AddValue("Vertex");
+				else if (result.kindFlag == SHADERKIND_FRAGMENT)
+					refSec.AddValue("Fragment");
+				else if (result.kindFlag == SHADERKIND_COMPUTE)
+					refSec.AddValue("Compute");
+
+				refSec.AddValue(shaderInfo.entryPoints[result.entryPointIdx].name);
+				refSec.AddValue(result.queryStr);
+				refSec.AddValue(referenceRemap[result.refResult]);
+			}
+
+			// put added files
+			for (const ShaderInfo::AddFile& addFile : shaderInfo.addedFiles)
+			{
+				IFileStreamPtr filePtr = g_fileSystem->Open(addFile.fileName, FS_OPEN_READ, SP_ROOT);
+				shaderPackFile.Add(filePtr, addFile.values.back());
+
+				KVSection& fileSec = fileListSec.CreateSection(addFile.values[0]);
+				for(int i = 1; i < addFile.values.numElem(); ++i)
+					fileSec.AddValue(addFile.values[i]);
+			}
+
+			CMemoryStream shaderInfoData(nullptr, FS_OPEN_WRITE, 8192, PP_SL);
+			KeyValues::WriteBinary(&shaderInfoData, shaderInfoKvs);
+			shaderPackFile.Add(&shaderInfoData, "ShaderInfo");
+
+			shaderPackFile.End();
+		}
+	});
+	completeJob->DeleteOnFinish();
+	completeJob->InitJob();
+
+	syncJob.AddWait(completeJob);
 
 	if (shaderInfo.type != ShaderInfo::SHADER_PACKAGE)
 	{
@@ -807,17 +1131,16 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 		for (const ShaderInfo::Variant& variant : shaderInfo.variants)
 		{
 			if(variant.baseVariant != -1)
-				switchDefines.append(variant.defines);
+				compileData->switchDefines.append(variant.defines);
 		}
 
-		MsgWarning("Processing shader %s (%d vertex layouts %d defines)\n", shaderInfo.name.ToCString(), shaderInfo.vertexLayouts.numElem(), switchDefines.numElem());
+		MsgWarning("Processing shader %s (%d vertex layouts %d defines)\n", shaderInfo.name.ToCString(), shaderInfo.vertexLayouts.numElem(), compileData->switchDefines.numElem());
 
-		const int totalVariantCount = 1 << switchDefines.numElem();
+		const int totalVariantCount = 1 << compileData->switchDefines.numElem();
 
 		// reserve variant count * (vertex + fragment)
 		shaderInfo.results.reserve(shaderInfo.vertexLayouts.numElem() * totalVariantCount * 2);
 
-		CEqMutex resultsMutex;
 		for (int vertLayoutIdx = 0; vertLayoutIdx < shaderInfo.vertexLayouts.numElem(); ++vertLayoutIdx)
 		{
 			const ShaderInfo::VertLayout& vertexLayout = shaderInfo.vertexLayouts[vertLayoutIdx];
@@ -831,32 +1154,35 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 			MsgWarning("   Compiling for vertex %s\n", vertexLayout.name.ToCString());
 			for (int i = 0; i < totalVariantCount; ++i)
 			{
-				FunctionJob* funcJob = PPNew FunctionJob(vertexLayout.name, 
-					[includePaths, &resultsMutex, &shaderSourceString, &shaderSourceName, &compileErrors, &shaderInfo, vertexLayout, &switchDefines, nSwitch = i, vertLayoutIdx](void*, int) {
+				FunctionJob* compileVariantJob = PPNew FunctionJob(vertexLayout.name, 
+					[this, compileData, vertexLayout, i, vertLayoutIdx](void*, int) {
+
+					ShaderInfo& shaderInfo = compileData->shaderInfo;
+
 					EqString queryStr;
-					for (int j = 0; j < switchDefines.numElem(); ++j)
+					for (int switchDef = 0; switchDef < compileData->switchDefines.numElem(); ++switchDef)
 					{
-						if (nSwitch & (1 << j))
+						if (i & (1 << switchDef))
 						{
-							if (arrayFindIndex(vertexLayout.excludeDefines, switchDefines[j]) != -1)
+							if (arrayFindIndex(vertexLayout.excludeDefines, compileData->switchDefines[switchDef]) != -1)
 							{
-								MsgWarning("Skipping %s %s\n", vertexLayout.name.ToCString(), switchDefines[j].ToCString());
+								MsgWarning("Skipping %s %s\n", vertexLayout.name.ToCString(), compileData->switchDefines[switchDef].ToCString());
 								return;
 							}
 
 							if (queryStr.Length())
 								queryStr.Append("|");
-							queryStr.Append(switchDefines[j]);
+							queryStr.Append(compileData->switchDefines[switchDef]);
 						}
 					}
 
 					auto foundDefineLen = [](const char* str)
-						{
-							const char* p = str;
-							while (!(*p == 0 || *p == '|'))
-								++p;
-							return p - str;
-						};
+					{
+						const char* p = str;
+						while (!(*p == 0 || *p == '|'))
+							++p;
+						return p - str;
+					};
 
 					for (const ShaderInfo::SkipCombo& skip : shaderInfo.skipCombos)
 					{
@@ -876,292 +1202,28 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 							return;
 					}
 
-					shaderc::Compiler compiler;
-					auto fillMacros = [vertexLayout, &queryStr, &switchDefines, nSwitch](shaderc::CompileOptions& options) {
-						for (int j = 0; j < switchDefines.numElem(); ++j)
-						{
-							if (nSwitch & (1 << j))
-								options.AddMacroDefinition(switchDefines[j], switchDefines[j].Length(), nullptr, 0u);
-						}
-					};
-
-					auto compileShaderKind = [&](int entryPointId, const ShaderInfo::EntryPoint& entryPoint)
+					for (int entryPointIdx = 0; entryPointIdx < shaderInfo.entryPoints.numElem(); ++entryPointIdx)
 					{
-						EqStringRef kindMacroStr;
-						shaderc_shader_kind shaderCKind;
-
-						if (entryPoint.kind == SHADERKIND_VERTEX)
-						{
-							kindMacroStr = "VERTEX";
-							shaderCKind = shaderc_vertex_shader;
-						}
-						else if (entryPoint.kind == SHADERKIND_FRAGMENT)
-						{
-							kindMacroStr = "FRAGMENT";
-							shaderCKind = shaderc_fragment_shader;
-						}
-						else if (entryPoint.kind == SHADERKIND_COMPUTE)
-						{
-							kindMacroStr = "COMPUTE";
-							shaderCKind = shaderc_compute_shader;
-						}
-
-						std::unique_ptr<EqShaderIncluder> includer = std::make_unique<EqShaderIncluder>(shaderInfo, includePaths);
-						includer->SetVertexLayout(vertexLayout.name);
-
-						shaderc::CompileOptions options;
-						options.SetSourceLanguage(s_sourceLanguage[shaderInfo.sourceType]);
-						options.SetOptimizationLevel(shaderc_optimization_level_performance);
-						options.SetIncluder(std::move(includer));
-						options.AddMacroDefinition(kindMacroStr.ToCString());			
-						options.SetTargetEnvironment(shaderc_target_env_webgpu, 0);
-	
-						if(shaderInfo.debugInfo)
-							options.SetGenerateDebugInfo();
-
-						if (shaderInfo.sourceType == SHADERSOURCE_GLSL)
-							options.SetForcedVersionProfile(450, shaderc_profile_none);
-
-						fillMacros(options);
-
-						// first we need to pre-process our file and collect bindings for pipeline layouts
-						shaderc::PreprocessedSourceCompilationResult preprocessResult = compiler.PreprocessGlsl(
-							(const char*)shaderSourceString.GetBasePointer(),
-							shaderSourceString.GetSize(),
-							shaderCKind,
-							shaderSourceName,
-							options);			
-
-						const shaderc_compilation_status preprocessStatus = preprocessResult.GetCompilationStatus();
-						if (preprocessStatus != shaderc_compilation_status_success)
-						{
-							MsgError("Failed pre-processing %s %s\n%s\n", vertexLayout.name.ToCString(), queryStr.ToCString(), preprocessResult.GetErrorMessage().c_str());
-							if (preprocessStatus == shaderc_compilation_status_compilation_error)
-								compileErrors = true;
-							return;
-						}
-
-						Array<ShaderInfo::Binding> bindings(PP_SL);
-
-						// we need to parse shader resources
-						ParseShaderResourceBindings(bindings, entryPoint.kind, shaderSourceName, const_cast<char*>(preprocessResult.begin()), preprocessResult.end() - preprocessResult.begin());
-
-						shaderc::SpvCompilationResult compilationResult = compiler.CompileGlslToSpv(
-							preprocessResult.begin(),
-							preprocessResult.end() - preprocessResult.begin(),
-							shaderCKind,
-							shaderSourceName,
-							entryPoint.name,
-							options
-						);
-
-						const shaderc_compilation_status compileStatus = compilationResult.GetCompilationStatus();
-						if (compileStatus != shaderc_compilation_status_success)
-						{
-							MsgError("Failed compiling %s %s\n%s\n", vertexLayout.name.ToCString(), queryStr.ToCString(), compilationResult.GetErrorMessage().c_str());
-							if (compileStatus == shaderc_compilation_status_compilation_error)
-								compileErrors = true;
-							return;
-						}
-
-						uint32 resultCRC = 0;
-						CRC32_InitChecksum(resultCRC);
-						CRC32_UpdateChecksum(resultCRC, compilationResult.begin(), (compilationResult.end() - compilationResult.begin()) * sizeof(compilationResult.begin()[0]));
-						{
-							CScopedMutex m(resultsMutex);
-
-							// Reference shaders if they have same output
-							// TODO: make it so defines are detected for Vertex or Fragment.
-							const int refIdx = arrayFindIndexF(shaderInfo.results, [resultCRC](const ShaderInfo::Result& result) {
-								return resultCRC == result.crc32;
-							});
-
-							// store result
-							ShaderInfo::Result& result = shaderInfo.results.append();
-							result.crc32 = resultCRC;
-							result.queryStr = queryStr;
-							result.vertLayoutIdx = vertLayoutIdx;
-							result.entryPointId = entryPointId;
-							result.kindFlag = entryPoint.kind;
-
-							if (refIdx == -1)
-							{
-								result.data = std::move(compilationResult);
-								result.bindings = std::move(bindings);
-							}
-							else
-							{
-								ASSERT_MSG(entryPoint.kind == shaderInfo.results[refIdx].kindFlag, "Referenced shader kind is invalid (checksum collision?)");
-								result.refResult = refIdx;
-							}
-						}
-					};
-
-					int entryPointIdx = 0;
-					for (const ShaderInfo::EntryPoint& entryPoint : shaderInfo.entryPoints)
-					{
-						if (compileErrors)
+						if (compileData->compileErrors)
 							break;
-						compileShaderKind(entryPointIdx, entryPoint);
-						++entryPointIdx;
+						CompileShaderSpirV(compileData.Ref(), entryPointIdx, vertLayoutIdx, queryStr);
 					}
 
 					//if(!stopCompilation)
 					//	Msg("   - compiled variant '%s' (%d)\n", queryStr.ToCString(), nSwitch);
 				});
 
-				funcJob->DeleteOnFinish();
-				m_jobMng.InitStartJob(funcJob);
+				compileVariantJob->DeleteOnFinish();
+				completeJob->AddWait(compileVariantJob);
+				m_jobMng.InitStartJob(compileVariantJob);
 
-				if (compileErrors)
+				if (compileData->compileErrors)
 					break;
 			}
 		}
-		m_jobMng.Wait();
 	}
 
-	// Store files
-	if (!compileErrors && (shaderInfo.results.numElem() || shaderInfo.addedFiles.numElem()))
-	{
-		CDPKFileWriter shaderPackFile("shaders", 4);
-		if (!shaderPackFile.Begin(targetFileName))
-		{
-			MsgError("Unable to create pack file %s\n", targetFileName.ToCString());
-			return;
-		}
-
-		// store new CRC
-		m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", shaderInfo.crc32), shaderInfo.name);
-
-		// Store shader info
-		KVSection shaderInfoKvs;
-		shaderInfoKvs.SetName(shaderInfo.name);
-		{
-			KVSection& definesSec = shaderInfoKvs.CreateSection("Defines");
-			for (EqString& defineStr : switchDefines)
-				definesSec.AddValue(defineStr);
-		}
-
-		// store vertex layout info
-		{
-			KVSection& vertexLayoutsSec = shaderInfoKvs.CreateSection("VertexLayouts");
-			for (ShaderInfo::VertLayout& vertLayout : shaderInfo.vertexLayouts)
-			{
-				KVSection& layoutSec = vertexLayoutsSec.CreateSection(vertLayout.name);
-				if (vertLayout.aliasOf != -1)
-				{
-					layoutSec.AddValue("aliasOf");
-					layoutSec.AddValue(shaderInfo.vertexLayouts[vertLayout.aliasOf].name);
-				}
-			}
-		}
-
-		KVSection& fileListSec = shaderInfoKvs.CreateSection("FileList");
-
-		int shaderFileCount = 0;
-		Array<int> referenceRemap(PP_SL);
-		referenceRemap.setNum(shaderInfo.results.numElem());
-
-		// Store shader SPIR-V output in separate files
-		for (int i = 0; i < shaderInfo.results.numElem(); ++i)
-		{
-			const ShaderInfo::Result& result = shaderInfo.results[i];
-			const ShaderInfo::VertLayout& layout = shaderInfo.vertexLayouts[result.vertLayoutIdx];
-
-			if (result.refResult != -1)
-				continue;
-
-			EqString shaderFileName = EqString::Format("%s-%s", layout.name.ToCString(), result.queryStr.ToCString());
-			KVSection& spvSec = fileListSec.CreateSection("spv");
-			spvSec.AddValue(result.vertLayoutIdx);
-			
-			if (result.kindFlag == SHADERKIND_VERTEX)
-			{
-				spvSec.AddValue("Vertex");
-				shaderFileName.Append(".vert");
-			}
-			else if (result.kindFlag == SHADERKIND_FRAGMENT)
-			{
-				spvSec.AddValue("Fragment");
-				shaderFileName.Append(".frag");
-			}
-			else if (result.kindFlag == SHADERKIND_COMPUTE)
-			{
-				spvSec.AddValue("Compute");
-				shaderFileName.Append(".comp");
-			}
-
-			spvSec.AddValue(shaderInfo.entryPoints[result.entryPointId].name);
-			spvSec.AddValue(result.queryStr);
-
-			for (ShaderInfo::Binding& binding : result.bindings)
-			{
-				KVSection& bindingSec = spvSec.CreateSection(binding.name.ToCString());
-				bindingSec.AddValue(binding.bindGroupId);
-				bindingSec.AddValue(binding.index);
-				bindingSec.AddValue(s_bindingTypeNames[binding.type]);
-
-				if (binding.rwFlags & (RWFLAG_READ | RWFLAG_WRITE))
-					bindingSec.AddValue(binding.rwFlags == RWFLAG_READ ? "readonly " : (binding.rwFlags == RWFLAG_WRITE ? "writeonly " : ""));
-				else if(binding.rwFlags & RWFLAG_UNIFORM)
-					bindingSec.AddValue("uniform");
-				
-				//Msg("layout(set = %d, binding = %d) %s%s %s\n", binding.bindGroupId, binding.index, binding.RWFlags == FLAG_READ ? "readonly " : (binding.RWFlags == FLAG_WRITE ? "writeonly " : ""), s_bindingTypeNames[binding.type], binding.name.ToCString());
-			}
-
-			// Write shader bytecode file
-			const uint32* shaderData = result.data.begin();
-			const uint32 size = result.data.end() - shaderData;
-
-			CMemoryStream readOnlyStream((ubyte*)shaderData, FS_OPEN_READ, size * sizeof(uint32), PP_SL);
-			shaderPackFile.Add(&readOnlyStream, shaderFileName);
-
-			referenceRemap[i] = shaderFileCount++;
-		}
-
-		for (const ShaderInfo::Result& result : shaderInfo.results)
-		{
-			const ShaderInfo::VertLayout& layout = shaderInfo.vertexLayouts[result.vertLayoutIdx];
-
-			if (result.refResult == -1)
-				continue;
-
-			ASSERT_MSG(result.refResult != -1, "Something went wrong, got empty shader and no reference id");
-			ASSERT(shaderInfo.results[result.refResult].kindFlag == result.kindFlag);
-
-			// Reference shader bytecode file
-			KVSection& refSec = fileListSec.CreateSection("ref");
-			refSec.AddValue(result.vertLayoutIdx);
-
-			if (result.kindFlag == SHADERKIND_VERTEX)
-				refSec.AddValue("Vertex");
-			else if (result.kindFlag == SHADERKIND_FRAGMENT)
-				refSec.AddValue("Fragment");
-			else if (result.kindFlag == SHADERKIND_COMPUTE)
-				refSec.AddValue("Compute");
-
-			refSec.AddValue(shaderInfo.entryPoints[result.entryPointId].name);
-			refSec.AddValue(result.queryStr);
-			refSec.AddValue(referenceRemap[result.refResult]);
-		}
-
-		// put added files
-		for (const ShaderInfo::AddFile& addFile : shaderInfo.addedFiles)
-		{
-			IFileStreamPtr filePtr = g_fileSystem->Open(addFile.fileName, FS_OPEN_READ, SP_ROOT);
-			shaderPackFile.Add(filePtr, addFile.values.back());
-
-			KVSection& fileSec = fileListSec.CreateSection(addFile.values[0]);
-			for(int i = 1; i < addFile.values.numElem(); ++i)
-				fileSec.AddValue(addFile.values[i]);
-		}
-
-		CMemoryStream shaderInfoData(nullptr, FS_OPEN_WRITE, 8192, PP_SL);
-		KeyValues::WriteBinary(&shaderInfoData, shaderInfoKvs);
-		shaderPackFile.Add(&shaderInfoData, "ShaderInfo");
-
-		shaderPackFile.End();
-	}
+	m_jobMng.StartJob(completeJob);
 }
 
 bool CShaderCooker::Init(const char* confFileName, const char* targetName)
@@ -1268,10 +1330,13 @@ void CShaderCooker::Execute()
 
 	// process shader files
 	
+	SyncJob syncJob("WaitForCompilationComplete");
+	syncJob.InitSignal();
 	for (ShaderInfo& shaderInfo : m_shaderList)
-	{	
-		ProcessShader(shaderInfo);
-	}
+		ProcessShader(shaderInfo, syncJob);
+
+	m_jobMng.InitStartJob(&syncJob);
+	syncJob.GetSignal()->Wait();
 
 	// save CRC list file
 	IFileStreamPtr pStream = g_fileSystem->Open(crcFileName, FS_OPEN_WRITE, SP_ROOT);
