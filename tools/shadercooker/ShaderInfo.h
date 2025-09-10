@@ -24,6 +24,23 @@ enum EShaderSourceType : int
 	//SHADERSOURCE_WGSL,
 };
 
+enum EShaderModuleType
+{
+	SHADERMODULE_SPIRV,
+	SHADERMODULE_DXBC,
+	SHADERMODULE_DXIL,
+	SHADERMODULE_WGSL,		// WGPU only
+
+	SHADERMODULE_TYPES,
+};
+
+static const char* s_shaderModuleTypeExt[] = {
+	".spv",
+	".dxbc",
+	".dxil",
+	".wgsl",
+};
+
 enum EBindGroupId : int
 {
 	BINDGROUP_UNKNOWN = -1,
@@ -100,9 +117,9 @@ struct ShaderInfo
 	};
 	struct Result
 	{
-		shaderc::SpvCompilationResult data;
+		shaderc::SpvCompilationResult data[SHADERMODULE_TYPES];
 		EqString		queryStr;
-		int				entryPointId{ -1 };
+		int				entryPointIdx{ -1 };
 		int				kindFlag{ -1 };
 		int				refResult{ -1 };
 		int				vertLayoutIdx{ -1 };
