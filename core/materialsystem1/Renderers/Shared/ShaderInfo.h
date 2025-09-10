@@ -7,7 +7,17 @@ enum EShaderModuleType
 {
 	SHADERMODULE_SPIRV,
 	SHADERMODULE_DXBC,
+	SHADERMODULE_DXIL,
 	SHADERMODULE_WGSL,		// WGPU only
+
+	SHADERMODULE_TYPES,
+};
+
+enum ERWFlags : int
+{
+	RWFLAG_UNIFORM	= (1 << 0),
+	RWFLAG_READ		= (1 << 1),
+	RWFLAG_WRITE	= (1 << 2),
 };
 
 struct ShaderInfo
@@ -28,13 +38,23 @@ struct ShaderInfo
 		int			aliasOf{ -1 };
 	};
 
+	struct Binding
+	{
+		EqString		name{ 0 };
+		int				bindGroupId{ -1 };
+		int				index{ 0 };
+		int				rwFlags{ RWFLAG_READ | RWFLAG_WRITE };
+		EBindEntryType	type{};
+	};
+
 	struct Module
 	{
-		void*				rhiModule{ nullptr };
-		EShaderKind			kind;
-		EqString			entryPoint;
-		int					fileIndex{ -1 };
-		EShaderModuleType	type{};
+		void*					rhiModule{ nullptr };
+		EShaderKind				kind;
+		EqString				entryPoint;
+		int						fileIndex[SHADERMODULE_TYPES]{ -1 };
+		Array<Binding>			bindings{ PP_SL };
+		IGPUPipelineLayoutPtr	pipelineLayout;				// needed for NVRHI
 	};
 
 	struct EntryPoint
