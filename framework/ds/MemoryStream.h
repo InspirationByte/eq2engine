@@ -17,18 +17,25 @@ class CMemoryStream : public IFileStream
 public:
 	~CMemoryStream();
 
+	CMemoryStream(CMemoryStream&& other);
+	CMemoryStream(const CMemoryStream& other) = delete;
 	CMemoryStream(PPSourceLine sl);
-	CMemoryStream(ubyte* data, int nOpenFlags, VSSize nDataSize, PPSourceLine sl);
+	CMemoryStream(ubyte* data, int openFlags, VSSize dataSize, PPSourceLine sl);
+	CMemoryStream(const ubyte* data, VSSize dataSize, PPSourceLine sl);				// read-only
+
+	CMemoryStream&	operator=(CMemoryStream&& other);
+	CMemoryStream&	operator=(const CMemoryStream& other) = delete;
 
 	// opens stream, if this is a file, data is filename
-	bool			Open(ubyte* data, int nOpenFlags, VSSize nDataSize);
+	bool			Open(ubyte* data, int openFlags, VSSize dataSize);
+	bool			Open(const ubyte* data, VSSize dataSize);						// read-only
 
 	// closes stream
 	void			Close(bool deallocate = false);
 
 	VSSize			Read(void *dest, VSSize count, VSSize size);
 	VSSize			Write(const void *src, VSSize count, VSSize size);
-	VSSize			Seek(int64 nOffset, EFileStreamSeek seekType);
+	VSSize			Seek(int64 offset, EFileStreamSeek seekType);
 
 	VSSize			Tell() const;
 	VSSize			GetSize();
@@ -36,7 +43,7 @@ public:
 	bool			Flush();
 	uint32			GetCRC32();
 
-	EFileStreamType		GetType() const { return FS_TYPE_MEMORY; }
+	EFileStreamType	GetType() const { return FS_TYPE_MEMORY; }
 	const char*		GetName() const { return m_sl.GetFileName(); }
 
 	// reads other stream into this one
@@ -53,6 +60,8 @@ public:
 
 	// returns base pointer to the stream (only memory stream)
 	ubyte*			GetBasePointer();
+
+	bool			IsValid() const { return m_start != nullptr; }
 
 protected:
 

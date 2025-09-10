@@ -32,14 +32,57 @@ void IFileStream::PrintF(const char* pFmt, ...)
 // CMemoryStream - File stream
 //--------------------------
 
-CMemoryStream::CMemoryStream(PPSourceLine sl) : m_sl(sl)
+CMemoryStream::CMemoryStream(CMemoryStream&& other)
+	 : m_sl(other.m_sl)
+	, m_start(other.m_start)
+	, m_currentPtr(other.m_currentPtr)
+	, m_writeTop(other.m_writeTop)
+	, m_allocatedSize(other.m_allocatedSize)
+	, m_openFlags(other.m_openFlags)
+	, m_ownBuffer(other.m_ownBuffer)
+{
+	other.m_start = nullptr;
+	other.m_currentPtr = nullptr;
+	other.m_writeTop = 0;
+	other.m_allocatedSize = 0;
+	other.m_openFlags = 0;
+	other.m_ownBuffer = false;
+}
+
+
+CMemoryStream& CMemoryStream::operator=(CMemoryStream&& other)
+{
+	m_sl = other.m_sl;
+	m_start = other.m_start;
+	m_currentPtr = other.m_currentPtr;
+	m_writeTop = other.m_writeTop;
+	m_allocatedSize = other.m_allocatedSize;
+	m_openFlags = other.m_openFlags;
+	m_ownBuffer = other.m_ownBuffer;
+	other.m_start = nullptr;
+	other.m_currentPtr = nullptr;
+	other.m_writeTop = 0;
+	other.m_allocatedSize = 0;
+	other.m_openFlags = 0;
+	other.m_ownBuffer = false;
+	return *this;
+}
+
+CMemoryStream::CMemoryStream(PPSourceLine sl)
+	: m_sl(sl)
 {
 }
 
-CMemoryStream::CMemoryStream(ubyte* data, int nOpenFlags, VSSize nDataSize, PPSourceLine sl)
+CMemoryStream::CMemoryStream(ubyte* data, int openFlags, VSSize dataSize, PPSourceLine sl)
 	: m_sl(sl)
 {
-	Open(data, nOpenFlags, nDataSize);
+	Open(data, openFlags, dataSize);
+}
+
+CMemoryStream::CMemoryStream(const ubyte* data, VSSize dataSize, PPSourceLine sl)
+	: m_sl(sl)
+{
+	Open(data, dataSize);
 }
 
 // destroys stream data
@@ -136,27 +179,48 @@ VSSize CMemoryStream::GetSize()
 }
 
 // opens stream, if this is a file, data is filename
-bool CMemoryStream::Open(ubyte* data, int nOpenFlags, VSSize nDataSize)
+bool CMemoryStream::Open(ubyte* data, int openFlags, VSSize dataSize)
 {
-	ASSERT(nDataSize >= 0);
+	ASSERT(dataSize >= 0);
 	ASSERT_MSG(m_openFlags == 0, "Already open");
 
 	if (m_ownBuffer && data != nullptr)
 		Close(true);
 
 	m_ownBuffer = (data == nullptr);
-	m_openFlags = nOpenFlags;
-	m_writeTop = ((nOpenFlags & FS_OPEN_READ) && data) ? nDataSize : 0;
+	m_openFlags = openFlags;
+	m_writeTop = ((openFlags & FS_OPEN_READ) && data) ? dataSize : 0;
 
 	if (m_ownBuffer)
 	{
-		ReAllocate(nDataSize);
+		ReAllocate(dataSize);
 	}
 	else
 	{
 		m_start = m_currentPtr = data;
-		m_allocatedSize = nDataSize;
+		m_allocatedSize = dataSize;
 	}
+
+	return true;
+}
+
+bool CMemoryStream::Open(const ubyte* data, VSSize dataSize)
+{
+	if (!data || !dataSize)
+		return false;
+
+	ASSERT(dataSize >= 0);
+	ASSERT_MSG(m_openFlags == 0, "Already open");
+
+	if (m_ownBuffer)
+		Close(true);
+
+	m_ownBuffer = false;
+	m_openFlags = FS_OPEN_READ;
+	m_writeTop = dataSize;
+
+	m_start = m_currentPtr = const_cast<ubyte*>(data);
+	m_allocatedSize = dataSize;
 
 	return true;
 }
