@@ -19,6 +19,8 @@ using namespace Threading;
 
 extern CEqMutex	g_sapi_TextureMutex;
 
+enum ENVRHIBackendType : int;
+
 class CNVRHIRenderAPI : public ShaderAPI_Base
 {
 	friend class CNVRHIRenderLibDXGIBase;
@@ -112,6 +114,7 @@ protected:
 
 	Map<int, ShaderInfo>		m_shaderCache{ PP_SL };
 	nvrhi::DeviceHandle			m_rhiDevice{ nullptr };
+	ENVRHIBackendType			m_backendType;
 	bool						m_deviceLost{ false };
 	bool						m_isValidationActive{ false };
 };

@@ -14,6 +14,7 @@
 #include "utils/KeyValues.h"
 
 #include "NVRHIRenderAPI.h"
+#include "NVRHIBackend.h"
 #include "NVRHIRenderDefs.h"
 #include "NVRHIStates.h"
 #include "NVRHICommandRecorder.h"
@@ -523,48 +524,51 @@ const ShaderInfo::Module& CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInf
 	if (mod.rhiModule)
 		return mod;
 
-	CMemoryStream shaderData(PP_SL);
+	CMemoryStream shaderBlobData(PP_SL);
+	auto loadShaderBlob = [&](EShaderModuleType type)
 	{
-		IFileStreamPtr shaderFile = shaderInfo.shaderPackFile->Open(mod.fileIndex, FS_OPEN_READ);
+		IFileStreamPtr shaderFile = shaderInfo.shaderPackFile->Open(mod.fileIndex[type], FS_OPEN_READ);
 		if (!shaderFile)
-		{
-			ASSERT_FAIL("Unable to open file in shader package!");
-			return mod;
-		}
+			return nullptr;
 
-		shaderData.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, shaderFile->GetSize());
-		shaderData.AppendStream(shaderFile);
-	}
+		shaderBlobData.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, shaderFile->GetSize());
+		shaderBlobData.AppendStream(shaderFile);
+	};
 
 	const EqString shaderModuleName = EqString::Format("%s-%d", shaderInfo.shaderName.ToCString(), shaderModuleIdx);
 
 	nvrhi::ShaderHandle rhiShaderModule = nullptr;
-	if (mod.type == SHADERMODULE_SPIRV)
+	nvrhi::ShaderDesc rhiShaderDesc{};
+	rhiShaderDesc.debugName = shaderModuleName;
+	rhiShaderDesc.entryName = mod.entryPoint.ToCString();
+
+	switch (mod.kind)
 	{
-		nvrhi::ShaderDesc rhiShaderDesc{};
-		rhiShaderDesc.debugName = shaderModuleName;
-		rhiShaderDesc.entryName = mod.entryPoint.ToCString();
-
-		switch (mod.kind)
-		{
-		case SHADERKIND_VERTEX:
-			rhiShaderDesc.shaderType = nvrhi::ShaderType::Vertex;
-			break;
-		case SHADERKIND_FRAGMENT:
-			rhiShaderDesc.shaderType = nvrhi::ShaderType::Pixel;
-			break;
-		case SHADERKIND_COMPUTE:
-			rhiShaderDesc.shaderType = nvrhi::ShaderType::Compute;
-			break;
-		}
-
-		rhiShaderModule = m_rhiDevice->createShader(rhiShaderDesc, shaderData.GetBasePointer(), shaderData.GetSize());
+	case SHADERKIND_VERTEX:
+		rhiShaderDesc.shaderType = nvrhi::ShaderType::Vertex;
+		break;
+	case SHADERKIND_FRAGMENT:
+		rhiShaderDesc.shaderType = nvrhi::ShaderType::Pixel;
+		break;
+	case SHADERKIND_COMPUTE:
+		rhiShaderDesc.shaderType = nvrhi::ShaderType::Compute;
+		break;
 	}
-	else
+
+	if (m_backendType == NVRHI_BACKEND_D3D11)
+		loadShaderBlob(SHADERMODULE_DXIL);
+	else if (m_backendType == NVRHI_BACKEND_D3D12)
+		loadShaderBlob(SHADERMODULE_DXBC);
+	else if (m_backendType == NVRHI_BACKEND_VULKAN)
+		loadShaderBlob(SHADERMODULE_SPIRV);
+
+	if (!shaderBlobData.IsValid())
 	{
-		ASSERT_FAIL("Shader module type %d (found in package %s) not supported", mod.type, shaderInfo.shaderName.ToCString());
+		ASSERT_FAIL("Shader module %s (found in package %s) not found for specific backend", shaderModuleName.ToCString(), shaderInfo.shaderName.ToCString());
 		return mod;
 	}
+
+	rhiShaderModule = m_rhiDevice->createShader(rhiShaderDesc, shaderBlobData.GetBasePointer(), shaderBlobData.GetSize());
 	
 	if (!rhiShaderModule)
 	{
