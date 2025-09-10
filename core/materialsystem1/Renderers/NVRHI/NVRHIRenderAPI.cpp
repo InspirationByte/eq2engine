@@ -333,9 +333,6 @@ nvrhi::BindingLayoutHandle CNVRHIRenderAPI::CreateBindingLayout(const BindGroupL
 	int rhiShaderTypeVisbility = 0;
 	for (const BindGroupLayoutDesc::Entry& entry : bindGroupDesc.entries)
 	{
-		const bool isSRV = (entry.visibility & (SHADERKIND_VERTEX | SHADERKIND_FRAGMENT));
-		const bool isUAV = (entry.visibility & (SHADERKIND_COMPUTE));
-
 		if (entry.visibility & SHADERKIND_VERTEX)	rhiShaderTypeVisbility |= static_cast<int>(nvrhi::ShaderType::Vertex);
 		if (entry.visibility & SHADERKIND_FRAGMENT) rhiShaderTypeVisbility |= static_cast<int>(nvrhi::ShaderType::Pixel);
 		if (entry.visibility & SHADERKIND_COMPUTE)	rhiShaderTypeVisbility |= static_cast<int>(nvrhi::ShaderType::Compute);
@@ -343,22 +340,29 @@ nvrhi::BindingLayoutHandle CNVRHIRenderAPI::CreateBindingLayout(const BindGroupL
 		switch (entry.type)
 		{
 		case BINDENTRY_BUFFER:
-			//if (entry.buffer.bindType == BUFFERBIND_UNIFORM)
-			//else if (entry.buffer.bindType == BUFFERBIND_STORAGE)
-			//else if (entry.buffer.bindType == BUFFERBIND_STORAGE_READONLY)
-
-			if (isSRV) rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_SRV(entry.binding));
-			if (isUAV) rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_UAV(entry.binding));
+			switch (entry.buffer.bindType)
+			{
+			case BUFFERBIND_UNIFORM:
+				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::ConstantBuffer(entry.binding));
+				break;
+			case BUFFERBIND_STORAGE_READONLY:
+				// I'm not sure if it should be TypedBuffer, StructuredBuffer or RawBuffer
+				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_SRV(entry.binding));
+				break;
+			case BUFFERBIND_STORAGE:
+				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_UAV(entry.binding));
+				break;
+			}
 			break;
 		case BINDENTRY_SAMPLER:
 			rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Sampler(entry.binding));
 			break;
 		case BINDENTRY_TEXTURE:
-			if (isSRV) rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_SRV(entry.binding));
-			if (isUAV) rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_UAV(entry.binding));
+			rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_SRV(entry.binding));
 			break;
 		case BINDENTRY_STORAGETEXTURE:
-			if (isUAV) rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_UAV(entry.binding));
+			// all storage images are supposed to be UAV
+			rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_UAV(entry.binding));
 			break;
 		}
 	}
