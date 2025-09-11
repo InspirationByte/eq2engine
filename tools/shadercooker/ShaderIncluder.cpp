@@ -7,12 +7,12 @@
 #include "GLSLBoilerplate.h"
 #include "HLSLBoilerplate.h"
 
-EqShaderIncluder::EqShaderIncluder(ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths)
+ShadercIncluder::ShadercIncluder(ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths)
 	: m_shaderInfo(shaderInfo), m_includePaths(includePaths)
 {
 }
 
-shaderc_include_result* EqShaderIncluder::GetInclude(
+shaderc_include_result* ShadercIncluder::GetInclude(
 	const char* requested_source, shaderc_include_type type,
 	const char* requesting_source, size_t include_depth)
 {
@@ -33,7 +33,7 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 	{
 		if (!CString::Compare(requested_source, "ShaderCooker"))
 		{
-			result->includeContent.Open(nullptr, FS_OPEN_READ | FS_OPEN_WRITE, 8192);
+			result->includeContent.Open(FS_OPEN_READ | FS_OPEN_WRITE, nullptr, 8192);
 
 			if(m_shaderInfo.sourceType == SHADERSOURCE_GLSL)
 				result->includeContent.Print(s_boilerPlateStrGLSL);
@@ -80,7 +80,7 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 	return &result->resultData;
 }
 
-bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fileName, IncludeResult* result)
+bool ShadercIncluder::TryOpenIncludeFile(const char* reqSource, const char* fileName, IncludeResult* result)
 {
 	IFileStreamPtr openFile = nullptr;
 
@@ -101,7 +101,7 @@ bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fil
 
 	if (!openFile)
 	{
-		result->includeContent.Open(nullptr, FS_OPEN_READ | FS_OPEN_WRITE, 8192);
+		result->includeContent.Open(FS_OPEN_READ | FS_OPEN_WRITE, nullptr, 8192);
 		result->includeContent.Print("Could not open %s", fileName);
 		result->resultData.content = (const char*)result->includeContent.GetBasePointer();
 		result->resultData.content_length = result->includeContent.GetSize();
@@ -110,7 +110,7 @@ bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fil
 	}
 
 	result->includeName = fullPath;
-	result->includeContent.Open(nullptr, FS_OPEN_READ | FS_OPEN_WRITE, openFile->GetSize());
+	result->includeContent.Open(FS_OPEN_READ | FS_OPEN_WRITE, nullptr, openFile->GetSize());
 	result->includeContent.AppendStream(openFile);
 
 	const char _zero = 0;
@@ -121,7 +121,7 @@ bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fil
 }
 
 // Handles shaderc_include_result_release_fn callbacks.
-void EqShaderIncluder::ReleaseInclude(shaderc_include_result* data)
+void ShadercIncluder::ReleaseInclude(shaderc_include_result* data)
 {
 	IncludeResult* incRes = reinterpret_cast<IncludeResult*>(data);
 	const int index = incRes - m_shaderIncludes.ptr();
@@ -133,7 +133,7 @@ void EqShaderIncluder::ReleaseInclude(shaderc_include_result* data)
 	m_freeSlots.append(index);
 }
 
-void EqShaderIncluder::SetVertexLayout(const char* vertexLayoutName)
+void ShadercIncluder::SetVertexLayout(const char* vertexLayoutName)
 {
 	m_vertexLayoutName = vertexLayoutName;
 }

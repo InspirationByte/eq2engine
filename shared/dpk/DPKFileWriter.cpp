@@ -86,9 +86,11 @@ int CDPKFileWriter::End(bool storeFileList)
 
 	if (storeFileList)
 	{
-		CMemoryStream lstFile(nullptr, FS_OPEN_WRITE, 8192 * 1024, PP_SL);
+		CMemoryStream lstFile(PP_SL);
+		
+		lstFile.Open(FS_OPEN_WRITE, nullptr, 8192 * 1024);
 		for (FileInfo& info : m_files)
-			lstFile.Print("%s\n", info.fileName.ToCString());
+			lstFile.Print("%s\n", info.fileName);
 
 		Add(&lstFile, "dpkfiles.lst");
 	}
@@ -124,7 +126,7 @@ uint CDPKFileWriter::WriteDataToPackFile(IFileStream* fileData, dpkfileinfo_t& p
 		// make a reader from the memory stream to not cause assert
 		// when memory stream is open as FS_OPEN_WRITE only
 		CMemoryStream* readFromFileData = static_cast<CMemoryStream*>(fileData);
-		readStream.Open(readFromFileData->GetBasePointer(), FS_OPEN_READ, readFromFileData->GetSize());
+		readStream.Open(readFromFileData->GetBasePointer(), readFromFileData->GetSize());
 		fileData = &readStream;
 	}
 	fileData->Seek(0, FS_SEEK_SET);
@@ -291,7 +293,7 @@ uint CDPKFileWriter::Add(IFileStream* fileData, const char* fileName, int packag
 			// make a reader from the memory stream to not cause assert
 			// when memory stream is open as FS_OPEN_WRITE only
 			CMemoryStream* readFromFileData = static_cast<CMemoryStream*>(fileData);
-			readStream.Open(readFromFileData->GetBasePointer(), FS_OPEN_READ, readFromFileData->GetSize());
+			readStream.Open(readFromFileData->GetBasePointer(), readFromFileData->GetSize());
 			fileData = &readStream;
 		}
 		fileData->Seek(0, FS_SEEK_SET);

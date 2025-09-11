@@ -58,7 +58,7 @@ CRIFF_Parser::CRIFF_Parser(ubyte* pChunkData, int nChunkSize)
 	m_riffMem.Ref_Grab();
 	m_stream = IFileStreamPtr(&m_riffMem);
 
-	m_riffMem.Open(pChunkData, FS_OPEN_READ, nChunkSize);
+	m_riffMem.Open(FS_OPEN_READ, pChunkData, nChunkSize);
 
 	RIFFhdr_t header;
 	m_stream->ReadObj(header);

@@ -454,8 +454,8 @@ void CSoundScriptEditor::InitNodesFromScriptDesc(const SoundScriptDesc& script)
 		UISoundNodeDesc& uiNode = *it;
 		if (uiNode.flags & SOUND_NODE_FLAG_OUTPUT)
 		{
-			const int outLen = strlen("out_");
-			memmove(uiNode.name, uiNode.name + outLen, strlen(uiNode.name) - outLen + 1);
+			const int outLen = CString::Length("out_");
+			memmove(uiNode.name, uiNode.name + outLen, CString::Length(uiNode.name) - outLen + 1);
 		}
 	}
 }
@@ -1728,7 +1728,8 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 					SerializeScriptParamsToKeyValues(*selectedScript, soundSec);
 					SerializeNodesToKeyValues(soundSec);
 
-					CMemoryStream stream(nullptr, FS_OPEN_WRITE, 2048, PP_SL);
+					CMemoryStream stream(PP_SL); 
+					stream.Open(FS_OPEN_WRITE, nullptr, 2048);
 					KeyValues::WriteText(&stream, clipboardSec, 0, true);
 
 					const char nullChar = '\0';

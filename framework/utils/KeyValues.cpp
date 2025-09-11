@@ -1594,11 +1594,11 @@ bool KeyValues::Parse(IFileStream* stream, KVSection& outSection)
 	if (stream->GetType() == FS_TYPE_MEMORY)
 	{
 		CMemoryStream* memOpenStream = static_cast<CMemoryStream*>(stream);
-		memBuffer.Open(memOpenStream->GetBasePointer(), FS_OPEN_READ, memOpenStream->GetSize());
+		memBuffer.Open(FS_OPEN_READ, memOpenStream->GetBasePointer(), memOpenStream->GetSize());
 	}
 	else
 	{
-		memBuffer.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, stream->GetSize());
+		memBuffer.Open(FS_OPEN_WRITE | FS_OPEN_READ, nullptr, stream->GetSize());
 		memBuffer.AppendStream(stream);
 		memBuffer.Seek(0, FS_SEEK_SET);
 	}
@@ -1653,7 +1653,7 @@ bool KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection& outS
 			DevMsg(1, "Can't open key-values file '%s'\n", pszFileName);
 			return false;
 		}
-		buffer.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, file->GetSize());
+		buffer.Open(FS_OPEN_WRITE | FS_OPEN_READ, nullptr, file->GetSize());
 		buffer.AppendStream(file);
 		buffer.Seek(0, FS_SEEK_SET);
 	}

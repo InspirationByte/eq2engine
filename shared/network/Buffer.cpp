@@ -15,7 +15,7 @@ namespace Networking
 Buffer::Buffer() 
 	: m_data(m_intData)
 {
-	m_data.Open(nullptr, FS_OPEN_READ | FS_OPEN_WRITE, 128);
+	m_data.Open(FS_OPEN_READ | FS_OPEN_WRITE, nullptr, 128);
 }
 
 Buffer::Buffer(CMemoryStream& stream, int startOfs /*= -1*/)
@@ -65,7 +65,8 @@ void Buffer::WriteWString(const wchar_t* pszStr)
 
 void Buffer::WriteKeyValues(const KVSection& kbase)
 {
-	CMemoryStream stream(nullptr, FS_OPEN_WRITE, 8192, PP_SL);
+	CMemoryStream stream(PP_SL);
+	stream.Open(FS_OPEN_WRITE, nullptr, 8192);
 	KeyValues::WriteBinary(&stream, kbase);
 
 	char zerochar = '\0';
@@ -82,7 +83,8 @@ void Buffer::ReadKeyValues(KVSection& kbase)
 	char* data = PPNew char[len];
 	ReadData(data, len);
 
-	CMemoryStream memstr((ubyte*)data, FS_OPEN_READ, len, PP_SL);
+	CMemoryStream memstr(PP_SL);
+	memstr.Open(FS_OPEN_READ, (ubyte*)data, len);
 	KeyValues::ParseBinary(&memstr, kbase);
 
 	delete [] data;

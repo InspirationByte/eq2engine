@@ -73,18 +73,6 @@ CMemoryStream::CMemoryStream(PPSourceLine sl)
 {
 }
 
-CMemoryStream::CMemoryStream(ubyte* data, int openFlags, VSSize dataSize, PPSourceLine sl)
-	: m_sl(sl)
-{
-	Open(data, openFlags, dataSize);
-}
-
-CMemoryStream::CMemoryStream(const ubyte* data, VSSize dataSize, PPSourceLine sl)
-	: m_sl(sl)
-{
-	Open(data, dataSize);
-}
-
 // destroys stream data
 CMemoryStream::~CMemoryStream()
 {
@@ -94,7 +82,7 @@ CMemoryStream::~CMemoryStream()
 // reads data from virtual stream
 VSSize CMemoryStream::Read(void *dest, VSSize count, VSSize size)
 {
-	ASSERT(m_openFlags & FS_OPEN_READ);
+	ASSERT_MSG(m_openFlags & FS_OPEN_READ, "Stream must be open for READ");
 
 	const VSSize numBytesToRead = size * count;
 	if (numBytesToRead <= 0)
@@ -114,7 +102,7 @@ VSSize CMemoryStream::Read(void *dest, VSSize count, VSSize size)
 // writes data to virtual stream
 VSSize CMemoryStream::Write(const void *src, VSSize count, VSSize size)
 {
-	ASSERT(m_openFlags & FS_OPEN_WRITE);
+	ASSERT_MSG(m_openFlags & FS_OPEN_WRITE, "Stream must be open for WRITE");
 
 	const VSSize numBytesToWrite = size * count;
 	if (numBytesToWrite <= 0)
@@ -147,7 +135,7 @@ VSSize CMemoryStream::Write(const void *src, VSSize count, VSSize size)
 // seeks pointer to position
 VSSize CMemoryStream::Seek(int64 nOffset, EFileStreamSeek seekType)
 {
-	ASSERT(m_openFlags != 0);
+	ASSERT_MSG(m_openFlags != 0, "Stream must be open");
 
 	switch(seekType)
 	{
@@ -179,10 +167,10 @@ VSSize CMemoryStream::GetSize()
 }
 
 // opens stream, if this is a file, data is filename
-bool CMemoryStream::Open(ubyte* data, int openFlags, VSSize dataSize)
+bool CMemoryStream::Open(int openFlags, ubyte* data, VSSize dataSize)
 {
 	ASSERT(dataSize >= 0);
-	ASSERT_MSG(m_openFlags == 0, "Already open");
+	ASSERT_MSG(m_openFlags == 0, "Stream is already open");
 
 	if (m_ownBuffer && data != nullptr)
 		Close(true);
@@ -210,7 +198,7 @@ bool CMemoryStream::Open(const ubyte* data, VSSize dataSize)
 		return false;
 
 	ASSERT(dataSize >= 0);
-	ASSERT_MSG(m_openFlags == 0, "Already open");
+	ASSERT_MSG(m_openFlags == 0, "Stream is already open");
 
 	if (m_ownBuffer)
 		Close(true);
@@ -281,46 +269,34 @@ void CMemoryStream::ShrinkBuffer(VSSize size)
 }
 
 // writes constents of this stream into the other stream
-void CMemoryStream::WriteToStream(IFileStream* pStream, VSSize maxSize)
+void CMemoryStream::WriteToStream(IFileStream* stream, VSSize maxSize)
 {
-	pStream->Write(m_start, 1, min(maxSize > 0 ? maxSize : INT_MAX, m_writeTop));
+	ASSERT(stream);
+	stream->Write(m_start, 1, min(maxSize > 0 ? maxSize : INT_MAX, m_writeTop));
 }
 
 // reads other stream into this one
-bool CMemoryStream::AppendStream(IFileStream* pStream, VSSize maxSize)
+bool CMemoryStream::AppendStream(IFileStream* stream, VSSize maxSize)
 {
-	ASSERT(m_openFlags & FS_OPEN_WRITE);
+	ASSERT(stream);
+	ASSERT_MSG(m_openFlags & FS_OPEN_WRITE, "Stream must be open for WRITE");
 
-	const VSSize resetPos = pStream->Tell();
-	const VSSize readSize = min(maxSize > 0 ? maxSize : INT_MAX, pStream->GetSize() - resetPos);
+	const VSSize resetPos = stream->Tell();
+	const VSSize readSize = min(maxSize > 0 ? maxSize : INT_MAX, stream->GetSize() - resetPos);
 	
 	m_writeTop = max(Tell() + readSize, m_writeTop);
 	ReAllocate(m_writeTop + 16);
 
 	// read to me
-	pStream->Read(m_currentPtr, readSize, 1);
-	pStream->Seek(resetPos, FS_SEEK_SET);
+	stream->Read(m_currentPtr, readSize, 1);
+	stream->Seek(resetPos, FS_SEEK_SET);
 	m_currentPtr += readSize;
 
 	// let user seek this stream after
 	return true;
 }
 
-// returns current pointer to the stream (only memory stream)
-ubyte* CMemoryStream::GetCurrentPointer()
-{
-	return m_currentPtr;
-}
-
-// returns base pointer to the stream (only memory stream)
-ubyte* CMemoryStream::GetBasePointer()
-{
-	return m_start;
-}
-
 uint32 CMemoryStream::GetCRC32()
 {
-	uint32 nCRC = CRC32_BlockChecksum( m_start, m_writeTop );
-
-	return nCRC;
+	return CRC32_BlockChecksum(m_start, m_writeTop);
 }

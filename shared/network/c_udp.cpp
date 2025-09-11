@@ -15,6 +15,7 @@
 
 #include "c_udp.h"
 
+
 DECLARE_CVAR(net_fakeLag, "0", "Simulate lagging packets\n", CV_CHEAT);
 
 namespace Networking
@@ -54,15 +55,8 @@ namespace Networking
 //------------------------------------------------------------------------------
 struct cdp_queued_message_t
 {
-	cdp_queued_message_t()
-	{
-		bytestream = nullptr;
-		flags = 0;
-		sendTime = 0;
-	}
-
 	sockaddr_in				addr;			// address of sender or receiver
-	CMemoryStream*			bytestream{ nullptr };
+	CRefPtr<CMemoryStream>	bytestream;
 	mutable int				sendTimes{ 0 };		// send times
 	mutable int				sentTimeout{ 0 };	// timeout to send
 	mutable int				removeTimeout{ 0 };	// timeout to remove
@@ -109,13 +103,11 @@ ALIGNED_TYPE(udp_cdp_packetstate_s,2) udp_cdp_packetstate_t;
 bool cdp_queued_message_t::Write(const void* pData, int nSize )
 {
 	ASSERT( bytestream->Tell() + nSize < UDP_CDP_MAX_MESSAGEPAYLOAD );
-
 	return bytestream->Write( pData, 1, nSize ) > 0;
 }
 
 void cdp_queued_message_t::WriteReset()
 {
-	delete bytestream;
 	bytestream = nullptr;
 }
 
@@ -126,7 +118,6 @@ void cdp_queued_message_t::ReadReset()
 
 void FreeMessage(cdp_queued_message_t* pMessage)
 {
-	delete pMessage->bytestream;
 	delete pMessage;
 }
 
@@ -139,7 +130,8 @@ cdp_queued_message_t* AllocMessage()
 
 	if(!pMessage->bytestream)
 	{
-		pMessage->bytestream = PPNew CMemoryStream(nullptr, FS_OPEN_WRITE, UDP_CDP_MIN_MESSAGESIZE, PP_SL);
+		pMessage->bytestream = CRefPtr_new(CMemoryStream, PP_SL);
+		pMessage->bytestream->Open(FS_OPEN_WRITE, nullptr, UDP_CDP_MIN_MESSAGESIZE);
 	}
 
 	return pMessage;

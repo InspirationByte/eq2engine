@@ -19,15 +19,13 @@ public:
 
 	CMemoryStream(CMemoryStream&& other);
 	CMemoryStream(const CMemoryStream& other) = delete;
-	CMemoryStream(PPSourceLine sl);
-	CMemoryStream(ubyte* data, int openFlags, VSSize dataSize, PPSourceLine sl);
-	CMemoryStream(const ubyte* data, VSSize dataSize, PPSourceLine sl);				// read-only
+	CMemoryStream(PPSourceLine sl = PP_SL);
 
 	CMemoryStream&	operator=(CMemoryStream&& other);
 	CMemoryStream&	operator=(const CMemoryStream& other) = delete;
 
 	// opens stream, if this is a file, data is filename
-	bool			Open(ubyte* data, int openFlags, VSSize dataSize);
+	bool			Open(int openFlags, ubyte* data = nullptr, VSSize dataSize = 0);
 	bool			Open(const ubyte* data, VSSize dataSize);						// read-only
 
 	// closes stream
@@ -56,10 +54,12 @@ public:
 	void			ShrinkBuffer(VSSize size);
 
 	// returns current pointer to the stream (only memory stream)
-	ubyte*			GetCurrentPointer();
+	ubyte*			GetCurrentPointer() { return m_currentPtr; }
+	const ubyte*	GetCurrentPointer() const { return m_currentPtr; }
 
 	// returns base pointer to the stream (only memory stream)
-	ubyte*			GetBasePointer();
+	ubyte*			GetBasePointer() { return m_start; }
+	const ubyte*	GetBasePointer() const { return m_start; }
 
 	bool			IsValid() const { return m_start != nullptr; }
 
