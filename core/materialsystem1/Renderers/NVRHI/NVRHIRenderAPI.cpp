@@ -531,7 +531,7 @@ const ShaderInfo::Module& CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInf
 		if (!shaderFile)
 			return nullptr;
 
-		shaderBlobData.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, shaderFile->GetSize());
+		shaderBlobData.Open(FS_OPEN_WRITE | FS_OPEN_READ);
 		shaderBlobData.AppendStream(shaderFile);
 	};
 
