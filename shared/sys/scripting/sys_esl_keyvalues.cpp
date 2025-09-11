@@ -137,7 +137,8 @@ EQSCRIPT_TYPE_END
 
 static void KV_PrintSection(const KVSection& base)
 {
-	CMemoryStream stream(nullptr, FS_OPEN_WRITE, 2048, PP_SL);
+	CMemoryStream stream(PP_SL);
+	stream.Open(FS_OPEN_WRITE, nullptr, 2048);
 	KeyValues::WriteText(&stream, base, 0, true);
 
 	char nullChar = '\0';

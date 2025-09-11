@@ -36,7 +36,9 @@ int ScriptState::LoadFileBuffer(IFileStream* virtStream, const char* name, const
 		return LUA_ERRMEM;
 	}
 
-	CMemoryStream memStream(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, 0, PPSourceLine::Make(name, 0));
+	CMemoryStream memStream(PPSourceLine::Make(name, 0));
+	memStream.Open(FS_OPEN_WRITE | FS_OPEN_READ);
+
 	CMemoryStream* useStream = &memStream;
 	if (virtStream->GetType() == FS_TYPE_MEMORY)
 		useStream = static_cast<CMemoryStream*>(virtStream);

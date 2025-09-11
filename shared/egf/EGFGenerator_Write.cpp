@@ -683,7 +683,8 @@ void CEGFGenerator::Validate(studioHdr_t* header, const char* stage)
 //************************************
 bool CEGFGenerator::GenerateEGF()
 {
-	CMemoryStream egfStream(nullptr, FS_OPEN_WRITE, FILEBUFFER_EQGF, PP_SL);
+	CMemoryStream egfStream(PP_SL);
+	egfStream.Open(FS_OPEN_WRITE, nullptr, FILEBUFFER_EQGF);
 
 	// Make header
 	studioHdr_t* header = (studioHdr_t*)egfStream.GetBasePointer();

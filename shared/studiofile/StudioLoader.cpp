@@ -254,7 +254,7 @@ bool Studio_LoadPhysModel(const char* pszPath, StudioPhysData& physData)
 					const char* str = name + sz;
 					objectNames.append(str);
 
-					sz += strlen(str) + 1;
+					sz += CString::Length(str) + 1;
 				}while(sz < pLump->size);
 
 				break;

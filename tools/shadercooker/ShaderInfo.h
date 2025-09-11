@@ -117,14 +117,16 @@ struct ShaderInfo
 	};
 	struct Result
 	{
-		shaderc::SpvCompilationResult data[SHADERMODULE_TYPES];
+		mutable CMemoryStream	data[SHADERMODULE_TYPES];
+		uint32					crc32[SHADERMODULE_TYPES]{ 0 };
+
 		EqString		queryStr;
 		int				entryPointIdx{ -1 };
 		int				kindFlag{ -1 };
 		int				refResult{ -1 };
 		int				vertLayoutIdx{ -1 };
-		uint32			crc32{ 0 };
 		Array<Binding>	bindings{ PP_SL };
+		bool			isError{ false };
 	};
 	struct SkipCombo
 	{

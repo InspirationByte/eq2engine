@@ -1151,7 +1151,8 @@ void CopyLumpToFile(IFileStream* data, int lump_type, ubyte* toCopy, int toCopyS
 
 void CMotionPackageGenerator::WriteAnimationPackage(const char* packageOutputFilename)
 {
-	CMemoryStream lumpDataStream(nullptr, FS_OPEN_WRITE, MIN_MOTIONPACKAGE_SIZE, PP_SL);
+	CMemoryStream lumpDataStream(PP_SL);
+	lumpDataStream.Open(FS_OPEN_WRITE, nullptr, MIN_MOTIONPACKAGE_SIZE);
 
 	lumpfilehdr_t header;
 	header.ident = ANIMFILE_IDENT;
