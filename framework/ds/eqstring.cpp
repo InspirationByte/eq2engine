@@ -291,6 +291,13 @@ void EqTStr<CH>::Assign(const EqTStr<CH>& str, int start, int len)
 template<typename CH>
 void EqTStr<CH>::Assign(StrRef str, int start, int len)
 {
+	if (!str)
+	{
+		if (m_pszString)
+			*m_pszString = 0;
+		m_nLength = 0;
+		return;
+	}
 	const int strLen = str.Length();
 	ASSERT(start >= 0);
 	ASSERT(start + len < strLen);

@@ -379,6 +379,27 @@ wchar_t* DuplicateNew(const wchar_t* s)
 //------------------------------------------------
 
 template<typename CH>
+EqTStr<CH>& EqTStrRef<CH>::GetTempString(const CH* str, int len)
+{
+	static constexpr int MAX_TEMP_STRINGS = 512;
+
+	static thread_local int tempStrIdx = 0;
+	static thread_local EqTStr<CH> tmpStr[MAX_TEMP_STRINGS];
+
+	const int nextStr = tempStrIdx;
+	tempStrIdx = (tempStrIdx + 1) % MAX_TEMP_STRINGS;
+
+	tmpStr[nextStr].Assign(str, len);
+	return tmpStr[nextStr];
+}
+
+template<typename CH>
+EqTStr<CH>& EqTStrRef<CH>::GetTempString(const EqTStrRef<CH>& str, int len)
+{
+	return GetTempString(str.ToCString(), len != -1 ? len : str.Length());
+}
+
+template<typename CH>
 int EqTStrRef<CH>::Length() const
 {
 	if (!m_pszString)
@@ -449,9 +470,9 @@ int EqTStrRef<CH>::Find(EqTStrRef subStr, bool bCaseSensetive, int nStart) const
 }
 
 template<typename CH>
-EqTStr<CH> EqTStrRef<CH>::LowerCase() const
+EqTStrRef<CH> EqTStrRef<CH>::LowerCase() const
 {
-	EqTStr<CH> str(*this);
+	EqTStr<CH>& str = GetTempString(*this);
 	CH* data = str.GetData();
 	for (int i = 0; i < str.Length(); ++i)
 		data[i] = CType::LowerChar(data[i]);
@@ -460,9 +481,9 @@ EqTStr<CH> EqTStrRef<CH>::LowerCase() const
 }
 
 template<typename CH>
-EqTStr<CH> EqTStrRef<CH>::UpperCase() const
+EqTStrRef<CH> EqTStrRef<CH>::UpperCase() const
 {
-	EqTStr<CH> str(*this);
+	EqTStr<CH>& str = GetTempString(*this);
 	CH* data = str.GetData();
 	for (int i = 0; i < str.Length(); ++i)
 		data[i] = CType::UpperChar(data[i]);
@@ -471,13 +492,13 @@ EqTStr<CH> EqTStrRef<CH>::UpperCase() const
 }
 
 template<typename CH>
-EqTStr<CH> EqTStrRef<CH>::Left(int nCount) const
+EqTStrRef<CH> EqTStrRef<CH>::Left(int nCount) const
 {
 	return Mid(0, nCount);
 }
 
 template<typename CH>
-EqTStr<CH> EqTStrRef<CH>::Right(int nCount) const
+EqTStrRef<CH> EqTStrRef<CH>::Right(int nCount) const
 {
 	if (nCount >= Length())
 		return (*this);
@@ -486,7 +507,7 @@ EqTStr<CH> EqTStrRef<CH>::Right(int nCount) const
 }
 
 template<typename CH>
-EqTStr<CH> EqTStrRef<CH>::Mid(int nStart, int nCount) const
+EqTStrRef<CH> EqTStrRef<CH>::Mid(int nStart, int nCount) const
 {
 	if (!IsValid())
 		return EqTStr<CH>::EmptyStr;
@@ -496,11 +517,11 @@ EqTStr<CH> EqTStrRef<CH>::Mid(int nStart, int nCount) const
 	if (nStart < 0 || nStart + nCount > Length())
 		return EqTStr<CH>::EmptyStr;
 
-	return EqTStr<CH>(&m_pszString[nStart], nCount);
+	return GetTempString(&m_pszString[nStart], nCount);
 }
 
 template<typename CH>
-EqTStr<CH> EqTStrRef<CH>::EatWhiteSpaces() const
+EqTStrRef<CH> EqTStrRef<CH>::EatWhiteSpaces() const
 {
 	if (!IsValid())
 		return EqTStr<CH>::EmptyStr;
@@ -517,7 +538,7 @@ EqTStr<CH> EqTStrRef<CH>::EatWhiteSpaces() const
 }
 
 template<typename CH>
-EqTStr<CH> EqTStrRef<CH>::TrimSpaces(bool left, bool right) const
+EqTStrRef<CH> EqTStrRef<CH>::TrimSpaces(bool left, bool right) const
 {
 	if (!IsValid())
 		return EqTStr<CH>::EmptyStr;
@@ -541,7 +562,7 @@ EqTStr<CH> EqTStrRef<CH>::TrimSpaces(bool left, bool right) const
 }
 
 template<typename CH>
-EqTStr<CH> EqTStrRef<CH>::TrimChar(const CH* ch, bool left, bool right) const
+EqTStrRef<CH> EqTStrRef<CH>::TrimChar(const CH* ch, bool left, bool right) const
 {
 	if (!IsValid())
 		return EqTStr<CH>::EmptyStr;
@@ -551,7 +572,7 @@ EqTStr<CH> EqTStrRef<CH>::TrimChar(const CH* ch, bool left, bool right) const
 	auto ischr = [](const CH* ch, CH c) -> bool {
 		while (*ch) { if (*ch++ == c) return true; }
 		return false;
-		};
+	};
 
 	// trim whitespace from left
 	while (*begin && ischr(ch, *begin))
@@ -570,7 +591,7 @@ EqTStr<CH> EqTStrRef<CH>::TrimChar(const CH* ch, bool left, bool right) const
 }
 
 template<typename CH>
-EqTStr<CH> EqTStrRef<CH>::TrimChar(CH ch, bool left, bool right) const
+EqTStrRef<CH> EqTStrRef<CH>::TrimChar(CH ch, bool left, bool right) const
 {
 	CH cch[2] = { ch, 0 };
 	return TrimChar(cch, left, right);

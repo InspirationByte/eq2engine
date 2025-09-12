@@ -2,6 +2,7 @@
 #include <gtest/gtest-spi.h>
 
 #include "core/core_common.h"
+#include "utils/CRC32.h"
 
 
 constexpr EqStringRef s_StringTestStr1 = "Testing String";
@@ -306,6 +307,15 @@ TEST(EQSTRING_TESTS, ReplaceChar)
 	EXPECT_GE(checkPart.GetSize(), checkStr.length() + 1);
 }
 
+TEST(EQSTRING_TESTS, LeftRightMidChain)
+{
+	EqString testString(s_StringTestStrTwoParts);	// "The String And the Extraordinary Nuts"
+
+	EqString thePart = testString.Right(34).Left(29).Mid(12, 3);
+
+	std::string checkStr = ("the");
+	EXPECT_EQ(thePart, EqStringRef(checkStr.c_str()));
+}
 
 TEST(EQSTRING_TESTS, ReplaceSubStr)
 {
@@ -460,8 +470,7 @@ TEST(EQSTRINGREF_TESTS, AppendOperators)
 	}
 }
 
-
-TEST(EQSTRINGREF_TESTS, Hash)
+TEST(EQSTRINGREF_TESTS, Hash24)
 {
 	{
 		const int hashA = StringId24("Testing String");
@@ -488,3 +497,50 @@ TEST(EQSTRINGREF_TESTS, Hash)
 	}
 }
 
+TEST(EQSTRINGREF_TESTS, HashCRC32)
+{
+	{
+		const uint hashA = StringId("Testing String");
+		const uint hashB = StringIdConst("Testing String");
+		EXPECT_EQ(hashA, hashB);
+	}
+
+	{
+		const uint hashA = StringId("Hashed String 2");
+		const uint hashB = StringIdConst("Hashed String 2");
+		EXPECT_EQ(hashA, hashB);
+	}
+
+	{
+		const uint hashA = StringId("String 3");
+		const uint hashB = StringIdConst("String 3");
+		EXPECT_EQ(hashA, hashB);
+	}
+
+	{
+		const uint hashA = StringId(" 3");
+		const uint hashB = StringIdConst(" 2");
+		EXPECT_NE(hashA, hashB);
+	}
+}
+
+TEST(STRING_UTILS, FilenameUtils)
+{
+	const char* testPathStringExt = "abc/ideal/filename.test";
+	const char* testPathStringNoExt = "noexts_only/filenameNoExt";
+
+	const char* testPathStringExtStripped = "abc/ideal/filename";
+
+	EXPECT_TRUE(fnmPathHasExt(testPathStringExt));
+	EXPECT_FALSE(fnmPathHasExt(testPathStringNoExt));
+
+	EXPECT_TRUE(fnmPathApplyExt(testPathStringNoExt, "ext") == "noexts_only/filenameNoExt.ext");
+	EXPECT_TRUE(fnmPathApplyExt(testPathStringExt, "newext") == "abc/ideal/filename.newext");
+
+	EXPECT_TRUE(fnmPathStripExt(testPathStringExt) == testPathStringExtStripped);
+	EXPECT_TRUE(fnmPathStripExt(testPathStringNoExt) == testPathStringNoExt);
+	EXPECT_TRUE(fnmPathStripName(testPathStringExt) == "abc/ideal");
+	EXPECT_TRUE(fnmPathStripPath(testPathStringExt) == "filename.test");
+
+	EXPECT_TRUE(fnmPathCombine("test", "newpath"), "test" _CORRECT_PATH_SEPARATOR_STR "newpath");
+}

@@ -6,6 +6,9 @@
 */
 
 namespace crc32_detail {
+	static constexpr uint32 INIT_VALUE = 0xffffffffL;
+	static constexpr uint32 XOR_VALUE = 0xffffffffL;
+
 	// CRC32 Table (zlib polynomial)
 	static constexpr uint32 crctable[256] = {
 		0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL,
@@ -84,14 +87,23 @@ void CRC32_FinishChecksum( uint32 &crcvalue );
 
 uint32 CRC32_BlockChecksum( const void *data, size_t length );
 
-template<size_t idx>
-constexpr uint32 _CRC32_String(const char* const str)
+constexpr uint32 _CRC32_String(const char* const str, size_t length, bool caseIns = false)
 {
-    return (_CRC32_String<idx - 1>(str) >> 8) ^ crc32_detail::crctable[(_CRC32_String<idx - 1>(str) ^ str[idx]) & 0xff];
+	uint crcvalue = crc32_detail::INIT_VALUE;
+	for (int i = 0; i < length; ++i)
+	{
+		const int chr = caseIns ? ASCIILower_Cexpr(str[i]) : str[i];
+		crcvalue = crc32_detail::crctable[(crcvalue ^ chr) & 0xff] ^ (crcvalue >> 8);
+	}
+
+	return crcvalue;
 }
 
-template<>
-constexpr uint32 _CRC32_String<size_t(-1)>(const char* const str) { return 0xFFFFFFFF; } // CRC32_XOR_VALUE - terminator
+template<int N>
+constexpr int _CRC32_String_B(const char(&str)[N], bool caseIns = false)
+{
+	return _CRC32_String(str, N - 1, caseIns);
+}
 
-// This doesn't take into account the nul char
-#define CRC32_StringConst(x) (_CRC32_String<sizeof(x) - 2>(x) ^ 0xFFFFFFFF)
+// This doesn't take into account the null char
+#define CRC32_StringConst(x) _CRC32_String_B(x)
