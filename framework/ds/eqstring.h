@@ -78,18 +78,18 @@ public:
 	int			ReplaceSubstr(StrRef find, StrRef replaceTo, bool bCaseSensetive = false, int nStart = 0);
 
 	// converters
-	EqTStr		LowerCase() const { return Ref().LowerCase(); }
-	EqTStr		UpperCase() const { return Ref().UpperCase(); }
+	StrRef		LowerCase() const { return Ref().LowerCase(); }
+	StrRef		UpperCase() const { return Ref().UpperCase(); }
 
 	// rightmost\leftmost string extractors
-	EqTStr		Left(int nCount) const { return Ref().Left(nCount); }
-	EqTStr		Right(int nCount) const { return Ref().Right(nCount); }
-	EqTStr		Mid(int nStart, int nCount) const { return Ref().Mid(nStart, nCount); }
+	StrRef		Left(int nCount) const { return Ref().Left(nCount); }
+	StrRef		Right(int nCount) const { return Ref().Right(nCount); }
+	StrRef		Mid(int nStart, int nCount) const { return Ref().Mid(nStart, nCount); }
 
-	EqTStr		EatWhiteSpaces() const { return Ref().EatWhiteSpaces(); }
-	EqTStr		TrimSpaces(bool left = true, bool right = true) const { return Ref().TrimSpaces(left, right); }
-	EqTStr		TrimChar(const CH* ch, bool left = true, bool right = true) const { return Ref().TrimChar(ch, left, right); }
-	EqTStr		TrimChar(CH ch, bool left = true, bool right = true) const { return Ref().TrimChar(ch, left, right); }
+	StrRef		EatWhiteSpaces() const { return Ref().EatWhiteSpaces(); }
+	StrRef		TrimSpaces(bool left = true, bool right = true) const { return Ref().TrimSpaces(left, right); }
+	StrRef		TrimChar(const CH* ch, bool left = true, bool right = true) const { return Ref().TrimChar(ch, left, right); }
+	StrRef		TrimChar(CH ch, bool left = true, bool right = true) const { return Ref().TrimChar(ch, left, right); }
 
 	//------------------------------------------------------------------------------------------------
 

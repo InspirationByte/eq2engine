@@ -77,7 +77,7 @@ constexpr int StringId24_Cexpr(const char* const str, int length, bool caseIns =
 template<int N>
 constexpr int StringId24_Cexpr_B(const char(&str)[N], bool caseIns = false)
 {
-	return StringId24_Cexpr(str, N-1);
+	return StringId24_Cexpr(str, N-1, caseIns);
 }
 
 template <auto V> constexpr auto force_consteval = V;
@@ -107,24 +107,24 @@ void		StringSplit(const char* pString, const char* separator, Array<EqString>& o
 
 // strip operators
 bool		fnmPathHasExt(EqStringRef path);
-EqString	fnmPathApplyExt(EqStringRef path, EqStringRef ext);
-EqString	fnmPathStripExt(EqStringRef path);
-EqString	fnmPathStripName(EqStringRef path);
-EqString	fnmPathStripPath(EqStringRef path);
+EqStringRef	fnmPathApplyExt(EqStringRef path, EqStringRef ext);
+EqStringRef	fnmPathStripExt(EqStringRef path);
+EqStringRef	fnmPathStripName(EqStringRef path);
+EqStringRef	fnmPathStripPath(EqStringRef path);
 
-EqString	fnmPathExtractExt(EqStringRef path, bool autoLowerCase = true);
-EqString	fnmPathExtractName(EqStringRef path);
-EqString	fnmPathExtractPath(EqStringRef path);
+EqStringRef	fnmPathExtractExt(EqStringRef path, bool autoLowerCase = true);
+EqStringRef	fnmPathExtractName(EqStringRef path);
+EqStringRef	fnmPathExtractPath(EqStringRef path);
 
 // changes path separator to correct one for platform
 void		fnmPathFixSeparators(EqString& str);
 void		fnmPathFixSeparators(char* str);
 
 // combines paths
-EqString	fnmPathCombineF(int num, ...);
+EqStringRef	fnmPathCombineF(int num, ...);
 
 template<typename ...Args> // requires std::same_as<Args, const char*>...
-EqString	fnmPathCombine(const Args&... args)
+EqStringRef	fnmPathCombine(const Args&... args)
 {
 	return fnmPathCombineF(sizeof...(Args), ToCString(args)...);
 }

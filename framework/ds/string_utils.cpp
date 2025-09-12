@@ -52,7 +52,7 @@ void StringSplit(const char* pString, ArrayCRef<const char*> separators, Array<E
 		if (pFirstSeparator)
 		{
 			// Split on this separator and continue on.
-			const int separatorLen = strlen(separators[iFirstSeparator]);
+			const int separatorLen = CString::Length(separators[iFirstSeparator]);
 			if (pFirstSeparator > pCurPos)
 			{
 				outStrings.append(_Es(pCurPos, pFirstSeparator - pCurPos));
@@ -92,12 +92,12 @@ bool fnmPathHasExt(EqStringRef path)
 	return false;
 }
 
-EqString fnmPathApplyExt(EqStringRef path, EqStringRef ext)
+EqStringRef fnmPathApplyExt(EqStringRef path, EqStringRef ext)
 {
 	for (int i = path.Length() - 1; i >= 0; i--)
 	{
 		if (path[i] == '.')
-			return path.Left(i+1) + ext;
+			return path.Left(i + 1) + ext;
 	}
 
 	if (path.Length() > 0 && path[path.Length() - 1] == '.')
@@ -105,7 +105,7 @@ EqString fnmPathApplyExt(EqStringRef path, EqStringRef ext)
 	return path + "." + ext;
 }
 
-EqString fnmPathStripExt(EqStringRef path)
+EqStringRef fnmPathStripExt(EqStringRef path)
 {
 	for (int i = path.Length() - 1; i >= 0; i--)
 	{
@@ -115,17 +115,17 @@ EqString fnmPathStripExt(EqStringRef path)
 	return path;
 }
 
-EqString fnmPathStripName(EqStringRef path)
+EqStringRef fnmPathStripName(EqStringRef path)
 {
 	for (int i = path.Length() - 1; i >= 0; i--)
 	{
 		if (path[i] == CORRECT_PATH_SEPARATOR || path[i] == INCORRECT_PATH_SEPARATOR)
-			return path.Left(i + 1);
+			return path.Left(i);
 	}
 	return EqString::EmptyStr;
 }
 
-EqString fnmPathStripPath(EqStringRef path)
+EqStringRef fnmPathStripPath(EqStringRef path)
 {
 	for (int i = path.Length() - 1; i >= 0; i--)
 	{
@@ -136,40 +136,43 @@ EqString fnmPathStripPath(EqStringRef path)
 }
 
 		 
-EqString fnmPathExtractExt(EqStringRef path, bool autoLowerCase)
+EqStringRef fnmPathExtractExt(EqStringRef path, bool autoLowerCase)
 {
-	EqString result;
+	static thread_local EqString outPath;
+	outPath.Empty();
+
 	for (int i = path.Length() - 1; i >= 0; i--)
 	{
 		if (path[i] == '.')
 		{
-			result = path.Right(path.Length() - 1 - i);
+			outPath = path.Right(path.Length() - 1 - i);
 			break;
 		}
 	}
 
 	if (autoLowerCase)
 	{
-		char* data = result.GetData();
-		for (int i = 0; i < result.Length(); ++i)
+		char* data = outPath.GetData();
+		for (int i = 0; i < outPath.Length(); ++i)
 			data[i] = CType::LowerChar(data[i]);
 	}
-	return result;
+	return outPath;
 }
 
-EqString fnmPathExtractName(EqStringRef path)
+EqStringRef fnmPathExtractName(EqStringRef path)
 {
 	return fnmPathStripPath(path);
 }
 
-EqString fnmPathExtractPath(EqStringRef path)
+EqStringRef fnmPathExtractPath(EqStringRef path)
 {
 	return fnmPathStripName(path);
 }
 
-EqString fnmPathCombineF(int num, ...)
+EqStringRef fnmPathCombineF(int num, ...)
 {
-	EqString outPath;
+	static thread_local EqString outPath;
+	outPath.Empty();
 
 	va_list	argptr;
 	va_start(argptr, num);

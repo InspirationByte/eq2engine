@@ -106,21 +106,21 @@ struct EMPTY_BASES CStringComparisonOpsMixin
 template<typename R, typename TStr, typename CH>
 struct EMPTY_BASES StringBaseCombinationOpsMixin
 {
-	friend R operator+(const TStr& a, const TStr& b)
+	friend R& operator+( const TStr& a, const TStr& b )
 	{
-		R result(a);
+		R& result = EqTStrRef<CH>::GetTempString(EqTStrRef<CH>(a));
 		result.Append(b);
 		return result;
 	}
-	friend R operator+( const TStr& a, const CH *b ) 
+	friend R& operator+( const TStr& a, const CH *b ) 
 	{
-		R result(a);
+		R& result = EqTStrRef<CH>::GetTempString(EqTStrRef<CH>(a));
 		result.Append(b);
 		return result;
 	}
-	friend R operator+( const CH *a, const TStr& b )
+	friend R& operator+( const CH *a, const TStr& b )
 	{
-		R result(a);
+		R& result = EqTStrRef<CH>::GetTempString(a);
 		result.Append(b);
 		return result;
 	}
@@ -130,15 +130,15 @@ template<typename R, typename TStr, typename CH>
 struct EMPTY_BASES StringCombinationOpsMixin
 	: public StringBaseCombinationOpsMixin<R, TStr, CH>
 {
-	friend R operator+( const TStr &a, EqTStrRef<CH> b )
+	friend R& operator+( const TStr &a, EqTStrRef<CH> b )
 	{
-		R result(a);
+		R& result = EqTStrRef<CH>::GetTempString(EqTStrRef<CH>(a));
 		result.Append(b);
 		return result;
 	}
-	friend R operator+(EqTStrRef<CH> a, const TStr &b )
+	friend R& operator+(EqTStrRef<CH> a, const TStr &b )
 	{
-		R result(a);
+		R& result = EqTStrRef<CH>::GetTempString(a);
 		result.Append(b);
 		return result;
 	}
@@ -157,6 +157,9 @@ class EMPTY_BASES EqTStrRef
 {
 public:
 	using Str = EqTStr<CH>;
+
+	static EqTStr<CH>&	GetTempString(const CH* str, int len = -1);
+	static EqTStr<CH>&	GetTempString(const EqTStrRef<CH>& str, int len = -1);
 
 	constexpr EqTStrRef()
 		: m_pszString(nullptr)
@@ -205,18 +208,18 @@ public:
 	int			Find(CH chr, bool caseSensitive = false, int start = 0) const { return Find(EqTStrRef(&chr, 1), caseSensitive, start); }
 
 	// converters
-	Str			LowerCase() const;
-	Str			UpperCase() const;
+	EqTStrRef	LowerCase() const;
+	EqTStrRef	UpperCase() const;
 
 	// rightmost\leftmost string extractors
-	Str			Left(int nCount) const;
-	Str			Right(int nCount) const;
-	Str			Mid(int nStart, int nCount) const;
+	EqTStrRef	Left(int nCount) const;
+	EqTStrRef	Right(int nCount) const;
+	EqTStrRef	Mid(int nStart, int nCount) const;
 
-	Str			EatWhiteSpaces() const;
-	Str			TrimSpaces(bool left = true, bool right = true) const;
-	Str			TrimChar(const CH* ch, bool left = true, bool right = true) const;
-	Str			TrimChar(CH ch, bool left = true, bool right = true) const;
+	EqTStrRef	EatWhiteSpaces() const;
+	EqTStrRef	TrimSpaces(bool left = true, bool right = true) const;
+	EqTStrRef	TrimChar(const CH* ch, bool left = true, bool right = true) const;
+	EqTStrRef	TrimChar(CH ch, bool left = true, bool right = true) const;
 
 	CH operator[](int idx) const
 	{
