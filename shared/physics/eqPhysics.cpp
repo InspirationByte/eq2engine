@@ -502,7 +502,7 @@ void CEqPhysicsWorld::AddGhostObject( CEqCollisionObject* object )
 		return;
 
 	// add extra flags to objects
-	object->m_flags = COLLOBJ_ISGHOST | COLLOBJ_DISABLE_RESPONSE | COLLOBJ_NO_RAYCAST;
+	object->m_flags = COLLOBJ_ISGHOST | COLLOBJ_DISABLE_RESPONSE | COLLOBJ_NO_RAYCAST | COLLOBJ_BROADPHASE_DIRTY;
 
 	if (!object->m_callbacks)
 		object->m_flags |= COLLOBJ_COLLISIONLIST;
