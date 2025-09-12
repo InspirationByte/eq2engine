@@ -105,8 +105,10 @@ TEST(KEYVALUES_TESTS, DescParser)
 
 TEST(KEYVALUES_TESTS, SerializeDeserialize)
 {
-	CMemoryStream memStreamText(nullptr, FS_OPEN_WRITE, 1024, PP_SL);
-	CMemoryStream memStreamBin(nullptr, FS_OPEN_WRITE, 1024, PP_SL);
+	CMemoryStream memStreamText(PP_SL);
+	CMemoryStream memStreamBin(PP_SL);
+	memStreamText.Open(FS_OPEN_WRITE);
+	memStreamBin.Open(FS_OPEN_WRITE);
 	{
 		KVSection section;
 		section.SetKey("model", "weapons/w_har77.egf")

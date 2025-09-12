@@ -14,6 +14,11 @@
 #include "utils/CRC32.h"
 #include "texcooker_defs.h"
 
+#ifdef _WIN32
+#define popen	_popen
+#define pclose	_pclose
+#endif
+
 /*
 
 // Configuration structure
@@ -523,10 +528,10 @@ void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 	DevMsg(DEVMSG_CORE, "*RUN '%s'", cmdLine.ToCString());
 
 	{
-		FILE* outFile = _popen(cmdLine, "rt");
+		FILE* outFile = popen(cmdLine, "rt");
 		if (outFile)
 		{
-			const int closeReturnVal = _pclose(outFile);
+			const int closeReturnVal = pclose(outFile);
 			DevMsg(DEVMSG_CORE, ": %x\n", closeReturnVal);
 		}
 		else
