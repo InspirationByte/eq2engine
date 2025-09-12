@@ -6,12 +6,9 @@
 #include "ds/common_types.h"
 #include "CRC32.h"
 
-#define CRC32_INIT_VALUE	0xffffffffL
-#define CRC32_XOR_VALUE		0xffffffffL
-
 void CRC32_InitChecksum( uint32 &crcvalue )
 {
-	crcvalue = CRC32_INIT_VALUE;
+	crcvalue = crc32_detail::INIT_VALUE;
 }
 
 void CRC32_Update( uint32 &crcvalue, const char data )
@@ -25,18 +22,15 @@ void CRC32_UpdateChecksum( uint32 &crcvalue, const void *data, size_t length )
 	const unsigned char *buf = (const unsigned char *) data;
 
 	crc = crcvalue;
-
 	while( length-- )
-	{
-		crc = crc32_detail::crctable[ ( crc ^ ( *buf++ ) ) & 0xff ] ^ ( crc >> 8 );
-	}
+		crc = crc32_detail::crctable[ ( crc ^ *buf++ ) & 0xff ] ^ ( crc >> 8 );
 
 	crcvalue = crc;
 }
 
 void CRC32_FinishChecksum( uint32 &crcvalue )
 {
-	crcvalue ^= CRC32_XOR_VALUE;
+	crcvalue ^= crc32_detail::XOR_VALUE;
 }
 
 uint32 CRC32_BlockChecksum( const void *data, size_t length )
