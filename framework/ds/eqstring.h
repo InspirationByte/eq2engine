@@ -21,10 +21,10 @@ public:
 
 	static VSSize	ReadString(IFileStream* stream, int length, EqTStr& output);
 	static VSSize	ReadString(IFileStream* stream, EqTStr& output);
-	static EqTStr 	FormatF(const CH* pszFormat, ...);
-	static EqTStr 	FormatV(const CH* pszFormat, va_list argptr);
+	static StrRef 	FormatF(const CH* pszFormat, ...);
+	static StrRef 	FormatV(const CH* pszFormat, va_list argptr);
 	template <typename... Args>
-	static EqTStr 	Format(const CH* pszFormat, Args&&... args);
+	static StrRef 	Format(const CH* pszFormat, Args&&... args);
 
 	~EqTStr();
 
@@ -130,7 +130,7 @@ static VSSize VSWrite(IFileStream* stream, const EqTStr<CH>& str)
 
 template <typename CH>
 template <typename... Args>
-inline EqTStr<CH> EqTStr<CH>::Format(const CH* pszFormat, Args&&... args)
+inline EqTStrRef<CH> EqTStr<CH>::Format(const CH* pszFormat, Args&&... args)
 {
 	return FormatF(pszFormat, ::ToCString(std::forward<Args>(args))...);
 }

@@ -13,16 +13,15 @@
 #pragma warning(disable: 4267)
 #endif
 
-#define VSTREAM_GRANULARITY 1024 * 4	// 4kb
+static constexpr VSSize VSTREAM_GRANULARITY = 1024 * 4;	// 4kb
 
 // prints string to stream
 void IFileStream::PrintF(const char* pFmt, ...)
 {
-	EqString str;
 	va_list	argptr;
 
 	va_start (argptr,pFmt);
-	str = EqString::FormatV(pFmt, argptr);
+	EqStringRef str = EqString::FormatV(pFmt, argptr);
 	va_end (argptr);
 
 	Write(str.GetData(), 1, str.Length());

@@ -84,6 +84,11 @@ if VULKAN_SDK_LOCATION ~= nil and VULKAN_SDK_LOCATION ~= "" then
 			"shadercooker/*.cpp",
 			"shadercooker/*.h"
 		}
+		filter "system:Windows"
+			links {
+				"d3dcompiler",
+				"dxcompiler"
+			}
 else
 	print("WARNING: Vulkan SDK is missing (env VULKAN_SDK not found), ShaderCooker will not be built")
 end

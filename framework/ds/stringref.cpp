@@ -389,7 +389,11 @@ EqTStr<CH>& EqTStrRef<CH>::GetTempString(const CH* str, int len)
 	const int nextStr = tempStrIdx;
 	tempStrIdx = (tempStrIdx + 1) % MAX_TEMP_STRINGS;
 
-	tmpStr[nextStr].Assign(str, len);
+	if (str && len)
+		tmpStr[nextStr].Assign(str, len);
+	else
+		tmpStr[nextStr].Empty();
+
 	return tmpStr[nextStr];
 }
 
@@ -595,6 +599,13 @@ EqTStrRef<CH> EqTStrRef<CH>::TrimChar(CH ch, bool left, bool right) const
 {
 	CH cch[2] = { ch, 0 };
 	return TrimChar(cch, left, right);
+}
+
+template<typename CH>
+CH EqTStrRef<CH>::operator[](int idx) const
+{
+	ASSERT(idx >= 0 && idx <= Length());
+	return m_pszString[idx];
 }
 
 // define implementations below
