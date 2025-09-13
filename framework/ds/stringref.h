@@ -227,14 +227,9 @@ public:
 	EqTStrRef	TrimChar(const CH* ch, bool left = true, bool right = true) const;
 	EqTStrRef	TrimChar(CH ch, bool left = true, bool right = true) const;
 
-	CH operator[](int idx) const
-	{
-		ASSERT(idx >= 0 && idx <= Length());
-		return m_pszString[idx];
-	}
+	CH			operator[](int idx) const;
 
-	operator const CH* () const { return ToCString(); }
-	operator bool() const { return IsValid(); }
+	operator 	const CH* () const { return ToCString(); }
 
 private:
 	const CH*	m_pszString{ nullptr };

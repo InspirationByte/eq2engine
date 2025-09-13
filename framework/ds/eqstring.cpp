@@ -128,9 +128,9 @@ CH EqTStr<CH>::operator[](int idx) const
 }
 
 template<typename CH>
-EqTStr<CH> EqTStr<CH>::FormatF(const CH* pszFormat, ...)
+EqTStrRef<CH> EqTStr<CH>::FormatF(const CH* pszFormat, ...)
 {
-	EqTStr<CH> newString;
+	EqTStrRef<CH> newString;
 	va_list argptr;
 
 	va_start(argptr, pszFormat);
@@ -141,10 +141,10 @@ EqTStr<CH> EqTStr<CH>::FormatF(const CH* pszFormat, ...)
 }
 
 template<typename CH>
-EqTStr<CH> EqTStr<CH>::FormatV(const CH* pszFormat, va_list argptr)
+EqTStrRef<CH> EqTStr<CH>::FormatV(const CH* pszFormat, va_list argptr)
 {
-	EqTStr<CH> newString;
-	newString.Resize(512, false);
+	EqTStr<CH>& newString = EqTStrRef<CH>::GetTempString(nullptr, 0);
+	newString.Resize(CString::Length(pszFormat) + 128, false);
 
 	va_list varg;
 	va_copy(varg, argptr);

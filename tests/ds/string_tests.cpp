@@ -418,6 +418,18 @@ TEST(EQSTRING_TESTS, TestAppendOperators)
 	}
 }
 
+TEST(EQSTRINGREF_TESTS, Empty)
+{
+	EqStringRef testString;
+
+	EXPECT_EQ(testString.Length(), 0);
+	ASSERT_FALSE(testString);
+	ASSERT_FALSE(testString.IsValid());
+	EXPECT_EQ(testString.GetData(), nullptr);
+	EXPECT_EQ(testString.ToCString(), nullptr);
+}
+
+
 TEST(EQSTRINGREF_TESTS, Instantiate)
 {
 	EqStringRef defaultRef;
