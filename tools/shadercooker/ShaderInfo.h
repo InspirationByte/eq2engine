@@ -162,4 +162,5 @@ struct ShaderInfo
 
 	EType				type{ SHADER_BASE };
 	bool				debugInfo{ false };
+	bool				skipOptimize{ false };
 };
