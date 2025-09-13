@@ -542,5 +542,5 @@ TEST(STRING_UTILS, FilenameUtils)
 	EXPECT_TRUE(fnmPathStripName(testPathStringExt) == "abc/ideal");
 	EXPECT_TRUE(fnmPathStripPath(testPathStringExt) == "filename.test");
 
-	EXPECT_TRUE(fnmPathCombine("test", "newpath"), "test" _CORRECT_PATH_SEPARATOR_STR "newpath");
+	EXPECT_TRUE(fnmPathCombine("test", "newpath") == ("test" _CORRECT_PATH_SEPARATOR_STR "newpath"));
 }
