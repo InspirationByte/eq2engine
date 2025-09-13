@@ -55,12 +55,6 @@ decltype(auto) ToCString(const T& value)
 static constexpr int StringId24Bits = 24;
 static constexpr int StringId24Mask = ((1 << StringId24Bits) - 1);
 
-constexpr int ASCIILower_Cexpr(int c)
-{
-	constexpr int d = 'a' - 'A';
-	return c + (c >= 'A' && c <= 'Z' ? d : 0);
-}
-
 constexpr int StringId24_Cexpr(const char* const str, int length, bool caseIns = false)
 {
 	int hash = length;
@@ -68,7 +62,7 @@ constexpr int StringId24_Cexpr(const char* const str, int length, bool caseIns =
 	{
 		const int v1 = hash >> 19;
 		const int v0 = hash << 5;
-		const int chr = caseIns ? ASCIILower_Cexpr(str[i]) : str[i];
+		const int chr = caseIns ? CType::ASCIILower_Cexpr(str[i]) : str[i];
 		hash = ((v0 | v1) + chr) & StringId24Mask;
 	}
 	return hash;

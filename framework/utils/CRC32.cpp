@@ -2,8 +2,10 @@
    CRC-32
    Copyright (C) 1995-1998 Mark Adler
 */
-
+#include <cstddef>		// std::nullptr_t
+#include <stdarg.h>		// va_list
 #include "ds/common_types.h"
+#include "ds/stringref.h"
 #include "CRC32.h"
 
 void CRC32_InitChecksum( uint32 &crcvalue )

@@ -92,7 +92,7 @@ constexpr uint32 _CRC32_String(const char* const str, size_t length, bool caseIn
 	uint crcvalue = crc32_detail::INIT_VALUE;
 	for (int i = 0; i < length; ++i)
 	{
-		const int chr = caseIns ? ASCIILower_Cexpr(str[i]) : str[i];
+		const int chr = caseIns ? CType::ASCIILower_Cexpr(str[i]) : str[i];
 		crcvalue = crc32_detail::crctable[(crcvalue ^ chr) & 0xff] ^ (crcvalue >> 8);
 	}
 

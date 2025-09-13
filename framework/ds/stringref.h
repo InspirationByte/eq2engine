@@ -27,6 +27,12 @@ decltype(auto) ToCString(const T& value);
 
 namespace CType
 {
+constexpr int ASCIILower_Cexpr(int c)
+{
+	constexpr int d = 'a' - 'A';
+	return c + (c >= 'A' && c <= 'Z' ? d : 0);
+}
+
 template<typename CH> bool IsAlphabetic(CH chr);
 template<typename CH> bool IsAlphaNumeric(CH chr);
 template<typename CH> bool IsDigit(CH chr);
