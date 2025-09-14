@@ -1,11 +1,11 @@
 #pragma once
 
 #ifdef _WIN32
-#include <d3dcompiler.h> // FXC
-#include <dxcapi.h> // DXC
-
+// TODO: cross-platform
 #include <wrl/client.h>
+
 using Microsoft::WRL::ComPtr;
+#include <dxcapi.h> // DXC
 #endif
 
 #include "ShaderInfo.h"
@@ -48,12 +48,13 @@ public:
 	void ReleaseInclude(shaderc_include_result* data) override;
 };
 
+#ifdef _WIN32
 class ShaderDXCIncluder
 	: public ShaderIncluderImpl
 	, public IDxcIncludeHandler
 {
 public:
-	ShaderDXCIncluder(EqStringRef shaderSourceFullName, IDxcLibrary* library, ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths);
+	ShaderDXCIncluder(EqStringRef shaderSourceFullName, IDxcUtils* utils, ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths);
 
 	ULONG STDMETHODCALLTYPE AddRef() override;
 	ULONG STDMETHODCALLTYPE Release() override;
@@ -63,6 +64,7 @@ public:
 	HRESULT STDMETHODCALLTYPE LoadSource(LPCWSTR pFilename, IDxcBlob** ppIncludeSource) override;
 
 protected:
-	IDxcLibrary*	m_dxcLibrary;
+	IDxcUtils*		m_dxcUtils;
 	EqStringRef		m_shaderSourceFullName;
 };
+#endif // _WIN32

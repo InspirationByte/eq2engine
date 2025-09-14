@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 	if(!g_fileSystem->Init(false))
 		return -1;
 
-	MsgInfo("ShaderCooker - Eq2 MatSystem offline shader compiler\n\n\n");
+	MsgInfo("ShaderCooker - Eq2 offline shader compiler\n\n\n");
 
 	ArrayCRef<EqString> args = g_cmdLine->GetParameters();
 	if (args.numElem() <= 1)

@@ -7,11 +7,11 @@
 
 #include <shaderc/shaderc.hpp>
 #ifdef _WIN32
-#include <d3dcompiler.h> // FXC
-#include <dxcapi.h> // DXC
-
+// TODO: cross-platform
 #include <wrl/client.h>
+
 using Microsoft::WRL::ComPtr;
+#include <dxcapi.h> // DXC
 #endif
 
 #include "core/core_common.h"
@@ -80,7 +80,6 @@ private:
 	{
 		ComPtr<IDxcCompiler3>	compiler;
 		ComPtr<IDxcUtils>		utils;
-		ComPtr<IDxcLibrary>		library;
 	};
 
 	struct BatchConfig
@@ -300,8 +299,6 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 		shaderInfo.sourceType = SHADERSOURCE_HLSL;
 	else if (!shaderType.CompareCaseIns("glsl"))
 		shaderInfo.sourceType = SHADERSOURCE_GLSL;
-	//else if (!shaderType.CompareCaseIns("wgsl"))
-	//	shaderInfo.sourceType = SHADERSOURCE_WGSL;
 
 	InitShaderVariants(shaderInfo, -1, shaderSection);
 
@@ -777,22 +774,13 @@ bool CShaderCooker::CompileShaderDXC(ShaderPackageCompileData& compileData, int 
 	const ShaderInfo::VertLayout& vertexLayout = shaderInfo.vertexLayouts[vertLayoutIdx];
 
 	// DXC_ARG_OPTIMIZATION_LEVEL3
-	if (!m_dxc.compiler && !m_dxc.utils && !m_dxc.library)
+	if (!m_dxc.compiler && !m_dxc.utils)
 	{
 		HRESULT hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&m_dxc.compiler));
 		if (FAILED(hr))
 		{
 			if (!compileData.compileErrors)
 				MsgError("ERROR: Cannot create an instance of IDxcCompiler3, HRESULT = 0x%08x\n", hr);
-			compileData.compileErrors = true;
-			return false;
-		}
-
-		hr = DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&m_dxc.library));
-		if (FAILED(hr))
-		{
-			if (!compileData.compileErrors)
-				MsgError("ERROR: Cannot create an instance of IDxcLibrary, HRESULT = 0x%08x\n", hr);
 			compileData.compileErrors = true;
 			return false;
 		}
@@ -886,7 +874,7 @@ bool CShaderCooker::CompileShaderDXC(ShaderPackageCompileData& compileData, int 
 	sourceBuffer.Size = compileData.shaderSourceString.GetSize(); 
 	sourceBuffer.Encoding = DXC_CP_ACP;
 
-	ShaderDXCIncluder includer(compileData.shaderSourceFullName, m_dxc.library.Get(), shaderInfo, m_targetProps.includePaths);
+	ShaderDXCIncluder includer(compileData.shaderSourceFullName, m_dxc.utils.Get(), shaderInfo, m_targetProps.includePaths);
 
 	ComPtr<IDxcResult> dxcResult;
 	HRESULT hr = m_dxc.compiler->Compile(&sourceBuffer, arguments.ptr(), arguments.numElem(), &includer, IID_PPV_ARGS(&dxcResult));
@@ -904,11 +892,11 @@ bool CShaderCooker::CompileShaderDXC(ShaderPackageCompileData& compileData, int 
 
 	if (errorBlob && errorBlob->GetBufferSize() > 0)
 	{
-		ComPtr<IDxcBlobEncoding> errorUtf8;
-		m_dxc.library->GetBlobAsUtf8(errorBlob.Get(), &errorUtf8);
+		ComPtr<IDxcBlobUtf8> errorUtf8;
+		m_dxc.utils->GetBlobAsUtf8(errorBlob.Get(), &errorUtf8);
 		if (errorUtf8)
 		{
-			MsgError("DXC Failed compiling %s %s\n%s\n", vertexLayout.name.ToCString(), queryStr.ToCString(), (const char*)errorUtf8->GetBufferPointer());
+			MsgError("DXC Failed compiling %s %s %s\n%s\n", shaderInfo.name.ToCString(), vertexLayout.name.ToCString(), queryStr.ToCString(), (const char*)errorUtf8->GetBufferPointer());
 			compileData.compileErrors = true;
 		}
 	}
@@ -926,6 +914,7 @@ bool CShaderCooker::CompileShaderSpirV(ShaderPackageCompileData& compileData, in
 	const ShaderInfo::VertLayout& vertexLayout = shaderInfo.vertexLayouts[vertLayoutIdx];
 
 	EqStringRef kindMacroStr;
+	EqStringRef entryPointPrefix;
 	shaderc_shader_kind shaderCKind;
 	if (entryPoint.kind == SHADERKIND_VERTEX)
 	{
@@ -1015,7 +1004,7 @@ bool CShaderCooker::CompileShaderSpirV(ShaderPackageCompileData& compileData, in
 	const shaderc_compilation_status compileStatus = spvCompilationResult.GetCompilationStatus();
 	if (compileStatus != shaderc_compilation_status_success)
 	{
-		MsgError("ShaderC Failed compiling %s %s\n%s\n", vertexLayout.name.ToCString(), queryStr.ToCString(), spvCompilationResult.GetErrorMessage().c_str());
+		MsgError("ShaderC Failed compiling %s %s %s\n%s\n", shaderInfo.name.ToCString(), vertexLayout.name.ToCString(), queryStr.ToCString(), spvCompilationResult.GetErrorMessage().c_str());
 		if (compileStatus == shaderc_compilation_status_compilation_error)
 			compileData.compileErrors = true;
 		return false;
@@ -1394,16 +1383,16 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 								result.isError = true;
 						}
 
-						if(false)
-						{
-							CMemoryStream dxcCompilationResult(PP_SL);
-							if (CompileShaderDXC(compileData.Ref(), entryPointIdx, vertLayoutIdx, queryStr, dxcCompilationResult, result.bindings))
-							{
-								AddOrReferenceCompilationResult(shaderInfo, result, SHADERMODULE_DXBC, entryPointIdx, vertLayoutIdx, queryStr, dxcCompilationResult);
-							}
-							else
-								result.isError = true;
-						}
+						//if(shaderInfo.sourceType == SHADERSOURCE_HLSL)
+						//{
+						//	CMemoryStream dxcCompilationResult(PP_SL);
+						//	if (CompileShaderDXC(compileData.Ref(), entryPointIdx, vertLayoutIdx, queryStr, dxcCompilationResult, result.bindings))
+						//	{
+						//		AddOrReferenceCompilationResult(shaderInfo, result, SHADERMODULE_DXBC, entryPointIdx, vertLayoutIdx, queryStr, dxcCompilationResult);
+						//	}
+						//	else
+						//		result.isError = true;
+						//}
 					}
 
 					//if(!stopCompilation)

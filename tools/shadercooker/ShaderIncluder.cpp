@@ -151,9 +151,10 @@ shaderc_include_result* ShadercIncluder::GetInclude(const char* requested_source
 }
 
 //----------------------------------------------
+#ifdef _WIN32
 
-ShaderDXCIncluder::ShaderDXCIncluder(EqStringRef shaderSourceFullName, IDxcLibrary* library, ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths)
-	: m_dxcLibrary(library)
+ShaderDXCIncluder::ShaderDXCIncluder(EqStringRef shaderSourceFullName, IDxcUtils* utils, ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths)
+	: m_dxcUtils(utils)
 	, m_shaderSourceFullName(shaderSourceFullName)
 	, ShaderIncluderImpl(shaderInfo, includePaths)
 {
@@ -201,14 +202,16 @@ HRESULT STDMETHODCALLTYPE ShaderDXCIncluder::LoadSource(LPCWSTR pFilename, IDxcB
 	}
 
 	IDxcBlobEncoding* textBlob;
-	if (FAILED(m_dxcLibrary->CreateBlobWithEncodingFromPinned(result->includeContent.GetBasePointer(), result->includeContent.GetSize(), CP_UTF8, &textBlob)))
+	if (FAILED(m_dxcUtils->CreateBlobFromPinned(result->includeContent.GetBasePointer(), result->includeContent.GetSize(), DXC_CP_UTF8, &textBlob)))
 	{
 		ReleaseInclude(result);
 		return E_FAIL;
 	}
 
 	*ppIncludeSource = textBlob;
-	ReleaseInclude(result);
+	//ReleaseInclude(result);
 
 	return S_OK;
 }
+
+#endif // _WIN32

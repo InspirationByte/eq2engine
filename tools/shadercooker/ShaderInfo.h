@@ -18,10 +18,8 @@ enum EShaderConvStatus : int
 
 enum EShaderSourceType : int
 {
-	SHADERSOURCE_UNDEFINED = -1,
-	SHADERSOURCE_HLSL,
+	SHADERSOURCE_HLSL = 0,
 	SHADERSOURCE_GLSL,
-	//SHADERSOURCE_WGSL,
 };
 
 enum EShaderModuleType
@@ -155,7 +153,7 @@ struct ShaderInfo
 	EqString			sourceFilename;
 
 	EShaderConvStatus	status{ SHADERCONV_INIT };
-	EShaderSourceType	sourceType{ SHADERSOURCE_UNDEFINED };
+	EShaderSourceType	sourceType{ SHADERSOURCE_HLSL };
 
 	uint32				crc32{ 0 };
 	int					totalVariationCount{ 0 };
