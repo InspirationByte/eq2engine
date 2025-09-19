@@ -207,7 +207,7 @@ void CMaterial::InitMaterialVars(const KVSection* kvs, const char* prefix)
 		if( !CString::CompareCaseIns(materialVarSec.GetName(), "Shader") )
 			continue;
 
-		const EqString matVarName(prefix ? EqString::Format("%s.%s", prefix, materialVarSec.GetName()) : EqString(materialVarSec.GetName()));
+		const EqString matVarName(prefix ? EqString::Format("%s.%s", prefix, materialVarSec.GetName()) : EqStringRef(materialVarSec.GetName()));
 
 		// initialize material var by this
 		const int nameHash = StringId24(matVarName, true);
