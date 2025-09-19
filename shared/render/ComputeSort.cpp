@@ -38,7 +38,7 @@ ComputeSortShader::ComputeSortShader()
 			.Buffer("Values", 0, SHADERKIND_COMPUTE, BUFFERBIND_STORAGE_READONLY)
 			.End())
 		.Group(Builder<BindGroupLayoutDesc>()
-			.Buffer("ParamsBuffer", 0, SHADERKIND_COMPUTE, BUFFERBIND_STORAGE_READONLY, true)
+			.Buffer("ParamsBuffer", 0, SHADERKIND_COMPUTE, BUFFERBIND_STORAGE_READONLY, true)	// TODO: BUFFERBIND_UNIFORM
 			.End())
 		.End()
 	);
