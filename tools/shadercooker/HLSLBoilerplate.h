@@ -12,9 +12,9 @@ static const char s_boilerPlateStrHLSL[] = R"(
 #define ivec3 int3
 #define ivec4 int4
 
-#define ivec2 int2
-#define ivec3 int3
-#define ivec4 int4
+#define uvec2 uint2
+#define uvec3 uint3
+#define uvec4 uint4
 
 #define bvec2 bool2
 #define bvec3 bool3
