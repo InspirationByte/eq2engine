@@ -26,12 +26,14 @@ static const char s_boilerPlateStrHLSL[] = R"(
 
 vec4 unpackUnorm4x8(uint p)
 {
-	return vec4(
-		float(p & 255) / 255.0, 
-		float(p >> 8 & 255) / 255.0, 
-		float(p >> 16 & 255) / 255.0,
-		float(p >> 24 & 255) / 255.0
+	const float oneBy255 = 1.0 / 255.0;
+	vec4 v = vec4(
+		float(p & 255), 
+		float(p >> 8 & 255), 
+		float(p >> 16 & 255),
+		float(p >> 24 & 255)
 	);
+	return v * oneBy255;
 }
 
 //// functions
@@ -74,13 +76,6 @@ vec4 unpackUnorm4x8(uint p)
 #ifndef BINDGROUP_INSTANCES
 #define BINDGROUP_INSTANCES		space3
 #endif
-
-// See BaseShader and shaders layouts
-#define BIND_E( S, N, E )			: register(N, S)
-#define BIND_CONSTANT_E( N, E )		BIND_E( BINDGROUP_CONSTANT, N, E)
-#define BIND_RENDERPASS_E( N, E )	BIND_E( BINDGROUP_RENDERPASS, N, E)
-#define BIND_TRANSIENT_E( N, E )	BIND_E( BINDGROUP_TRANSIENT, N, E)
-#define BIND_INSTANCES_E( N, E )	BIND_E( BINDGROUP_INSTANCES, N, E)
 
 #define BIND( S, N )				: register(N, S)
 #define BIND_CONSTANT( N )			BIND( BINDGROUP_CONSTANT, N )
