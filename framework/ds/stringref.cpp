@@ -233,103 +233,103 @@ template<> wchar_t UpperChar(wchar_t chr)
 
 namespace CString
 {
-template<> int Length<char>(const char* str)
+int Length(const char* str)
 {
 	ASSERT(str);
 	return static_cast<int>(strlen(str));
 }
 
-template<> int Length<wchar_t>(const wchar_t* str)
+int Length(const wchar_t* str)
 {
 	ASSERT(str);
 	return static_cast<int>(wcslen(str));
 }
 
-template<> char* SubString(char* str, const char* search)
+char* SubString(char* str, const char* search)
 {
 	ASSERT(str && search);
 	return strstr(str, search);
 }
 
-template<> char* SubStringCaseIns(char* str, const char* search)
+char* SubStringCaseIns(char* str, const char* search)
 {
 	ASSERT(str && search);
 	return x_stristr(str, search);
 }
 
-template<> wchar_t* SubString(wchar_t* str, const wchar_t* search)
+wchar_t* SubString(wchar_t* str, const wchar_t* search)
 {
 	ASSERT(str && search);
 	return wcsstr(str, search);
 }
 
-template<> wchar_t* SubStringCaseIns(wchar_t* str, const wchar_t* search)
+wchar_t* SubStringCaseIns(wchar_t* str, const wchar_t* search)
 {
 	ASSERT(str && search);
 	return x_wcsistr(str, search);
 }
 
-template<> char* LowerCase(char* str)
+char* LowerCase(char* str)
 {
 	ASSERT(str);
 	return x_strlwr(str);
 }
 
-template<> wchar_t* LowerCase(wchar_t* str)
+wchar_t* LowerCase(wchar_t* str)
 {
 	ASSERT(str);
 	return x_wcslwr(str);
 }
 
-template<> char* UpperCase(char* str)
+char* UpperCase(char* str)
 {
 	ASSERT(str);
 	return x_strupr(str);
 }
 
-template<> wchar_t* UpperCase(wchar_t* str)
+wchar_t* UpperCase(wchar_t* str)
 {
 	ASSERT(str);
 	return x_wcsupr(str);
 }
 
-template<> int Compare(const char* strA, const char* strB)
+int Compare(const char* strA, const char* strB)
 {
 	ASSERT(strA && strB);
 	return strcmp(strA, strB);
 }
 
-template<> int Compare(const wchar_t* strA, const wchar_t* strB)
+int Compare(const wchar_t* strA, const wchar_t* strB)
 {
 	ASSERT(strA && strB);
 	return wcscmp(strA, strB);
 }
 
-template<> int CompareCaseIns(const char* strA, const char* strB)
+int CompareCaseIns(const char* strA, const char* strB)
 {
 	ASSERT(strA && strB);
 	return stricmp(strA, strB);
 }
 
-template<> int CompareCaseIns(const wchar_t* strA, const wchar_t* strB)
+int CompareCaseIns(const wchar_t* strA, const wchar_t* strB)
 {
 	ASSERT(strA && strB);
 	return x_wcsicmp(strA, strB);
 }
 
-template<> int PrintFV(char* buffer, int bufferCnt, const char* fmt, va_list argList)
+int PrintFV(char* buffer, int bufferCnt, const char* fmt, va_list argList)
 {
 	ASSERT(buffer && fmt);
 	return vsnprintf(buffer, bufferCnt, fmt, argList);
 }
 
-template<> int PrintFV(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, va_list argList)
+int PrintFV(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, va_list argList)
 {
 	ASSERT(buffer && fmt);
 	return _vsnwprintf(buffer, bufferCnt, fmt, argList);
 }
 
-template<> int PrintF(char* buffer, int bufferCnt, const char* fmt, ...)
+int PrintF(char* buffer, int bufferCnt, const char* fmt, ...)
 {
 	ASSERT(buffer && fmt);
 	va_list argptr;
@@ -339,7 +339,7 @@ template<> int PrintF(char* buffer, int bufferCnt, const char* fmt, ...)
 	return result;
 }
 
-template<> int PrintF(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, ...)
+int PrintF(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, ...)
 {
 	ASSERT(buffer && fmt);
 	va_list argptr;
