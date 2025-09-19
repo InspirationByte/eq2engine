@@ -24,6 +24,10 @@ static const char s_boilerPlateStrHLSL[] = R"(
 #define mat3 row_major float3x3
 #define mat4 row_major float4x4
 
+#define highp
+#define mediump
+#define lowp
+
 vec4 unpackUnorm4x8(uint p)
 {
 	const float oneBy255 = 1.0 / 255.0;
