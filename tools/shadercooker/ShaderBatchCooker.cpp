@@ -122,7 +122,7 @@ struct ShaderPackageCompileData
 	EqString			shaderSourceFullName;
 	CMemoryStream		shaderSourceString;
 	Array<EqString>		switchDefines{ PP_SL };
-	bool				compileErrors{ false };
+	volatile uint		compileErrors{ false };
 };
 
 //-----------------------------------------------------------------------
@@ -773,28 +773,6 @@ bool CShaderCooker::CompileShaderDXC(ShaderPackageCompileData& compileData, int 
 	const ShaderInfo::EntryPoint& entryPoint = shaderInfo.entryPoints[entryPointIdx];
 	const ShaderInfo::VertLayout& vertexLayout = shaderInfo.vertexLayouts[vertLayoutIdx];
 
-	// DXC_ARG_OPTIMIZATION_LEVEL3
-	if (!m_dxc.compiler && !m_dxc.utils)
-	{
-		HRESULT hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&m_dxc.compiler));
-		if (FAILED(hr))
-		{
-			if (!compileData.compileErrors)
-				MsgError("ERROR: Cannot create an instance of IDxcCompiler3, HRESULT = 0x%08x\n", hr);
-			compileData.compileErrors = true;
-			return false;
-		}
-
-		hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&m_dxc.utils));
-		if (FAILED(hr))
-		{
-			if (!compileData.compileErrors)
-				MsgError("ERROR: Cannot create an instance of IDxcUtils, HRESULT = 0x%08x\n", hr);
-			compileData.compileErrors = true;
-			return false;
-		}
-	}
-
 	EqWString targetProfile;
 	EqString kindMacroStr;
 	if (entryPoint.kind == SHADERKIND_VERTEX)
@@ -875,6 +853,7 @@ bool CShaderCooker::CompileShaderDXC(ShaderPackageCompileData& compileData, int 
 	sourceBuffer.Encoding = DXC_CP_ACP;
 
 	ShaderDXCIncluder includer(compileData.shaderSourceFullName, m_dxc.utils.Get(), shaderInfo, m_targetProps.includePaths);
+	includer.SetVertexLayout(vertexLayout.name);
 
 	ComPtr<IDxcResult> dxcResult;
 	HRESULT hr = m_dxc.compiler->Compile(&sourceBuffer, arguments.ptr(), arguments.numElem(), &includer, IID_PPV_ARGS(&dxcResult));
@@ -897,7 +876,7 @@ bool CShaderCooker::CompileShaderDXC(ShaderPackageCompileData& compileData, int 
 		if (errorUtf8)
 		{
 			MsgError("DXC Failed compiling %s %s %s\n%s\n", shaderInfo.name.ToCString(), vertexLayout.name.ToCString(), queryStr.ToCString(), (const char*)errorUtf8->GetBufferPointer());
-			compileData.compileErrors = true;
+			Atomic::Store(compileData.compileErrors, true);
 		}
 	}
 
@@ -985,7 +964,7 @@ bool CShaderCooker::CompileShaderSpirV(ShaderPackageCompileData& compileData, in
 	{
 		MsgError("Failed pre-processing %s %s\n%s\n", vertexLayout.name.ToCString(), queryStr.ToCString(), preprocessResult.GetErrorMessage().c_str());
 		if (preprocessStatus == shaderc_compilation_status_compilation_error)
-			compileData.compileErrors = true;
+			Atomic::Store(compileData.compileErrors, true);
 		return false;
 	}
 
@@ -1006,7 +985,7 @@ bool CShaderCooker::CompileShaderSpirV(ShaderPackageCompileData& compileData, in
 	{
 		MsgError("ShaderC Failed compiling %s %s %s\n%s\n", shaderInfo.name.ToCString(), vertexLayout.name.ToCString(), queryStr.ToCString(), spvCompilationResult.GetErrorMessage().c_str());
 		if (compileStatus == shaderc_compilation_status_compilation_error)
-			compileData.compileErrors = true;
+			Atomic::Store(compileData.compileErrors, true);
 		return false;
 	}
 
@@ -1298,6 +1277,9 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 
 		for (int vertLayoutIdx = 0; vertLayoutIdx < shaderInfo.vertexLayouts.numElem(); ++vertLayoutIdx)
 		{
+			if (compileData->compileErrors)
+				break;
+
 			const ShaderInfo::VertLayout& vertexLayout = shaderInfo.vertexLayouts[vertLayoutIdx];
 			if (vertexLayout.aliasOf != -1)
 			{
@@ -1310,6 +1292,8 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 			for (int i = 0; i < totalVariantCount; ++i)
 			{
 				FunctionJob* compileVariantJob = PPNew FunctionJob(vertexLayout.name, [this, compileData, vertexLayout, i, vertLayoutIdx](void*, int) {
+					if (compileData->compileErrors)
+						return;
 
 					ShaderInfo& shaderInfo = compileData->shaderInfo;
 
@@ -1371,6 +1355,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 						result.entryPointIdx = entryPointIdx;
 						result.kindFlag = shaderInfo.entryPoints[entryPointIdx].kind;
 
+						if (shaderInfo.sourceType == SHADERSOURCE_GLSL)
 						{
 							shaderc::SpvCompilationResult spvCompilationResult;
 							if (CompileShaderSpirV(compileData.Ref(), entryPointIdx, vertLayoutIdx, queryStr, spvCompilationResult, result.bindings))
@@ -1383,16 +1368,16 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 								result.isError = true;
 						}
 
-						//if(shaderInfo.sourceType == SHADERSOURCE_HLSL)
-						//{
-						//	CMemoryStream dxcCompilationResult(PP_SL);
-						//	if (CompileShaderDXC(compileData.Ref(), entryPointIdx, vertLayoutIdx, queryStr, dxcCompilationResult, result.bindings))
-						//	{
-						//		AddOrReferenceCompilationResult(shaderInfo, result, SHADERMODULE_DXBC, entryPointIdx, vertLayoutIdx, queryStr, dxcCompilationResult);
-						//	}
-						//	else
-						//		result.isError = true;
-						//}
+						if(shaderInfo.sourceType == SHADERSOURCE_HLSL)
+						{
+							CMemoryStream dxcCompilationResult(PP_SL);
+							if (CompileShaderDXC(compileData.Ref(), entryPointIdx, vertLayoutIdx, queryStr, dxcCompilationResult, result.bindings))
+							{
+								AddOrReferenceCompilationResult(shaderInfo, result, SHADERMODULE_DXIL, entryPointIdx, vertLayoutIdx, queryStr, dxcCompilationResult);
+							}
+							else
+								result.isError = true;
+						}
 					}
 
 					//if(!stopCompilation)
@@ -1414,6 +1399,24 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 
 bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 {
+	if (!m_dxc.compiler && !m_dxc.utils)
+	{
+		HRESULT hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&m_dxc.compiler));
+		if (FAILED(hr))
+		{
+			MsgError("ERROR: Cannot create an instance of IDxcCompiler3, HRESULT = 0x%08x\n", hr);
+			return false;
+		}
+
+		hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&m_dxc.utils));
+		if (FAILED(hr))
+		{
+			MsgError("ERROR: Cannot create an instance of IDxcUtils, HRESULT = 0x%08x\n", hr);
+			return false;
+		}
+	}
+
+
 	// load all properties
 	KVSection kvs;
 	if (!KV_LoadFromFile(confFileName, SP_ROOT, kvs))
