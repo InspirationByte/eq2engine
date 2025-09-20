@@ -18,6 +18,8 @@ public:
 		shaderc_include_result	resultData;
 		EqString				includeName;
 		CMemoryStream			includeContent{ PP_SL };
+		int						includeCount{ 0 };
+		bool					isError{ true };
 	};
 
 	ShaderIncluderImpl(ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths);
@@ -25,15 +27,14 @@ public:
 	IncludeResult*			GetInclude(const char* fileName, bool isRelativePath, const char* includeFromName);
 	void					ReleaseInclude(IncludeResult* data);
 
-	bool					TryOpenIncludeFile(const char* reqSource, const char* fileName, IncludeResult* result);
+	IncludeResult*			TryOpenIncludeFile(const char* reqSource, const char* fileName);
 	void					SetVertexLayout(const char* vertexLayoutName) { m_vertexLayoutName = vertexLayoutName; }
 
 protected:
-	Array<IncludeResult>	m_shaderIncludes{ PP_SL };
-	Array<int>				m_freeSlots{ PP_SL };
-	ArrayCRef<EqString>		m_includePaths;
-	const ShaderInfo&		m_shaderInfo;
-	EqString				m_vertexLayoutName;
+	Map<uint, IncludeResult>	m_shaderIncludes{ PP_SL };
+	ArrayCRef<EqString>			m_includePaths;
+	const ShaderInfo&			m_shaderInfo;
+	EqString					m_vertexLayoutName;
 };
 
 // includer used for shaderc
@@ -54,7 +55,7 @@ class ShaderDXCIncluder
 	, public IDxcIncludeHandler
 {
 public:
-	ShaderDXCIncluder(EqStringRef shaderSourceFullName, IDxcUtils* utils, ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths);
+	ShaderDXCIncluder(EqStringRef shaderSourceFullName, ComPtr<IDxcUtils> utils, ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths);
 
 	ULONG STDMETHODCALLTYPE AddRef() override;
 	ULONG STDMETHODCALLTYPE Release() override;
@@ -64,7 +65,7 @@ public:
 	HRESULT STDMETHODCALLTYPE LoadSource(LPCWSTR pFilename, IDxcBlob** ppIncludeSource) override;
 
 protected:
-	IDxcUtils*		m_dxcUtils;
-	EqStringRef		m_shaderSourceFullName;
+	ComPtr<IDxcUtils>	m_dxcUtils;
+	EqStringRef			m_shaderSourceFullName;
 };
 #endif // _WIN32
