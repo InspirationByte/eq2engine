@@ -857,7 +857,8 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 				queryStr.Append(str);
 			}
 
-			ASSERT_FAIL("No vertex shader module found for %s %s in shader package %s", shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
+
+			ASSERT_FAIL("Missing VS module %s:%s (%s) in '%s'", shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString(), pipelineDesc.vertex.shaderEntryPoint.ToCString(), queryStr.ToCString(), shaderInfo.shaderName.ToCString());
 			return nullptr;
 		}
 	}
@@ -954,7 +955,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 				queryStr.Append(str);
 			}
 
-			ASSERT_FAIL("No fragment shader module found for %s %s in shader package %s", shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
+			ASSERT_FAIL("Missing PS module %s:%s (%s) in '%s'", shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString(), pipelineDesc.fragment.shaderEntryPoint.ToCString(), queryStr.ToCString(), shaderInfo.shaderName.ToCString());
 			return nullptr;
 		}
 
@@ -1116,6 +1117,20 @@ IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipeli
 			}
 			ASSERT_MSG(shaderInfo.modules[*itShaderModuleId].kind == SHADERKIND_COMPUTE, "Incorrect shader kind for %s %s in shader package %s", shaderInfo.vertexLayouts[layoutIdx].name.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
 			rhiComputeShaderModule = GetOrLoadShaderModule(shaderInfo, *itShaderModuleId);
+		}
+
+		if(!rhiComputeShaderModule)
+		{
+			EqString queryStr;
+			for (const EqString& str : pipelineDesc.shaderQuery)
+			{
+				if (queryStr.Length())
+					queryStr.Append("|");
+				queryStr.Append(str);
+			}
+
+			ASSERT_FAIL("Missing CS module %s:%s (%s) in '%s'", shaderInfo.vertexLayouts[layoutIdx].name.ToCString(), pipelineDesc.shaderEntryPoint.ToCString(), queryStr.ToCString(), shaderInfo.shaderName.ToCString());
+			return nullptr;
 		}
 	}
 

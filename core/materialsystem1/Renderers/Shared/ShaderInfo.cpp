@@ -183,6 +183,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 			modInfo.fileIndex[SHADERMODULE_SPIRV] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".spv"));
 			modInfo.fileIndex[SHADERMODULE_DXBC] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".dxbc"));
 			modInfo.fileIndex[SHADERMODULE_DXIL] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".dxil"));
+			modInfo.fileIndex[SHADERMODULE_WGSL] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".wgsl"));
 			modInfo.kind = static_cast<EShaderKind>(kind);
 		}
 		{
