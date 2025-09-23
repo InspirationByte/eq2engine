@@ -40,6 +40,13 @@ static const char* s_shaderModuleTypeExt[] = {
 	".wgsl",
 };
 
+static const char* s_shaderModuleTypeName[] = {
+	"SPIRV",
+	"DXBC",
+	"DXIL",
+	"WGSL",
+};
+
 enum EBindGroupId : int
 {
 	BINDGROUP_UNKNOWN = -1,

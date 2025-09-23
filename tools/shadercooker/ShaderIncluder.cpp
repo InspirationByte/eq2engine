@@ -31,21 +31,14 @@ ShaderIncluderImpl::IncludeResult* ShaderIncluderImpl::GetInclude(const char* fi
 		// also add vertex layout defines
 		for (int i = 0; i < m_shaderInfo.vertexLayouts.numElem(); ++i)
 		{
-			const ShaderInfo::VertLayout& layout = m_shaderInfo.vertexLayouts[i];
+			const ShaderInfo::VertLayout& layout = m_shaderInfo.vertexLayouts[i]; 
 			const int vertexId = layout.aliasOf != -1 ? layout.aliasOf : i;
 			result->includeContent.Print("\nstatic const uint VID_%s = %u;\n", layout.name.ToCString(), StringId24(m_shaderInfo.vertexLayouts[vertexId].name));
 		}
 
-		int vertexId = -1;
-		for (int i = 0; i < m_shaderInfo.vertexLayouts.numElem(); ++i)
-		{
-			const ShaderInfo::VertLayout& layout = m_shaderInfo.vertexLayouts[i];
-			if (layout.name == m_vertexLayoutName)
-			{
-				vertexId = i;
-				break;
-			}
-		}
+		const int vertexId = arrayFindIndexF(m_shaderInfo.vertexLayouts, [&](const ShaderInfo::VertLayout& layout) {
+			return (layout.name == m_vertexLayoutName);
+		});
 		if (vertexId != -1)
 			result->includeContent.Print("\nstatic const uint CURRENT_VERTEX_ID = %u;\n", StringId24(m_shaderInfo.vertexLayouts[vertexId].name));
 		else

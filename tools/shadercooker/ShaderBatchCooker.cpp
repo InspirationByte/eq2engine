@@ -89,6 +89,7 @@ private:
 	struct TargetProperties
 	{
 		Array<EqString>	includePaths{ PP_SL };
+		Array<EShaderModuleType> blobTypes{ PP_SL };
 		EqString		sourceShaderPath;
 		EqString		sourceShaderDescExt;
 		EqString		targetFolder;
@@ -1427,9 +1428,8 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 						}
 						else
 						{
-							compileTargets.append({ SHADERMODULE_SPIRV });
-							//compileTargets.append({ SHADERMODULE_DXIL });
-							//compileTargets.append({ SHADERMODULE_WGSL }); 
+							for(EShaderModuleType blobType : m_targetProps.blobTypes)
+								compileTargets.append({ blobType });
 
 							// Slang can compile into SPIRV, DXIL, WGSL
 							if (!CompileShaderSlang(compileData.Ref(), entryPointIdx, vertLayoutIdx, queryStr, compileTargets, result.bindings))
@@ -1462,25 +1462,6 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 
 bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 {
-#if 0
-	if (!m_dxc.compiler && !m_dxc.utils)
-	{
-		HRESULT hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&m_dxc.compiler));
-		if (FAILED(hr))
-		{
-			MsgError("ERROR: Cannot create an instance of IDxcCompiler3, HRESULT = 0x%08x\n", hr);
-			return false;
-		}
-
-		hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&m_dxc.utils));
-		if (FAILED(hr))
-		{
-			MsgError("ERROR: Cannot create an instance of IDxcUtils, HRESULT = 0x%08x\n", hr);
-			return false;
-		}
-	}
-#endif
-
 	// load all properties
 	KVSection kvs;
 	if (!KV_LoadFromFile(confFileName, SP_ROOT, kvs))
@@ -1531,6 +1512,29 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 				includePath.ReplaceSubstr(s_gameDirTag, g_fileSystem->GetCurrentGameDirectory());
 
 				m_targetProps.includePaths.append(std::move(includePath));
+			}
+
+			for (auto val : currentTarget->Get("blobs").Values<EqStringRef>())
+			{
+				bool added = false;
+				for (int type = 0; type < SHADERMODULE_TYPES; ++type)
+				{
+					if (!val.CompareCaseIns(s_shaderModuleTypeName[type]))
+					{
+						m_targetProps.blobTypes.append(static_cast<EShaderModuleType>(type));
+						added = true;
+						break;
+					}
+				}
+
+				if(!added)
+					MsgError("Target '%s' unknown blob type %s\n", targetName, val.ToCString());
+			}
+
+			if (m_targetProps.blobTypes.isEmpty())
+			{
+				MsgError("Target '%s' missing 'blobs' values or has invalid values\n", targetName);
+				return false;
 			}
 
 			m_targetProps.sourceShaderPath = shadersSrc;
