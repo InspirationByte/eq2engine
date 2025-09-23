@@ -20,9 +20,9 @@ static const char s_boilerPlateStrHLSL[] = R"(
 #define bvec3 bool3
 #define bvec4 bool4
 
-#define mat2 row_major float2x2
-#define mat3 row_major float3x3
-#define mat4 row_major float4x4
+#define mat2 float2x2
+#define mat3 float3x3
+#define mat4 float4x4
 
 #define highp
 #define mediump
@@ -81,7 +81,7 @@ vec4 unpackUnorm4x8(uint p)
 #define BINDGROUP_INSTANCES		space3
 #endif
 
-#define BIND( S, N )				: register(N, S)
+#define BIND( S, N )				/*[[vk::binding(N, S)]]*/
 #define BIND_CONSTANT( N )			BIND( BINDGROUP_CONSTANT, N )
 #define BIND_RENDERPASS( N )		BIND( BINDGROUP_RENDERPASS, N )
 #define BIND_TRANSIENT( N )			BIND( BINDGROUP_TRANSIENT, N )

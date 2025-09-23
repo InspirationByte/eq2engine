@@ -1,13 +1,4 @@
 #pragma once
-
-#ifdef _WIN32
-// TODO: cross-platform
-#include <wrl/client.h>
-
-using Microsoft::WRL::ComPtr;
-#include <dxcapi.h> // DXC
-#endif
-
 #include "ShaderInfo.h"
 
 class ShaderIncluderImpl
@@ -49,7 +40,45 @@ public:
 	void ReleaseInclude(shaderc_include_result* data) override;
 };
 
-#ifdef _WIN32
+class SlangFileSystemIncluder
+	: public ShaderIncluderImpl
+	, public ISlangFileSystem
+{
+public:
+	SlangFileSystemIncluder(ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths);
+
+	SLANG_NO_THROW SlangResult SLANG_MCALL loadFile(char const* path, ISlangBlob** outBlob) override;
+
+	SLANG_FORCE_INLINE ISlangUnknown* getInterface(const Slang::Guid& guid)
+	{
+		if (guid == ISlangUnknown::getTypeGuid() ||
+			guid == ISlangFileSystem::getTypeGuid())
+		{
+			return static_cast<ISlangFileSystem*>(this);
+		}
+		if (guid == ISlangCastable::getTypeGuid())
+		{
+			return static_cast<ISlangCastable*>(this);
+		}
+
+		return nullptr;
+	}
+
+	SLANG_FORCE_INLINE SLANG_NO_THROW void* SLANG_MCALL castAs(const SlangUUID& guid)
+	{
+		if (auto intf = getInterface(guid))
+		{
+			return intf;
+		}
+		return nullptr;
+	}
+
+	SLANG_IUNKNOWN_ALL
+	int m_refCount = 0;
+};
+
+
+#if 0
 class ShaderDXCIncluder
 	: public ShaderIncluderImpl
 	, public IDxcIncludeHandler

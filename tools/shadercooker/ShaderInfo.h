@@ -18,7 +18,8 @@ enum EShaderConvStatus : int
 
 enum EShaderSourceType : int
 {
-	SHADERSOURCE_HLSL = 0,
+	SHADERSOURCE_SLANG = 0,
+	SHADERSOURCE_HLSL,
 	SHADERSOURCE_GLSL,
 };
 
@@ -153,7 +154,7 @@ struct ShaderInfo
 	EqString			sourceFilename;
 
 	EShaderConvStatus	status{ SHADERCONV_INIT };
-	EShaderSourceType	sourceType{ SHADERSOURCE_HLSL };
+	EShaderSourceType	sourceType{ SHADERSOURCE_SLANG };
 
 	uint32				crc32{ 0 };
 	int					totalVariationCount{ 0 };
