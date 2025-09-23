@@ -627,18 +627,7 @@ WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfo& shaderI
 	const EqString shaderModuleName = EqString::Format("%s-%d", shaderInfo.shaderName.ToCString(), shaderModuleIdx);
 
 	WGPUShaderModule rhiShaderModule = nullptr;
-	if (mod.fileIndex[SHADERMODULE_SPIRV] != -1)
-	{
-		loadShaderBlob(SHADERMODULE_SPIRV);
-		if(!shaderBlobData.IsValid())
-		{
-			ASSERT_FAIL("Shader module %s (found in package %s) not found for specific backend", shaderModuleName.ToCString(), shaderInfo.shaderName.ToCString());
-			return nullptr;
-		}
-
-		rhiShaderModule = CreateShaderSPIRV(reinterpret_cast<uint32*>(shaderBlobData.GetBasePointer()), shaderBlobData.GetSize(), shaderModuleName);
-	}
-	else if(mod.fileIndex[SHADERMODULE_WGSL] != -1)
+	if (mod.fileIndex[SHADERMODULE_WGSL] != -1)
 	{
 		loadShaderBlob(SHADERMODULE_WGSL);
 		if (!shaderBlobData.IsValid())
@@ -650,6 +639,17 @@ WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfo& shaderI
 		const int _zero = 0;
 		shaderBlobData.Write(&_zero, 1, sizeof(_zero));
 		rhiShaderModule = CreateShaderWGSL(reinterpret_cast<char*>(shaderBlobData.GetBasePointer()), shaderModuleName);
+	}
+	else if (mod.fileIndex[SHADERMODULE_SPIRV] != -1)
+	{
+		loadShaderBlob(SHADERMODULE_SPIRV);
+		if(!shaderBlobData.IsValid())
+		{
+			ASSERT_FAIL("Shader module %s (found in package %s) not found for specific backend", shaderModuleName.ToCString(), shaderInfo.shaderName.ToCString());
+			return nullptr;
+		}
+
+		rhiShaderModule = CreateShaderSPIRV(reinterpret_cast<uint32*>(shaderBlobData.GetBasePointer()), shaderBlobData.GetSize(), shaderModuleName);
 	}
 	
 	if (!rhiShaderModule)
