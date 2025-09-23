@@ -522,7 +522,7 @@ private:
 			Item* item = m_pool.allocate();
 
 			new (item) Item(parent, key);
-			PPSLPlacementNew<V>(&(*item->value), m_pool.getSL());
+			PPSLPlacementNew<V>(std::addressof(*item->value), m_pool.getSL());
 
 			*cell = item;
 			++m_size;

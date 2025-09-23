@@ -606,7 +606,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::setNum(int newnum, bool shrinkResize)
 	T* listPtr = STORAGE_TYPE::getData();
 	for (int i = m_nNumElem; i < newnum; ++i)
 	{
-		PPSLPlacementNew<T>(&listPtr[i], STORAGE_TYPE::getSL());
+		PPSLPlacementNew<T>(std::addressof(listPtr[i]), STORAGE_TYPE::getSL());
 	}
 
 	m_nNumElem = newnum;
@@ -787,7 +787,7 @@ inline T& ArrayBase<T, STORAGE_TYPE>::append()
 	T* listPtr = STORAGE_TYPE::getData();
 
 	T& newItem = listPtr[m_nNumElem++];
-	PPSLPlacementNew<T>(&newItem, STORAGE_TYPE::getSL());
+	PPSLPlacementNew<T>(std::addressof(newItem), STORAGE_TYPE::getSL());
 
 	return newItem;
 }
@@ -932,7 +932,7 @@ inline T& ArrayBase<T, STORAGE_TYPE>::insert(int index)
 
 	++m_nNumElem;
 
-	PPSLPlacementNew<T>(&listPtr[index], STORAGE_TYPE::getSL());
+	PPSLPlacementNew<T>(std::addressof(listPtr[index]), STORAGE_TYPE::getSL());
 
 	return listPtr[index];
 }
