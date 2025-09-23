@@ -28,22 +28,6 @@ ShaderIncluderImpl::IncludeResult* ShaderIncluderImpl::GetInclude(const char* fi
 
 		result->includeContent.Open(FS_OPEN_READ | FS_OPEN_WRITE, nullptr, 8192);
 
-		// also add vertex layout defines
-		for (int i = 0; i < m_shaderInfo.vertexLayouts.numElem(); ++i)
-		{
-			const ShaderInfo::VertLayout& layout = m_shaderInfo.vertexLayouts[i]; 
-			const int vertexId = layout.aliasOf != -1 ? layout.aliasOf : i;
-			result->includeContent.Print("\nstatic const uint VID_%s = %u;\n", layout.name.ToCString(), StringId24(m_shaderInfo.vertexLayouts[vertexId].name));
-		}
-
-		const int vertexId = arrayFindIndexF(m_shaderInfo.vertexLayouts, [&](const ShaderInfo::VertLayout& layout) {
-			return (layout.name == m_vertexLayoutName);
-		});
-		if (vertexId != -1)
-			result->includeContent.Print("\nstatic const uint CURRENT_VERTEX_ID = %u;\n", StringId24(m_shaderInfo.vertexLayouts[vertexId].name));
-		else
-			result->includeContent.Print("\nstatic const uint CURRENT_VERTEX_ID = 0;\n");
-
 		// append boilerplate
 		if (m_shaderInfo.sourceType == SHADERSOURCE_SLANG)
 			result->includeContent.Print(s_boilerPlateStrSlang);	// TODO
@@ -65,9 +49,9 @@ ShaderIncluderImpl::IncludeResult* ShaderIncluderImpl::GetInclude(const char* fi
 		result = TryOpenIncludeFile(sourcePath, shaderSourceName);
 		result->includeName = shaderSourceName;
 	}
-	else if (isRelativePath)
+	else
 	{
-		result = TryOpenIncludeFile(sourcePath, fileName);
+		result = TryOpenIncludeFile(isRelativePath ? sourcePath : "", fileName);
 	}
 
 	return result;
@@ -82,13 +66,25 @@ ShaderIncluderImpl::IncludeResult* ShaderIncluderImpl::TryOpenIncludeFile(const 
 		EqString fullPath;
 		for (const EqString& incPath : m_includePaths)
 		{
-			fullPath = fnmPathCombine(incPath, sourcePath, fileName);
-			const int strId = StringId(fullPath);
-			auto foundIt = m_shaderIncludes.find(strId);
-			if (foundIt)
 			{
-				++foundIt->includeCount;
-				return &(*foundIt);
+				fullPath = fnmPathCombine(incPath, sourcePath, fileName);
+				const int strId = StringId(fullPath);
+				auto foundIt = m_shaderIncludes.find(strId);
+				if (foundIt)
+				{
+					++foundIt->includeCount;
+					return &(*foundIt);
+				}
+			}
+			{
+				fullPath = fnmPathCombine(incPath, fileName);
+				const int strId = StringId(fullPath);
+				auto foundIt = m_shaderIncludes.find(strId);
+				if (foundIt)
+				{
+					++foundIt->includeCount;
+					return &(*foundIt);
+				}
 			}
 		}
 
@@ -110,10 +106,18 @@ ShaderIncluderImpl::IncludeResult* ShaderIncluderImpl::TryOpenIncludeFile(const 
 	{
 		for (const EqString& incPath : m_includePaths)
 		{
-			fullPath = fnmPathCombine(incPath, sourcePath, fileName);
-			openFile = g_fileSystem->Open(fullPath, FS_OPEN_READ, SP_ROOT);
-			if (openFile)
-				break;
+			{
+				fullPath = fnmPathCombine(incPath, sourcePath, fileName);
+				openFile = g_fileSystem->Open(fullPath, FS_OPEN_READ, SP_ROOT);
+				if (openFile)
+					break;
+			}
+			{
+				fullPath = fnmPathCombine(incPath, fileName);
+				openFile = g_fileSystem->Open(fullPath, FS_OPEN_READ, SP_ROOT);
+				if (openFile)
+					break;
+			}
 		}
 
 		if (!openFile)

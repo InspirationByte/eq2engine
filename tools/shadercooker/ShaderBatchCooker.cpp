@@ -128,14 +128,14 @@ struct ShaderPackageCompileData
 //-----------------------------------------------------------------------
 
 template<typename Processor>
-static void ProcessIncludesRecursively(const char* fileName, const char* source, int length, ShadercIncluder& includer, Processor& processor, int depth = 0);
+static void ProcessIncludesRecursively(const char* fileName, const char* source, int length, ShaderIncluderImpl& includer, Processor& processor, int depth = 0);
 
 struct IncludeCRCProcessor
 {
 	ShaderInfo& shaderInfo;
 	Set<uint>	crcProcessed{ PP_SL };
 
-	void Process(const char* currentSource, ShadercIncluder& includer, const EqString& name, bool relative, int depth)
+	void Process(const char* currentSource, ShaderIncluderImpl& includer, const EqString& name, bool relative, int depth)
 	{
 		if (name == "VertexLayout")
 		{
@@ -146,21 +146,23 @@ struct IncludeCRCProcessor
 					continue;
 
 				includer.SetVertexLayout(vertLayout.name);
-				shaderc_include_result* includeResult = includer.GetInclude(name, relative ? shaderc_include_type_relative : shaderc_include_type_standard, currentSource, depth);
-				if (includeResult->source_name_length)
+				ShaderIncluderImpl::IncludeResult* includeResult = includer.GetInclude(name, relative, fnmPathStripName(currentSource));
+				if (!includeResult->isError)
 				{
 					uint checkCrc;
 					CRC32_InitChecksum(checkCrc);
-					CRC32_UpdateChecksum(checkCrc, includeResult->source_name, includeResult->source_name_length);
+					CRC32_UpdateChecksum(checkCrc, includeResult->includeName, includeResult->includeName.Length());
 					CRC32_FinishChecksum(checkCrc);
 
 					if (crcProcessed.find(checkCrc).atEnd())
 					{
-						EqString sourceNameFull(includeResult->source_name, includeResult->source_name_length);
+						const char* incText = (const char*)includeResult->includeContent.GetBasePointer();
+						const int incLength = includeResult->includeContent.Tell();
 
 						crcProcessed.insert(checkCrc);
-						CRC32_UpdateChecksum(shaderInfo.crc32, includeResult->content, includeResult->content_length);
-						ProcessIncludesRecursively(sourceNameFull, includeResult->content, static_cast<int>(includeResult->content_length), includer, *this, depth + 1);
+						CRC32_UpdateChecksum(shaderInfo.crc32, incText, incLength);
+
+						ProcessIncludesRecursively(includeResult->includeName, incText, incLength, includer, *this, depth + 1);
 					}
 					//else
 					//{
@@ -177,21 +179,22 @@ struct IncludeCRCProcessor
 			return;
 		}
 
-		shaderc_include_result* includeResult = includer.GetInclude(name, relative ? shaderc_include_type_relative : shaderc_include_type_standard, currentSource, depth);
-		if (includeResult->source_name_length)
+		ShaderIncluderImpl::IncludeResult* includeResult = includer.GetInclude(name, relative, fnmPathStripName(currentSource));
+		if (includeResult && !includeResult->isError)
 		{
 			uint checkCrc;
 			CRC32_InitChecksum(checkCrc);
-			CRC32_UpdateChecksum(checkCrc, includeResult->source_name, includeResult->source_name_length);
+			CRC32_UpdateChecksum(checkCrc, includeResult->includeName, includeResult->includeName.Length());
 			CRC32_FinishChecksum(checkCrc);
 
 			if (crcProcessed.find(checkCrc).atEnd())
 			{
-				EqString sourceNameFull(includeResult->source_name, includeResult->source_name_length);
+				const char* incText = (const char*)includeResult->includeContent.GetBasePointer();
+				const int incLength = includeResult->includeContent.Tell();
 
 				crcProcessed.insert(checkCrc);
-				CRC32_UpdateChecksum(shaderInfo.crc32, includeResult->content, includeResult->content_length);
-				ProcessIncludesRecursively(sourceNameFull, includeResult->content, static_cast<int>(includeResult->content_length), includer, *this, depth + 1);
+				CRC32_UpdateChecksum(shaderInfo.crc32, incText, incLength);
+				ProcessIncludesRecursively(includeResult->includeName, incText, incLength, includer, *this, depth + 1);
 			}
 			//else
 			//{
@@ -624,7 +627,7 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 }
 
 template<typename Processor>
-static void ProcessIncludesRecursively(const char* fileName, const char* source, int length, ShadercIncluder& includer, Processor& processor, int depth)
+static void ProcessIncludesRecursively(const char* fileName, const char* source, int length, ShaderIncluderImpl& includer, Processor& processor, int depth)
 {
 	const char* srcBegin = source;
 	const char* srcEnd = source + length;
@@ -816,6 +819,19 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 		slangCompileRequest->setOptimizationLevel(SLANG_OPTIMIZATION_LEVEL_NONE);
 	else
 		slangCompileRequest->setOptimizationLevel(SLANG_OPTIMIZATION_LEVEL_MAXIMAL);
+
+	for(auto& path : m_targetProps.includePaths)
+		slangCompileRequest->addSearchPath(path);
+
+	// add vertex layout defines
+	for (int i = 0; i < shaderInfo.vertexLayouts.numElem(); ++i)
+	{
+		const ShaderInfo::VertLayout& layout = shaderInfo.vertexLayouts[i];
+		const int vertexId = layout.aliasOf != -1 ? layout.aliasOf : i;
+
+		slangCompileRequest->addPreprocessorDefine(EqString::Format("VID_%s", layout.name), EqString::Format("%u", StringId24(shaderInfo.vertexLayouts[vertexId].name)));
+	}
+	slangCompileRequest->addPreprocessorDefine("CURRENT_VERTEX_ID", EqString::Format("%u", StringId24(vertexLayout.name)));
 	
 	for(CompileTargetData& tgtData : targetData)
 	{
@@ -903,8 +919,10 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 	}
 
 	{
+		const char* srcStart = (const char*)compileData.shaderSourceString.GetBasePointer();
+		const char* srcEnd = srcStart + compileData.shaderSourceString.Tell();
 		const int idx = slangCompileRequest->addTranslationUnit(srcLang, "Main");
-		slangCompileRequest->addTranslationUnitSourceString(idx, compileData.shaderSourceFullName, (const char*)compileData.shaderSourceString.GetBasePointer());
+		slangCompileRequest->addTranslationUnitSourceStringSpan(idx, compileData.shaderSourceFullName, srcStart, srcEnd);
 		slangCompileRequest->addEntryPoint(idx, entryPointPrefix + entryPoint.name, entryPointStage);
 	}
 
@@ -972,6 +990,16 @@ bool CShaderCooker::CompileShaderShadercSpirV(ShaderPackageCompileData& compileD
 	}
 	options.SetSourceLanguage(s_sourceLanguage[shaderInfo.sourceType]);
 	options.AddMacroDefinition(kindMacroStr.ToCString());
+
+	// add vertex layout defines
+	for (int i = 0; i < shaderInfo.vertexLayouts.numElem(); ++i)
+	{
+		const ShaderInfo::VertLayout& layout = shaderInfo.vertexLayouts[i];
+		const int vertexId = layout.aliasOf != -1 ? layout.aliasOf : i;
+
+		options.AddMacroDefinition(EqString::Format("VID_%s=%u", layout.name, StringId24(shaderInfo.vertexLayouts[vertexId].name)).ToCString());
+	}
+	options.AddMacroDefinition(EqString::Format("CURRENT_VERTEX_ID=%u", StringId24(vertexLayout.name)).ToCString());
 
 	// add macros from query string
 	if (queryStr)
@@ -1144,15 +1172,15 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 	// process all includes CRCs
 	// also collect pipeline layouts
 	{
-		ShadercIncluder includer(shaderInfo, m_targetProps.includePaths);
+		ShaderIncluderImpl includer(shaderInfo, m_targetProps.includePaths);
 		IncludeCRCProcessor processor{ shaderInfo };
 
 		EqStringRef sourceName = shaderInfo.sourceFilename.Length() ? shaderInfo.sourceFilename : shaderInfo.name;
 
-		ProcessIncludesRecursively(
-			sourceName,
-			(const char*)compileData->shaderSourceString.GetBasePointer(), compileData->shaderSourceString.GetSize(),
-			includer, processor);
+		const char* incText = (const char*)compileData->shaderSourceString.GetBasePointer();
+		const int incLength = compileData->shaderSourceString.Tell();
+
+		ProcessIncludesRecursively(sourceName, incText, incLength, includer, processor);
 	}
 
 	// now check CRC from loaded file
