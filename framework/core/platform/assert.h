@@ -24,6 +24,11 @@
 
 #endif
 
+#define _DEBUG_BREAK_ONCE do { \
+	static bool _break = true; \
+	if (_break) { _DEBUG_BREAK; _break = false; } \
+} while(0)
+
 enum EEqAssertType {
 	_EQASSERT_IGNORE_ALWAYS	= -1,
 	_EQASSERT_BREAK			= 1,
