@@ -1,4 +1,4 @@
-#include <shaderc/shaderc.hpp>	// TODO: remove
+#include <shaderc/shaderc.hpp>	// TODO: remove some day
 #include <slang.h>
 #include <slang-com-helper.h>
 
@@ -70,7 +70,7 @@ ShaderIncluderImpl::IncludeResult* ShaderIncluderImpl::TryOpenIncludeFile(const 
 				fullPath = fnmPathCombine(incPath, sourcePath, fileName);
 				const int strId = StringId(fullPath);
 				auto foundIt = m_shaderIncludes.find(strId);
-				if (foundIt)
+				if (foundIt && !foundIt->isError)
 				{
 					++foundIt->includeCount;
 					return &(*foundIt);
@@ -80,7 +80,7 @@ ShaderIncluderImpl::IncludeResult* ShaderIncluderImpl::TryOpenIncludeFile(const 
 				fullPath = fnmPathCombine(incPath, fileName);
 				const int strId = StringId(fullPath);
 				auto foundIt = m_shaderIncludes.find(strId);
-				if (foundIt)
+				if (foundIt && !foundIt->isError)
 				{
 					++foundIt->includeCount;
 					return &(*foundIt);
@@ -93,7 +93,7 @@ ShaderIncluderImpl::IncludeResult* ShaderIncluderImpl::TryOpenIncludeFile(const 
 			fullPath = fnmPathCombine(sourcePath, fileName);
 			const int strId = StringId(fullPath);
 			auto foundIt = m_shaderIncludes.find(strId);
-			if (foundIt)
+			if (foundIt && !foundIt->isError)
 			{
 				++foundIt->includeCount;
 				return &(*foundIt);

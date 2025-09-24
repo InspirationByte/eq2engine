@@ -5,7 +5,7 @@
 // Description: Shader module compiler
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <shaderc/shaderc.hpp>	// TODO: remove
+#include <shaderc/shaderc.hpp>	// TODO: remove some day
 #include <slang.h>
 #include <slang-com-ptr.h>
 #include <slang-com-helper.h>
@@ -1000,9 +1000,9 @@ bool CShaderCooker::CompileShaderShadercSpirV(ShaderPackageCompileData& compileD
 		const ShaderInfo::VertLayout& layout = shaderInfo.vertexLayouts[i];
 		const int vertexId = layout.aliasOf != -1 ? layout.aliasOf : i;
 
-		options.AddMacroDefinition(EqString::Format("VID_%s=%u", layout.name, StringId24(shaderInfo.vertexLayouts[vertexId].name)).ToCString());
+		options.AddMacroDefinition(EqString::Format("VID_%s", layout.name).ToCString(), EqString::Format("%u", StringId24(shaderInfo.vertexLayouts[vertexId].name)).ToCString());
 	}
-	options.AddMacroDefinition(EqString::Format("CURRENT_VERTEX_ID=%u", StringId24(vertexLayout.name)).ToCString());
+	options.AddMacroDefinition("CURRENT_VERTEX_ID", EqString::Format("%u", StringId24(vertexLayout.name)).ToCString());
 
 	// add macros from query string
 	if (queryStr)
@@ -1073,8 +1073,11 @@ bool CShaderCooker::CompileShaderShadercSpirV(ShaderPackageCompileData& compileD
 		return false;
 	}
 	
-	CMemoryStream& resultStream = targetData[0].resultData;
+	CMemoryStream resultStream;
 	resultStream.Open((const ubyte*)spvCompilationResult.begin(), (spvCompilationResult.end() - spvCompilationResult.begin()) * sizeof(spvCompilationResult.begin()[0]));
+
+	targetData[0].resultData.Open(FS_OPEN_WRITE);
+	targetData[0].resultData.AppendStream(&resultStream);
 
 	return true;
 };
