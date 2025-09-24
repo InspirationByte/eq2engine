@@ -814,6 +814,8 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 
 	if (shaderInfo.debugInfo)
 		slangCompileRequest->setDebugInfoLevel(SLANG_DEBUG_INFO_LEVEL_MAXIMAL);
+	else
+		slangCompileRequest->setDebugInfoLevel(SLANG_DEBUG_INFO_LEVEL_NONE);
 
 	if (shaderInfo.skipOptimize)
 		slangCompileRequest->setOptimizationLevel(SLANG_OPTIMIZATION_LEVEL_NONE);
@@ -840,6 +842,7 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 		switch (tgtData.type)
 		{
 		case SHADERMODULE_SPIRV:
+			// TODO: configuration
 			profileName = "spirv_1_1";
 			slangCompileTarget = SLANG_SPIRV; break;
 		case SHADERMODULE_DXBC:
@@ -912,7 +915,7 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 	};
 
 	slangAddSourceFile("ShaderCooker", "ShaderCooker");
-	if (vertexLayout.name != "Default")
+	if (vertexLayout.name != "Default" && entryPoint.kind != SHADERKIND_COMPUTE)
 	{
 		slangAddSourceFile("IVertex", fnmPathCombine("VertexLayouts", "IVertex.h"));
 		slangAddSourceFile("VertexLayout", fnmPathCombine("VertexLayouts", vertexLayout.name + ".h"));

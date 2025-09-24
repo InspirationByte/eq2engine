@@ -38,7 +38,6 @@ int main(int argc, char* argv[])
 		Usage();
 
 	{
-		FixedArray<EqString, 16> targets;
 		EqString shaderFilter;
 
 		CEqJobManager jobMng("shadersJobs", max(4, g_cpuCaps->GetCPUCount()), 16384);
@@ -46,13 +45,10 @@ int main(int argc, char* argv[])
 		{
 			EqStringRef argStr = args[i];
 			if (!argStr.CompareCaseIns("-target"))
-				targets.append(g_cmdLine->GetArgumentsOf(i));
+				CookTarget(jobMng, g_cmdLine->GetArgumentsOf(i), shaderFilter);
 			else if (!argStr.CompareCaseIns("-filter"))
 				shaderFilter = g_cmdLine->GetArgumentsOf(i);
 		}
-
-		for(EqStringRef targetName : targets)
-			CookTarget(jobMng, targetName, shaderFilter);
 	}
 
 	g_eqCore->Shutdown();
