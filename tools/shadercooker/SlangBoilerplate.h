@@ -57,5 +57,85 @@ public property int _VertexIndex
 
 //------------------------------------
 
+// Depth texture mapping hacks to WGSL (https://github.com/shader-slang/slang/issues/8503)
+// TODO: remove this once Slang properly supports texture_depth_xxx for WGSL
+
+__generic<let sampleCount : int = 0, let format : int = 0>
+public typealias DepthTexture2D = _Texture<
+    float,
+    __Shape2D,
+    0, // isArray
+    0, // isMS
+    sampleCount,
+    0, // access
+    1, // isShadow
+    0, // isCombined
+    format
+>;
+
+__generic<let sampleCount : int = 0, let format : int = 0>
+public typealias DepthTexture2DArray = _Texture<
+    float,
+    __Shape2D,
+    1, // isArray
+    0, // isMS
+    sampleCount,
+    0, // access
+    1, // isShadow
+    0, // isCombined
+    format
+>;
+
+__generic<let sampleCount : int = 0, let format : int = 0>
+public typealias DepthTexture3D = _Texture<
+    float,
+    __Shape3D,
+    0, // isArray
+    0, // isMS
+    sampleCount,
+    0, // access
+    1, // isShadow
+    0, // isCombined
+    format
+>;
+
+__generic<let sampleCount : int = 0, let format : int = 0>
+public typealias DepthTexture3DArray = _Texture<
+    float,
+    __Shape3D,
+    1, // isArray
+    0, // isMS
+    sampleCount,
+    0, // access
+    1, // isShadow
+    0, // isCombined
+    format
+>;
+
+__generic<let sampleCount : int = 0, let format : int = 0>
+public typealias DepthTextureCube = _Texture<
+    float,
+    __ShapeCube,
+    0, // isArray
+    0, // isMS
+    sampleCount,
+    0, // access
+    1, // isShadow
+    0, // isCombined
+    format
+>;
+
+__generic<let sampleCount : int = 0, let format : int = 0>
+public typealias DepthTextureCubeArray = _Texture<
+    float,
+    __ShapeCube,
+    1, // isArray
+    0, // isMS
+    sampleCount,
+    0, // access
+    1, // isShadow
+    0, // isCombined
+    format
+>;
 
 )~";
