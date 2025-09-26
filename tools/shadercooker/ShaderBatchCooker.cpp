@@ -866,7 +866,6 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 	else if (shaderInfo.sourceType == SHADERSOURCE_HLSL)
 		srcLang = SLANG_SOURCE_LANGUAGE_HLSL;
 
-	Array<EqString> preprocessorMacrosStr(PP_SL);
 	SlangStage entryPointStage;
 	EqStringRef entryPointPrefix;
 	if (entryPoint.kind == SHADERKIND_VERTEX)
@@ -894,6 +893,8 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 	// add macros from query string
 	if (queryStr)
 	{
+		BitArray enabledSwitches(PP_SL, compileData.switchDefines.numElem());
+
 		char* macros = const_cast<char*>(queryStr.GetData());
 		char* macrosEnd = macros + queryStr.Length();
 		while (macros < macrosEnd)
@@ -902,10 +903,16 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 			if (!next)
 				next = macrosEnd;
 
-			const int strIdx = preprocessorMacrosStr.append(EqString(macros, next - macros));
-			slangCompileRequest->addPreprocessorDefine(preprocessorMacrosStr[strIdx], nullptr);
+			const EqString str(macros, next - macros);
+			const int foundSwitchIdx = arrayFindIndex(compileData.switchDefines, str);
+			if (foundSwitchIdx != -1)
+				enabledSwitches.setTrue(foundSwitchIdx);
+
 			macros = next + 1;
 		}
+
+		for(int i = 0; i < compileData.switchDefines.numElem(); ++i)
+			slangCompileRequest->addPreprocessorDefine(compileData.switchDefines[i], enabledSwitches[i] ? "1" : "0");
 	}
 
 	ComPtr<slang::IEntryPoint> slangEntryPoint;
