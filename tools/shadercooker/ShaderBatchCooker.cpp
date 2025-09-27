@@ -784,15 +784,19 @@ static void ParseShaderResourceBindings(Array<ShaderInfo::Binding>& bindings, ES
 	}
 }
 
+static Threading::CEqMutex s_slangMutex;
+
 bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, int entryPointIdx, int vertLayoutIdx, EqStringRef queryStr, ArrayRef<CompileTargetData> targetData, Array<ShaderInfo::Binding>& bindings)
 {
 	using namespace Slang;
+	using namespace Threading;
 
 	ShaderInfo& shaderInfo = compileData.shaderInfo;
 	const ShaderInfo::EntryPoint& entryPoint = shaderInfo.entryPoints[entryPointIdx];
 	const ShaderInfo::VertLayout& vertexLayout = shaderInfo.vertexLayouts[vertLayoutIdx];
 
-	ComPtr<slang::IGlobalSession> slangGlobalSes;
+	thread_local ComPtr<slang::IGlobalSession> slangGlobalSes;
+	if(!slangGlobalSes)
 	{
 		SlangGlobalSessionDesc slangGlobalSessionDesc;
 		slangGlobalSessionDesc.enableGLSL = (shaderInfo.sourceType == SHADERSOURCE_GLSL);
@@ -806,6 +810,7 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 
 	ComPtr<SlangCompileRequest> slangCompileRequest;
 	slangGlobalSes->createCompileRequest(slangCompileRequest.writeRef());
+
 	slangCompileRequest->setFileSystem(&includer);
 	slangCompileRequest->setAllowGLSLInput(shaderInfo.sourceType == SHADERSOURCE_GLSL);
 
@@ -833,7 +838,11 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 
 		slangCompileRequest->addPreprocessorDefine(EqString::Format("VID_%s", layout.name), EqString::Format("%u", StringId24(shaderInfo.vertexLayouts[vertexId].name)));
 	}
+
 	slangCompileRequest->addPreprocessorDefine("CURRENT_VERTEX_ID", EqString::Format("%u", StringId24(vertexLayout.name)));
+
+	// currently using as hack for crashing extern struct
+	slangCompileRequest->addPreprocessorDefine("VERTEX_LAYOUT", vertexLayout.name);
 	
 	for(CompileTargetData& tgtData : targetData)
 	{
@@ -887,9 +896,6 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 		//entryPointPrefix = "cs_";
 	}
 
-	// currently using as hack for crashing extern struct
-	slangCompileRequest->addPreprocessorDefine("VsInput", vertexLayout.name);
-
 	// add macros from query string
 	if (queryStr)
 	{
@@ -938,8 +944,7 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 
 	if (SLANG_FAILED(slangCompileRequest->compile()))
 	{
-		MsgError("Slang Failed compiling %s %s %s\n", shaderInfo.name.ToCString(), vertexLayout.name.ToCString(), queryStr.ToCString());
-		MsgError("%s\n", (const char*)slangCompileRequest->getDiagnosticOutput());
+		MsgError("Slang Failed compiling %s %s %s\n%s\n\n", shaderInfo.name.ToCString(), vertexLayout.name.ToCString(), queryStr.ToCString(), (const char*)slangCompileRequest->getDiagnosticOutput());
 
 		Atomic::Store(compileData.compileErrors, true);
 		return false;

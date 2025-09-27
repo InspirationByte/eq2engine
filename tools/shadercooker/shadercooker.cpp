@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 	{
 		EqString shaderFilter;
 
-		CEqJobManager jobMng("shadersJobs", max(4, g_cpuCaps->GetCPUCount()), 16384);
+		CEqJobManager jobMng("shadersJobs", max(4, g_cpuCaps->GetCPUCount() * 2), 16384);
 		for (int i = 0; i < args.numElem(); i++)
 		{
 			EqStringRef argStr = args[i];
