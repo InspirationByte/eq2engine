@@ -30,6 +30,7 @@ struct ShaderInfo
 	ShaderInfo& operator=(ShaderInfo&& other) noexcept;
 
 	bool GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const;
+	EqStringRef GetShaderQueryStr(ArrayCRef<EqString> findDefines) const;
 
 	struct VertLayout
 	{

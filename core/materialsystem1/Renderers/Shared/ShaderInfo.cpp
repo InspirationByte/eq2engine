@@ -37,29 +37,34 @@ ShaderInfo& ShaderInfo::operator=(ShaderInfo&& other) noexcept
 	return *this;
 }
 
-bool ShaderInfo::GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const
+EqStringRef ShaderInfo::GetShaderQueryStr(ArrayCRef<EqString> findDefines) const
 {
 	Array<int> defineIds(PP_SL);
 	for (const EqString& define : findDefines)
 	{
 		const int defineId = arrayFindIndex(defines, define);
 		if (defineId == -1)
-			return false;
+			return nullptr;
 		defineIds.append(defineId);
 	}
 
 	arraySort(defineIds, [](int a, int b) {
 		return a - b;
-	});
+		});
 
-	EqString queryStr;
+	EqString& queryStr = EqStringRef::GetTempString(nullptr, 0);
 	for (int id : defineIds)
 	{
 		if (queryStr.Length())
 			queryStr.Append("|");
 		queryStr.Append(defines[id]);
 	}
-	outHash = StringId24(queryStr, true);
+	return queryStr;
+}
+
+bool ShaderInfo::GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const
+{
+	outHash = StringId24(GetShaderQueryStr(findDefines), true);
 	return true;
 }
 
