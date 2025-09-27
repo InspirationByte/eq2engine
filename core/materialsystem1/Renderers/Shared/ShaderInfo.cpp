@@ -207,8 +207,8 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 		EqStringRef kindStr;
 		EqStringRef entryPointName;
 		EqStringRef queryStr;
-		int refSpvIndex = -1;
-		if (itemSec.GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr, refSpvIndex) < 5)
+		int refBlobIdx = -1;
+		if (itemSec.GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr, refBlobIdx) < 5)
 		{
 			ASSERT_FAIL("Shader %s 'ref' does not have 5 values (old shader version?)", shaderInfoKvs.GetName());
 			break;
@@ -220,7 +220,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 		const int queryStrHash = StringId24(queryStr, true);
 		const int entryPointStrHash = StringId24(entryPointName);
 		const uint shaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, vertLayoutIdx, kind, entryPointStrHash);
-		ASSERT_MSG(shaderInfo.modules[refSpvIndex].kind == static_cast<EShaderKind>(kind), "%s ref %d (%s-%s) points to invalid shader kind", shaderInfo.shaderName.ToCString(), refSpvIndex, kindStr, queryStr);
+		ASSERT_MSG(shaderInfo.modules[refBlobIdx].kind == static_cast<EShaderKind>(kind), "%s ref %d (%s-%s) points to invalid shader kind", shaderInfo.shaderName.ToCString(), refBlobIdx, kindStr.ToCString(), queryStr.ToCString());
 
 		auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
 		if (!exIt.atEnd())
@@ -228,7 +228,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 			ASSERT_FAIL("%s %s-%s module reference already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), kindStr, queryStr, exIt.value());
 		}
 
-		shaderInfo.modulesMap.insert(shaderModuleId, refSpvIndex);
+		shaderInfo.modulesMap.insert(shaderModuleId, refBlobIdx);
 		++refIdx;
 	}
 	return true;
