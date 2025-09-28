@@ -53,8 +53,11 @@ static void OnWGPUDeviceError(WGPUDevice const* device, WGPUErrorType type, stru
 	if (errorCtx)
 	{
 		errorCtx->hasError = true;
+
+#ifndef _RETAIL
 		if(errorCtx->onError)
 			errorCtx->onError();
+#endif
 	}
 
 	if (wgpu_breakOnError.GetBool())
