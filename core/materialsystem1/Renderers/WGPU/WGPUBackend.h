@@ -4,6 +4,8 @@
 
 #define _WSTR(x) {(x), WGPU_STRLEN}
 
+struct WGPUDeviceErrorContext;
+
 struct WGPUDeviceErrorContext
 {
 	WGPUDeviceErrorContext()
