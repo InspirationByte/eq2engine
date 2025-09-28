@@ -23,6 +23,8 @@
 #include "../RenderWorker.h"
 #include "NVRHIComputePassRecorder.h"
 
+#pragma optimize("", off)
+
 constexpr EqStringRef s_shaderKindVertexName = "Vertex";
 constexpr EqStringRef s_shaderKindFragmentName = "Fragment";
 constexpr EqStringRef s_shaderKindComputeName = "Compute";
@@ -329,7 +331,12 @@ IGPUBufferPtr CNVRHIRenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int bu
 nvrhi::BindingLayoutHandle CNVRHIRenderAPI::CreateBindingLayout(const BindGroupLayoutDesc& bindGroupDesc, int bindGroupIndex) const
 {
 	auto rhiBindingLayoutDesc = nvrhi::BindingLayoutDesc()
-		.setRegisterSpace(bindGroupIndex);
+		.setRegisterSpace(bindGroupIndex)
+		.setRegisterSpaceIsDescriptorSet(true);
+
+	int constantCount = 0;
+	int uavCount = 0;
+	int srvCount = 0;
 
 	int rhiShaderTypeVisbility = 0;
 	for (const BindGroupLayoutDesc::Entry& entry : bindGroupDesc.entries)
@@ -344,14 +351,14 @@ nvrhi::BindingLayoutHandle CNVRHIRenderAPI::CreateBindingLayout(const BindGroupL
 			switch (entry.buffer.bindType)
 			{
 			case BUFFERBIND_UNIFORM:
-				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::ConstantBuffer(entry.binding));
+				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::VolatileConstantBuffer(entry.binding));
 				break;
 			case BUFFERBIND_STORAGE_READONLY:
 				// I'm not sure if it should be TypedBuffer, StructuredBuffer or RawBuffer
-				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_SRV(entry.binding));
+				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_SRV(srvCount++));
 				break;
 			case BUFFERBIND_STORAGE:
-				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_UAV(entry.binding));
+				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_UAV(uavCount++));
 				break;
 			}
 			break;
@@ -359,11 +366,14 @@ nvrhi::BindingLayoutHandle CNVRHIRenderAPI::CreateBindingLayout(const BindGroupL
 			rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Sampler(entry.binding));
 			break;
 		case BINDENTRY_TEXTURE:
-			rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_SRV(entry.binding));
+			rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_SRV(srvCount++));
 			break;
 		case BINDENTRY_STORAGETEXTURE:
 			// all storage images are supposed to be UAV
-			rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_UAV(entry.binding));
+			if(entry.storageTexture.access == STORAGETEX_READONLY)
+				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_SRV(srvCount++));
+			else
+				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_UAV(uavCount++));
 			break;
 		}
 	}
@@ -540,7 +550,7 @@ const ShaderInfo::Module& CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInf
 	nvrhi::ShaderHandle rhiShaderModule = nullptr;
 	nvrhi::ShaderDesc rhiShaderDesc{};
 	rhiShaderDesc.debugName = shaderModuleName;
-	rhiShaderDesc.entryName = mod.entryPoint.ToCString();
+	rhiShaderDesc.entryName = mod.entryPoint;
 
 	switch (mod.kind)
 	{
@@ -1071,7 +1081,8 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		CRefPtr<CNVRHIComputePipeline> computePipeline = CRefPtr_new(CNVRHIComputePipeline);
 		computePipeline->m_rhiComputePipeline = rhiComputePipeline;
 		computePipeline->m_dbgName = std::move(pipelineName);
-		computePipeline->m_rhiBindingLayout = pipelineLayoutImpl->m_rhiBindingLayout;
+		for(int i = 0; i < rhiComputePipelineDesc.bindingLayouts.size(); ++i)
+			computePipeline->m_rhiBindingLayout.append(rhiComputePipelineDesc.bindingLayouts[i]);
 
 		return IGPUComputePipelinePtr(computePipeline);
 	}
