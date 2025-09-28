@@ -206,6 +206,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 			modInfo.fileIndex[SHADERMODULE_DXIL] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".dxil"));
 			modInfo.fileIndex[SHADERMODULE_WGSL] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".wgsl"));
 			modInfo.kind = static_cast<EShaderKind>(kind);
+			modInfo.entryPoint = entryPointName;
 
 			// parse module pipeline layout
 			for (const KVSection& bindingSec : itemSec.Keys())

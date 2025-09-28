@@ -852,7 +852,7 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 		{
 		case SHADERMODULE_SPIRV:
 			// TODO: configuration
-			profileName = "spirv_1_1";
+			profileName = "spirv_1_3";
 			slangCompileTarget = SLANG_SPIRV;
 			break;
 		case SHADERMODULE_DXBC:
@@ -954,9 +954,16 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 		return false;
 	}
 
+	{
+		const char* diagStr = (const char*)slangCompileRequest->getDiagnosticOutput();
+		if(diagStr && *diagStr)
+			MsgWarning(diagStr);
+	}
+
 	// construct bindings for PipelineLayout
 	{
 		slang::ShaderReflection* shaderReflection = slang::ShaderReflection::get(slangCompileRequest);
+		slang::VariableLayoutReflection* varLayoutReflection = shaderReflection->getGlobalParamsVarLayout();
 
 		const int paramCount = shaderReflection->getParameterCount();
 		for (int i = 0; i < paramCount; i++)
@@ -1368,7 +1375,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 					bindingSec.AddValue(s_bindingTypeNames[binding.type]);
 
 					if (binding.rwFlags & (RWFLAG_READ | RWFLAG_WRITE))
-						bindingSec.AddValue(binding.rwFlags == RWFLAG_READ ? "readonly " : (binding.rwFlags == RWFLAG_WRITE ? "writeonly " : ""));
+						bindingSec.AddValue(binding.rwFlags == RWFLAG_READ ? "readonly" : (binding.rwFlags == RWFLAG_WRITE ? "writeonly" : ""));
 					else if(binding.rwFlags & RWFLAG_UNIFORM)
 						bindingSec.AddValue("uniform");
 				}
