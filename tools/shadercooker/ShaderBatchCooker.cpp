@@ -1102,11 +1102,14 @@ void CShaderCooker::AddOrReferenceCompilationResult(ShaderInfo& shaderInfo, Shad
 	using namespace Threading;
 
 	const ShaderInfo::EntryPoint& entryPoint = shaderInfo.entryPoints[entryPointIdx];
+	const ShaderInfo::VertLayout& vertexLayout = shaderInfo.vertexLayouts[vertLayoutIdx];
 
 	uint32 resultCRC = 0;
 	CRC32_InitChecksum(resultCRC); 
 	CRC32_UpdateChecksum(resultCRC, &entryPoint.kind, sizeof(entryPoint.kind));
+	CRC32_UpdateChecksum(resultCRC, vertexLayout.name.ToCString(), vertexLayout.name.Length());
 	CRC32_UpdateChecksum(resultCRC, targetData.resultData.GetBasePointer(), targetData.resultData.GetSize());
+	CRC32_FinishChecksum(resultCRC);
 
 	{
 		Threading::CScopedMutex m(s_resultsMutex);
