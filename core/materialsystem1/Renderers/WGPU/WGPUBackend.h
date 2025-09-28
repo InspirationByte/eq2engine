@@ -29,7 +29,7 @@ struct WGPUDeviceErrorContext
 	OnErrorFunc onError;
 #else
 	template<typename F>
-	WGPUCrashDebugContextDumper(F onError)
+	WGPUDeviceErrorContext(F onError)
 	{
 		g_currentErrorDeviceContext = this;
 	}
