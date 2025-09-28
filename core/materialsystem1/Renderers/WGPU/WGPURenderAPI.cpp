@@ -642,7 +642,7 @@ WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfo& shaderI
 
 	const EqString shaderModuleName = EqString::Format("%s-%d", shaderInfo.shaderName.ToCString(), shaderModuleIdx);
 
-	const bool forceUseSpirV = wgpu_forceUseSPIRV.GetBool() && mod.fileIndex[SHADERMODULE_SPIRV] != -1;
+	const bool forceUseSpirV = wgpu_forceUseSPIRV.GetBool() && mod.fileIndex[SHADERMODULE_SPIRV] != -1 || mod.fileIndex[SHADERMODULE_WGSL] == -1;
 
 	WGPUShaderModule rhiShaderModule = nullptr;
 	if (forceUseSpirV && mod.fileIndex[SHADERMODULE_SPIRV] != -1)
