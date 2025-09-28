@@ -12,10 +12,10 @@ public static const uint BINDGROUP_INSTANCES = 3;
 //      I kinda find it pretty nice that you can extend Slang in this way
 //      as both HLSL and GLSL sucks HLSL sucks even more
 
-internal in int __sv_InstanceIndex : SV_InstanceID;
-internal in int __sv_VertexIndex : SV_VertexID;
-internal in int __sv_VulkanInstanceIndex : SV_VulkanInstanceID;
-internal in int __sv_VulkanVertexIndex : SV_VulkanVertexID;
+internal in uint __sv_InstanceIndex : SV_InstanceID;
+internal in uint __sv_VertexIndex : SV_VertexID;
+internal in uint __sv_VulkanInstanceIndex : SV_VulkanInstanceID;
+internal in uint __sv_VulkanVertexIndex : SV_VulkanVertexID;
 
 // SPIRV InstanceIndex builtin for vertex shader
 public property int _InstanceIndex

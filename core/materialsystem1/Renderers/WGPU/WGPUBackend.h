@@ -5,7 +5,7 @@
 #define _WSTR(x) {(x), WGPU_STRLEN}
 
 struct WGPUDeviceErrorContext;
-thread_local WGPUDeviceErrorContext* g_currentErrorDeviceContext;
+extern thread_local WGPUDeviceErrorContext* g_currentErrorDeviceContext;
 
 struct WGPUDeviceErrorContext
 {
