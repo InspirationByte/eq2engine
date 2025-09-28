@@ -853,18 +853,22 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 		case SHADERMODULE_SPIRV:
 			// TODO: configuration
 			profileName = "spirv_1_1";
-			slangCompileTarget = SLANG_SPIRV; break;
+			slangCompileTarget = SLANG_SPIRV;
+			break;
 		case SHADERMODULE_DXBC:
-			slangCompileTarget = SLANG_DXBC; break;
+			slangCompileTarget = SLANG_DXBC;
+			break;
 		case SHADERMODULE_DXIL:
-			slangCompileTarget = SLANG_DXIL; break;
+			profileName = "sm_6_0";
+			slangCompileTarget = SLANG_DXIL;
+			break;
 		case SHADERMODULE_WGSL:
-			slangCompileTarget = SLANG_WGSL; break;
+			slangCompileTarget = SLANG_WGSL;
+			break;
 		default:
 			ASSERT_FAIL("Unknown shader module type");
 		}
 		tgtData.targetIdx = slangCompileRequest->addCodeGenTarget(slangCompileTarget);
-
 		if(profileName)
 			slangCompileRequest->setTargetProfile(tgtData.targetIdx, slangGlobalSes->findProfile(profileName));
 	}
