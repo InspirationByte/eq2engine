@@ -28,7 +28,7 @@ constexpr EqStringRef s_shaderKindFragmentName = "Fragment";
 constexpr EqStringRef s_shaderKindComputeName = "Compute";
 constexpr EqStringRef s_DefaultVertexLayoutName = "Default";
 
-DECLARE_CVAR(nvrhi_preload_shaders, "0", "Preload all shaders during startup. This affects engine startup time but allows name display.", CV_ARCHIVE);
+DECLARE_CVAR(nvrhi_preloadShaders, "0", "Preload all shaders during startup. This affects engine startup time but allows name display.", CV_ARCHIVE);
 
 CNVRHIRenderAPI CNVRHIRenderAPI::Instance;
 ShaderAPI_Base& ShaderAPI_Base::Instance = CNVRHIRenderAPI::Instance;
@@ -120,7 +120,7 @@ int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 		return 0;
 	}
 
-	if (nvrhi_preload_shaders.GetBool())
+	if (nvrhi_preloadShaders.GetBool())
 	{
 		for (int i = 0; i < shaderInfo.modules.numElem(); ++i)
 			GetOrLoadShaderModule(shaderInfo, i);
@@ -518,7 +518,7 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUComputePipeline* com
 	return CreateBindGroupImpl(computePipelineImpl->m_rhiBindingLayout, bindGroupDesc);
 }
 
-const ShaderInfo::Module& CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInfo& shaderInfo, int shaderModuleIdx) const
+const ShaderInfo::Module& CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInfo& shaderInfo, int shaderModuleIdx, const char* dbgName) const
 {
 	ShaderInfo::Module& mod = const_cast<ShaderInfo::Module&>(shaderInfo.modules[shaderModuleIdx]);
 	if (mod.rhiModule)
@@ -556,9 +556,9 @@ const ShaderInfo::Module& CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInf
 	}
 
 	if (m_backendType == NVRHI_BACKEND_D3D11)
-		loadShaderBlob(SHADERMODULE_DXIL);
-	else if (m_backendType == NVRHI_BACKEND_D3D12)
 		loadShaderBlob(SHADERMODULE_DXBC);
+	else if (m_backendType == NVRHI_BACKEND_D3D12)
+		loadShaderBlob(SHADERMODULE_DXIL);
 	else if (m_backendType == NVRHI_BACKEND_VULKAN)
 		loadShaderBlob(SHADERMODULE_SPIRV);
 
@@ -572,7 +572,7 @@ const ShaderInfo::Module& CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInf
 	
 	if (!rhiShaderModule)
 	{
-		MsgError("Can't create shader module %s!\n", shaderModuleName.ToCString());
+		MsgError("Can't create shader module %s!\n", dbgName ? dbgName : shaderModuleName.ToCString());
 		return mod;
 	}
 
@@ -1038,14 +1038,14 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 	else
 	{
 		// create shader pipeline layout
-		int maxBindGroups = 0;
+		int maxBindGroupIdx = -1;
 		for (const ShaderInfo::Binding& binding : computeShaderModule->bindings)
-			maxBindGroups = max(binding.bindGroupId, maxBindGroups);
+			maxBindGroupIdx = max(binding.bindGroupId, maxBindGroupIdx);
 
-		if (maxBindGroups)
+		if (maxBindGroupIdx >= 0)
 		{
 			PipelineLayoutDesc shaderPipelineLayoutDesc;
-			shaderPipelineLayoutDesc.bindGroups.setNum(maxBindGroups);
+			shaderPipelineLayoutDesc.bindGroups.setNum(maxBindGroupIdx + 1);
 			ShaderBindingsToPipelineLayout(shaderPipelineLayoutDesc, computeShaderModule->bindings, SHADERKIND_COMPUTE);
 
 			int bindGroupIdx = 0;

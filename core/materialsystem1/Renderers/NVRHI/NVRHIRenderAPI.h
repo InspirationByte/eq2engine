@@ -110,7 +110,7 @@ protected:
 	nvrhi::BindingLayoutHandle	CreateBindingLayout(const BindGroupLayoutDesc& bindGroupDesc, int bindGroupIndex) const;
 	IGPUBindGroupPtr			CreateBindGroupImpl(const NVRHIBindingLayoutList& rhiBindingLayouts, const BindGroupDesc& bindGroupDesc) const;
 
-	const ShaderInfo::Module&	GetOrLoadShaderModule(const ShaderInfo& shaderInfo, int shaderModuleIdx) const;
+	const ShaderInfo::Module&	GetOrLoadShaderModule(const ShaderInfo& shaderInfo, int shaderModuleIdx, const char* dbgName = nullptr) const;
 
 	Map<int, ShaderInfo>		m_shaderCache{ PP_SL };
 	nvrhi::DeviceHandle			m_rhiDevice{ nullptr };

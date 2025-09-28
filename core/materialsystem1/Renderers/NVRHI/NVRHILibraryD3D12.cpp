@@ -214,6 +214,8 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	else
 		CNVRHIRenderAPI::Instance.m_rhiDevice = m_nvrhiDevice;
 
+	CNVRHIRenderAPI::Instance.m_backendType = NVRHI_BACKEND_D3D12;
+
 	return true;
 }
 

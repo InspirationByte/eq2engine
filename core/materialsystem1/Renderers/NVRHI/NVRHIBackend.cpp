@@ -8,7 +8,7 @@
 CNVRHIMessageCallback CNVRHIMessageCallback::Instance;
 
 DECLARE_CVAR_G(nvrhi_validation, "1", nullptr, 0);
-DECLARE_CVAR(nvrhi_break_on_error, "1", nullptr, 0);
+DECLARE_CVAR(nvrhi_breakOnError, "1", nullptr, 0);
 
 void CNVRHIMessageCallback::message(nvrhi::MessageSeverity severity, const char* messageText)
 {
@@ -21,7 +21,7 @@ void CNVRHIMessageCallback::message(nvrhi::MessageSeverity severity, const char*
 		MsgWarning("NVRHI WARN: %s", messageText);
 		break;
 	case nvrhi::MessageSeverity::Error:
-		if (nvrhi_break_on_error.GetBool())
+		if (nvrhi_breakOnError.GetBool())
 		{
 			ASSERT_FAIL("NVRHI ERROR: %s", messageText);
 		}
@@ -31,7 +31,7 @@ void CNVRHIMessageCallback::message(nvrhi::MessageSeverity severity, const char*
 		}
 		break;
 	case nvrhi::MessageSeverity::Fatal:
-		if (nvrhi_break_on_error.GetBool())
+		if (nvrhi_breakOnError.GetBool())
 		{
 			ASSERT_FAIL("NVRHI ERROR: %s", messageText);
 		}
