@@ -74,6 +74,22 @@ constexpr EqStringRef s_shaderKindFragmentName = "Fragment";
 constexpr EqStringRef s_shaderKindComputeName = "Compute";
 constexpr EqStringRef s_DefaultVertexLayoutName = "Default";
 
+static const char* s_bindingTypeNames[] = {
+	"buffer",
+	"sampler",
+	"texture",
+	"storagetexture",
+};
+
+static EBindEntryType GetBindingTypeByName(const char* name)
+{
+	for (int i = 0; i < elementsOf(s_bindingTypeNames); ++i)
+	{
+		if (!CString::Compare(s_bindingTypeNames[i], name))
+			return (EBindEntryType)i;
+	}
+	return (EBindEntryType) - 1;
+}
 
 bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shaderPackFile, const KVSection& shaderInfoKvs, int& filesFound)
 {
@@ -190,6 +206,27 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 			modInfo.fileIndex[SHADERMODULE_DXIL] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".dxil"));
 			modInfo.fileIndex[SHADERMODULE_WGSL] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".wgsl"));
 			modInfo.kind = static_cast<EShaderKind>(kind);
+
+			// parse module pipeline layout
+			for (const KVSection& bindingSec : itemSec.Keys())
+			{
+				Binding& binding = modInfo.bindings.append();
+
+				EqStringRef type;
+				bindingSec.GetValues(binding.bindGroupId, binding.index, type);
+				binding.name = bindingSec.GetName();
+				binding.type = GetBindingTypeByName(type);
+				ASSERT(binding.type >= 0);
+
+				EqStringRef flag;
+				bindingSec.GetValuesAt(3, flag);
+				if (flag == "readonly")
+					binding.rwFlags = RWFLAG_READ;
+				else if (flag == "writeonly")
+					binding.rwFlags = RWFLAG_WRITE;
+				else if (flag == "uniform")
+					binding.rwFlags = RWFLAG_UNIFORM;
+			}
 		}
 		{
 			const int queryStrHash = StringId24(queryStr, true);
