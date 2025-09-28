@@ -49,7 +49,6 @@ thread_local WGPUDeviceErrorContext* WGPUDeviceErrorContext::s_currentErrorDevic
 
 static void OnWGPUDeviceError(WGPUDevice const* device, WGPUErrorType type, struct WGPUStringView message, void* userdata1, void* userdata2)
 {
-	// dump the error
 	WGPUDeviceErrorContext* errorCtx = WGPUDeviceErrorContext::s_currentErrorDeviceContext;
 	if (errorCtx)
 	{
