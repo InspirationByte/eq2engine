@@ -106,7 +106,7 @@ struct ShaderInfo
 		EBindGroupId	bindGroupId{ BINDGROUP_UNKNOWN };
 		int				index{ -1 };
 		EBindEntryType	type{ BINDENTRY_BUFFER };
-		int				rwFlags{ RWFLAG_READ | RWFLAG_WRITE };
+		int				rwFlags{ RWFLAG_UNIFORM };
 		int				shaderKind{ 0 };
 	};
 	struct VertLayout

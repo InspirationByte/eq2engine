@@ -954,10 +954,75 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 		return false;
 	}
 
-	// TODO: program layout collection
-	ComPtr<slang::IComponentType> linkedProgram;
-	slangCompileRequest->getProgram(linkedProgram.writeRef());
-	slang::ProgramLayout* layout = linkedProgram->getLayout();
+	// construct bindings for PipelineLayout
+	{
+		slang::ShaderReflection* shaderReflection = slang::ShaderReflection::get(slangCompileRequest);
+
+		const int paramCount = shaderReflection->getParameterCount();
+		for (int i = 0; i < paramCount; i++)
+		{
+			auto param = shaderReflection->getParameterByIndex(i);
+			auto paramName = param->getName();
+
+			switch (param->getType()->getKind())
+			{
+			case slang::TypeReflection::Kind::Resource:
+			{
+				ShaderInfo::Binding& binding = bindings.append();
+				binding.bindGroupId = static_cast<EBindGroupId>(param->getBindingSpace());
+				binding.index = param->getBindingIndex();
+				binding.name = paramName;
+				binding.shaderKind = entryPoint.kind;
+
+				switch (param->getType()->getResourceShape())
+				{
+				case SLANG_STRUCTURED_BUFFER:
+				case SLANG_BYTE_ADDRESS_BUFFER:
+					binding.type = BINDENTRY_BUFFER; break;
+				default:
+					binding.type = BINDENTRY_TEXTURE;
+				}
+
+				switch (param->getType()->getResourceAccess())
+				{
+				case SLANG_RESOURCE_ACCESS_READ_WRITE:
+					binding.rwFlags = RWFLAG_READ | RWFLAG_WRITE; break;
+				case SLANG_RESOURCE_ACCESS_READ:
+					binding.rwFlags = RWFLAG_READ; break;
+				case SLANG_RESOURCE_ACCESS_WRITE:
+					binding.rwFlags = RWFLAG_WRITE; break;
+				}
+
+				if (binding.type == BINDENTRY_TEXTURE && binding.rwFlags != RWFLAG_UNIFORM)
+					binding.type = BINDENTRY_STORAGETEXTURE;
+
+				break;
+			}
+			case slang::TypeReflection::Kind::SamplerState:
+			{
+				ShaderInfo::Binding& binding = bindings.append();
+				binding.bindGroupId = static_cast<EBindGroupId>(param->getBindingSpace());
+				binding.index = param->getBindingIndex();
+				binding.name = paramName;
+				binding.type = BINDENTRY_SAMPLER;
+				binding.rwFlags = RWFLAG_UNIFORM;
+				binding.shaderKind = entryPoint.kind;
+				break;
+			}
+			case slang::TypeReflection::Kind::ConstantBuffer:
+			{
+				ShaderInfo::Binding& binding = bindings.append();
+				binding.bindGroupId = static_cast<EBindGroupId>(param->getBindingSpace());
+				binding.index = param->getBindingIndex();
+				binding.name = paramName;
+				binding.type = BINDENTRY_BUFFER;
+				binding.rwFlags = RWFLAG_UNIFORM;
+				binding.shaderKind = entryPoint.kind;
+				break;
+			}
+			}
+		}
+	}
 
 	for (CompileTargetData& tgtData : targetData)
 	{
