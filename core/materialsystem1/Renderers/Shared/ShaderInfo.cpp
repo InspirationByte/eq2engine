@@ -37,29 +37,34 @@ ShaderInfo& ShaderInfo::operator=(ShaderInfo&& other) noexcept
 	return *this;
 }
 
-bool ShaderInfo::GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const
+EqStringRef ShaderInfo::GetShaderQueryStr(ArrayCRef<EqString> findDefines) const
 {
 	Array<int> defineIds(PP_SL);
 	for (const EqString& define : findDefines)
 	{
 		const int defineId = arrayFindIndex(defines, define);
 		if (defineId == -1)
-			return false;
+			return nullptr;
 		defineIds.append(defineId);
 	}
 
 	arraySort(defineIds, [](int a, int b) {
 		return a - b;
-	});
+		});
 
-	EqString queryStr;
+	EqString& queryStr = EqStringRef::GetTempString(nullptr, 0);
 	for (int id : defineIds)
 	{
 		if (queryStr.Length())
 			queryStr.Append("|");
 		queryStr.Append(defines[id]);
 	}
-	outHash = StringId24(queryStr, true);
+	return queryStr;
+}
+
+bool ShaderInfo::GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const
+{
+	outHash = StringId24(GetShaderQueryStr(findDefines), true);
 	return true;
 }
 
@@ -183,6 +188,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 			modInfo.fileIndex[SHADERMODULE_SPIRV] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".spv"));
 			modInfo.fileIndex[SHADERMODULE_DXBC] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".dxbc"));
 			modInfo.fileIndex[SHADERMODULE_DXIL] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".dxil"));
+			modInfo.fileIndex[SHADERMODULE_WGSL] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".wgsl"));
 			modInfo.kind = static_cast<EShaderKind>(kind);
 
 			// parse module pipeline layout
@@ -226,8 +232,8 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 		EqStringRef kindStr;
 		EqStringRef entryPointName;
 		EqStringRef queryStr;
-		int refSpvIndex = -1;
-		if (itemSec.GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr, refSpvIndex) < 5)
+		int refBlobIdx = -1;
+		if (itemSec.GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr, refBlobIdx) < 5)
 		{
 			ASSERT_FAIL("Shader %s 'ref' does not have 5 values (old shader version?)", shaderInfoKvs.GetName());
 			break;
@@ -239,7 +245,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 		const int queryStrHash = StringId24(queryStr, true);
 		const int entryPointStrHash = StringId24(entryPointName);
 		const uint shaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, vertLayoutIdx, kind, entryPointStrHash);
-		ASSERT_MSG(shaderInfo.modules[refSpvIndex].kind == static_cast<EShaderKind>(kind), "%s ref %d (%s-%s) points to invalid shader kind", shaderInfo.shaderName.ToCString(), refSpvIndex, kindStr, queryStr);
+		ASSERT_MSG(shaderInfo.modules[refBlobIdx].kind == static_cast<EShaderKind>(kind), "%s ref %d (%s-%s) points to invalid shader kind", shaderInfo.shaderName.ToCString(), refBlobIdx, kindStr.ToCString(), queryStr.ToCString());
 
 		auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
 		if (!exIt.atEnd())
@@ -247,7 +253,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 			ASSERT_FAIL("%s %s-%s module reference already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), kindStr, queryStr, exIt.value());
 		}
 
-		shaderInfo.modulesMap.insert(shaderModuleId, refSpvIndex);
+		shaderInfo.modulesMap.insert(shaderModuleId, refBlobIdx);
 		++refIdx;
 	}
 	return true;

@@ -55,23 +55,20 @@ void GRIMBaseSyncrhronizedPool::RunUpdatePipeline(IGPUCommandRecorder* cmdRecord
 {
 	IGPUComputePassRecorderPtr computePass = cmdRecorder->BeginComputePass("UpdateInstances");
 
-	IGPUBindGroupPtr sourceIdxsAndDataGroup = g_renderAPI->CreateBindGroup(updatePipeline,
-		Builder<BindGroupDesc>().GroupIndex(0)
+	Builder<BindGroupDesc> bindGroupDesc;
+	bindGroupDesc.GroupIndex(0)
 		.Buffer(0, idxsBuffer)
-		.Buffer(1, dataBuffer)
-		.End()
-	);
-	Builder<BindGroupDesc> targetBindGroupBuilder;
-	if (targetData.GetType() == GRIMResource::BUFFER)
-		targetBindGroupBuilder.Buffer(0, targetData.Get<IGPUBuffer>());
-	else if (targetData.GetType() == GRIMResource::TEXTURE)
-		targetBindGroupBuilder.StorageTexture(0, targetData.Get<ITexture>());
+		.Buffer(1, dataBuffer);
 
-	IGPUBindGroupPtr destPoolDataGroup = g_renderAPI->CreateBindGroup(updatePipeline, targetBindGroupBuilder.GroupIndex(1).End());
+	if (targetData.GetType() == GRIMResource::BUFFER)
+		bindGroupDesc.Buffer(2, targetData.Get<IGPUBuffer>());
+	else if (targetData.GetType() == GRIMResource::TEXTURE)
+		bindGroupDesc.StorageTexture(2, targetData.Get<ITexture>());
+
+	IGPUBindGroupPtr bindGroup = g_renderAPI->CreateBindGroup(updatePipeline, bindGroupDesc.End());
 
 	computePass->SetPipeline(updatePipeline);
-	computePass->SetBindGroup(0, sourceIdxsAndDataGroup);
-	computePass->SetBindGroup(1, destPoolDataGroup);
+	computePass->SetBindGroup(0, bindGroup);
 
 	IVector2D workGroups = CalcWorkSize(idxsCount);
 	computePass->DispatchWorkgroups(workGroups.x, workGroups.y);

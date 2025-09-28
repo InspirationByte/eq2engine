@@ -46,13 +46,13 @@ float fmod(float x, float y) { return x - y * floor(x / y); }
 #endif
 
 // See BaseShader and shaders layouts
-#define BIND_E( S, N, E )			layout(set = S, binding = N, E) __sc_bind__(S,N)
+#define BIND_E( S, N, E )			layout(set = S, binding = N, E) /*__sc_bind__(S,N)*/
 #define BIND_CONSTANT_E( N, E )		BIND_E( BINDGROUP_CONSTANT, N, E)
 #define BIND_RENDERPASS_E( N, E )	BIND_E( BINDGROUP_RENDERPASS, N, E)
 #define BIND_TRANSIENT_E( N, E )	BIND_E( BINDGROUP_TRANSIENT, N, E)
 #define BIND_INSTANCES_E( N, E )	BIND_E( BINDGROUP_INSTANCES, N, E)
 
-#define BIND( S, N )				layout(set = S, binding = N ) __sc_bind__(S,N)
+#define BIND( S, N )				layout(set = S, binding = N ) /*__sc_bind__(S,N)*/
 #define BIND_CONSTANT( N )			BIND( BINDGROUP_CONSTANT, N )
 #define BIND_RENDERPASS( N )		BIND( BINDGROUP_RENDERPASS, N )
 #define BIND_TRANSIENT( N )			BIND( BINDGROUP_TRANSIENT, N )

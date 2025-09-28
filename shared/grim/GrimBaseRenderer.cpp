@@ -744,7 +744,7 @@ void GRIMBaseRenderer::FilterInstances_Compute(IntermediateState& intermediate)
 
 	const BufferInfo filterParamsBufferInfo(1, sizeof(params));
 	if (!rendState.filterParamsBuffer)
-		rendState.filterParamsBuffer = g_renderAPI->CreateBuffer(filterParamsBufferInfo, BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "FilterParams");
+		rendState.filterParamsBuffer = g_renderAPI->CreateBuffer(filterParamsBufferInfo, BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST, "FilterParams");
 	intermediate.cmdRecorder->WriteBuffer(rendState.filterParamsBuffer, &params, sizeof(params), 0);
 
 	// D3D11 HACK

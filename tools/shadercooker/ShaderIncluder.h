@@ -1,13 +1,4 @@
 #pragma once
-
-#ifdef _WIN32
-#include <d3dcompiler.h> // FXC
-#include <dxcapi.h> // DXC
-
-#include <wrl/client.h>
-using Microsoft::WRL::ComPtr;
-#endif
-
 #include "ShaderInfo.h"
 
 class ShaderIncluderImpl
@@ -18,6 +9,8 @@ public:
 		shaderc_include_result	resultData;
 		EqString				includeName;
 		CMemoryStream			includeContent{ PP_SL };
+		int						includeCount{ 0 };
+		bool					isError{ true };
 	};
 
 	ShaderIncluderImpl(ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths);
@@ -25,15 +18,14 @@ public:
 	IncludeResult*			GetInclude(const char* fileName, bool isRelativePath, const char* includeFromName);
 	void					ReleaseInclude(IncludeResult* data);
 
-	bool					TryOpenIncludeFile(const char* reqSource, const char* fileName, IncludeResult* result);
+	IncludeResult*			TryOpenIncludeFile(const char* reqSource, const char* fileName);
 	void					SetVertexLayout(const char* vertexLayoutName) { m_vertexLayoutName = vertexLayoutName; }
 
 protected:
-	Array<IncludeResult>	m_shaderIncludes{ PP_SL };
-	Array<int>				m_freeSlots{ PP_SL };
-	ArrayCRef<EqString>		m_includePaths;
-	const ShaderInfo&		m_shaderInfo;
-	EqString				m_vertexLayoutName;
+	Map<uint, IncludeResult>	m_shaderIncludes{ PP_SL };
+	ArrayCRef<EqString>			m_includePaths;
+	const ShaderInfo&			m_shaderInfo;
+	EqString					m_vertexLayoutName;
 };
 
 // includer used for shaderc
@@ -48,12 +40,51 @@ public:
 	void ReleaseInclude(shaderc_include_result* data) override;
 };
 
+class SlangFileSystemIncluder
+	: public ShaderIncluderImpl
+	, public ISlangFileSystem
+{
+public:
+	SlangFileSystemIncluder(ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths);
+
+	SLANG_NO_THROW SlangResult SLANG_MCALL loadFile(char const* path, ISlangBlob** outBlob) override;
+
+	SLANG_FORCE_INLINE ISlangUnknown* getInterface(const Slang::Guid& guid)
+	{
+		if (guid == ISlangUnknown::getTypeGuid() ||
+			guid == ISlangFileSystem::getTypeGuid())
+		{
+			return static_cast<ISlangFileSystem*>(this);
+		}
+		if (guid == ISlangCastable::getTypeGuid())
+		{
+			return static_cast<ISlangCastable*>(this);
+		}
+
+		return nullptr;
+	}
+
+	SLANG_FORCE_INLINE SLANG_NO_THROW void* SLANG_MCALL castAs(const SlangUUID& guid)
+	{
+		if (auto intf = getInterface(guid))
+		{
+			return intf;
+		}
+		return nullptr;
+	}
+
+	SLANG_IUNKNOWN_ALL
+	int m_refCount = 0;
+};
+
+
+#if 0
 class ShaderDXCIncluder
 	: public ShaderIncluderImpl
 	, public IDxcIncludeHandler
 {
 public:
-	ShaderDXCIncluder(EqStringRef shaderSourceFullName, IDxcLibrary* library, ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths);
+	ShaderDXCIncluder(EqStringRef shaderSourceFullName, ComPtr<IDxcUtils> utils, ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths);
 
 	ULONG STDMETHODCALLTYPE AddRef() override;
 	ULONG STDMETHODCALLTYPE Release() override;
@@ -63,6 +94,7 @@ public:
 	HRESULT STDMETHODCALLTYPE LoadSource(LPCWSTR pFilename, IDxcBlob** ppIncludeSource) override;
 
 protected:
-	IDxcLibrary*	m_dxcLibrary;
-	EqStringRef		m_shaderSourceFullName;
+	ComPtr<IDxcUtils>	m_dxcUtils;
+	EqStringRef			m_shaderSourceFullName;
 };
+#endif // _WIN32

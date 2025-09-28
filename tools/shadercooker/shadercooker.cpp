@@ -31,28 +31,24 @@ int main(int argc, char* argv[])
 	if(!g_fileSystem->Init(false))
 		return -1;
 
-	MsgInfo("ShaderCooker - Eq2 MatSystem offline shader compiler\n\n\n");
+	MsgInfo("ShaderCooker - Eq2 offline shader compiler\n\n\n");
 
 	ArrayCRef<EqString> args = g_cmdLine->GetParameters();
 	if (args.numElem() <= 1)
 		Usage();
 
 	{
-		FixedArray<EqString, 16> targets;
 		EqString shaderFilter;
 
-		CEqJobManager jobMng("shadersJobs", max(4, g_cpuCaps->GetCPUCount()), 16384);
+		CEqJobManager jobMng("shadersJobs", max(4, g_cpuCaps->GetCPUCount() * 2), 16384);
 		for (int i = 0; i < args.numElem(); i++)
 		{
 			EqStringRef argStr = args[i];
 			if (!argStr.CompareCaseIns("-target"))
-				targets.append(g_cmdLine->GetArgumentsOf(i));
+				CookTarget(jobMng, g_cmdLine->GetArgumentsOf(i), shaderFilter);
 			else if (!argStr.CompareCaseIns("-filter"))
 				shaderFilter = g_cmdLine->GetArgumentsOf(i);
 		}
-
-		for(EqStringRef targetName : targets)
-			CookTarget(jobMng, targetName, shaderFilter);
 	}
 
 	g_eqCore->Shutdown();

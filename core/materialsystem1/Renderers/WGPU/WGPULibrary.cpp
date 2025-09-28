@@ -45,8 +45,18 @@ static const char* s_wgpuDeviceLostReasonStr[] = {
     "FailedCreation",
 };
 
+thread_local WGPUDeviceErrorContext* WGPUDeviceErrorContext::s_currentErrorDeviceContext = nullptr;
+
 static void OnWGPUDeviceError(WGPUDevice const* device, WGPUErrorType type, struct WGPUStringView message, void* userdata1, void* userdata2)
 {
+	WGPUDeviceErrorContext* errorCtx = WGPUDeviceErrorContext::s_currentErrorDeviceContext;
+	if (errorCtx)
+	{
+		errorCtx->hasError = true;
+		if(errorCtx->onError)
+			errorCtx->onError();
+	}
+
 	if (wgpu_breakOnError.GetBool())
 	{
 		ASSERT_FAIL("WGPU device %s error:\n\n%.*s", s_wgpuErrorTypesStr[type], static_cast<int>(message.length), message.data);

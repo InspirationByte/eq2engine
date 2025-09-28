@@ -26,6 +26,7 @@ include "imgui_lua"
 
 include "wgpu-dawn"
 include "nvrhi"
+include "slang"
 include "minivorbis"
 include "ffmpeg"
 include "lua54"

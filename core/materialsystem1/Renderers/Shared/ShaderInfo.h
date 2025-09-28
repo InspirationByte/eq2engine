@@ -5,9 +5,9 @@
 
 enum EShaderModuleType
 {
-	SHADERMODULE_SPIRV,
-	SHADERMODULE_DXBC,
-	SHADERMODULE_DXIL,
+	SHADERMODULE_SPIRV,		// Vulkan & WGPU
+	SHADERMODULE_DXBC,		// D3D10+
+	SHADERMODULE_DXIL,		// D3D12
 	SHADERMODULE_WGSL,		// WGPU only
 
 	SHADERMODULE_TYPES,
@@ -30,6 +30,7 @@ struct ShaderInfo
 	ShaderInfo& operator=(ShaderInfo&& other) noexcept;
 
 	bool GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const;
+	EqStringRef GetShaderQueryStr(ArrayCRef<EqString> findDefines) const;
 
 	struct VertLayout
 	{

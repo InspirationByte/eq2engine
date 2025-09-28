@@ -41,16 +41,24 @@ IShaderAPI* g_renderAPI = nullptr;
 static CMaterialSystem s_matsystem;
 IMaterialSystem* g_matSystem = &s_matsystem;
 
+struct DynMeshVertexProto
+{
+	Vector4D		pos;
+	TVec2D<half>	texCoord;
+	uint			color;
+	TVec4D<half>	normal;
+};
+
 // standard vertex format used by the material system's dynamic mesh instance
 static VertexLayoutDesc& GetDynamicMeshLayout()
 {
-	const int stride = sizeof(Vector4D) + sizeof(TVec4D<half>) * 2 + sizeof(uint);
+	const int stride = sizeof(DynMeshVertexProto);
 	static VertexLayoutDesc s_levModelDrawVertLayout = Builder<VertexLayoutDesc>()
 		.Stride(stride)
-		.Attribute(VERTEXATTRIB_POSITION, "position", 0, 0, ATTRIBUTEFORMAT_FLOAT, 4)
-		.Attribute(VERTEXATTRIB_TEXCOORD, "texCoord", 1, sizeof(Vector4D), ATTRIBUTEFORMAT_HALF, 4)
-		.Attribute(VERTEXATTRIB_NORMAL, "normal", 2, sizeof(Vector4D) + sizeof(TVec4D<half>), ATTRIBUTEFORMAT_HALF, 4)
-		.Attribute(VERTEXATTRIB_COLOR, "color", 3, sizeof(Vector4D) + sizeof(TVec4D<half>) * 2, ATTRIBUTEFORMAT_UINT8, 4)
+		.Attribute(VERTEXATTRIB_POSITION, "position", 0, offsetOf(DynMeshVertexProto, pos), ATTRIBUTEFORMAT_FLOAT, 4)
+		.Attribute(VERTEXATTRIB_TEXCOORD, "texCoord", 1, offsetOf(DynMeshVertexProto, texCoord), ATTRIBUTEFORMAT_HALF, 4)
+		.Attribute(VERTEXATTRIB_COLOR, "color", 2, offsetOf(DynMeshVertexProto, color), ATTRIBUTEFORMAT_UINT8, 4)
+		.Attribute(VERTEXATTRIB_NORMAL, "normal", 3, offsetOf(DynMeshVertexProto, normal), ATTRIBUTEFORMAT_HALF, 4)
 		.End();
 	return s_levModelDrawVertLayout;
 }

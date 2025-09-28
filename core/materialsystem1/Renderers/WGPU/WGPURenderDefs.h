@@ -184,10 +184,10 @@ static WGPUVertexFormat g_wgpuVertexFormats[][4] = {
 	},
 	{
 		// HACK: GLSL does not support vector of Uint8 so we use WGPUVertexFormat_Uint32 instead of Uint8x4
-		(WGPUVertexFormat)0, (WGPUVertexFormat)0, (WGPUVertexFormat)0, WGPUVertexFormat_Uint32
+		WGPUVertexFormat_Uint8, WGPUVertexFormat_Uint8x2, (WGPUVertexFormat)0, WGPUVertexFormat_Uint32
 	},
 	{
-		(WGPUVertexFormat)0, WGPUVertexFormat_Float16x2, (WGPUVertexFormat)0, WGPUVertexFormat_Float16x4
+		WGPUVertexFormat_Float16, WGPUVertexFormat_Float16x2, (WGPUVertexFormat)0, WGPUVertexFormat_Float16x4
 	},
 	{
 		WGPUVertexFormat_Float32, WGPUVertexFormat_Float32x2, WGPUVertexFormat_Float32x3, WGPUVertexFormat_Float32x4

@@ -68,7 +68,7 @@ project "texcooker"
 ----------------------------------------------
 -- Shader cooker
 
-local VULKAN_SDK_LOCATION = os.getenv("VULKAN_SDK")
+local VULKAN_SDK_LOCATION = os.getenv("VULKAN_SDK")	-- TODO: remove
 
 if VULKAN_SDK_LOCATION ~= nil and VULKAN_SDK_LOCATION ~= "" then
 	project "shadercooker"
@@ -78,7 +78,8 @@ if VULKAN_SDK_LOCATION ~= nil and VULKAN_SDK_LOCATION ~= "" then
 			"corelib", "frameworkLib",
 			"e2Core",
 			"dpkLib",
-			"shaderc"
+			"shaderc",
+			"slang"
 		}
 		files {
 			"shadercooker/*.cpp",

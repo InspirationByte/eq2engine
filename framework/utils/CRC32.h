@@ -78,6 +78,11 @@ namespace crc32_detail {
 	};
 }
 
+namespace CType
+{
+constexpr int ASCIILower_Cexpr(int c);
+}
+
 void CRC32_InitChecksum( uint32 &crcvalue );
 
 void CRC32_Update( uint32 &crcvalue, const char data );

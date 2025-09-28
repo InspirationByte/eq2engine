@@ -101,10 +101,10 @@ public:
 
 protected:
 
-	WGPUShaderModule			CreateShaderSPIRV(const uint32* code, uint32 size, const char* name = nullptr) const;
-	WGPUShaderModule			CreateShaderWGSL(const char* szText, const char* name = nullptr) const;
+	WGPUShaderModule			CreateShaderSPIRV(const uint32* code, uint32 size, const char* dbgName = nullptr) const;
+	WGPUShaderModule			CreateShaderWGSL(const char* szText, const char* dbgName = nullptr) const;
 
-	WGPUShaderModule			GetOrLoadShaderModule(const ShaderInfo& shaderInfo, int shaderModuleIdx) const;
+	WGPUShaderModule			GetOrLoadShaderModule(const ShaderInfo& shaderInfo, int shaderModuleIdx, const char* dbgName = nullptr) const;
 
 	Map<int, ShaderInfo>		m_shaderCache{ PP_SL };
 	WGPUInstance				m_rhiInstance{ nullptr };

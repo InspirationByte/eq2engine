@@ -1,4 +1,6 @@
-#include <shaderc/shaderc.hpp>
+#include <shaderc/shaderc.hpp>	// TODO: remove some day
+#include <slang.h>
+#include <slang-com-helper.h>
 
 #include "core/core_common.h"
 #include "core/IFileSystem.h"
@@ -6,6 +8,7 @@
 #include "ShaderIncluder.h"
 #include "GLSLBoilerplate.h"
 #include "HLSLBoilerplate.h"
+#include "SlangBoilerplate.h"
 
 ShaderIncluderImpl::ShaderIncluderImpl(ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths)
 	: m_shaderInfo(shaderInfo)
@@ -13,107 +16,147 @@ ShaderIncluderImpl::ShaderIncluderImpl(ShaderInfo& shaderInfo, ArrayCRef<EqStrin
 {
 }
 
-ShaderIncluderImpl::IncludeResult* ShaderIncluderImpl::GetInclude(const char* fileName, bool isRelativePath, const char* includeFromName)
+ShaderIncluderImpl::IncludeResult* ShaderIncluderImpl::GetInclude(const char* fileName, bool isRelativePath, const char* sourcePath)
 {
-	const EqString sourcePath = fnmPathExtractPath(includeFromName);
-
 	IncludeResult* result = nullptr;
-	if (m_freeSlots.numElem())
-		result = &m_shaderIncludes[m_freeSlots.popBack()];
-	else
-		result = &m_shaderIncludes.append();
+	if (!CString::Compare(fileName, "ShaderCooker"))
+	{
+		const int strId = StringId("ShaderCooker");
+		result = &(*m_shaderIncludes.insert(strId));
 
-	if (isRelativePath)
-	{
-		if (!TryOpenIncludeFile(sourcePath, fileName, result))
-			return result;
-	}
-	else if (!CString::Compare(fileName, "ShaderCooker"))
-	{
+		++result->includeCount;
+
 		result->includeContent.Open(FS_OPEN_READ | FS_OPEN_WRITE, nullptr, 8192);
 
-		if (m_shaderInfo.sourceType == SHADERSOURCE_GLSL)
+		// append boilerplate
+		if (m_shaderInfo.sourceType == SHADERSOURCE_SLANG)
+			result->includeContent.Print(s_boilerPlateStrSlang);	// TODO
+		else if (m_shaderInfo.sourceType == SHADERSOURCE_GLSL)
 			result->includeContent.Print(s_boilerPlateStrGLSL);
 		else if (m_shaderInfo.sourceType == SHADERSOURCE_HLSL)
 			result->includeContent.Print(s_boilerPlateStrHLSL);
 
-		// also add vertex layout defines
-		for (int i = 0; i < m_shaderInfo.vertexLayouts.numElem(); ++i)
-		{
-			const ShaderInfo::VertLayout& layout = m_shaderInfo.vertexLayouts[i];
-			const int vertexId = layout.aliasOf != -1 ? layout.aliasOf : i;
-			result->includeContent.Print("\n#define VID_%s %d\n", layout.name.ToCString(), StringId24(m_shaderInfo.vertexLayouts[vertexId].name));
-		}
-
-		int vertexId = -1;
-		for (int i = 0; i < m_shaderInfo.vertexLayouts.numElem(); ++i)
-		{
-			const ShaderInfo::VertLayout& layout = m_shaderInfo.vertexLayouts[i];
-			if (layout.name == m_vertexLayoutName)
-			{
-				vertexId = i;
-				break;
-			}
-		}
-		if (vertexId != -1)
-			result->includeContent.Print("\n#define CURRENT_VERTEX_ID %d\n", StringId24(m_shaderInfo.vertexLayouts[vertexId].name));
-
 		result->includeName = fileName;
+		result->isError = false;
+		result->resultData.content = (const char*)result->includeContent.GetBasePointer();
+		result->resultData.content_length = result->includeContent.Tell();
+		result->resultData.source_name = result->includeName;
+		result->resultData.source_name_length = result->includeName.Length();
 	}
 	else if (!CString::Compare(fileName, "VertexLayout"))
 	{
 		const EqString shaderSourceName = fnmPathCombine("VertexLayouts", m_vertexLayoutName + ".h");
-		if (!TryOpenIncludeFile(sourcePath, shaderSourceName, result))
-			return result;
-
+		result = TryOpenIncludeFile(sourcePath, shaderSourceName);
 		result->includeName = shaderSourceName;
 	}
+	else
+	{
+		result = TryOpenIncludeFile(isRelativePath ? sourcePath : "", fileName);
+	}
 
-	result->resultData.content = (const char*)result->includeContent.GetBasePointer();
-	result->resultData.content_length = result->includeContent.Tell();
-	result->resultData.source_name = result->includeName;
-	result->resultData.source_name_length = result->includeName.Length();
 	return result;
 }
 
-bool ShaderIncluderImpl::TryOpenIncludeFile(const char* reqSource, const char* fileName, IncludeResult* result)
+ShaderIncluderImpl::IncludeResult* ShaderIncluderImpl::TryOpenIncludeFile(const char* sourcePath, const char* fileName)
 {
 	IFileStreamPtr openFile = nullptr;
 
+	// find already loaded file buffer
+	{
+		EqString fullPath;
+		for (const EqString& incPath : m_includePaths)
+		{
+			{
+				fullPath = fnmPathCombine(incPath, sourcePath, fileName);
+				const int strId = StringId(fullPath);
+				auto foundIt = m_shaderIncludes.find(strId);
+				if (foundIt && !foundIt->isError)
+				{
+					++foundIt->includeCount;
+					return &(*foundIt);
+				}
+			}
+			{
+				fullPath = fnmPathCombine(incPath, fileName);
+				const int strId = StringId(fullPath);
+				auto foundIt = m_shaderIncludes.find(strId);
+				if (foundIt && !foundIt->isError)
+				{
+					++foundIt->includeCount;
+					return &(*foundIt);
+				}
+			}
+		}
+
+		if (!openFile)
+		{
+			fullPath = fnmPathCombine(sourcePath, fileName);
+			const int strId = StringId(fullPath);
+			auto foundIt = m_shaderIncludes.find(strId);
+			if (foundIt && !foundIt->isError)
+			{
+				++foundIt->includeCount;
+				return &(*foundIt);
+			}
+		}
+	}
+
+	// open new file
 	EqString fullPath;
-	for (const EqString& incPath : m_includePaths)
 	{
-		fullPath = fnmPathCombine(incPath, fileName);
-		openFile = g_fileSystem->Open(fullPath, FS_OPEN_READ, SP_ROOT);
-		if (openFile)
-			break;
+		for (const EqString& incPath : m_includePaths)
+		{
+			{
+				fullPath = fnmPathCombine(incPath, sourcePath, fileName);
+				openFile = g_fileSystem->Open(fullPath, FS_OPEN_READ, SP_ROOT);
+				if (openFile)
+					break;
+			}
+			{
+				fullPath = fnmPathCombine(incPath, fileName);
+				openFile = g_fileSystem->Open(fullPath, FS_OPEN_READ, SP_ROOT);
+				if (openFile)
+					break;
+			}
+		}
+
+		if (!openFile)
+		{
+			fullPath = fnmPathCombine(sourcePath, fileName);
+			openFile = g_fileSystem->Open(fullPath, FS_OPEN_READ, SP_ROOT);
+		}
 	}
 
-	if (!openFile)
+	// store result
+	const int strId = StringId(fullPath);
+	IncludeResult& result = *m_shaderIncludes.insert(strId);
+	++result.includeCount;
+	if (openFile)
 	{
-		fullPath = fnmPathCombine(reqSource, fileName);
-		openFile = g_fileSystem->Open(fullPath, FS_OPEN_READ, SP_ROOT);
+		result.includeName = fullPath;
+		result.includeContent.Open(FS_OPEN_READ | FS_OPEN_WRITE);
+		result.includeContent.AppendStream(openFile);
+		result.includeContent.Print("\n");
+
+		const char _zero = 0;
+		result.includeContent.WriteObj(_zero);
+		result.includeContent.Seek(-1, FS_SEEK_CUR);
+		result.isError = false;
+
+		result.resultData.content = (const char*)result.includeContent.GetBasePointer();
+		result.resultData.content_length = result.includeContent.Tell();
+		result.resultData.source_name = result.includeName;
+		result.resultData.source_name_length = result.includeName.Length();
+		return &result;
 	}
 
-	if (!openFile)
-	{
-		result->includeContent.Open(FS_OPEN_READ | FS_OPEN_WRITE);
-		result->includeContent.Print("Could not open %s", fileName);
-		result->resultData.content = (const char*)result->includeContent.GetBasePointer();
-		result->resultData.content_length = result->includeContent.GetSize();
-		// leave source_name and source_name_length empty
-		return false;
-	}
+	result.includeContent.Open(FS_OPEN_READ | FS_OPEN_WRITE);
+	result.includeContent.Print("Could not open %s", fileName);
+	result.resultData.content = (const char*)result.includeContent.GetBasePointer();
+	result.resultData.content_length = result.includeContent.Tell();
 
-	result->includeName = fullPath;
-	result->includeContent.Open(FS_OPEN_READ | FS_OPEN_WRITE);
-	result->includeContent.AppendStream(openFile);
-
-	const char _zero = 0;
-	result->includeContent.WriteObj(_zero);
-	result->includeContent.Seek(-1, FS_SEEK_CUR);
-
-	return true;
+	// leave source_name and source_name_length empty
+	return &result;
 }
 
 void ShaderIncluderImpl::ReleaseInclude(IncludeResult* data)
@@ -121,13 +164,16 @@ void ShaderIncluderImpl::ReleaseInclude(IncludeResult* data)
 	if (!data)
 		return;
 
-	const int index = data - m_shaderIncludes.ptr();
-	memset(&data->resultData, 0, sizeof(data->resultData));
-
-	data->includeName.Clear();
-	data->includeContent.Close();
-
-	m_freeSlots.append(index);
+	for (auto it = m_shaderIncludes.begin(); it; ++it)
+	{
+		if (&it.value() == data)
+		{
+			--(*it).includeCount;
+			if ((*it).includeCount == 0)
+				m_shaderIncludes.remove(it);
+			return;
+		}
+	}
 }
 
 //----------------------------------------------
@@ -145,70 +191,55 @@ void ShadercIncluder::ReleaseInclude(shaderc_include_result* data)
 
 shaderc_include_result* ShadercIncluder::GetInclude(const char* requested_source, shaderc_include_type type, const char* requesting_source, size_t include_depth)
 {
-	IncludeResult* result = ShaderIncluderImpl::GetInclude(requested_source, type == shaderc_include_type_relative, requesting_source);
+	IncludeResult* result = ShaderIncluderImpl::GetInclude(requested_source, type == shaderc_include_type_relative, fnmPathExtractPath(requesting_source));
 
 	return result ? &result->resultData : nullptr;
 }
 
 //----------------------------------------------
 
-ShaderDXCIncluder::ShaderDXCIncluder(EqStringRef shaderSourceFullName, IDxcLibrary* library, ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths)
-	: m_dxcLibrary(library)
-	, m_shaderSourceFullName(shaderSourceFullName)
-	, ShaderIncluderImpl(shaderInfo, includePaths)
+SlangFileSystemIncluder::SlangFileSystemIncluder(ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths)
+	: ShaderIncluderImpl(shaderInfo, includePaths)
 {
 }
 
-ULONG ShaderDXCIncluder::AddRef()
+// return difference start offset
+static EqStringRef fnmRemoveCommonPath(EqStringRef commonPath, EqStringRef fullPath)
 {
-	return 1;
+	int len = 0;
+	for (const char* a = commonPath, *b = fullPath; *a == *b && *a && *b; ++a, ++b)
+		++len;
+
+	if (len < commonPath.Length())
+		return fullPath;
+
+	return fullPath.Mid(len, fullPath.Length() - len).TrimChar(_CORRECT_PATH_SEPARATOR_STR _INCORRECT_PATH_SEPARATOR_STR);
 }
 
-ULONG ShaderDXCIncluder::Release()
+SLANG_NO_THROW SlangResult SLANG_MCALL SlangFileSystemIncluder::loadFile(char const* path, ISlangBlob** outBlob)
 {
-	return 1;
-}
-
-HRESULT ShaderDXCIncluder::QueryInterface(REFIID riid, void** ppvObject)
-{
-	if (riid == __uuidof(IDxcIncludeHandler) || riid == __uuidof(IUnknown))
-	{
-		AddRef();
-		*ppvObject = this;
-		return S_OK;
-	}
-
-	*ppvObject = nullptr;
-	return E_NOINTERFACE;
-}
-
-HRESULT STDMETHODCALLTYPE ShaderDXCIncluder::LoadSource(LPCWSTR pFilename, IDxcBlob** ppIncludeSource)
-{
-	EqString mbcFilename;
-	AnsiUnicodeConverter(mbcFilename, pFilename);
+	EqString mbcFilename = path;
 	fnmPathFixSeparators(mbcFilename);
 	mbcFilename = mbcFilename.TrimChar(_CORRECT_PATH_SEPARATOR_STR ".");
-	const bool isRelativePath = m_shaderSourceFullName.Find(fnmPathStripName(mbcFilename)) == -1;
 
-	IncludeResult* result = ShaderIncluderImpl::GetInclude(isRelativePath ? mbcFilename : fnmPathStripPath(mbcFilename), isRelativePath, mbcFilename);
-	if (!result)
-		return E_FAIL;
+	EqStringRef basePath = fnmPathStripName(mbcFilename);
+	EqString fileName = fnmRemoveCommonPath(basePath, mbcFilename);
 
+	IncludeResult* result = ShaderIncluderImpl::GetInclude(fileName, true, basePath);
 	if (result->resultData.source_name == nullptr)
 	{
 		ReleaseInclude(result);
-		return E_FAIL;
+		return SLANG_E_NOT_FOUND;
 	}
 
-	IDxcBlobEncoding* textBlob;
-	if (FAILED(m_dxcLibrary->CreateBlobWithEncodingFromPinned(result->includeContent.GetBasePointer(), result->includeContent.GetSize(), CP_UTF8, &textBlob)))
+	ISlangBlob* blob = slang_createBlob(result->includeContent.GetBasePointer(), result->includeContent.Tell());
+	if (!blob)
 	{
 		ReleaseInclude(result);
-		return E_FAIL;
+		return SLANG_E_NOT_FOUND;
 	}
 
-	*ppIncludeSource = textBlob;
-	ReleaseInclude(result);
+	*outBlob = blob;
 
-	return S_OK;
+	return SLANG_OK;
 }

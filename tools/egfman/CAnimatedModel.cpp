@@ -372,7 +372,8 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 	instData.count = 1;
 
 	CEqStudioGeom::DrawProps drawProperties;
-	drawProperties.boneTransforms = g_matSystem->GetTransientUniformBuffer(boneTransforms, numBones * sizeof(RenderBoneTransform));
+	if(numBones)
+		drawProperties.boneTransforms = g_matSystem->GetTransientUniformBuffer(boneTransforms, numBones * sizeof(RenderBoneTransform));
 	drawProperties.lod = startLOD;
 	drawProperties.bodyGroupFlags = m_bodyGroupFlags;
 	m_pModel->Draw(drawProperties, instData, RenderPassContext(rendPassRecorder, nullptr));

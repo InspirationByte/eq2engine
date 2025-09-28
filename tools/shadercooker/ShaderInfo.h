@@ -18,17 +18,16 @@ enum EShaderConvStatus : int
 
 enum EShaderSourceType : int
 {
-	SHADERSOURCE_UNDEFINED = -1,
+	SHADERSOURCE_SLANG = 0,
 	SHADERSOURCE_HLSL,
 	SHADERSOURCE_GLSL,
-	//SHADERSOURCE_WGSL,
 };
 
 enum EShaderModuleType
 {
-	SHADERMODULE_SPIRV,
-	SHADERMODULE_DXBC,
-	SHADERMODULE_DXIL,
+	SHADERMODULE_SPIRV,		// Vulkan & WGPU
+	SHADERMODULE_DXBC,		// D3D10+
+	SHADERMODULE_DXIL,		// D3D12
 	SHADERMODULE_WGSL,		// WGPU only
 
 	SHADERMODULE_TYPES,
@@ -39,6 +38,13 @@ static const char* s_shaderModuleTypeExt[] = {
 	".dxbc",
 	".dxil",
 	".wgsl",
+};
+
+static const char* s_shaderModuleTypeName[] = {
+	"SPIRV",
+	"DXBC",
+	"DXIL",
+	"WGSL",
 };
 
 enum EBindGroupId : int
@@ -155,7 +161,7 @@ struct ShaderInfo
 	EqString			sourceFilename;
 
 	EShaderConvStatus	status{ SHADERCONV_INIT };
-	EShaderSourceType	sourceType{ SHADERSOURCE_UNDEFINED };
+	EShaderSourceType	sourceType{ SHADERSOURCE_SLANG };
 
 	uint32				crc32{ 0 };
 	int					totalVariationCount{ 0 };

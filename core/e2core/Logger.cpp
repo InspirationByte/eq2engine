@@ -7,6 +7,8 @@
 
 #include <ctime>
 
+
+
 #include "core/core_common.h"
 #include "core/IDkCore.h"
 #include "core/IFileSystem.h"
@@ -16,7 +18,9 @@
 #include <sys/stat.h>
 
 #ifdef PLAT_WIN
+#define WIN32_LEAN_AND_MEAN
 #include <direct.h>
+#include <windows.h>
 #endif
 
 #ifdef PLAT_ANDROID
@@ -158,9 +162,12 @@ DECLARE_CONCOMMAND_FN(developer)
 DECLARE_CMD_F(developer, "Sets developer modes", CV_CHEAT | CV_UNREGISTERED);
 
 // Default spew
-void DefaultSpewFunc(ESpewType type,const char* pMsg)
+void DefaultSpewFunc(ESpewType type, const char* pMsg)
 {
 	fputs(pMsg, stdout);
+#ifdef _WIN32
+	OutputDebugStringA(pMsg);
+#endif
 }
 
 //Spew callback

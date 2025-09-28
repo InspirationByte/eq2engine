@@ -798,7 +798,7 @@ private:
 					return Result{ std::move(guard), false, EqString::Format("insufficient return value count (got %d, required %d)", retValues, ReturnCount) };
 
 				auto value = runtime::GetValue<R, true>(L, -1);
-				return Result{ std::move(guard), value.success, value.success ? EqString() : EqString::Format("return value: %s", value.errorMessage.ToCString()), *value};
+				return Result{ std::move(guard), value.success, value.success ? EqStringRef() : EqString::Format("return value: %s", value.errorMessage), *value};
 			}
 		}
 
