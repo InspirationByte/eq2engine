@@ -4,33 +4,34 @@
 
 #define _WSTR(x) {(x), WGPU_STRLEN}
 
+struct WGPUDeviceErrorContext;
+thread_local WGPUDeviceErrorContext* g_currentErrorDeviceContext;
+
 struct WGPUDeviceErrorContext
 {
 	WGPUDeviceErrorContext()
 	{
-		s_currentErrorDeviceContext = this;
+		g_currentErrorDeviceContext = this;
 	}
 	~WGPUDeviceErrorContext()
 	{
-		s_currentErrorDeviceContext = nullptr;
+		g_currentErrorDeviceContext = nullptr;
 	}
 
 #ifndef _RETAIL
-	static thread_local WGPUDeviceErrorContext* s_currentErrorDeviceContext;
-
 	template<typename F>
 	WGPUDeviceErrorContext(F onError)
 		: onError(onError)
 	{
-		s_currentErrorDeviceContext = this;
+		g_currentErrorDeviceContext = this;
 	}
 	using OnErrorFunc = EqFunction<void()>;
 	OnErrorFunc onError;
 #else
 	template<typename F>
-	WGPUCrashDebugContextDumper(F onError)
+	WGPUDeviceErrorContext(F onError)
 	{
-		s_currentErrorDeviceContext = this;
+		g_currentErrorDeviceContext = this;
 	}
 #endif
 
