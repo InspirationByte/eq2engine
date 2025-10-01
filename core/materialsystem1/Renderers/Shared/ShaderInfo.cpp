@@ -201,10 +201,9 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 			const EqString shaderFileName = EqString::Format("%s-%s%s", shaderInfo.vertexLayouts[vertLayoutIdx].name, queryStr, getKindExt(kind));
 			
 			ShaderInfo::Module& modInfo = shaderInfo.modules.append();
-			modInfo.fileIndex[SHADERMODULE_SPIRV] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".spv"));
-			modInfo.fileIndex[SHADERMODULE_DXBC] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".dxbc"));
-			modInfo.fileIndex[SHADERMODULE_DXIL] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".dxil"));
-			modInfo.fileIndex[SHADERMODULE_WGSL] = shaderInfo.shaderPackFile->FindFileIndex((shaderFileName + ".wgsl"));
+			for (int i = 0; i < SHADERMODULE_TYPES; ++i)
+				modInfo.fileIndex[i] = shaderInfo.shaderPackFile->FindFileIndex(shaderFileName + s_shaderModuleTypeExt[i]);
+
 			modInfo.kind = static_cast<EShaderKind>(kind);
 			modInfo.entryPoint = entryPointName;
 
@@ -213,19 +212,23 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 			{
 				Binding& binding = modInfo.bindings.append();
 
-				EqStringRef type;
-				bindingSec.GetValues(binding.bindGroupId, binding.index, type);
+				int rangeTypeIdx;
+				EqStringRef rwFlagsStr;
+				EqStringRef typeName;
+				bindingSec.GetValues(typeName, rwFlagsStr, binding.descriptorSetIdx, binding.index, rangeTypeIdx, binding.registerIdx);
+
+				binding.type = GetBindingTypeByName(typeName);
 				binding.name = bindingSec.GetName();
-				binding.type = GetBindingTypeByName(type);
+				binding.rangeType = static_cast<EBindingRangeType>(rangeTypeIdx);
 				ASSERT(binding.type >= 0);
 
-				EqStringRef flag;
-				bindingSec.GetValuesAt(3, flag);
-				if (flag == "readonly")
+				if (rwFlagsStr == "readonly")
 					binding.rwFlags = RWFLAG_READ;
-				else if (flag == "writeonly")
+				else if (rwFlagsStr == "writeonly")
 					binding.rwFlags = RWFLAG_WRITE;
-				else if (flag == "uniform")
+				else if (rwFlagsStr == "readwrite")
+					binding.rwFlags = RWFLAG_READ | RWFLAG_WRITE;
+				else if (rwFlagsStr == "uniform")
 					binding.rwFlags = RWFLAG_UNIFORM;
 			}
 		}

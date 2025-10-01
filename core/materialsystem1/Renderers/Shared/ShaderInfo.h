@@ -20,6 +20,22 @@ enum ERWFlags : int
 	RWFLAG_WRITE	= (1 << 2),
 };
 
+enum EBindingRangeType : int
+{
+	BINDING_RANGE_SRV = 0,
+	BINDING_RANGE_UAV,
+	BINDING_RANGE_CBV,
+	BINDING_RANGE_SAMPLER
+};
+
+static const char* s_shaderModuleTypeExt[] = {
+	".spv",
+	".dxbc",
+	".dxil",
+	".wgsl",
+};
+static_assert(SHADERMODULE_TYPES == elementsOf(s_shaderModuleTypeExt), "BINDENTRY_TYPES doesn't match SHADERMODULE_TYPES count");
+
 struct ShaderInfo
 {
 	static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, int entryPointStrHash);
@@ -41,11 +57,15 @@ struct ShaderInfo
 
 	struct Binding
 	{
-		EqString		name{ 0 };
-		int				bindGroupId{ -1 };
-		int				index{ 0 };
-		int				rwFlags{ RWFLAG_READ | RWFLAG_WRITE };
-		EBindEntryType	type{};
+		EqString			name;
+		EBindEntryType		type{ BINDENTRY_BUFFER };
+		int					rwFlags{ RWFLAG_UNIFORM };
+
+		int					descriptorSetIdx{ -1 };
+		int					index{ -1 };
+		EBindingRangeType	rangeType{};
+		int					registerIdx{ 0 };
+
 	};
 
 	struct Module
