@@ -7,22 +7,6 @@ enum EShaderKind : int
 	SHADERKIND_COMPUTE	= (1 << 2),
 };
 
-enum EShaderConvStatus : int
-{
-	SHADERCONV_INIT = 0,
-	SHADERCONV_CRC_LOADED,
-	SHADERCONV_COMPILED,
-	SHADERCONV_FAILED,
-	SHADERCONV_SKIPPED
-};
-
-enum EShaderSourceType : int
-{
-	SHADERSOURCE_SLANG = 0,
-	SHADERSOURCE_HLSL,
-	SHADERSOURCE_GLSL,
-};
-
 enum EShaderModuleType
 {
 	SHADERMODULE_SPIRV,		// Vulkan & WGPU
@@ -39,6 +23,7 @@ static const char* s_shaderModuleTypeExt[] = {
 	".dxil",
 	".wgsl",
 };
+static_assert(SHADERMODULE_TYPES == elementsOf(s_shaderModuleTypeExt), "BINDENTRY_TYPES doesn't match SHADERMODULE_TYPES count");
 
 static const char* s_shaderModuleTypeName[] = {
 	"SPIRV",
@@ -46,30 +31,33 @@ static const char* s_shaderModuleTypeName[] = {
 	"DXIL",
 	"WGSL",
 };
+static_assert(SHADERMODULE_TYPES == elementsOf(s_shaderModuleTypeName), "SHADERMODULE_TYPES doesn't match s_shaderModuleTypeName count");
 
-enum EBindGroupId : int
+enum ERWFlags : int
 {
-	BINDGROUP_UNKNOWN = -1,
-
-	BINDGROUP_CONSTANT = 0,
-	BINDGROUP_RENDERPASS = 1,
-	BINDGROUP_TRANSIENT = 2,
-	BINDGROUP_INSTANCES = 3,
+	RWFLAG_UNIFORM = (1 << 0),
+	RWFLAG_READ = (1 << 1),
+	RWFLAG_WRITE = (1 << 2),
 };
 
-static const char* s_bindGroupNames[] = {
-	"CONSTANT",
-	"RENDERPASS",
-	"TRANSIENT",
-	"INSTANCES",
+enum EBindingRangeType : int
+{
+	BINDING_RANGE_SRV = 0,
+	BINDING_RANGE_UAV,
+	BINDING_RANGE_CBV,
+	BINDING_RANGE_SAMPLER
 };
 
-enum EBindEntryType
+//-----------------------------------------
+
+enum EBindEntryType : int
 {
 	BINDENTRY_BUFFER = 0,
 	BINDENTRY_SAMPLER,
 	BINDENTRY_TEXTURE,
-	BINDENTRY_STORAGETEXTURE
+	BINDENTRY_STORAGETEXTURE,
+
+	BINDENTRY_TYPES,
 };
 
 static const char* s_bindingTypeNames[] = {
@@ -78,18 +66,25 @@ static const char* s_bindingTypeNames[] = {
 	"texture",
 	"storagetexture",
 };
+static_assert(BINDENTRY_TYPES == elementsOf(s_bindingTypeNames), "BINDENTRY_TYPES doesn't match s_bindingTypeNames count");
 
-enum ERWFlags : int
+//-----------------------------------------
+
+enum EShaderSourceType : int
 {
-	RWFLAG_UNIFORM	= (1 << 0),
-	RWFLAG_READ		= (1 << 1),
-	RWFLAG_WRITE	= (1 << 2),
+	SHADERSOURCE_SLANG = 0,
+	SHADERSOURCE_HLSL,
+	SHADERSOURCE_GLSL,
+
+	SHADERSOURCE_COUNT,
 };
 
 static shaderc_source_language s_sourceLanguage[] = {
 	shaderc_source_language_hlsl,
+	shaderc_source_language_hlsl,
 	shaderc_source_language_glsl,
 };
+static_assert(SHADERSOURCE_COUNT == elementsOf(s_sourceLanguage), "SHADERSOURCE_COUNT doesn't match s_sourceLanguage count");
 
 struct ShaderInfo
 {
@@ -102,12 +97,15 @@ struct ShaderInfo
 
 	struct Binding
 	{
-		EqString		name;
-		EBindGroupId	bindGroupId{ BINDGROUP_UNKNOWN };
-		int				index{ -1 };
-		EBindEntryType	type{ BINDENTRY_BUFFER };
-		int				rwFlags{ RWFLAG_UNIFORM };
-		int				shaderKind{ 0 };
+		EqString			name;
+		EBindEntryType		type{ BINDENTRY_BUFFER };
+		int					rwFlags{ RWFLAG_UNIFORM };
+
+		int					descriptorSetIdx{ -1 };
+		int					index{ -1 };
+		EBindingRangeType	rangeType{};
+		int					registerIdx{ 0 };
+
 	};
 	struct VertLayout
 	{
@@ -160,7 +158,6 @@ struct ShaderInfo
 	EqString			sourceText;
 	EqString			sourceFilename;
 
-	EShaderConvStatus	status{ SHADERCONV_INIT };
 	EShaderSourceType	sourceType{ SHADERSOURCE_SLANG };
 
 	uint32				crc32{ 0 };

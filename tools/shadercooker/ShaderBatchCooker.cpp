@@ -210,6 +210,17 @@ struct IncludeCRCProcessor
 	}
 };
 
+static EqStringRef GetRWFlagsString(int rwFlags)
+{
+	if (rwFlags == 0)
+		return "";
+	if (rwFlags == RWFLAG_UNIFORM)
+		return "uniform";
+	if (rwFlags == (RWFLAG_READ | RWFLAG_WRITE))
+		return "readwrite";
+	return rwFlags == RWFLAG_READ ? "readonly" : "writeonly";
+}
+
 //-----------------------------------------------------------------------
 
 void CShaderCooker::ParseFileList(ShaderInfo& shaderInfo, const KVSection* fileListSec)
@@ -703,15 +714,13 @@ static void ParseShaderResourceBindings(Array<ShaderInfo::Binding>& bindings, ES
 		char* tok = tokenizer.next();
 
 		ShaderInfo::Binding& newBinding = bindings.append();
-		newBinding.shaderKind = shaderKind;
-
 		tok = tokenizer.next();
 		if (*tok == '(')
 		{
 			tok = tokenizer.next();
 
 			{
-				newBinding.bindGroupId = (EBindGroupId)atoi(tok);
+				newBinding.descriptorSetIdx = atoi(tok);
 				tok = tokenizer.next();
 				if (*tok != ',')
 				{
@@ -954,34 +963,73 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 		return false;
 	}
 
+	if(0)
 	{
 		const char* diagStr = (const char*)slangCompileRequest->getDiagnosticOutput();
 		if(diagStr && *diagStr)
+		{
 			MsgWarning(diagStr);
+			MsgWarning("\n");
+		}
 	}
 
 	// construct bindings for PipelineLayout
 	{
 		slang::ShaderReflection* shaderReflection = slang::ShaderReflection::get(slangCompileRequest);
 		slang::VariableLayoutReflection* varLayoutReflection = shaderReflection->getGlobalParamsVarLayout();
+		slang::TypeLayoutReflection* typeLayoutReflection = varLayoutReflection->getTypeLayout();
+
+		auto slangBindingTypeToD3DRangeType = [](slang::BindingType bindingType, SlangResourceAccess accessType) {
+			switch (bindingType)
+			{
+			case slang::BindingType::Sampler:
+				return BINDING_RANGE_SAMPLER;
+			case slang::BindingType::Texture:
+				switch (accessType)
+				{
+					case SLANG_RESOURCE_ACCESS_READ_WRITE:
+					case SLANG_RESOURCE_ACCESS_READ:
+					case SLANG_RESOURCE_ACCESS_WRITE:
+						return BINDING_RANGE_UAV;
+					default:
+						return BINDING_RANGE_SRV;
+				}
+			case slang::BindingType::ConstantBuffer:
+				return BINDING_RANGE_CBV;
+			case slang::BindingType::ParameterBlock:
+			case slang::BindingType::TypedBuffer:
+			case slang::BindingType::RawBuffer:
+				return BINDING_RANGE_UAV;
+			default:
+				return BINDING_RANGE_SRV;
+			}
+		};
+
+		int bindingTypeCounter[8][SLANG_BINDING_TYPE_PUSH_CONSTANT + 1]{ 0 };
 
 		const int paramCount = shaderReflection->getParameterCount();
 		for (int i = 0; i < paramCount; i++)
 		{
 			auto param = shaderReflection->getParameterByIndex(i);
 			auto paramName = param->getName();
+			auto type = param->getType();
 
-			switch (param->getType()->getKind())
+			const EBindingRangeType bindingRangeType = slangBindingTypeToD3DRangeType(typeLayoutReflection->getBindingRangeType(i), type->getResourceAccess());
+			const int registerIndex = bindingTypeCounter[param->getBindingSpace()][static_cast<int>(bindingRangeType)]++;
+
+			switch (type->getKind())
 			{
 			case slang::TypeReflection::Kind::Resource:
 			{
 				ShaderInfo::Binding& binding = bindings.append();
-				binding.bindGroupId = static_cast<EBindGroupId>(param->getBindingSpace());
-				binding.index = param->getBindingIndex();
 				binding.name = paramName;
-				binding.shaderKind = entryPoint.kind;
 
-				switch (param->getType()->getResourceShape())
+				binding.descriptorSetIdx = param->getBindingSpace();
+				binding.index = param->getBindingIndex();
+				binding.rangeType = bindingRangeType;
+				binding.registerIdx = registerIndex;
+
+				switch (type->getResourceShape())
 				{
 				case SLANG_STRUCTURED_BUFFER:
 				case SLANG_BYTE_ADDRESS_BUFFER:
@@ -990,7 +1038,7 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 					binding.type = BINDENTRY_TEXTURE;
 				}
 
-				switch (param->getType()->getResourceAccess())
+				switch (type->getResourceAccess())
 				{
 				case SLANG_RESOURCE_ACCESS_READ_WRITE:
 					binding.rwFlags = RWFLAG_READ | RWFLAG_WRITE; break;
@@ -1008,27 +1056,36 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 			case slang::TypeReflection::Kind::SamplerState:
 			{
 				ShaderInfo::Binding& binding = bindings.append();
-				binding.bindGroupId = static_cast<EBindGroupId>(param->getBindingSpace());
-				binding.index = param->getBindingIndex();
 				binding.name = paramName;
 				binding.type = BINDENTRY_SAMPLER;
 				binding.rwFlags = RWFLAG_UNIFORM;
-				binding.shaderKind = entryPoint.kind;
+
+				binding.descriptorSetIdx = param->getBindingSpace();
+				binding.index = param->getBindingIndex();
+				binding.rangeType = bindingRangeType;
+				binding.registerIdx = registerIndex;
 				break;
 			}
 			case slang::TypeReflection::Kind::ConstantBuffer:
 			{
 				ShaderInfo::Binding& binding = bindings.append();
-				binding.bindGroupId = static_cast<EBindGroupId>(param->getBindingSpace());
-				binding.index = param->getBindingIndex();
 				binding.name = paramName;
 				binding.type = BINDENTRY_BUFFER;
 				binding.rwFlags = RWFLAG_UNIFORM;
-				binding.shaderKind = entryPoint.kind;
+
+				binding.descriptorSetIdx = param->getBindingSpace();
+				binding.index = param->getBindingIndex();
+				binding.rangeType = bindingRangeType;
+				binding.registerIdx = registerIndex;
 				break;
 			}
 			}
 		}
+
+		//for (const ShaderInfo::Binding& binding : bindings)
+		//{
+		//	Msg("[vk_layout(%d,%d)] %s %s %s : register(%d, space%d)\n", binding.index, binding.descriptorSetIdx, GetRWFlagsString(binding.rwFlags).ToCString(), s_bindingTypeNames[binding.type], binding.name.ToCString(), binding.registerIdx, binding.descriptorSetIdx);
+		//}
 	}
 
 	for (CompileTargetData& tgtData : targetData)
@@ -1370,14 +1427,12 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 				for (ShaderInfo::Binding& binding : result.bindings)
 				{
 					KVSection& bindingSec = shaderBlobSec.CreateSection(binding.name.ToCString());
-					bindingSec.AddValue(binding.bindGroupId);
-					bindingSec.AddValue(binding.index);
 					bindingSec.AddValue(s_bindingTypeNames[binding.type]);
-
-					if (binding.rwFlags & (RWFLAG_READ | RWFLAG_WRITE))
-						bindingSec.AddValue(binding.rwFlags == RWFLAG_READ ? "readonly" : (binding.rwFlags == RWFLAG_WRITE ? "writeonly" : ""));
-					else if(binding.rwFlags & RWFLAG_UNIFORM)
-						bindingSec.AddValue("uniform");
+					bindingSec.AddValue(GetRWFlagsString(binding.rwFlags));
+					bindingSec.AddValue(binding.descriptorSetIdx);
+					bindingSec.AddValue(binding.index);
+					bindingSec.AddValue(binding.rangeType);
+					bindingSec.AddValue(binding.registerIdx);
 				}
 
 				// Write shader bytecode files
