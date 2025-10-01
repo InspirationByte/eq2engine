@@ -351,7 +351,7 @@ nvrhi::BindingLayoutHandle CNVRHIRenderAPI::CreateBindingLayout(const BindGroupL
 			switch (entry.buffer.bindType)
 			{
 			case BUFFERBIND_UNIFORM:
-				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::VolatileConstantBuffer(entry.binding));
+				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::ConstantBuffer(entry.binding));
 				break;
 			case BUFFERBIND_STORAGE_READONLY:
 				// I'm not sure if it should be TypedBuffer, StructuredBuffer or RawBuffer
@@ -646,7 +646,7 @@ static void ShaderBindingsToPipelineLayout(PipelineLayoutDesc& layoutDesc, Array
 {
 	for (const ShaderInfo::Binding& binding : bindings)
 	{
-		BindGroupLayoutDesc& bindGroupDesc = layoutDesc.bindGroups[binding.bindGroupId];
+		BindGroupLayoutDesc& bindGroupDesc = layoutDesc.bindGroups[binding.descriptorSetIdx];
 		BindGroupLayoutDesc::Entry& entry = bindGroupDesc.entries.append();
 		entry.name = binding.name;
 		entry.binding = binding.index;
@@ -906,11 +906,11 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 		// create shader pipeline layout
 		int maxBindGroups = 0;
 		for (const ShaderInfo::Binding& binding : vertexShaderModule->bindings)
-			maxBindGroups = max(binding.bindGroupId, maxBindGroups);
+			maxBindGroups = max(binding.descriptorSetIdx, maxBindGroups);
 
 		ArrayCRef<ShaderInfo::Binding> fragmentBindings = fragmentShaderModule ? fragmentShaderModule->bindings : ArrayCRef<ShaderInfo::Binding>(nullptr);
 		for (const ShaderInfo::Binding& binding : fragmentBindings)
-			maxBindGroups = max(binding.bindGroupId, maxBindGroups);
+			maxBindGroups = max(binding.descriptorSetIdx, maxBindGroups);
 
 		if (maxBindGroups)
 		{
@@ -920,7 +920,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 
 			for (const ShaderInfo::Binding& binding : fragmentBindings)
 			{
-				BindGroupLayoutDesc& bindGroupDesc = shaderPipelineLayoutDesc.bindGroups[binding.bindGroupId];
+				BindGroupLayoutDesc& bindGroupDesc = shaderPipelineLayoutDesc.bindGroups[binding.descriptorSetIdx];
 				const int existingIdx = arrayFindIndexF(bindGroupDesc.entries, [&](const BindGroupLayoutDesc::Entry& entry) {
 					return entry.name == binding.name;
 				});
@@ -1050,7 +1050,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		// create shader pipeline layout
 		int maxBindGroupIdx = -1;
 		for (const ShaderInfo::Binding& binding : computeShaderModule->bindings)
-			maxBindGroupIdx = max(binding.bindGroupId, maxBindGroupIdx);
+			maxBindGroupIdx = max(binding.descriptorSetIdx, maxBindGroupIdx);
 
 		if (maxBindGroupIdx >= 0)
 		{
