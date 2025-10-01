@@ -24,7 +24,7 @@ public:
 
 	nvrhi::TextureHandle				GetNVRHITextureHandle() const { return m_rhiTexture; }
 	int									GetNVRHITextureViewCount() const { return m_rhiViews.numElem(); }
-	const nvrhi::TextureSubresourceSet&	GetNVRHiTextureView(int idx) const { return m_rhiViews[idx]; }
+	const nvrhi::TextureSubresourceSet&	GetNVRHITextureView(int idx) const { return m_rhiViews[idx]; }
 
 protected:
 	void			Ref_DeleteObject();

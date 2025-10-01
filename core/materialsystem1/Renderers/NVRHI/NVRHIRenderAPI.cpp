@@ -458,7 +458,7 @@ static void FillNVRHIBindGroupEntries(nvrhi::IDevice* rhiDevice, const BindGroup
 			{
 				ASSERT_MSG(texture->GetNVRHITextureViewCount(), "Texture '%s' has no views", texture->GetName());
 				rhiBindingSetDesc.addItem(nvrhi::BindingSetItem()
-					.Texture_SRV(bindGroupEntry.binding, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, texture->GetNVRHiTextureView(bindGroupEntry.texture.arraySlice))
+					.Texture_SRV(bindGroupEntry.binding, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, texture->GetNVRHITextureView(bindGroupEntry.texture.arraySlice))
 				);
 			}
 			else

@@ -205,10 +205,10 @@ static void NVRHIBeginRenderPass(const RenderPassDesc& renderPassDesc, nvrhi::Co
 		const CNVRHITexture* targetTexture = static_cast<CNVRHITexture*>(colorTarget.target.texture.Ptr());
 		const CNVRHITexture* resolveTargetTexture = static_cast<CNVRHITexture*>(colorTarget.resolveTarget.texture.Ptr());
 
-		rhiFramebufferDesc.addColorAttachment(targetTexture->GetNVRHITextureHandle(), targetTexture->GetNVRHiTextureView(colorTarget.target.arraySlice));
+		rhiFramebufferDesc.addColorAttachment(targetTexture->GetNVRHITextureHandle(), targetTexture->GetNVRHITextureView(colorTarget.target.arraySlice));
 		if (colorTarget.loadOp == LOADFUNC_CLEAR)
 		{
-			rhiCmdList->clearTextureFloat(targetTexture->GetNVRHITextureHandle(), targetTexture->GetNVRHiTextureView(colorTarget.target.arraySlice),
+			rhiCmdList->clearTextureFloat(targetTexture->GetNVRHITextureHandle(), targetTexture->GetNVRHITextureView(colorTarget.target.arraySlice),
 				nvrhi::Color{ colorTarget.clearColor.r, colorTarget.clearColor.g, colorTarget.clearColor.b, colorTarget.clearColor.a });
 		}
 
@@ -222,7 +222,7 @@ static void NVRHIBeginRenderPass(const RenderPassDesc& renderPassDesc, nvrhi::Co
 		const CNVRHITexture* depthTexture = static_cast<CNVRHITexture*>(renderPassDesc.depthStencil.texture.Ptr());
 
 		auto rhiDepthAttachment = nvrhi::FramebufferAttachment()
-			.setSubresources(depthTexture->GetNVRHiTextureView(renderPassDesc.depthStencil.arraySlice))
+			.setSubresources(depthTexture->GetNVRHITextureView(renderPassDesc.depthStencil.arraySlice))
 			.setTexture(depthTexture->GetNVRHITextureHandle())
 			.setReadOnly(renderPassDesc.depthReadOnly);
 
@@ -230,7 +230,7 @@ static void NVRHIBeginRenderPass(const RenderPassDesc& renderPassDesc, nvrhi::Co
 
 		const bool clearDepth = !renderPassDesc.depthReadOnly && renderPassDesc.depthLoadOp == LOADFUNC_CLEAR;
 		const bool clearStencil = !renderPassDesc.stencilReadOnly && IsStencilFormat(renderPassDesc.depthStencil.texture->GetFormat()) && renderPassDesc.stencilLoadOp == LOADFUNC_CLEAR;
-		rhiCmdList->clearDepthStencilTexture(depthTexture->GetNVRHITextureHandle(), depthTexture->GetNVRHiTextureView(renderPassDesc.depthStencil.arraySlice),
+		rhiCmdList->clearDepthStencilTexture(depthTexture->GetNVRHITextureHandle(), depthTexture->GetNVRHITextureView(renderPassDesc.depthStencil.arraySlice),
 			clearDepth, renderPassDesc.depthClearValue, clearStencil, (uint8)renderPassDesc.stencilClearValue);
 
 		// TODO
