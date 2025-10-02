@@ -8,9 +8,9 @@
 #include <nvrhi/nvrhi.h>
 #include <nvrhi/validation.h>
 #include <dxgi.h>
-#include <dxgi1_5.h>
 #include <dxgi1_6.h>
 #include <dxgidebug.h>
+#include <d3d12sdklayers.h>
 
 #include "core/core_common.h"
 #include "core/IConsoleCommands.h"
@@ -27,7 +27,10 @@
 #include "NVRHISwapChainDXGI.h"
 #include "NVRHIRenderAPI.h"
 
-#pragma comment(lib, "d3d12.lib")
+//extern "C" {
+//__declspec(dllexport) const UINT D3D12SDKVersion = 608;
+//__declspec(dllexport) const char* D3D12SDKPath = u8".\\D3D12\\";
+//}
 
 DECLARE_CVAR(d3d12_adapter, "", "Adapter to use", CV_UNREGISTERED);
 DECLARE_CVAR(d3d12_validation, "1", nullptr, CV_UNREGISTERED);
@@ -36,8 +39,33 @@ DECLARE_CVAR_F(nvrhi_validation);
 #define HR_RETURN(hr, fmt, ...) if(FAILED(hr)) { MsgError("ERROR: D3D12 failure - " fmt "\n", __VA_ARGS__); return false; }
 #define HR_ASSERT(hr, fmt, ...) if(FAILED(hr)) { ASSERT_FAIL("ERROR: D3D12 failure - " fmt "\n", __VA_ARGS__); return false; }
 
+PFN_D3D12_CREATE_DEVICE	CNVRHIRenderLibD3D12::s_d3d12CreateDeviceFnPtr = nullptr;
+PFN_D3D12_GET_DEBUG_INTERFACE CNVRHIRenderLibD3D12::s_d3d12GetDebugInterfaceFnPtr = nullptr;
+PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE CNVRHIRenderLibD3D12::s_d3d12SerializeVersionedRootSignatureFnPtr = nullptr;
+
+// Wrap
+HRESULT WINAPI D3D12SerializeVersionedRootSignature(
+	_In_ const D3D12_VERSIONED_ROOT_SIGNATURE_DESC* pRootSignature,
+	_Out_ ID3DBlob** ppBlob,
+	_Always_(_Outptr_opt_result_maybenull_) ID3DBlob** ppErrorBlob)
+{
+	return CNVRHIRenderLibD3D12::s_d3d12SerializeVersionedRootSignatureFnPtr(pRootSignature, ppBlob, ppErrorBlob);
+}
+
 bool CNVRHIRenderLibD3D12::InitCaps()
 {
+	m_d3d12Lib = LoadLibraryA("d3d12.dll");
+	if (!m_d3d12Lib) {
+		MsgError("Failed to load d3d12.dll");
+		return false;
+	}
+
+#define INIT_FN(fn, name) fn = reinterpret_cast<decltype(fn)>(GetProcAddress(m_d3d12Lib, name))
+	INIT_FN(s_d3d12CreateDeviceFnPtr, "D3D12CreateDevice");
+	INIT_FN(s_d3d12GetDebugInterfaceFnPtr, "D3D12GetDebugInterface");
+	INIT_FN(s_d3d12SerializeVersionedRootSignatureFnPtr, "D3D12SerializeVersionedRootSignature");
+#undef INIT_FN
+
 	g_consoleCommands->RegisterCommand(&d3d12_adapter);
 	g_consoleCommands->RegisterCommand(&d3d12_validation);
 
@@ -75,17 +103,16 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	if (debugRuntimeLayer)
 	{
 		RefCountPtr<ID3D12Debug> pDebug;
-		hr = D3D12GetDebugInterface(IID_PPV_ARGS(&pDebug));
+		hr = s_d3d12GetDebugInterfaceFnPtr(IID_PPV_ARGS(&pDebug));
 		if (hr == S_OK && pDebug)
 			pDebug->EnableDebugLayer();
 	}
 
-	RefCountPtr<IDXGIFactory2> rhiDxgiFactory;
 	UINT dxgiFactoryFlags = debugRuntimeLayer ? DXGI_CREATE_FACTORY_DEBUG : 0;
-	hr = CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&rhiDxgiFactory));
+	hr = CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_dxgiFactory));
 	HR_ASSERT(hr, "Cannot create IDXGIFactory2 interface");
 
-	hr = D3D12CreateDevice(
+	hr = s_d3d12CreateDeviceFnPtr(
 		rhiAdapter,
 		D3D_FEATURE_LEVEL_11_1,
 		IID_PPV_ARGS(&m_rhiDevice12));
@@ -119,7 +146,7 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 		}
 	}
 
-	rhiAdapter->QueryInterface(IID_PPV_ARGS(&m_rhiDxgiAdapter));
+	rhiAdapter->QueryInterface(IID_PPV_ARGS(&m_dxgiAdapter));
 
 	D3D12_COMMAND_QUEUE_DESC rhiQueueDesc;
 	ZeroMemory(&rhiQueueDesc, sizeof(rhiQueueDesc));
@@ -199,9 +226,6 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 		caps.textureFormatsSupported[FORMAT_ATI1N] = false;
 	}
 
-	// create default swap chain
-	m_defaultSwapChain = CRefPtr<CNVRHISwapChainDXGI>(static_cast<CNVRHISwapChainDXGI*>(CreateSwapChain(params.windowInfo).Ptr()));
-
 	nvrhi::d3d12::DeviceDesc deviceDesc;
 	deviceDesc.errorCB = &CNVRHIMessageCallback::Instance;
 	deviceDesc.pDevice = m_rhiDevice12;
@@ -217,11 +241,106 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 
 	CNVRHIRenderAPI::Instance.m_backendType = NVRHI_BACKEND_D3D12;
 
+	// create default swap chain
+	if (params.windowInfo.windowType != RHI_WINDOW_HANDLE_UNKNOWN)
+	{
+		HWND mainWindow = (HWND)params.windowInfo.get(params.windowInfo.userData, RenderWindowInfo::WINDOW);
+
+		m_defaultSwapChain = CRefPtr<CNVRHISwapChainDXGI>(static_cast<CNVRHISwapChainDXGI*>(CNVRHIRenderLibDXGIBase::CreateSwapChain(params.windowInfo).Ptr()));
+
+		m_dxgiFullScreenDesc = {};
+		m_dxgiFullScreenDesc.RefreshRate.Numerator = params.screenRefreshRateHZ;
+		m_dxgiFullScreenDesc.RefreshRate.Denominator = 1;
+		m_dxgiFullScreenDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE;
+		m_dxgiFullScreenDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+		m_dxgiFullScreenDesc.Windowed = m_windowed;
+
+		RefCountPtr<IDXGISwapChain1> pSwapChain1;
+		hr = m_dxgiFactory->CreateSwapChainForHwnd(m_rhiGraphicsQueue,
+			mainWindow,
+			&m_defaultSwapChain->m_dxgiSwapChainDesc, &m_dxgiFullScreenDesc, nullptr,
+			&pSwapChain1);
+		HR_ASSERT(hr, "Failed to create main swap chain");
+
+		hr = pSwapChain1->QueryInterface(IID_PPV_ARGS(&m_defaultSwapChain->m_dxgiSwapChain));
+		HR_ASSERT(hr, "Failed to create main swap chain");
+	}
+
+	if (m_defaultSwapChain && !CreateSwapchainTargets(static_cast<CNVRHISwapChainDXGI*>(m_defaultSwapChain)))
+	{
+		CrashMsg("Failed to initialize main swap chain");
+		return false;
+	}
+
+	return true;
+}
+
+ISwapChainPtr CNVRHIRenderLibD3D12::CreateSwapChain(const RenderWindowInfo& windowInfo)
+{
+	ISwapChainPtr swapChain = CNVRHIRenderLibDXGIBase::CreateSwapChain(windowInfo);
+
+	DXGI_SWAP_CHAIN_FULLSCREEN_DESC dxgiFullScreenDesc = {};
+	dxgiFullScreenDesc.RefreshRate.Numerator = 0;
+	dxgiFullScreenDesc.RefreshRate.Denominator = 1;
+	dxgiFullScreenDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE;
+	dxgiFullScreenDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	dxgiFullScreenDesc.Windowed = false;
+
+	RefCountPtr<IDXGISwapChain1> pSwapChain1;
+	HRESULT hr = m_dxgiFactory->CreateSwapChainForHwnd(m_rhiGraphicsQueue,
+		(HWND)windowInfo.get(windowInfo.userData, RenderWindowInfo::WINDOW),
+		&m_defaultSwapChain->m_dxgiSwapChainDesc, &m_dxgiFullScreenDesc, nullptr,
+		&pSwapChain1);
+
+	HR_ASSERT(hr, "Failed to create main swap chain");
+
+	hr = pSwapChain1->QueryInterface(IID_PPV_ARGS(&m_defaultSwapChain->m_dxgiSwapChain));
+	HR_ASSERT(hr, "Failed to create main swap chain");
+
+	if (!CreateSwapchainTargets(static_cast<CNVRHISwapChainDXGI*>(swapChain.Ptr())))
+		return nullptr;
+
+	return swapChain;
+}
+
+bool CNVRHIRenderLibD3D12::CreateSwapchainTargets(CNVRHISwapChainDXGI* swapChain) const
+{
+	if (!swapChain)
+		return false;
+
+	IDXGISwapChain3* dxgiSwapChain = swapChain->m_dxgiSwapChain;
+	const DXGI_SWAP_CHAIN_DESC1& dxgiSwapChainDesc = swapChain->m_dxgiSwapChainDesc;
+	swapChain->m_d3d12SwapChainBuffers.setNum(dxgiSwapChainDesc.BufferCount);
+	swapChain->m_rhiSwapChainTextures.setNum(dxgiSwapChainDesc.BufferCount);
+
+	for (UINT i = 0; i < dxgiSwapChainDesc.BufferCount; i++)
+	{
+		const HRESULT hr = dxgiSwapChain->GetBuffer(i, IID_PPV_ARGS(&swapChain->m_d3d12SwapChainBuffers[i]));
+		HR_ASSERT(hr, "Cant create buffer for swap chain");
+
+		nvrhi::TextureDesc textureDesc;
+		textureDesc.width = dxgiSwapChainDesc.Width;
+		textureDesc.height = dxgiSwapChainDesc.Height;
+		textureDesc.sampleCount = dxgiSwapChainDesc.SampleDesc.Count;
+		textureDesc.sampleQuality = dxgiSwapChainDesc.SampleDesc.Quality;
+		textureDesc.format = swapChain->m_swapChainFormat;
+		textureDesc.debugName = swapChain->GetBackbuffer()->GetName();
+		textureDesc.isRenderTarget = true;
+		textureDesc.isUAV = false;
+		textureDesc.initialState = nvrhi::ResourceStates::Present;
+		textureDesc.keepInitialState = true;
+
+		swapChain->m_rhiSwapChainTextures[i] = m_nvrhiDevice->createHandleForNativeTexture(nvrhi::ObjectTypes::D3D12_Resource, nvrhi::Object(swapChain->m_d3d12SwapChainBuffers[i]), textureDesc);
+	}
+
 	return true;
 }
 
 void CNVRHIRenderLibD3D12::ExitAPI()
 {
+	FreeModule(m_d3d12Lib);
+	m_d3d12Lib = nullptr;
+
 	g_consoleCommands->UnregisterCommand(&d3d12_adapter);
 	g_consoleCommands->UnregisterCommand(&d3d12_validation);
 

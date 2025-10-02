@@ -12,7 +12,8 @@
 class CNVRHITexture : public CTexture
 {
 	friend class CNVRHIRenderAPI;
-	friend class CNVRHISwapChain;
+	friend class CNVRHISwapChainDXGI;
+	friend class CNVRHISwapChainVK;
 public:
 	~CNVRHITexture();
 

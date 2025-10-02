@@ -1090,7 +1090,10 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 
 IGPUCommandRecorderPtr CNVRHIRenderAPI::CreateCommandRecorder(const char* name, void* userData) const
 {
-	nvrhi::CommandListHandle rhiCommandList = m_rhiDevice->createCommandList();
+	nvrhi::CommandListParameters rhiCmdListParams = {};
+	rhiCmdListParams.enableImmediateExecution = false;
+
+	nvrhi::CommandListHandle rhiCommandList = m_rhiDevice->createCommandList(rhiCmdListParams);
 	rhiCommandList->open();
 
 	CRefPtr<CNVRHICommandRecorder> commandRecorder = CRefPtr_new(CNVRHICommandRecorder);
@@ -1103,7 +1106,10 @@ IGPUCommandRecorderPtr CNVRHIRenderAPI::CreateCommandRecorder(const char* name, 
 
 IGPURenderPassRecorderPtr CNVRHIRenderAPI::BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData) const
 {
-	nvrhi::CommandListHandle rhiCommandList = m_rhiDevice->createCommandList();
+	nvrhi::CommandListParameters rhiCmdListParams = {};
+	rhiCmdListParams.enableImmediateExecution = false;
+
+	nvrhi::CommandListHandle rhiCommandList = m_rhiDevice->createCommandList(rhiCmdListParams);
 	rhiCommandList->open();
 
 	CRefPtr<CNVRHIRenderPassRecorder> renderPass = CRefPtr_new(CNVRHIRenderPassRecorder, rhiCommandList, userData);
@@ -1114,7 +1120,10 @@ IGPURenderPassRecorderPtr CNVRHIRenderAPI::BeginRenderPass(const RenderPassDesc&
 
 IGPUComputePassRecorderPtr CNVRHIRenderAPI::BeginComputePass(const char* name, void* userData) const
 {
-	nvrhi::CommandListHandle rhiCommandList = m_rhiDevice->createCommandList();
+	nvrhi::CommandListParameters rhiCmdListParams = {};
+	rhiCmdListParams.enableImmediateExecution = false;
+
+	nvrhi::CommandListHandle rhiCommandList = m_rhiDevice->createCommandList(rhiCmdListParams);
 	rhiCommandList->open();
 
 	CRefPtr<CNVRHIComputePassRecorder> renderPass = CRefPtr_new(CNVRHIComputePassRecorder, rhiCommandList, userData, name);

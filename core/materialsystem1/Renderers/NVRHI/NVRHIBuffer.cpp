@@ -76,7 +76,10 @@ void CNVRHIBuffer::Update(const void* data, int64 size, int64 offset)
 	const int64 writeDataSize = (size + 3) & ~3;
 	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
 
-	nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList();
+	nvrhi::CommandListParameters rhiCmdListParams = {};
+	rhiCmdListParams.enableImmediateExecution = false;
+
+	nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList(rhiCmdListParams);
 	writeCmd->open();
 	writeCmd->writeBuffer(m_rhiBuffer, data, writeDataSize, offset);
 

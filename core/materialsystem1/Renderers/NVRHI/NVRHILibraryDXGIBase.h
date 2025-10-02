@@ -7,7 +7,7 @@
 
 #pragma once
 #include <nvrhi/nvrhi.h>
-#include <dxgi1_4.h>
+#include <dxgi1_6.h>
 #include "NVRHISwapChainDXGI.h"
 #include "../IRenderLibrary.h"
 
@@ -39,13 +39,16 @@ public:
 
 	bool			CaptureScreenshot(CImage &img);
 
-	ISwapChainPtr	CreateSwapChain(const RenderWindowInfo& windowInfo);
+	virtual ISwapChainPtr	CreateSwapChain(const RenderWindowInfo& windowInfo);
 protected:
 
 	// Find an adapter whose name contains the given string.
 	static RefCountPtr<IDXGIAdapter> FindAdapter(const wchar_t* targetName);
 
-	RefCountPtr<IDXGIAdapter3>		m_rhiDxgiAdapter;
+	DXGI_SWAP_CHAIN_FULLSCREEN_DESC	m_dxgiFullScreenDesc{};
+	RefCountPtr<IDXGIFactory2>		m_dxgiFactory;
+	RefCountPtr<IDXGIAdapter3>		m_dxgiAdapter;
+	nvrhi::TextureHandle			m_rhiSwapChainBuffers;
 	
 	Threading::CEqSignal			m_endFrameWait;
 

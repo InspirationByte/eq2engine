@@ -6,16 +6,22 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include <dxgi1_6.h>
+#include <d3d11.h>
+#include <d3d12.h>
 #include "renderers/ISwapChain.h"
 #include "renderers/ShaderAPI_defs.h"
 #include "NVRHITexture.h"
 
 class CNVRHIRenderLibDXGIBase;
+using nvrhi::RefCountPtr;
 
 class CNVRHISwapChainDXGI : public ISwapChain
 {
 public:
 	friend class CNVRHIRenderLibDXGIBase;
+	friend class CNVRHIRenderLibD3D11;
+	friend class CNVRHIRenderLibD3D12;
 
 	~CNVRHISwapChainDXGI();
 	CNVRHISwapChainDXGI(CNVRHIRenderLibDXGIBase* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture);
@@ -36,12 +42,17 @@ protected:
 
 	void			UpdateBackbufferView() const;
 
+	DXGI_SWAP_CHAIN_DESC1				m_dxgiSwapChainDesc{};
+	Array<RefCountPtr<ID3D12Resource>>	m_d3d12SwapChainBuffers{ PP_SL };
+	Array<nvrhi::TextureHandle>			m_rhiSwapChainTextures{ PP_SL };
+	RefCountPtr<IDXGISwapChain3>		m_dxgiSwapChain;
+	
 	CRefPtr<CNVRHITexture>		m_textureRef;
+	nvrhi::Format				m_swapChainFormat{ nvrhi::Format::RGBA8_UNORM };
 
 	CNVRHIRenderLibDXGIBase*	m_host{ nullptr };
 	RenderWindowInfo			m_winInfo;
 
 	//WGPUSurface				m_surface{ nullptr };
-	IVector2D					m_backbufferSize{ 0 };
 	int							m_vSync{ -1 };
 };

@@ -142,7 +142,10 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 
 	// TODO: create individual array views
 
-	nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList();
+	nvrhi::CommandListParameters rhiCmdListParams = {};
+	rhiCmdListParams.enableImmediateExecution = false;
+
+	nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList(rhiCmdListParams);
 	writeCmd->open();
 	writeCmd->beginTrackingTextureState(rhiTexture, nvrhi::AllSubresources, nvrhi::ResourceStates::Common);
 	for (int arrIdx = 0; arrIdx < arraySize; ++arrIdx)
@@ -278,7 +281,10 @@ bool CNVRHITexture::Lock(LockInOutData& data)
 		rhiSrcSlice.width = data.lockSize.width;
 		rhiSrcSlice.height = data.lockSize.height;
 
-		nvrhi::CommandListHandle copyCmd = rhiDevice->createCommandList();
+		nvrhi::CommandListParameters rhiCmdListParams = {};
+		rhiCmdListParams.enableImmediateExecution = false;
+
+		nvrhi::CommandListHandle copyCmd = rhiDevice->createCommandList(rhiCmdListParams);
 		copyCmd->open();
 		copyCmd->copyTexture(rhiStagingTexture, rhiDstSlice, m_rhiTexture, rhiSrcSlice);
 		copyCmd->close();
@@ -316,7 +322,10 @@ void CNVRHITexture::Unlock(IGPUCommandRecorder* writeCmdRecorder)
 		}
 		else
 		{
-			nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList();
+			nvrhi::CommandListParameters rhiCmdListParams = {};
+			rhiCmdListParams.enableImmediateExecution = false;
+
+			nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList(rhiCmdListParams);
 			writeCmd->open();
 			writeCmd->writeTexture(m_rhiTexture, data.lockOrigin.arraySlice, data.lockOrigin.mipLevel, data.lockData, data.lockPitch);
 			writeCmd->close();
