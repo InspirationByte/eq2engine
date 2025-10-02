@@ -45,7 +45,15 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 	if (bufferUsageFlags & BUFFERUSAGE_VERTEX)	rhiBufferDesc.setIsVertexBuffer(true);
 	if (bufferUsageFlags & BUFFERUSAGE_INDEX)	rhiBufferDesc.setIsIndexBuffer(true);
 	if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)rhiBufferDesc.setIsDrawIndirectArgs(true);
-	//if (bufferUsageFlags & BUFFERUSAGE_STORAGE)	rhiBufferDesc.setCanHaveUAVs(true);
+	if (bufferUsageFlags & BUFFERUSAGE_UNIFORM)	rhiBufferDesc.setIsConstantBuffer(true);
+	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)
+	{
+		if(cpuAccessMode != nvrhi::CpuAccessMode::Write)
+			rhiBufferDesc.setCanHaveUAVs(true);
+
+		rhiBufferDesc.setCanHaveRawViews(true);
+		rhiBufferDesc.setCanHaveTypedViews(true); 
+	}
 
 	rhiBufferDesc.debugName = label;
 	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
@@ -65,6 +73,22 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 	}
 }
 
+nvrhi::ResourceStates CNVRHIBuffer::GetNVRHIResourceStates() const
+{
+	nvrhi::ResourceStates resStates = nvrhi::ResourceStates::Common;
+	const int bufferUsageFlags = m_usageFlags;
+	if (bufferUsageFlags & BUFFERUSAGE_VERTEX)	resStates = resStates | nvrhi::ResourceStates::VertexBuffer;
+	if (bufferUsageFlags & BUFFERUSAGE_INDEX)	resStates = resStates | nvrhi::ResourceStates::IndexBuffer;
+	if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)resStates = resStates | nvrhi::ResourceStates::IndirectArgument;
+	if (bufferUsageFlags & BUFFERUSAGE_UNIFORM)	resStates = resStates | nvrhi::ResourceStates::ShaderResource | nvrhi::ResourceStates::ConstantBuffer;
+	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)
+	{
+		resStates = resStates | nvrhi::ResourceStates::UnorderedAccess | nvrhi::ResourceStates::ShaderResource;
+	}
+
+	return resStates;
+}
+
 void CNVRHIBuffer::Update(const void* data, int64 size, int64 offset)
 {
 	if (!m_rhiBuffer)
@@ -81,7 +105,18 @@ void CNVRHIBuffer::Update(const void* data, int64 size, int64 offset)
 
 	nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList(rhiCmdListParams);
 	writeCmd->open();
-	writeCmd->writeBuffer(m_rhiBuffer, data, writeDataSize, offset);
+
+	if (m_firstUpdate)
+	{
+		writeCmd->beginTrackingBufferState(m_rhiBuffer, nvrhi::ResourceStates::Common);
+		writeCmd->writeBuffer(m_rhiBuffer, data, writeDataSize, offset);
+		writeCmd->setPermanentBufferState(m_rhiBuffer, GetNVRHIResourceStates());
+		m_firstUpdate = false;
+	}
+	else
+	{
+		writeCmd->writeBuffer(m_rhiBuffer, data, writeDataSize, offset);
+	}
 
 	writeCmd->close();
 	rhiDevice->executeCommandList(writeCmd);

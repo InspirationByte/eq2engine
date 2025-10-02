@@ -23,12 +23,16 @@ public:
 	MapFuture	Lock(int lockOfs, int sizeToLock, int flags);
 	void		Unlock();
 
-	nvrhi::BufferHandle	GetNVRHIBufferHandle() const { return m_rhiBuffer; }
-	int			GetUsageFlags() const { return m_usageFlags; }
+	nvrhi::BufferHandle		GetNVRHIBufferHandle() const { return m_rhiBuffer; }
+	nvrhi::ResourceStates	GetNVRHIResourceStates() const;
+	bool					IsFirstUpdate() const { return m_firstUpdate; }
+	bool					OnUpdated() { m_firstUpdate = false; }
+	int						GetUsageFlags() const { return m_usageFlags; }
 
 private:
 	nvrhi::BufferHandle	m_rhiBuffer{ nullptr };
 	int			m_bufSize{ 0 };
 	int			m_usageFlags{ 0 };
 	bool		m_isLocked{ false };
+	bool		m_firstUpdate{ true };
 };

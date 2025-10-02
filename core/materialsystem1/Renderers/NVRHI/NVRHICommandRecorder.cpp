@@ -22,7 +22,14 @@ void CNVRHICommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, in
 	ASSERT_MSG(bufferImpl->GetUsageFlags() & BUFFERUSAGE_COPY_DST, "buffer must have BUFFERUSAGE_COPY_DST usage bit");
 	ASSERT_MSG(offset >= 0 && offset + writeDataSize <= bufferImpl->GetSize(), "Offset and/or Size outside buffer range");
 
-	m_rhiCommandList->writeBuffer(bufferImpl->GetNVRHIBufferHandle(), data, writeDataSize, offset);
+	if (bufferImpl->IsFirstUpdate())
+	{
+		m_rhiCommandList->beginTrackingBufferState(bufferImpl->GetNVRHIBufferHandle(), nvrhi::ResourceStates::Common);
+		m_rhiCommandList->writeBuffer(bufferImpl->GetNVRHIBufferHandle(), data, writeDataSize, offset);
+		m_rhiCommandList->setPermanentBufferState(bufferImpl->GetNVRHIBufferHandle(), bufferImpl->GetNVRHIResourceStates());
+	}
+	else
+		m_rhiCommandList->writeBuffer(bufferImpl->GetNVRHIBufferHandle(), data, writeDataSize, offset);
 }
 
 void CNVRHICommandRecorder::CopyBufferToBuffer(IGPUBuffer* source, int64 sourceOffset, IGPUBuffer* destination, int64 destinationOffset, int64 size) const
