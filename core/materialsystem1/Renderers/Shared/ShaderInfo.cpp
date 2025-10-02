@@ -206,6 +206,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 
 			modInfo.kind = static_cast<EShaderKind>(kind);
 			modInfo.entryPoint = entryPointName;
+			modInfo.bindings.reserve(itemSec.KeyCount());
 
 			// parse module pipeline layout
 			for (const KVSection& bindingSec : itemSec.Keys())
