@@ -127,7 +127,7 @@ class CFlatFileReader : public CBasePackageReader
 public:
 	EPackageType		GetType() const { return PACKAGE_READER_FLAT; }
 
-	bool				InitPackage(const char* filename, const char* mountPath /*= nullptr*/);
+	bool				InitPackage(const char* filename, const char* name /*= nullptr*/, const char* mountPath /*= nullptr*/);
 	IFileStreamPtr		Open(const char* filename, int modeFlags);
 	bool				FileExist(const char* filename) const;
 
@@ -135,10 +135,12 @@ public:
 	bool				OpenEmbeddedPackage(CBasePackageReader* target, const char* filename) { return false; }
 	IFileStreamPtr		Open(int fileIndex, int modeFlags) { return nullptr; }
 	int					FindFileIndex(const char* filename) const { return -1; }
+	int					GetFileCount() const { return -1; }
 };
 
-bool CFlatFileReader::InitPackage(const char* filename, const char* mountPath /*= nullptr*/)
+bool CFlatFileReader::InitPackage(const char* filename, const char* name /*= nullptr*/, const char* mountPath /*= nullptr*/)
 {
+	m_name = name ? name : filename;
 	m_packagePath = filename;
 	return true;
 }
@@ -696,7 +698,7 @@ bool CFileSystem::AddPackage(const char* packageName, ESearchPath type, const ch
 	}
 
 	CBasePackageReaderPtr reader = CBasePackageReader::CreateReaderByExtension(packageName);
-	if (!reader->InitPackage(packagePath, mountPath))
+	if (!reader->InitPackage(packagePath, packageName, mountPath))
 	{
 		MsgError("Cannot open package '%s'\n", packagePath.ToCString());
 		return false;
@@ -736,14 +738,14 @@ IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchF
 
 	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
 	{
-		if (reader->InitPackage(filePath, nullptr))
+		if (reader->InitPackage(filePath, packageName, nullptr))
 			return true;
 
 		if (g_fileSystem->DirExist(filePath, searchPath))
 		{
 			// open flat reader
 			reader = CBasePackageReaderPtr(CRefPtr_new(CFlatFileReader));
-			reader->InitPackage(filePath, nullptr);
+			reader->InitPackage(filePath, packageName, nullptr);
 			return true;
 		}
 
@@ -771,7 +773,7 @@ IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchF
 	if (!WalkOverSearchPaths(searchFlags, packageName, walkFileFunc))
 		return nullptr;
 
-	if (!reader)
+	if (!reader->GetFileCount())
 		return nullptr;
 
 	reader->SetSearchPath(SP_ROOT);

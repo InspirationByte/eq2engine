@@ -14,12 +14,24 @@
 class CDPKFileReader;
 class COSFile;
 
+// data package file info
+struct DPKFileHdr
+{
+	uint64	offset;
+	uint32	size;				// The real file size
+	uint32	crc;
+
+	short	numBlocks;			// number of blocks
+	short	flags;
+};
+
+
 class CDPKFileStream : public IPackFileStream
 {
 	friend class CDPKFileReader;
 	friend class CFileSystem;
 public:
-	CDPKFileStream(const char* filename, const dpkfileinfo_t& info, COSFile&& osFile);
+	CDPKFileStream(const char* filename, const DPKFileHdr& info, COSFile&& osFile);
 	~CDPKFileStream();
 
 	// reads data from virtual stream
@@ -48,7 +60,7 @@ protected:
 
 	EqString			m_name;
 
-	dpkfileinfo_t		m_info;
+	DPKFileHdr			m_info;
 	IceKey				m_ice;
 	COSFile				m_osFile;
 	Array<BlockInfo>	m_blockInfo{ PP_SL };
@@ -66,20 +78,24 @@ protected:
 class CDPKFileReader : public CBasePackageReader
 {
 public:
+	static bool				CheckValidHeader(const dpkheader_t& header, const char* packageName);
+
 	EPackageType			GetType() const { return PACKAGE_READER_DPK; }
 
-	bool					InitPackage( const char* filename, const char* mountPath /*= nullptr*/);
+	bool					InitPackage( const char* filename, const char* name /*= nullptr*/, const char* mountPath /*= nullptr*/);
 	bool					OpenEmbeddedPackage(CBasePackageReader* target, const char* filename);
 
-	IFileStreamPtr				Open(const char* filename, int modeFlags);
-	IFileStreamPtr				Open(int fileIndex, int modeFlags);
+	IFileStreamPtr			Open(const char* filename, int modeFlags);
+	IFileStreamPtr			Open(int fileIndex, int modeFlags);
+	int						GetFileCount() const { return m_dpkFiles.numElem(); }
+
 	bool					FileExist(const char* filename) const;
 	int						FindFileIndex(const char* filename) const;
 
 protected:
-	bool					InitPackage(COSFile& osFile, const char* mountPath /*= nullptr*/);
+	bool					InitPackageInternal(COSFile& osFile, const VSSize startOffset, const dpkheader_t& header, const char* mountPath /*= nullptr*/);
 
-	Array<dpkfileinfo_t>	m_dpkFiles{ PP_SL };
+	Array<DPKFileHdr>		m_dpkFiles{ PP_SL };
 	Map<int, int>			m_fileIndices{ PP_SL };
 	int						m_version{ 0 };
 };

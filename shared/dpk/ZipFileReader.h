@@ -49,10 +49,11 @@ class CZipFileReader : public CBasePackageReader
 public:
 	EPackageType		GetType() const { return PACKAGE_READER_ZIP; }
 
-	bool				InitPackage(const char* filename, const char* mountPath = nullptr);
+	bool				InitPackage(const char* filename, const char* name /*= nullptr*/, const char* mountPath /*= nullptr*/);
 
-	IFileStreamPtr			Open(const char* filename, int modeFlags);
-	IFileStreamPtr			Open(int fileIndex, int modeFlags);
+	IFileStreamPtr		Open(const char* filename, int modeFlags);
+	IFileStreamPtr		Open(int fileIndex, int modeFlags);
+	int					GetFileCount() const { return m_files.size(); }
 	bool				FileExist(const char* filename) const;
 	int					FindFileIndex(const char* filename) const;
 
