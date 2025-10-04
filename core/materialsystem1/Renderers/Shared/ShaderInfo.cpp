@@ -11,6 +11,11 @@ uint ShaderInfo::PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int k
 	return hash;
 }
 
+uint ShaderInfo::MakeBindingIdx(int descriptorSetIdx, int index)
+{
+	return descriptorSetIdx | (index << 8);
+}
+
 ShaderInfo::ShaderInfo(ShaderInfo&& other) noexcept
 	: shaderName(std::move(other.shaderName))
 	, shaderPackFile(std::move(other.shaderPackFile))
@@ -91,7 +96,38 @@ static EBindEntryType GetBindingTypeByName(const char* name)
 	return (EBindEntryType) - 1;
 }
 
-bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shaderPackFile, const KVSection& shaderInfoKvs, int& filesFound)
+void ShaderInfo::ParseModuleBindings(const KVSection& bindingsSec, Module& modInfo)
+{
+	modInfo.bindings.reserve(bindingsSec.KeyCount());
+	for (const KVSection& bindingSec : bindingsSec.Keys())
+	{
+		const int idx = modInfo.bindings.numElem();
+		Binding& binding = modInfo.bindings.append();
+
+		int rangeTypeIdx;
+		EqStringRef rwFlagsStr;
+		EqStringRef typeName;
+		bindingSec.GetValues(typeName, rwFlagsStr, binding.descriptorSetIdx, binding.index, rangeTypeIdx, binding.registerIdx);
+
+		binding.type = GetBindingTypeByName(typeName);
+		binding.name = bindingSec.GetName();
+		binding.rangeType = static_cast<EBindingRangeType>(rangeTypeIdx);
+		ASSERT(binding.type >= 0);
+
+		if (rwFlagsStr == "readonly")
+			binding.rwFlags = RWFLAG_READ;
+		else if (rwFlagsStr == "writeonly")
+			binding.rwFlags = RWFLAG_WRITE;
+		else if (rwFlagsStr == "readwrite")
+			binding.rwFlags = RWFLAG_READ | RWFLAG_WRITE;
+		else if (rwFlagsStr == "uniform")
+			binding.rwFlags = RWFLAG_UNIFORM;
+
+		modInfo.bindingMap.insert(MakeBindingIdx(binding.descriptorSetIdx, binding.index), idx);
+	}
+}
+
+bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shaderPackFile, const KVSection& shaderInfoKvs, int& filesFound, bool parseBindings)
 {
 	shaderInfo.shaderPackFile = shaderPackFile;
 	shaderInfo.shaderName = shaderInfoKvs.GetName();
@@ -206,32 +242,11 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 
 			modInfo.kind = static_cast<EShaderKind>(kind);
 			modInfo.entryPoint = entryPointName;
-			modInfo.bindings.reserve(itemSec.KeyCount());
 
 			// parse module pipeline layout
-			for (const KVSection& bindingSec : itemSec.Keys())
-			{
-				Binding& binding = modInfo.bindings.append();
+			if (parseBindings)
+				ParseModuleBindings(itemSec, modInfo);
 
-				int rangeTypeIdx;
-				EqStringRef rwFlagsStr;
-				EqStringRef typeName;
-				bindingSec.GetValues(typeName, rwFlagsStr, binding.descriptorSetIdx, binding.index, rangeTypeIdx, binding.registerIdx);
-
-				binding.type = GetBindingTypeByName(typeName);
-				binding.name = bindingSec.GetName();
-				binding.rangeType = static_cast<EBindingRangeType>(rangeTypeIdx);
-				ASSERT(binding.type >= 0);
-
-				if (rwFlagsStr == "readonly")
-					binding.rwFlags = RWFLAG_READ;
-				else if (rwFlagsStr == "writeonly")
-					binding.rwFlags = RWFLAG_WRITE;
-				else if (rwFlagsStr == "readwrite")
-					binding.rwFlags = RWFLAG_READ | RWFLAG_WRITE;
-				else if (rwFlagsStr == "uniform")
-					binding.rwFlags = RWFLAG_UNIFORM;
-			}
 		}
 		{
 			const int queryStrHash = StringId24(queryStr, true);
