@@ -20,16 +20,15 @@
 
 static Threading::CEqMutex s_dpkMutex;
 
-struct CDPKFileStream::BlockInfo
+struct CDPKFileStream::BlockInfo : dpkblock_t
 {
-	uint32 offset;
-	uint32 size;
-	uint32 compressedSize;
-	short flags;
+	uint64 offset;
 };
 
-CDPKFileStream::CDPKFileStream(const char* filename, const dpkfileinfo_t& info, COSFile&& osFile)
-	: m_name(filename), m_ice(0), m_osFile(std::move(osFile))
+CDPKFileStream::CDPKFileStream(const char* filename, const DPKFileHdr& info, COSFile&& osFile)
+	: m_name(filename)
+	, m_ice(0)
+	, m_osFile(std::move(osFile))
 {
 	m_info = info;
 	m_curPos = 0;
@@ -41,23 +40,19 @@ CDPKFileStream::CDPKFileStream(const char* filename, const dpkfileinfo_t& info, 
 	// read all block headers
 	m_osFile.Seek(m_info.offset, COSFile::ESeekPos::SET);
 
-	m_blockInfo.resize(m_info.numBlocks);
+	m_blockInfo.reserve(m_info.numBlocks);
 	for (int i = 0; i < m_info.numBlocks; i++)
 	{
-		dpkblock_t hdr;
-		m_osFile.Read(&hdr, sizeof(dpkblock_t));
-		
-		BlockInfo& block = m_blockInfo.append();
-		block.flags = hdr.flags;
-		block.offset = (uint32)m_osFile.Tell();
-		block.compressedSize = hdr.compressedSize;
-		block.size = hdr.size;
+		BlockInfo& blockInfo = m_blockInfo.append();
+		m_osFile.Read(&blockInfo, sizeof(dpkblock_t));
+
+		blockInfo.offset = (uint32)m_osFile.Tell();
 
 		// skip block contents
-		const int readSize = (block.flags & DPKFILE_FLAG_COMPRESSED) ? hdr.compressedSize : hdr.size;
+		const int readSize = (blockInfo.flags & DPKFILE_FLAG_COMPRESSED) ? blockInfo.compressedSize : blockInfo.size;
 		m_osFile.Seek(readSize, COSFile::ESeekPos::CURRENT);
 
-		hasCompressedBlocks = hasCompressedBlocks || (block.flags & DPKFILE_FLAG_COMPRESSED);
+		hasCompressedBlocks = hasCompressedBlocks || (blockInfo.flags & DPKFILE_FLAG_COMPRESSED);
 	}
 
 	m_blockData = malloc(DPK_BLOCK_DECOMPRESS_SIZE);
@@ -119,7 +114,7 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 	{
 		// decompress readMem to 'm_blockData'
 		const int decompressedSize = LZ4_decompress_safe((char*)readMem, (char*)m_blockData, curBlock.compressedSize, DPK_BLOCK_DECOMPRESS_SIZE);
-		ASSERT_MSG(decompressedSize == curBlock.size, "unable to decompress DPK block %d of %x (compressedSize: %d, decompressedSize: %d, blockSize: %d)", m_curBlockIdx, m_info.filenameHash, curBlock.compressedSize, decompressedSize, curBlock.size);
+		ASSERT_MSG(decompressedSize == curBlock.size, "unable to decompress DPK block %d (compressedSize: %d, decompressedSize: %d, blockSize: %d)", m_curBlockIdx, curBlock.compressedSize, decompressedSize, curBlock.size);
 	}
 }
 
@@ -258,7 +253,6 @@ bool CDPKFileReader::FileExist(const char* filename) const
 int	CDPKFileReader::FindFileIndex(const char* filename) const
 {
 	const int nameHash = DPK_FilenameHash(filename, m_version);
-
 	auto it = m_fileIndices.find(nameHash);
 	if (!it.atEnd())
 		return it.value();
@@ -266,65 +260,71 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
     return -1;
 }
 
-bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*= nullptr*/)
+bool CDPKFileReader::CheckValidHeader(const dpkheader_t& header, const char* packageName)
 {
-	m_packagePath = filename;
-
-	COSFile osFile;
-	if(!osFile.Open(m_packagePath, COSFile::OPEN_EXIST | COSFile::READ))
-		return false;
-
-	return InitPackage(osFile, mountPath);
-}
-
-bool CDPKFileReader::InitPackage(COSFile& osFile, const char* mountPath /*= nullptr*/)
-{
-	const VSSize packageStart = osFile.Tell();
-
-	dpkheader_t header;
-	osFile.Read(&header, sizeof(dpkheader_t));
-
 	if (header.signature != DPK_SIGNATURE)
 	{
-		MsgError("'%s' is not a Data Pack File\n", m_packagePath.ToCString());
+		MsgError("'%s' is not a Data Pack File\n", packageName);
 		return false;
 	}
 
 	if (header.version != DPK_VERSION && header.version != DPK_PREV_VERSION)
 	{
-		MsgError("package '%s' has wrong version\n", m_packagePath.ToCString());
+		MsgError("package '%s' has wrong version\n", packageName);
 		return false;
 	}
+	return true;
+}
 
-	m_version = header.version;
+bool CDPKFileReader::InitPackage(const char *filename, const char* name, const char* mountPath /*= nullptr*/)
+{
+	m_packagePath.Empty();
+
+	COSFile osFile;
+	if(!osFile.Open(filename, COSFile::OPEN_EXIST | COSFile::READ))
+		return false;
+
+	dpkheader_t header;
+	osFile.Read(&header, sizeof(dpkheader_t));
+	if (!CheckValidHeader(header, m_packagePath))
+		return false;
 
 	// read mount path
 	char dpkMountPath[DPK_STRING_SIZE];
 	osFile.Read(dpkMountPath, DPK_STRING_SIZE);
 
-	// if custom mount path provided, use it
-	if (mountPath)
-		m_mountPath = mountPath;
-	else
-		m_mountPath = dpkMountPath;
+	m_name = name ? name : filename;
+	m_packagePath = filename;
+
+	return InitPackageInternal(osFile, 0, header, mountPath ? mountPath : dpkMountPath);
+}
+
+bool CDPKFileReader::InitPackageInternal(COSFile& osFile, const VSSize startOffset, const dpkheader_t& header, const char* mountPath /*= nullptr*/)
+{
+	m_version = header.version;
+	m_mountPath = mountPath;
 
 	fnmPathFixSeparators(m_mountPath);
 
 	DevMsg(DEVMSG_FS, "Package '%s' loading OK\n", m_packagePath.ToCString());
 
-	// skip file data
-	osFile.Seek(packageStart + header.fileInfoOffset, COSFile::ESeekPos::SET);
-
 	// read file table
-	m_dpkFiles.setNum(header.numFiles);
-	osFile.Read(m_dpkFiles.ptr(), sizeof(dpkfileinfo_t) * header.numFiles);
+	osFile.Seek(startOffset + header.fileInfoOffset, COSFile::ESeekPos::SET);
 
+	m_dpkFiles.setNum(header.numFiles);
 	for (int i = 0; i < header.numFiles; ++i)
 	{
-		m_fileIndices.insert(m_dpkFiles[i].filenameHash, i);
+		dpkfileinfo_t finfo;
+		osFile.Read(&finfo, sizeof(dpkfileinfo_t));
 
-		// relocate package in case of opening EPK inside EPK
-		m_dpkFiles[i].offset += packageStart;
+		m_fileIndices.insert(finfo.filenameHash, i);
+
+		DPKFileHdr& dstInfo = m_dpkFiles[i];
+		dstInfo.offset = finfo.offset + startOffset;	// relocate package in case of opening EPK inside EPK
+		dstInfo.size = finfo.size;
+		dstInfo.crc = finfo.crc;
+		dstInfo.numBlocks = finfo.numBlocks;
+		dstInfo.flags = finfo.flags;
 	}
 
 	// ASSERT_MSG(header.numFiles == m_fileIndices.size(), "Programmer warning: hash collisions in %s, %d files out of %d", m_packageName.ToCString(), m_fileIndices.size(), header.numFiles);
@@ -340,7 +340,7 @@ bool CDPKFileReader::OpenEmbeddedPackage(CBasePackageReader* target, const char*
 	if (dpkFileIndex == -1)
 		return false;
 
-	const dpkfileinfo_t& fileInfo = m_dpkFiles[dpkFileIndex];
+	const DPKFileHdr& fileInfo = m_dpkFiles[dpkFileIndex];
 
 	// file must be flat-written in order to be able to read as package
 	if (fileInfo.flags & (DPKFILE_FLAG_COMPRESSED | DPKFILE_FLAG_ENCRYPTED))
@@ -358,10 +358,21 @@ bool CDPKFileReader::OpenEmbeddedPackage(CBasePackageReader* target, const char*
 	if (target->GetType() == PACKAGE_READER_DPK)
 	{
 		CDPKFileReader* targetDPKReader = (CDPKFileReader*)target;
+		targetDPKReader->m_name = filename;
 		targetDPKReader->m_packagePath = m_packagePath;
 
 		osFile.Seek(fileInfo.offset, COSFile::ESeekPos::SET);
-		targetDPKReader->InitPackage(osFile, nullptr);
+
+		dpkheader_t header;
+		osFile.Read(&header, sizeof(dpkheader_t));
+		if (!CheckValidHeader(header, fnmPathCombine(m_packagePath, filename)))
+			return false;
+
+		// read mount path
+		char dpkMountPath[DPK_STRING_SIZE];
+		osFile.Read(dpkMountPath, DPK_STRING_SIZE);
+
+		targetDPKReader->InitPackageInternal(osFile, fileInfo.offset, header, dpkMountPath);
 		return true;
 	}
 
@@ -381,7 +392,7 @@ IFileStreamPtr CDPKFileReader::Open(const char* filename, int modeFlags)
 	if (dpkFileIndex == -1)
 		return nullptr;
 
-	const dpkfileinfo_t& fileInfo = m_dpkFiles[dpkFileIndex];
+	const DPKFileHdr& fileInfo = m_dpkFiles[dpkFileIndex];
 
 	COSFile osFile;
 	if (!osFile.Open(m_packagePath, COSFile::OPEN_EXIST | COSFile::READ))
@@ -408,7 +419,7 @@ IFileStreamPtr CDPKFileReader::Open(int fileIndex, int modeFlags)
 	if (fileIndex == -1)
 		return nullptr;
 
-	const dpkfileinfo_t& fileInfo = m_dpkFiles[fileIndex];
+	const DPKFileHdr& fileInfo = m_dpkFiles[fileIndex];
 
 	COSFile osFile;
 	if (!osFile.Open(m_packagePath, COSFile::OPEN_EXIST | COSFile::READ))

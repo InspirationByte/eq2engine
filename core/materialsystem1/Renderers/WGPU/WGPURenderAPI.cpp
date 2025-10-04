@@ -110,7 +110,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	ShaderInfo& shaderInfo = *it;
 
 	int filesFound = 0;
-	if (!ShaderInfo::ParseShaderInfo(shaderInfo, shaderPackFile, shaderInfoKvs, filesFound))
+	if (!ShaderInfo::ParseShaderInfo(shaderInfo, shaderPackFile, shaderInfoKvs, filesFound, false))
 	{
 		m_shaderCache.remove(it);
 		return 0;
@@ -125,6 +125,57 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	DevMsg(DEVMSG_RENDER, "Loaded %d shader modules from %s package\n", filesFound, shaderInfoKvs.GetName());
 
 	return shaderNameId;
+}
+
+void CWGPURenderAPI::ReloadShaderPackage(int id)
+{
+	auto it = m_shaderCache.find(id);
+	if (it.atEnd())
+		return;
+
+	ShaderInfo& shaderInfo = *it;
+	EqString packageName = shaderInfo.shaderPackFile->GetName();
+
+	IPackFileReaderPtr shaderPackFile = g_fileSystem->OpenPackage(packageName, SP_MOD | SP_DATA);
+	if (!shaderPackFile)
+	{
+		MsgError("Cannot open shader package '%s'\n", packageName.ToCString());
+		return;
+	}
+
+	KVSection shaderInfoKvs;
+	{
+		IFileStreamPtr file = shaderPackFile->Open("ShaderInfo", FS_OPEN_READ);
+		if (!KeyValues::Parse(file, shaderInfoKvs))
+		{
+			Msg("No ShaderInfo in file %s\n", packageName.ToCString());
+			return;
+		}
+	}
+
+	DevMsg(DEVMSG_RENDER, "Reloading shader package %s\n", shaderInfoKvs.GetName());
+	if (!CString::SubString(packageName.ToCString(), shaderInfoKvs.GetName()))
+	{
+		ASSERT_FAIL("Shader package '%s' file name doesn't match it's name '%s' in desc", packageName.ToCString(), shaderInfoKvs.GetName());
+		return;
+	}
+
+	// re-initialize shader info
+	shaderInfo = {};
+
+	int filesFound = 0;
+	if (!ShaderInfo::ParseShaderInfo(shaderInfo, shaderPackFile, shaderInfoKvs, filesFound, false))
+	{
+		return;
+	}
+
+	if (wgpu_preloadShaders.GetBool())
+	{
+		for (int i = 0; i < shaderInfo.modules.numElem(); ++i)
+			GetOrLoadShaderModule(shaderInfo, i, nullptr);
+	}
+
+	DevMsg(DEVMSG_RENDER, "Loaded %d shader modules from %s package\n", filesFound, shaderInfoKvs.GetName());
 }
 
 void CWGPURenderAPI::PrintAPIInfo() const

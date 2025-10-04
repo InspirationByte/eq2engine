@@ -32,11 +32,10 @@ public:
 	static CBasePackageReaderPtr	CreateReaderByExtension(const char* packageName);
 
 	virtual EPackageType	GetType() const = 0;
-	const char*				GetName() const	{ return m_packagePath; }
+	const char*				GetName() const	{ return m_name; }
 
-	virtual bool			InitPackage(const char* filename, const char* mountPath = nullptr) = 0;
+	virtual bool			InitPackage(const char* filename, const char* name = nullptr, const char* mountPath = nullptr) = 0;
 	virtual bool			OpenEmbeddedPackage(CBasePackageReader* target, const char* filename) { return false; }
-
 
 	int						GetSearchPath() const		{ return m_searchPath; };
 	void					SetSearchPath(int search)	{ m_searchPath = search; };
@@ -46,6 +45,7 @@ public:
 
 protected:
 
+	EqString		m_name;
 	EqString		m_packagePath;
 	EqString		m_mountPath;
 	EqString		m_key;

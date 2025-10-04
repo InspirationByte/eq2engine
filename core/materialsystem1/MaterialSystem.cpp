@@ -724,7 +724,12 @@ void CMaterialSystem::ReloadAllMaterials()
 
 	const int oldFreq = m_shaderAPI->GetProgressiveTextureFrequency();
 	m_shaderAPI->SetProgressiveTextureFrequency(0);
-	LoadShaderPackages();
+
+	for (auto it = m_shaderFactoryList.begin(); !it.atEnd(); ++it)
+	{
+		MatSysShaderFactory& factory = *it;
+		m_shaderAPI->ReloadShaderPackage(it.key());
+	}
 
 	for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
 	{
@@ -769,10 +774,7 @@ void CMaterialSystem::ReloadShader(const char* name)
 		MsgInfo("Reloading shader %s and associate materials\n", name);
 
 		MatSysShaderFactory& factory = *it;
-		m_shaderAPI->FreeShaderPackage(it.key());
-
-		EqString shaderPackPath = fnmPathCombine("shaders", fnmPathApplyExt(factory.shaderName, "shd"));
-		m_shaderAPI->LoadShaderPackage(shaderPackPath);
+		m_shaderAPI->ReloadShaderPackage(it.key());
 	}
 
 	// clear pipeline cache first
@@ -785,7 +787,6 @@ void CMaterialSystem::ReloadShader(const char* name)
 
 	const int oldFreq = m_shaderAPI->GetProgressiveTextureFrequency();
 	m_shaderAPI->SetProgressiveTextureFrequency(0);
-	LoadShaderPackages();
 
 	// reload materials which have that shader
 	for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)

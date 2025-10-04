@@ -51,6 +51,7 @@ public:
 //-------------------------------------------------------------
 // Shaders
 	int							LoadShaderPackage(const char* filename);
+	void						ReloadShaderPackage(int id);
 	void						FreeShaderPackage(int id);
 	void						ClearShaderPackages();
 

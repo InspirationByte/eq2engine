@@ -14,8 +14,8 @@
 
 enum ESearchPath : int
 {
-    SP_DATA = (1 << 0),
-    SP_ROOT = (1 << 1),
+	SP_ROOT = (1 << 0),
+    SP_DATA = (1 << 1),
     SP_MOD	= (1 << 2),
 };
 

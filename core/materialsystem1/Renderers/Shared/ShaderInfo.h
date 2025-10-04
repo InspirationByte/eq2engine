@@ -38,8 +38,13 @@ static_assert(SHADERMODULE_TYPES == elementsOf(s_shaderModuleTypeExt), "BINDENTR
 
 struct ShaderInfo
 {
+	struct Module;
+
 	static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, int entryPointStrHash);
-	static bool ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shaderPackFile, const KVSection& shaderInfoKvs, int& filesFound);
+	static bool ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shaderPackFile, const KVSection& shaderInfoKvs, int& filesFound, bool parseBindings = true);
+	static void ParseModuleBindings(const KVSection& bindingsSec, Module& modInfo);
+
+	static uint MakeBindingIdx(int descriptorSetIdx, int index);
 
 	ShaderInfo() = default;
 	ShaderInfo(ShaderInfo&& other) noexcept;
@@ -65,7 +70,6 @@ struct ShaderInfo
 		int					index{ -1 };
 		EBindingRangeType	rangeType{};
 		int					registerIdx{ 0 };
-
 	};
 
 	struct Module
@@ -76,6 +80,9 @@ struct ShaderInfo
 		int						fileIndex[SHADERMODULE_TYPES]{ -1 };
 		Array<Binding>			bindings{ PP_SL };
 		IGPUPipelineLayoutPtr	pipelineLayout;				// needed for NVRHI
+
+		// descriptorSetIdx:index to bindings via MakeBindingIdx
+		Map<uint, int>			bindingMap{ PP_SL };
 	};
 
 	struct EntryPoint

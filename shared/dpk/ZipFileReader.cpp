@@ -113,18 +113,20 @@ VSSize CZipFileStream::Tell() const
 // ZIP host
 //-----------------------------------------------------------------------------------------------------------------------
 
-bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* = nullptr*/)
+bool CZipFileReader::InitPackage(const char* filename, const char* name /*= nullptr*/, const char* mountPath/* = nullptr*/)
 {
-	char path[2048];
-	m_packagePath = filename;
+	m_packagePath.Empty();
 
 	// perform test
-	unzFile zip = unzOpen(m_packagePath);
+	unzFile zip = unzOpen(filename);
 	if (!zip)
 	{
 		MsgError("Cannot open Zip package '%s'\n", m_packagePath.ToCString());
 		return false;
 	}
+
+	m_name = name ? name : filename;
+	m_packagePath = filename;
 
 	// add files
 	unz_global_info ugi;
@@ -132,7 +134,9 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 
 	const float COMPRESSION_RATIO_WARNING_THRESHOLD = 0.75f;
 	const int COMPRESSED_FILE_BIG_FILE_SIZE_THRESHOLD = 8 * 1024 * 1024;
+
 	bool warnAboutCompression = false;
+	char path[2048];
 
 	// hash all file names and positions
 	for (uLong i = 0; i < ugi.number_entry; ++i)

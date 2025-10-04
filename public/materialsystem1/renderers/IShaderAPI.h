@@ -146,6 +146,7 @@ public:
 // Shader resource managenent
 
 	virtual int					LoadShaderPackage(const char* filename) = 0;
+	virtual void				ReloadShaderPackage(int id) = 0;
 	virtual void				FreeShaderPackage(int id) = 0;
 	virtual void				ClearShaderPackages() = 0;
 
