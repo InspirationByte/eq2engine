@@ -133,6 +133,11 @@ int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 	return shaderNameId;
 }
 
+void CNVRHIRenderAPI::ReloadShaderPackage(int id)
+{
+	ASSERT_FAIL("Not implemented yet");
+}
+
 void CNVRHIRenderAPI::PrintAPIInfo() const
 {
 	Msg("ShaderAPI: WGPURenderAPI\n");
@@ -382,35 +387,6 @@ nvrhi::BindingLayoutHandle CNVRHIRenderAPI::CreateBindingLayout(const BindGroupL
 	return m_rhiDevice->createBindingLayout(rhiBindingLayoutDesc);
 }
 
-IGPUPipelineLayoutPtr CNVRHIRenderAPI::CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const
-{
-	CRefPtr<CNVRHIPipelineLayout> pipelineLayout = CRefPtr_new(CNVRHIPipelineLayout);
-	pipelineLayout->m_dbgName = layoutDesc.name;
-
-	// Pipeline layout and bind group layout
-	// are also objects of IGPURenderPipeline
-	// There are 3 distinctive bind groups or buffers as our MatSystem design defines:
-	//		- Material Constant Properties (static buffer)
-	//		- Material Proxy Properties (buffers of these group updated every frame)
-	//		- Scene Properties (camera, transform, fog, clip planes)
-
-	int bindGroupIndex = 0;
-	for(const BindGroupLayoutDesc& bindGroupDesc : layoutDesc.bindGroups)
-	{
-		nvrhi::BindingLayoutHandle rhiBindingLayout = CreateBindingLayout(bindGroupDesc, bindGroupIndex);
-		if (!rhiBindingLayout)
-		{
-			ASSERT_FAIL("Failed to create pipeline layout for bind group %d", bindGroupIndex);
-			return nullptr;
-		}
-
-		pipelineLayout->m_rhiBindingLayout[pipelineLayout] = rhiBindingLayout;
-		++bindGroupIndex;
-	}
-
-	return IGPUPipelineLayoutPtr(pipelineLayout);
-}
-
 static void FillNVRHIBindGroupEntries(nvrhi::IDevice* rhiDevice, const BindGroupDesc& bindGroupDesc, Array<nvrhi::SamplerHandle>& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc)
 {
 	for (const BindGroupDesc::Entry& bindGroupEntry : bindGroupDesc.entries)
@@ -468,7 +444,36 @@ static void FillNVRHIBindGroupEntries(nvrhi::IDevice* rhiDevice, const BindGroup
 	}
 }
 
-IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(const NVRHIBindingLayoutList& rhiBindingLayouts, const BindGroupDesc& bindGroupDesc) const
+IGPUPipelineLayoutPtr CNVRHIRenderAPI::CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const
+{
+	CRefPtr<CNVRHIPipelineLayout> pipelineLayout = CRefPtr_new(CNVRHIPipelineLayout);
+	pipelineLayout->m_dbgName = layoutDesc.name;
+
+	// Pipeline layout and bind group layout
+	// are also objects of IGPURenderPipeline
+	// There are 3 distinctive bind groups or buffers as our MatSystem design defines:
+	//		- Material Constant Properties (static buffer)
+	//		- Material Proxy Properties (buffers of these group updated every frame)
+	//		- Scene Properties (camera, transform, fog, clip planes)
+
+	int bindGroupIndex = 0;
+	for(const BindGroupLayoutDesc& bindGroupDesc : layoutDesc.bindGroups)
+	{
+		nvrhi::BindingLayoutHandle rhiBindingLayout = CreateBindingLayout(bindGroupDesc, bindGroupIndex);
+		if (!rhiBindingLayout)
+		{
+			ASSERT_FAIL("Failed to create pipeline layout for bind group %d", bindGroupIndex);
+			return nullptr;
+		}
+
+		pipelineLayout->m_rhiBindingLayout[pipelineLayout] = rhiBindingLayout;
+		++bindGroupIndex;
+	}
+
+	return IGPUPipelineLayoutPtr(pipelineLayout);
+}
+
+IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(NVRHIBindingLayoutsCRef rhiBindingLayouts, const BindGroupDesc& bindGroupDesc) const
 {
 	if (!rhiBindingLayouts.inRange(bindGroupDesc.groupIdx))
 	{
@@ -513,7 +518,8 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPURenderPipeline* rend
 	}
 
 	const CNVRHIRenderPipeline* renderPipelineImpl = static_cast<const CNVRHIRenderPipeline*>(renderPipeline);
-	return CreateBindGroupImpl(renderPipelineImpl->m_rhiBindingLayout, bindGroupDesc);
+	const nvrhi::BindingLayoutVector& bindingLayouts = renderPipelineImpl->m_rhiPipelineDesc.bindingLayouts;
+	return CreateBindGroupImpl(ArrayCRef(&bindingLayouts.front(), bindingLayouts.size()), bindGroupDesc);
 }
 
 IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUComputePipeline* computePipeline, const BindGroupDesc& bindGroupDesc) const
@@ -539,7 +545,7 @@ const ShaderInfo::Module& CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInf
 	{
 		IFileStreamPtr shaderFile = shaderInfo.shaderPackFile->Open(mod.fileIndex[type], FS_OPEN_READ);
 		if (!shaderFile)
-			return nullptr;
+			return;
 
 		shaderBlobData.Open(FS_OPEN_WRITE | FS_OPEN_READ);
 		shaderBlobData.AppendStream(shaderFile);
@@ -904,18 +910,18 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	else
 	{
 		// create shader pipeline layout
-		int maxBindGroups = 0;
+		int maxBindGroupIdx = -1;
 		for (const ShaderInfo::Binding& binding : vertexShaderModule->bindings)
-			maxBindGroups = max(binding.descriptorSetIdx, maxBindGroups);
+			maxBindGroupIdx = max(binding.descriptorSetIdx, maxBindGroupIdx);
 
 		ArrayCRef<ShaderInfo::Binding> fragmentBindings = fragmentShaderModule ? fragmentShaderModule->bindings : ArrayCRef<ShaderInfo::Binding>(nullptr);
 		for (const ShaderInfo::Binding& binding : fragmentBindings)
-			maxBindGroups = max(binding.descriptorSetIdx, maxBindGroups);
+			maxBindGroupIdx = max(binding.descriptorSetIdx, maxBindGroupIdx);
 
-		if (maxBindGroups)
+		if (maxBindGroupIdx >= 0)
 		{
 			PipelineLayoutDesc shaderPipelineLayoutDesc;
-			shaderPipelineLayoutDesc.bindGroups.setNum(maxBindGroups);
+			shaderPipelineLayoutDesc.bindGroups.setNum(maxBindGroupIdx + 1);
 			ShaderBindingsToPipelineLayout(shaderPipelineLayoutDesc, vertexShaderModule->bindings, SHADERKIND_VERTEX);
 
 			for (const ShaderInfo::Binding& binding : fragmentBindings)
@@ -955,7 +961,9 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	rhiGraphicsPipelineDesc.setInputLayout(rhiInputLayout);
 
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString());
-	
+
+	// TODO: use framebuffer info and VK_KHR_dynamic_rendering on Vulkan
+	CRefPtr<CNVRHIRenderPipeline> renderPipeline;
 #if 0
 	{
 		PROF_EVENT(EqString::Format("CreateRenderPipeline for %s", pipelineName.ToCString()));
@@ -966,16 +974,20 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 			return nullptr;
 		}
 
-		CRefPtr<CNVRHIRenderPipeline> renderPipeline = CRefPtr_new(CNVRHIRenderPipeline);
+		renderPipeline = CRefPtr_new(CNVRHIRenderPipeline);
 		renderPipeline->m_rhiRenderPipeline = rhiRenderPipeline;
 		renderPipeline->m_dbgName = std::move(pipelineName);
-		renderPipeline->m_rhiBindingLayout = pipelineLayoutImpl->m_rhiBindingLayout;
 
 		return IGPURenderPipelinePtr(renderPipeline);
 	}
+#else
+	renderPipeline = CRefPtr_new(CNVRHIRenderPipeline);
+	renderPipeline->m_rhiFramebufferinfo = rhiFramebufferInfo;
+	renderPipeline->m_rhiPipelineDesc = rhiGraphicsPipelineDesc;
+	renderPipeline->m_dbgName = std::move(pipelineName);
 #endif
-	ASSERT_FAIL("createGraphicsPipeline must be in CommitGraphicsState");
-	return nullptr;
+
+	return IGPURenderPipelinePtr(renderPipeline);
 }
 
 IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout) const

@@ -55,6 +55,7 @@ public:
 //-------------------------------------------------------------
 // Shaders
 	int							LoadShaderPackage(const char* filename);
+	void						ReloadShaderPackage(int id);
 	void						FreeShaderPackage(int id);
 	void						ClearShaderPackages();
 
@@ -108,7 +109,7 @@ public:
 
 protected:
 	nvrhi::BindingLayoutHandle	CreateBindingLayout(const BindGroupLayoutDesc& bindGroupDesc, int bindGroupIndex) const;
-	IGPUBindGroupPtr			CreateBindGroupImpl(const NVRHIBindingLayoutList& rhiBindingLayouts, const BindGroupDesc& bindGroupDesc) const;
+	IGPUBindGroupPtr			CreateBindGroupImpl(NVRHIBindingLayoutsCRef rhiBindingLayouts, const BindGroupDesc& bindGroupDesc) const;
 
 	const ShaderInfo::Module&	GetOrLoadShaderModule(const ShaderInfo& shaderInfo, int shaderModuleIdx, const char* dbgName = nullptr) const;
 

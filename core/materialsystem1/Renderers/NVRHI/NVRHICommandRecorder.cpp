@@ -27,6 +27,8 @@ void CNVRHICommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, in
 		m_rhiCommandList->beginTrackingBufferState(bufferImpl->GetNVRHIBufferHandle(), nvrhi::ResourceStates::Common);
 		m_rhiCommandList->writeBuffer(bufferImpl->GetNVRHIBufferHandle(), data, writeDataSize, offset);
 		m_rhiCommandList->setPermanentBufferState(bufferImpl->GetNVRHIBufferHandle(), bufferImpl->GetNVRHIResourceStates());
+
+		bufferImpl->OnUpdated();
 	}
 	else
 		m_rhiCommandList->writeBuffer(bufferImpl->GetNVRHIBufferHandle(), data, writeDataSize, offset);

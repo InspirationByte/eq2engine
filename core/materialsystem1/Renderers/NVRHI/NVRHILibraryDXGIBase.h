@@ -48,7 +48,7 @@ protected:
 	DXGI_SWAP_CHAIN_FULLSCREEN_DESC	m_dxgiFullScreenDesc{};
 	RefCountPtr<IDXGIFactory2>		m_dxgiFactory;
 	RefCountPtr<IDXGIAdapter3>		m_dxgiAdapter;
-	nvrhi::TextureHandle			m_rhiSwapChainBuffers;
+	nvrhi::DeviceHandle				m_nvrhiDevice;
 	
 	Threading::CEqSignal			m_endFrameWait;
 

@@ -2,19 +2,21 @@
 #include "renderers/IShaderAPI.h"
 
 using NVRHIBindingLayoutList = FixedArray<nvrhi::BindingLayoutHandle, MAX_BINDGROUPS>;
+using NVRHIBindingLayoutsCRef = ArrayCRef<nvrhi::BindingLayoutHandle>;
 
 class CNVRHIPipelineLayout : public IGPUPipelineLayout
 {
 public:
-
-	NVRHIBindingLayoutList	m_rhiBindingLayout;
-	EqString				m_dbgName;
+	//ArrayCRef<ShaderInfo::Binding>	m_shaderBindings;
+	NVRHIBindingLayoutList			m_rhiBindingLayout;
+	EqString						m_dbgName;
 };
 
 class CNVRHIRenderPipeline : public IGPURenderPipeline
 {
 public:
-	NVRHIBindingLayoutList			m_rhiBindingLayout;
+	nvrhi::FramebufferInfo			m_rhiFramebufferinfo;
+	nvrhi::GraphicsPipelineDesc		m_rhiPipelineDesc;
 	nvrhi::GraphicsPipelineHandle	m_rhiRenderPipeline;
 	EqString						m_dbgName;
 };

@@ -48,6 +48,5 @@ protected:
 	RefCountPtr<ID3D12CommandQueue>	m_rhiGraphicsQueue;
 	RefCountPtr<ID3D12CommandQueue>	m_rhiComputeQueue;
 	RefCountPtr<ID3D12CommandQueue>	m_rhiCopyQueue; 
-	nvrhi::DeviceHandle				m_nvrhiDevice;
 };
 

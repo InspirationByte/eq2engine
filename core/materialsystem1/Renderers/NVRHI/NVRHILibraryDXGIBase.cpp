@@ -98,6 +98,7 @@ void CNVRHIRenderLibDXGIBase::ExitAPI()
 
 void CNVRHIRenderLibDXGIBase::BeginFrame(ISwapChain* swapChain)
 {
+	m_nvrhiDevice->runGarbageCollection();
 	m_endFrameWait.Wait();
 
 	CNVRHIRenderAPI::Instance.m_deviceLost = false;

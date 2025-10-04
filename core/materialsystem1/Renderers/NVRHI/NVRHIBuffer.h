@@ -26,7 +26,7 @@ public:
 	nvrhi::BufferHandle		GetNVRHIBufferHandle() const { return m_rhiBuffer; }
 	nvrhi::ResourceStates	GetNVRHIResourceStates() const;
 	bool					IsFirstUpdate() const { return m_firstUpdate; }
-	bool					OnUpdated() { m_firstUpdate = false; }
+	void					OnUpdated() { m_firstUpdate = false; }
 	int						GetUsageFlags() const { return m_usageFlags; }
 
 private:
