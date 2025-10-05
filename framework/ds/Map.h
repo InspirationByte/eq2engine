@@ -283,6 +283,52 @@ public:
 		return insert(&m_root, nullptr, key);
 	}
 
+	Iterator insertNew(const Iterator& position, const K& key)
+	{
+		Item* insertPos = position.item;
+		if (insertPos == m_endItem)
+		{
+			Item* prev = insertPos->prev;
+			if (prev && key >= prev->key)
+				return insert<true>(&prev->right, prev, key);
+		}
+		else
+		{
+			if (key < insertPos->key)
+			{
+				Item* prev = insertPos->prev;
+				if (!prev || key >= prev->key)
+					return insert<true>(&insertPos->left, insertPos, key);
+			}
+			else
+			{
+				Item* next = insertPos->next;
+				if (next == &m_endItem || key <= next->key)
+					return insert<true>(&insertPos->right, insertPos, key);
+			}
+		}
+		return insert<true>(&m_root, nullptr, key);
+	}
+
+	Iterator insertNew(const K& key, const V& value)
+	{
+		Iterator it = insertNew(key);
+		*it.item->value = value;
+		return it;
+	}
+
+	Iterator insertNew(const K& key, V&& value)
+	{
+		Iterator it = insertNew(key);
+		*it.item->value = std::move(value);
+		return it;
+	}
+
+	Iterator insertNew(const K& key)
+	{
+		return insert<true>(&m_root, nullptr, key);
+	}
+
 	void insert(const Map& other)
 	{
 		if (other.m_root)
@@ -512,6 +558,7 @@ private:
 		m_end.item = m_endItem;
 	}
 
+	template<bool MULTI = false>
 	Iterator insert(Item** cell, Item* parent, const K& key)
 	{
 	begin:
@@ -568,7 +615,7 @@ private:
 		}
 		else
 		{
-			if (nextCell(key, position, &cell, &parent))
+			if (nextCell<MULTI>(key, position, &cell, &parent))
 			{
 				return position;
 			}
@@ -576,23 +623,43 @@ private:
 		}
 	}
 
-	// map
+	template<bool MULTI>
 	bool nextCell(const K& key, Item* position, Item*** cell, Item** parent)
 	{
-		if (key > position->key)
+		if constexpr (MULTI)
 		{
-			*cell = &position->right;
-			*parent = position;
-			return false;
-		}
-		else if (key < position->key)
-		{
-			*cell = &position->left;
-			*parent = position;
-			return false;
-		}
+			if (key < position->key)
+			{
+				*cell = &position->left;
+				*parent = position;
+				return false;
+			}
+			else
+			{
+				*cell = &position->right;
+				*parent = position;
+				return false;
+			}
 
-		return true;
+			return true;
+		}
+		else
+		{
+			if (key > position->key)
+			{
+				*cell = &position->right;
+				*parent = position;
+				return false;
+			}
+			else if (key < position->key)
+			{
+				*cell = &position->left;
+				*parent = position;
+				return false;
+			}
+
+			return true;
+		}
 	}
 
 	Item* rebal(Item* item)

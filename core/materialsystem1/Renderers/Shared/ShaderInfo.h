@@ -1,6 +1,6 @@
 #pragma once
 
-#include "renderers/IShaderAPI.h"
+#include "renderers/ShaderAPI_defs.h"
 #include "core/IPackFileReader.h"
 
 enum EShaderModuleType
@@ -38,20 +38,20 @@ static_assert(SHADERMODULE_TYPES == elementsOf(s_shaderModuleTypeExt), "BINDENTR
 
 struct ShaderInfo
 {
-	struct Module;
+	struct Binding;
 
-	static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, int entryPointStrHash);
-	static bool ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shaderPackFile, const KVSection& shaderInfoKvs, int& filesFound, bool parseBindings = true);
-	static void ParseModuleBindings(const KVSection& bindingsSec, Module& modInfo);
+	static uint		PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, int entryPointStrHash);
+	static bool		ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shaderPackFile, const KVSection& shaderInfoKvs, int& filesFound, bool parseBindings = true);
+	static void		ParseModuleBindings(const KVSection& bindingsSec, uint shaderModuleId, Array<Binding>& bindings, Map<uint64, int>& bindingMap, Map<uint, int>& usedBindingSlots);
 
-	static uint MakeBindingIdx(int descriptorSetIdx, int index);
+	static uint64	MakeBindingIdx(uint shaderModuleId, int descriptorSetIdx, int index);
 
 	ShaderInfo() = default;
 	ShaderInfo(ShaderInfo&& other) noexcept;
 	ShaderInfo& operator=(ShaderInfo&& other) noexcept;
 
-	bool GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const;
-	EqStringRef GetShaderQueryStr(ArrayCRef<EqString> findDefines) const;
+	bool			GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const;
+	EqStringRef		GetShaderQueryStr(ArrayCRef<EqString> findDefines) const;
 
 	struct VertLayout
 	{
@@ -74,22 +74,14 @@ struct ShaderInfo
 
 	struct Module
 	{
-		void*					rhiModule{ nullptr };
-		EShaderKind				kind;
-		EqString				entryPoint;
-		int						fileIndex[SHADERMODULE_TYPES]{ -1 };
-		Array<Binding>			bindings{ PP_SL };
-		IGPUPipelineLayoutPtr	pipelineLayout;				// needed for NVRHI
-
-		// descriptorSetIdx:index to bindings via MakeBindingIdx
-		Map<uint, int>			bindingMap{ PP_SL };
+		void*				rhiModule{ nullptr };
+		EqString			entryPoint;
+		int					fileIndex[SHADERMODULE_TYPES]{ -1 };
+		EShaderKind			kind;
 	};
 
-	struct EntryPoint
-	{
-		EqString	name;
-		int			kind{ -1 };
-	};
+	Array<Binding>			bindings{ PP_SL };
+	Map<uint64, int>		bindingMap{ PP_SL };		// kind:descriptorSetIdx:index to bindings via MakeBindingIdx
 
 	EqString				shaderName;
 	IPackFileReaderPtr		shaderPackFile{ nullptr };
