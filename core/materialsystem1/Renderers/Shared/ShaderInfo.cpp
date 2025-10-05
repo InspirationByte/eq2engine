@@ -11,9 +11,9 @@ uint ShaderInfo::PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int k
 	return hash;
 }
 
-uint ShaderInfo::MakeBindingIdx(int descriptorSetIdx, int index)
+uint64 ShaderInfo::MakeBindingIdx(uint shaderModuleId, int descriptorSetIdx, int index)
 {
-	return descriptorSetIdx | (index << 8);
+	return static_cast<uint64>(shaderModuleId) | (static_cast<uint64>(descriptorSetIdx | (index << 8)) << 32);
 }
 
 ShaderInfo::ShaderInfo(ShaderInfo&& other) noexcept
@@ -96,13 +96,12 @@ static EBindEntryType GetBindingTypeByName(const char* name)
 	return (EBindEntryType) - 1;
 }
 
-void ShaderInfo::ParseModuleBindings(const KVSection& bindingsSec, Module& modInfo)
+void ShaderInfo::ParseModuleBindings(const KVSection& bindingsSec, uint shaderModuleId, Array<Binding>& bindings, Map<uint64, int>& bindingMap, Map<uint, int>& usedBindingSlots)
 {
-	modInfo.bindings.reserve(bindingsSec.KeyCount());
+	bindings.reserve(bindingsSec.KeyCount());
 	for (const KVSection& bindingSec : bindingsSec.Keys())
 	{
-		const int idx = modInfo.bindings.numElem();
-		Binding& binding = modInfo.bindings.append();
+		Binding binding;
 
 		int rangeTypeIdx;
 		EqStringRef rwFlagsStr;
@@ -123,7 +122,33 @@ void ShaderInfo::ParseModuleBindings(const KVSection& bindingsSec, Module& modIn
 		else if (rwFlagsStr == "uniform")
 			binding.rwFlags = RWFLAG_UNIFORM;
 
-		modInfo.bindingMap.insert(MakeBindingIdx(binding.descriptorSetIdx, binding.index), idx);
+		uint bindingId = StringId(binding.name);
+		bindingId *= 31;
+		bindingId += binding.rwFlags | (binding.type << 3) | (binding.rangeType << 5) | (binding.descriptorSetIdx << 8);
+		bindingId *= 31;
+		bindingId += binding.index | (binding.registerIdx << 16);
+
+		auto it = usedBindingSlots.find(bindingId);
+		int idx = -1;
+		if (!it.atEnd())
+		{
+			idx = *it;
+			const Binding& foundBinding = bindings[idx];
+			ASSERT_MSG(foundBinding.name == binding.name, "bindingId hash collision");
+			ASSERT_MSG(foundBinding.type == binding.type, "bindingId hash collision");
+			ASSERT_MSG(foundBinding.descriptorSetIdx == binding.descriptorSetIdx, "bindingId hash collision");
+			ASSERT_MSG(foundBinding.index == binding.index, "bindingId hash collision");
+			ASSERT_MSG(foundBinding.rangeType == binding.rangeType, "bindingId hash collision");
+			ASSERT_MSG(foundBinding.registerIdx == binding.registerIdx, "bindingId hash collision");
+		}
+		else
+		{
+			idx = bindings.append(binding);
+			usedBindingSlots.insert(bindingId, idx);
+		}
+
+		const uint64 key = MakeBindingIdx(shaderModuleId, binding.descriptorSetIdx, binding.index);
+		bindingMap.insert(key, idx);
 	}
 }
 
@@ -175,46 +200,10 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 		return nullptr;
 	};
 
+	Map<uint, int> usedBindingSlots(PP_SL);
+
 	filesFound = 0;
 	const KVSection* fileListSec = shaderInfoKvs["FileList"];
-	for (const KVSection& itemSec : fileListSec->Keys("wgsl"))
-	{
-		int vertLayoutIdx = -1;
-		EqStringRef kindStr;
-		EqStringRef entryPointName;
-
-		// query string is not available in wgsl due to defines absense
-		if (itemSec.GetValues(vertLayoutIdx, kindStr, entryPointName) < 3)
-		{
-			ASSERT_FAIL("Shader %s 'wgsl' does not have 3 values");
-			break;
-		}
-
-		const int kind = getKind(kindStr);
-		ASSERT_MSG(kind != 0, "Shader kind is not valid");
-
-		shaderInfo.shaderKinds |= kind;
-
-		const int moduleIndex = shaderInfo.modules.numElem();
-		{
-			const EqString shaderFileName = EqString::Format("%s%s", shaderInfo.vertexLayouts[vertLayoutIdx].name, getKindExt(kind));
-
-			ShaderInfo::Module& modInfo = shaderInfo.modules.append();
-			modInfo.fileIndex[SHADERMODULE_WGSL] = shaderInfo.shaderPackFile->FindFileIndex(shaderFileName);
-			modInfo.kind = static_cast<EShaderKind>(kind);
-		}
-		{
-			const int entryPointStrHash = StringId24(entryPointName);
-			const uint shaderModuleId = ShaderInfo::PackShaderModuleId(0, vertLayoutIdx, kind, entryPointStrHash);
-
-			auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
-			ASSERT_MSG(exIt.atEnd(), "%s%s module already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), kindStr.ToCString(), exIt.value());
-
-			shaderInfo.modulesMap.insert(shaderModuleId, moduleIndex);
-		}
-		++filesFound;
-	}
-
 	for (const KVSection& itemSec : fileListSec->Keys("blob"))
 	{
 		int vertLayoutIdx = -1;
@@ -230,7 +219,9 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 		const int kind = getKind(kindStr);
 		ASSERT_MSG(kind != 0, "Shader kind is not valid");
 
-		shaderInfo.shaderKinds |= kind;
+		const int queryStrHash = StringId24(queryStr, true);
+		const int entryPointStrHash = StringId24(entryPointName);
+		const uint shaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, vertLayoutIdx, kind, entryPointStrHash);
 
 		const int moduleIndex = shaderInfo.modules.numElem();
 		{
@@ -245,18 +236,15 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 
 			// parse module pipeline layout
 			if (parseBindings)
-				ParseModuleBindings(itemSec, modInfo);
-
+				ParseModuleBindings(itemSec, shaderModuleId, shaderInfo.bindings, shaderInfo.bindingMap, usedBindingSlots);
 		}
 		{
-			const int queryStrHash = StringId24(queryStr, true);
-			const int entryPointStrHash = StringId24(entryPointName);
-			const uint shaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, vertLayoutIdx, kind, entryPointStrHash);
 
 			auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
 			ASSERT_MSG(exIt.atEnd(), "%s-%s%s module already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), queryStr, kindStr.ToCString(), exIt.value());
 
 			shaderInfo.modulesMap.insert(shaderModuleId, moduleIndex);
+			shaderInfo.shaderKinds |= kind;
 		}
 		++filesFound;
 	}
