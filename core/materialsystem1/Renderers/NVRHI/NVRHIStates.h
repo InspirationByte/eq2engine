@@ -18,7 +18,9 @@ public:
 	nvrhi::FramebufferInfo			m_rhiFramebufferinfo;
 	nvrhi::GraphicsPipelineDesc		m_rhiPipelineDesc;
 	nvrhi::GraphicsPipelineHandle	m_rhiRenderPipeline;
-	EqString						m_dbgName;
+	EqString						m_dbgName; 
+	uint							m_vertexShaderModuleId{ 0 };
+	uint							m_fragmentShaderModuleId{ 0 };
 };
 
 class CNVRHIComputePipeline : public IGPUComputePipeline
@@ -27,6 +29,7 @@ public:
 	NVRHIBindingLayoutList			m_rhiBindingLayout;
 	nvrhi::ComputePipelineHandle	m_rhiComputePipeline;
 	EqString						m_dbgName;
+	uint							m_shaderModuleId{ 0 };
 };
 
 class CNVRHIBindGroup : public IGPUBindGroup
