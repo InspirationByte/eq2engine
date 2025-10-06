@@ -1088,10 +1088,10 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 			}
 		}
 
-		for (const ShaderInfo::Binding& binding : bindings)
-		{
-			Msg("[vk_layout(%d,%d)] %s %s %s : register(%d, space%d)\n", binding.index, binding.descriptorSetIdx, GetRWFlagsString(binding.rwFlags).ToCString(), s_bindingTypeNames[binding.type], binding.name.ToCString(), binding.registerIdx, binding.descriptorSetIdx);
-		}
+		//for (const ShaderInfo::Binding& binding : bindings)
+		//{
+		//	Msg("[vk_layout(%d,%d)] %s %s %s : register(%d, space%d)\n", binding.index, binding.descriptorSetIdx, GetRWFlagsString(binding.rwFlags).ToCString(), s_bindingTypeNames[binding.type], binding.name.ToCString(), binding.registerIdx, binding.descriptorSetIdx);
+		//}
 	}
 
 	for (CompileTargetData& tgtData : targetData)
