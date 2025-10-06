@@ -979,26 +979,25 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 		slang::VariableLayoutReflection* varLayoutReflection = shaderReflection->getGlobalParamsVarLayout();
 		slang::TypeLayoutReflection* typeLayoutReflection = varLayoutReflection->getTypeLayout();
 
-		auto slangBindingTypeToD3DRangeType = [](slang::BindingType bindingType, SlangResourceAccess accessType) {
-			switch (bindingType)
+		auto slangBindingTypeToD3DRangeType = [](SlangBindingType bindingType, SlangResourceAccess accessType) {
+			switch (bindingType & SLANG_BINDING_TYPE_BASE_MASK)
 			{
-			case slang::BindingType::Sampler:
+			case SLANG_BINDING_TYPE_SAMPLER:
 				return BINDING_RANGE_SAMPLER;
-			case slang::BindingType::Texture:
+			case SLANG_BINDING_TYPE_TEXTURE:
 				switch (accessType)
 				{
 					case SLANG_RESOURCE_ACCESS_READ_WRITE:
-					case SLANG_RESOURCE_ACCESS_READ:
 					case SLANG_RESOURCE_ACCESS_WRITE:
 						return BINDING_RANGE_UAV;
 					default:
 						return BINDING_RANGE_SRV;
 				}
-			case slang::BindingType::ConstantBuffer:
+			case SLANG_BINDING_TYPE_CONSTANT_BUFFER:
 				return BINDING_RANGE_CBV;
-			case slang::BindingType::ParameterBlock:
-			case slang::BindingType::TypedBuffer:
-			case slang::BindingType::RawBuffer:
+			case SLANG_BINDING_TYPE_PARAMETER_BLOCK:
+			case SLANG_BINDING_TYPE_TYPED_BUFFER:
+			case SLANG_BINDING_TYPE_RAW_BUFFER:
 				return BINDING_RANGE_UAV;
 			default:
 				return BINDING_RANGE_SRV;
@@ -1014,8 +1013,9 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 			auto paramName = param->getName();
 			auto type = param->getType();
 
-			const EBindingRangeType bindingRangeType = slangBindingTypeToD3DRangeType(typeLayoutReflection->getBindingRangeType(i), type->getResourceAccess());
-			const int registerIndex = bindingTypeCounter[param->getBindingSpace()][static_cast<int>(bindingRangeType)]++;
+			const slang::BindingType bindingType = typeLayoutReflection->getBindingRangeType(i);
+			const SlangResourceAccess accessType = type->getResourceAccess();
+			const EBindingRangeType bindingRangeType = slangBindingTypeToD3DRangeType(static_cast<SlangBindingType>(bindingType), accessType);
 
 			switch (type->getKind())
 			{
@@ -1026,6 +1026,8 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 
 				binding.descriptorSetIdx = param->getBindingSpace();
 				binding.index = param->getBindingIndex();
+
+				const int registerIndex = bindingTypeCounter[param->getBindingSpace()][static_cast<int>(bindingRangeType)]++;
 				binding.rangeType = bindingRangeType;
 				binding.registerIdx = registerIndex;
 
@@ -1062,6 +1064,8 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 
 				binding.descriptorSetIdx = param->getBindingSpace();
 				binding.index = param->getBindingIndex();
+
+				const int registerIndex = bindingTypeCounter[param->getBindingSpace()][static_cast<int>(bindingRangeType)]++;
 				binding.rangeType = bindingRangeType;
 				binding.registerIdx = registerIndex;
 				break;
@@ -1075,6 +1079,8 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 
 				binding.descriptorSetIdx = param->getBindingSpace();
 				binding.index = param->getBindingIndex();
+
+				const int registerIndex = bindingTypeCounter[param->getBindingSpace()][static_cast<int>(bindingRangeType)]++;
 				binding.rangeType = bindingRangeType;
 				binding.registerIdx = registerIndex;
 				break;
@@ -1082,10 +1088,10 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 			}
 		}
 
-		//for (const ShaderInfo::Binding& binding : bindings)
-		//{
-		//	Msg("[vk_layout(%d,%d)] %s %s %s : register(%d, space%d)\n", binding.index, binding.descriptorSetIdx, GetRWFlagsString(binding.rwFlags).ToCString(), s_bindingTypeNames[binding.type], binding.name.ToCString(), binding.registerIdx, binding.descriptorSetIdx);
-		//}
+		for (const ShaderInfo::Binding& binding : bindings)
+		{
+			Msg("[vk_layout(%d,%d)] %s %s %s : register(%d, space%d)\n", binding.index, binding.descriptorSetIdx, GetRWFlagsString(binding.rwFlags).ToCString(), s_bindingTypeNames[binding.type], binding.name.ToCString(), binding.registerIdx, binding.descriptorSetIdx);
+		}
 	}
 
 	for (CompileTargetData& tgtData : targetData)

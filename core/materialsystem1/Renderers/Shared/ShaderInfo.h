@@ -39,12 +39,16 @@ static_assert(SHADERMODULE_TYPES == elementsOf(s_shaderModuleTypeExt), "BINDENTR
 struct ShaderInfo
 {
 	struct Binding;
+	struct Module;
 
 	static uint		PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, int entryPointStrHash);
 	static bool		ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shaderPackFile, const KVSection& shaderInfoKvs, int& filesFound, bool parseBindings = true);
-	static void		ParseModuleBindings(const KVSection& bindingsSec, uint shaderModuleId, Array<Binding>& bindings, Map<uint64, int>& bindingMap, Map<uint, int>& usedBindingSlots);
+	void			ParseModuleBindings(const KVSection& bindingsSec, uint shaderModuleId, Module& moduleInfo, Map<uint, int>& usedBindingSlots);
 
-	static uint64	MakeBindingIdx(uint shaderModuleId, int descriptorSetIdx, int index);
+	static uint		MakeBindingId(int descriptorSetIdx, int index);
+	static void		UnpackBindingId(uint bindingIdx, int& descriptorSetIdx, int& index);
+	static uint64	MakeShaderBindingId(uint shaderModuleId, uint bindingIdx);
+	static uint64	MakeShaderBindingId(uint shaderModuleId, int descriptorSetIdx, int index);
 
 	ShaderInfo() = default;
 	ShaderInfo(ShaderInfo&& other) noexcept;
@@ -52,6 +56,8 @@ struct ShaderInfo
 
 	bool			GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const;
 	EqStringRef		GetShaderQueryStr(ArrayCRef<EqString> findDefines) const;
+
+	ArrayCRef<uint>	GetBindingIds(const ShaderInfo::Module& module) const;
 
 	struct VertLayout
 	{
@@ -77,11 +83,13 @@ struct ShaderInfo
 		void*				rhiModule{ nullptr };
 		EqString			entryPoint;
 		int					fileIndex[SHADERMODULE_TYPES]{ -1 };
-		EShaderKind			kind;
+		EShaderKind			kind{ };
+		int					bindingsStart{ 0 };
 	};
 
 	Array<Binding>			bindings{ PP_SL };
 	Map<uint64, int>		bindingMap{ PP_SL };		// kind:descriptorSetIdx:index to bindings via MakeBindingIdx
+	Array<uint>				bindingIds{ PP_SL };		// binding ids per module, start by Module::bindingsStart storing count, rest is ids
 
 	EqString				shaderName;
 	IPackFileReaderPtr		shaderPackFile{ nullptr };
