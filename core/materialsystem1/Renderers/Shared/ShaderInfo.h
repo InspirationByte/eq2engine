@@ -68,7 +68,7 @@ struct ShaderInfo
 
 	struct Binding
 	{
-		EqString			name;
+		int					nameId{ -1 };
 		EBindEntryType		type{ BINDENTRY_BUFFER };
 		int					rwFlags{ RWFLAG_UNIFORM };
 

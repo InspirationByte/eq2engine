@@ -132,7 +132,7 @@ void ShaderInfo::ParseModuleBindings(const KVSection& bindingsSec, uint shaderMo
 		bindingSec.GetValues(typeName, rwFlagsStr, binding.descriptorSetIdx, binding.index, rangeTypeIdx, binding.registerIdx);
 
 		binding.type = GetBindingTypeByName(typeName);
-		binding.name = bindingSec.GetName();
+		binding.nameId = StringId24(bindingSec.GetName());
 		binding.rangeType = static_cast<EBindingRangeType>(rangeTypeIdx);
 		ASSERT(binding.type >= 0);
 
@@ -145,7 +145,7 @@ void ShaderInfo::ParseModuleBindings(const KVSection& bindingsSec, uint shaderMo
 		else if (rwFlagsStr == "uniform")
 			binding.rwFlags = RWFLAG_UNIFORM;
 
-		uint bindingId = StringId(binding.name);
+		uint bindingId = binding.nameId;
 		bindingId *= 31;
 		bindingId += binding.rwFlags | (binding.type << 3) | (binding.rangeType << 5) | (binding.descriptorSetIdx << 8);
 		bindingId *= 31;
@@ -157,7 +157,7 @@ void ShaderInfo::ParseModuleBindings(const KVSection& bindingsSec, uint shaderMo
 		{
 			idx = *it;
 			const Binding& foundBinding = bindings[idx];
-			ASSERT_MSG(foundBinding.name == binding.name, "bindingId hash collision");
+			ASSERT_MSG(foundBinding.nameId == binding.nameId, "bindingId hash collision");
 			ASSERT_MSG(foundBinding.type == binding.type, "bindingId hash collision");
 			ASSERT_MSG(foundBinding.descriptorSetIdx == binding.descriptorSetIdx, "bindingId hash collision");
 			ASSERT_MSG(foundBinding.index == binding.index, "bindingId hash collision");
