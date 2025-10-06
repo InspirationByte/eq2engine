@@ -11,9 +11,25 @@ uint ShaderInfo::PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int k
 	return hash;
 }
 
-uint64 ShaderInfo::MakeBindingIdx(uint shaderModuleId, int descriptorSetIdx, int index)
+uint ShaderInfo::MakeBindingId(int descriptorSetIdx, int index)
 {
-	return static_cast<uint64>(shaderModuleId) | (static_cast<uint64>(descriptorSetIdx | (index << 8)) << 32);
+	return static_cast<uint64>(descriptorSetIdx | (index << 8));
+}
+
+void ShaderInfo::UnpackBindingId(uint bindingIdx, int& descriptorSetIdx, int& index)
+{
+	descriptorSetIdx = bindingIdx & 255;
+	index = bindingIdx >> 8;
+}
+
+uint64 ShaderInfo::MakeShaderBindingId(uint shaderModuleId, uint bindingIdx)
+{
+	return static_cast<uint64>(shaderModuleId) | (static_cast<uint64>(bindingIdx) << 32);
+}
+
+uint64 ShaderInfo::MakeShaderBindingId(uint shaderModuleId, int descriptorSetIdx, int index)
+{
+	return MakeShaderBindingId(shaderModuleId, MakeBindingId(descriptorSetIdx, index));
 }
 
 ShaderInfo::ShaderInfo(ShaderInfo&& other) noexcept
@@ -96,9 +112,16 @@ static EBindEntryType GetBindingTypeByName(const char* name)
 	return (EBindEntryType) - 1;
 }
 
-void ShaderInfo::ParseModuleBindings(const KVSection& bindingsSec, uint shaderModuleId, Array<Binding>& bindings, Map<uint64, int>& bindingMap, Map<uint, int>& usedBindingSlots)
+void ShaderInfo::ParseModuleBindings(const KVSection& bindingsSec, uint shaderModuleId, Module& moduleInfo, Map<uint, int>& usedBindingSlots)
 {
-	bindings.reserve(bindingsSec.KeyCount());
+	const int bindingCount = bindingsSec.KeyCount();
+	moduleInfo.bindingsStart = bindingIds.numElem();
+
+	// store binding count
+	bindingIds.reserve(bindingIds.numElem() + bindingCount + 1);
+	bindingIds.append(bindingCount);
+
+	bindings.reserve(bindings.numElem() + bindingCount);
 	for (const KVSection& bindingSec : bindingsSec.Keys())
 	{
 		Binding binding;
@@ -147,9 +170,15 @@ void ShaderInfo::ParseModuleBindings(const KVSection& bindingsSec, uint shaderMo
 			usedBindingSlots.insert(bindingId, idx);
 		}
 
-		const uint64 key = MakeBindingIdx(shaderModuleId, binding.descriptorSetIdx, binding.index);
+		const uint64 key = MakeShaderBindingId(shaderModuleId, binding.descriptorSetIdx, binding.index);
 		bindingMap.insert(key, idx);
+		bindingIds.append(MakeBindingId(binding.descriptorSetIdx, binding.index));
 	}
+}
+
+ArrayCRef<uint>	ShaderInfo::GetBindingIds(const ShaderInfo::Module& module) const
+{
+	return ArrayCRef(&bindingIds[module.bindingsStart + 1], bindingIds[module.bindingsStart]);
 }
 
 bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shaderPackFile, const KVSection& shaderInfoKvs, int& filesFound, bool parseBindings)
@@ -236,7 +265,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 
 			// parse module pipeline layout
 			if (parseBindings)
-				ParseModuleBindings(itemSec, shaderModuleId, shaderInfo.bindings, shaderInfo.bindingMap, usedBindingSlots);
+				shaderInfo.ParseModuleBindings(itemSec, shaderModuleId, modInfo, usedBindingSlots);
 		}
 		{
 
