@@ -466,7 +466,7 @@ IGPUPipelineLayoutPtr CNVRHIRenderAPI::CreatePipelineLayout(const PipelineLayout
 			return nullptr;
 		}
 
-		pipelineLayout->m_rhiBindingLayout[pipelineLayout] = rhiBindingLayout;
+		//pipelineLayout->m_rhiBindingLayout[pipelineLayout] = rhiBindingLayout;
 		++bindGroupIndex;
 	}
 
@@ -505,8 +505,10 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUPipelineLayout* layo
 		return nullptr;
 	}
 
-	const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(layoutDesc);
-	return CreateBindGroupImpl(pipelineLayoutImpl->m_rhiBindingLayout, bindGroupDesc);
+	ASSERT_FAIL("Unimplemented");
+	return nullptr;
+	//const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(layoutDesc);
+	//return CreateBindGroupImpl(pipelineLayoutImpl->m_rhiBindingLayout, bindGroupDesc);
 }
 
 IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPURenderPipeline* renderPipeline, const BindGroupDesc& bindGroupDesc) const
@@ -645,48 +647,6 @@ void CNVRHIRenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqStri
 			if (!itShaderModuleId.atEnd())
 				GetOrLoadShaderModule(shaderInfo, *itShaderModuleId);
 		}
-	}
-}
-
-static void AddShaderBindingToPipelineLayout(PipelineLayoutDesc& layoutDesc, const ShaderInfo::Binding& binding, int visibility)
-{
-	BindGroupLayoutDesc& bindGroupDesc = layoutDesc.bindGroups[binding.descriptorSetIdx];
-
-	const int idx = arrayFindIndexF(bindGroupDesc.entries, [&](const BindGroupLayoutDesc::Entry& entry) {
-		return binding.index == entry.binding;
-	});
-
-	if (idx != -1)
-	{
-		// FIXME: more validation?
-
-		bindGroupDesc.entries[idx].visibility |= visibility;
-		return;
-	}
-
-	BindGroupLayoutDesc::Entry& entry = bindGroupDesc.entries.append();
-	entry.name = binding.name;
-	entry.binding = binding.index;
-	entry.type = binding.type;
-	entry.visibility = visibility;
-	switch (entry.type)
-	{
-	case BINDENTRY_BUFFER:
-		if (binding.rwFlags & RWFLAG_UNIFORM)
-			entry.buffer.bindType = BUFFERBIND_UNIFORM;
-		else if (binding.rwFlags & RWFLAG_WRITE)
-			entry.buffer.bindType = BUFFERBIND_STORAGE;
-		else
-			entry.buffer.bindType = BUFFERBIND_STORAGE_READONLY;
-		break;
-	case BINDENTRY_STORAGETEXTURE:
-		if ((binding.rwFlags & (RWFLAG_WRITE | RWFLAG_WRITE)) == (RWFLAG_WRITE | RWFLAG_WRITE))
-			entry.storageTexture.access = STORAGETEX_READWRITE;
-		else if (binding.rwFlags & RWFLAG_READ)
-			entry.storageTexture.access = STORAGETEX_READONLY;
-		else if (binding.rwFlags & RWFLAG_WRITE)
-			entry.storageTexture.access = STORAGETEX_WRITEONLY;
-		break;
 	}
 }
 
@@ -946,13 +906,6 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 		}
 	}
 
-	const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(pipelineLayout);
-	if (pipelineLayoutImpl)
-	{
-		for (nvrhi::BindingLayoutHandle& rhiLayout : pipelineLayoutImpl->m_rhiBindingLayout)
-			rhiGraphicsPipelineDesc.addBindingLayout(rhiLayout);
-	}
-	else
 	{
 		// create shader pipeline layout
 		int maxBindGroupIdx = -1;
@@ -1127,13 +1080,6 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 	auto rhiComputePipelineDesc = nvrhi::ComputePipelineDesc()
 		.setComputeShader(reinterpret_cast<nvrhi::IShader*>(computeShaderModule->rhiModule));
 
-	const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(pipelineLayout);
-	if (pipelineLayoutImpl)
-	{
-		for (nvrhi::BindingLayoutHandle& rhiLayout : pipelineLayoutImpl->m_rhiBindingLayout)
-			rhiComputePipelineDesc.addBindingLayout(rhiLayout);
-	}
-	else
 	{
 		// create shader pipeline layout
 		int maxBindGroupIdx = -1;

@@ -4,11 +4,12 @@
 using NVRHIBindingLayoutList = FixedArray<nvrhi::BindingLayoutHandle, MAX_BINDGROUPS>;
 using NVRHIBindingLayoutsCRef = ArrayCRef<nvrhi::BindingLayoutHandle>;
 
+// this shit is really for purposes of delaying bindgroup validation
+// need to get rid of this
 class CNVRHIPipelineLayout : public IGPUPipelineLayout
 {
 public:
-	//ArrayCRef<ShaderInfo::Binding>	m_shaderBindings;
-	NVRHIBindingLayoutList			m_rhiBindingLayout;
+	PipelineLayoutDesc				m_pipelineLayoutDesc;
 	EqString						m_dbgName;
 };
 
