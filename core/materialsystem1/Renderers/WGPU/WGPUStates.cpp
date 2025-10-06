@@ -4,9 +4,14 @@
 
 CWGPUPipelineLayout::~CWGPUPipelineLayout()
 {
-	wgpuPipelineLayoutRelease(m_rhiPipelineLayout);
+	if(m_rhiPipelineLayout)
+		wgpuPipelineLayoutRelease(m_rhiPipelineLayout);
+
 	for (WGPUBindGroupLayout layout : m_rhiBindGroupLayout)
-		wgpuBindGroupLayoutRelease(layout);
+	{
+		if(layout)
+			wgpuBindGroupLayoutRelease(layout);
+	}
 }
 
 //--------------------------------------------

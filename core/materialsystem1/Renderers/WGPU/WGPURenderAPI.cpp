@@ -384,7 +384,7 @@ IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const PipelineLayoutD
 	//		- Material Constant Properties (static buffer)
 	//		- Material Proxy Properties (buffers of these group updated every frame)
 	//		- Scene Properties (camera, transform, fog, clip planes)
-	Array<WGPUBindGroupLayout> rhiBindGroupLayout(PP_SL);
+	FixedArray<WGPUBindGroupLayout, MAX_BINDGROUPS> rhiBindGroupLayout;
 	Array<WGPUBindGroupLayoutEntry> rhiBindGroupLayoutEntry(PP_SL);
 	for(const BindGroupLayoutDesc& bindGroupDesc : layoutDesc.bindGroups)
 	{
@@ -443,7 +443,7 @@ IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const PipelineLayoutD
 		return nullptr;
 
 	CRefPtr<CWGPUPipelineLayout> pipelineLayout = CRefPtr_new(CWGPUPipelineLayout);
-	pipelineLayout->m_rhiBindGroupLayout = std::move(rhiBindGroupLayout);
+	pipelineLayout->m_rhiBindGroupLayout.append(rhiBindGroupLayout);
 	pipelineLayout->m_rhiPipelineLayout = rhiPipelineLayout;
 	return IGPUPipelineLayoutPtr(pipelineLayout);
 }
@@ -509,7 +509,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layou
 
 	const CWGPUPipelineLayout* pipelineLayout = static_cast<const CWGPUPipelineLayout*>(layoutDesc);
 
-	const Array<WGPUBindGroupLayout>& rhiLayout = pipelineLayout->m_rhiBindGroupLayout;
+	const ArrayCRef<WGPUBindGroupLayout> rhiLayout = pipelineLayout->m_rhiBindGroupLayout;
 	if (!rhiLayout.inRange(bindGroupDesc.groupIdx))
 		return nullptr;
 

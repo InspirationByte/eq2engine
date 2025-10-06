@@ -663,8 +663,8 @@ FLUENT_END_TYPE
 
 struct PipelineLayoutDesc
 {
-	using BindGroupDescList = Array<BindGroupLayoutDesc>;
-	BindGroupDescList	bindGroups{ PP_SL };
+	using BindGroupDescList = FixedArray<BindGroupLayoutDesc, MAX_BINDGROUPS>;
+	BindGroupDescList	bindGroups;
 	EqString			name;
 };
 
@@ -672,6 +672,7 @@ FLUENT_BEGIN_TYPE(PipelineLayoutDesc)
 	FLUENT_SET_VALUE(name, Name)
 	ThisType& Group(BindGroupLayoutDesc&& x)
 	{
+		ASSERT(!ref.bindGroups.isFull());
 		ref.bindGroups.append(std::move(x));
 		return *this; 
 	}

@@ -8,8 +8,8 @@ public:
 	~CWGPUPipelineLayout();
 
 	// TODO: name
-	Array<WGPUBindGroupLayout>	m_rhiBindGroupLayout{ PP_SL };
-	WGPUPipelineLayout			m_rhiPipelineLayout{ nullptr };
+	FixedArray<WGPUBindGroupLayout, MAX_BINDGROUPS>	m_rhiBindGroupLayout;
+	WGPUPipelineLayout								m_rhiPipelineLayout{ nullptr };
 };
 
 class CWGPURenderPipeline : public IGPURenderPipeline
