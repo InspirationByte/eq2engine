@@ -378,14 +378,10 @@ IGPUBufferPtr CWGPURenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int buf
 
 IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const
 {
-	// Pipeline layout and bind group layout
-	// are also objects of IGPURenderPipeline
-	// There are 3 distinctive bind groups or buffers as our MatSystem design defines:
-	//		- Material Constant Properties (static buffer)
-	//		- Material Proxy Properties (buffers of these group updated every frame)
-	//		- Scene Properties (camera, transform, fog, clip planes)
 	FixedArray<WGPUBindGroupLayout, MAX_BINDGROUPS> rhiBindGroupLayout;
-	Array<WGPUBindGroupLayoutEntry> rhiBindGroupLayoutEntry(PP_SL);
+	static thread_local Array<WGPUBindGroupLayoutEntry> rhiBindGroupLayoutEntry(PP_SL);
+	rhiBindGroupLayoutEntry.clear();
+
 	for(const BindGroupLayoutDesc& bindGroupDesc : layoutDesc.bindGroups)
 	{
 		rhiBindGroupLayoutEntry.clear();
@@ -502,43 +498,59 @@ static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& 
 	}
 }
 
-static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& bindGroupDesc, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList, const ShaderInfo& shaderInfo, int shaderModuleIdx)
+static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& bindGroupDesc, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs)
 {
 	int bindingsToResolve = 0;
 
-	const ShaderInfo::Module& shaderModule = shaderInfo.modules[shaderModuleIdx];
-	ArrayCRef<int> bindingIds = shaderInfo.GetBindingIds(shaderModule);
-	for (int i = 0; i < bindingIds.numElem(); ++i)
+	static thread_local BitArray::STORAGE_TYPE usedBindEntryBits[32];
+	memset(usedBindEntryBits, 0, sizeof(usedBindEntryBits));
+
+	BitArray usedBindingEntries(usedBindEntryBits, sizeof(usedBindEntryBits) * 8);
+	
+	for (const int moduleIdx : shaderModuleIdxs)
 	{
-		if (!shaderModule.usedBindings[i])
+		if (moduleIdx < 0)
 			continue;
 
-		const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIds[i]];
-		if(binding.descriptorSetIdx == bindGroupDesc.groupIdx)
+		const ShaderInfo::Module& shaderModule = shaderInfo.modules[moduleIdx];
+		ArrayCRef<int> bindingIds = shaderInfo.GetBindingIds(shaderModule);
+		for (int i = 0; i < bindingIds.numElem(); ++i)
+		{
+			if (usedBindingEntries[bindingIds[i]])
+				continue;
+
+			if (!shaderModule.usedBindings[i])
+				continue;
+
+			const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIds[i]];
+			if (binding.descriptorSetIdx != bindGroupDesc.groupIdx)
+				continue;
+
 			++bindingsToResolve;
 
-		const int entryIdx = arrayFindIndexF(bindGroupDesc.entries, [&](const BindGroupDesc::Entry& bindGroupEntry) {
-			// check if name id is used
-			if(bindGroupEntry.binding > bindingIds.numElem())
-				return bindGroupEntry.binding == binding.nameId;
+			const int entryIdx = arrayFindIndexF(bindGroupDesc.entries, [&](const BindGroupDesc::Entry& bindGroupEntry) {
+				// check if name id is used
+				if (bindGroupEntry.binding > bindingIds.numElem())
+					return bindGroupEntry.binding == binding.nameId;
 
-			return bindGroupDesc.groupIdx == binding.descriptorSetIdx && bindGroupEntry.binding == binding.index;
-		});
+				return bindGroupDesc.groupIdx == binding.descriptorSetIdx && bindGroupEntry.binding == binding.index;
+			});
 
-		if (entryIdx == -1)
-			continue;
+			if (entryIdx == -1)
+				continue;
 
-		const BindGroupDesc::Entry& bindGroupEntry = bindGroupDesc.entries[entryIdx];
-		//ASSERT(binding.type == bindGroupEntry.type);
+			usedBindingEntries.setTrue(bindingIds[i]);
 
-		WGPUBindGroupEntry& rhiBindGroupEntryDesc = rhiBindGroupEntryList.append();
-		FindWGPUBindGroupEntry(rhiDevice, rhiBindGroupEntryDesc, bindGroupEntry, "");
+			const BindGroupDesc::Entry& bindGroupEntry = bindGroupDesc.entries[entryIdx];
+			WGPUBindGroupEntry& rhiBindGroupEntryDesc = rhiBindGroupEntryList.append();
+			FindWGPUBindGroupEntry(rhiDevice, rhiBindGroupEntryDesc, bindGroupEntry, "");
 
-		// store correct index
-		rhiBindGroupEntryDesc.binding = binding.index;
+			// store correct index
+			rhiBindGroupEntryDesc.binding = binding.index;
+		}
 	}
 
-	ASSERT_MSG(bindGroupDesc.entries.numElem() == bindingsToResolve, "Bad binding entry count: %d, expected %d", rhiBindGroupEntryList.numElem(), bindingsToResolve);
+	ASSERT_MSG(bindGroupDesc.entries.numElem() >= bindingsToResolve, "Bad binding entry count: %d, expected %d", rhiBindGroupEntryList.numElem(), bindingsToResolve);
 	ASSERT_MSG(rhiBindGroupEntryList.numElem() == bindingsToResolve, "Incorrect binding ids, resolved: %d, expected %d", rhiBindGroupEntryList.numElem(), bindingsToResolve);
 }
 
@@ -556,7 +568,10 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layou
 	if (!rhiLayout.inRange(bindGroupDesc.groupIdx))
 		return nullptr;
 
-	Array<WGPUBindGroupEntry> rhiBindGroupEntryList(PP_SL);
+	static thread_local Array<WGPUBindGroupEntry> rhiBindGroupEntryList(PP_SL);
+	rhiBindGroupEntryList.clear();
+	rhiBindGroupEntryList.reserve(bindGroupDesc.entries.numElem());
+
 	WGPUBindGroupDescriptor rhiBindGroupDesc = {};
 
 	// samplers are created in FillWGPUBindGroupEntries
@@ -593,7 +608,10 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPURenderPipeline* rende
 		return nullptr;
 	}
 
-	Array<WGPUBindGroupEntry> rhiBindGroupEntryList(PP_SL);
+	static thread_local Array<WGPUBindGroupEntry> rhiBindGroupEntryList(PP_SL);
+	rhiBindGroupEntryList.clear();
+	rhiBindGroupEntryList.reserve(bindGroupDesc.entries.numElem());
+
 	WGPUBindGroupDescriptor rhiBindGroupDesc = {};
 
 	// samplers are created in FillWGPUBindGroupEntries
@@ -607,7 +625,12 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPURenderPipeline* rende
 	};
 
 	const CWGPURenderPipeline* pipelineImpl = static_cast<const CWGPURenderPipeline*>(renderPipeline);
-	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
+
+	const int moduleIds[] = {
+		pipelineImpl->m_vertexShaderModuleIdx,
+		pipelineImpl->m_fragmentShaderModuleIdx
+	};
+	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList, *pipelineImpl->m_shaderInfo, moduleIds);
 
 	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
 	rhiBindGroupDesc.layout = wgpuRenderPipelineGetBindGroupLayout(pipelineImpl->m_rhiRenderPipeline, bindGroupDesc.groupIdx);
@@ -632,7 +655,10 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUComputePipeline* comp
 		return nullptr;
 	}
 
-	Array<WGPUBindGroupEntry> rhiBindGroupEntryList(PP_SL);
+	static thread_local Array<WGPUBindGroupEntry> rhiBindGroupEntryList(PP_SL);
+	rhiBindGroupEntryList.clear();
+	rhiBindGroupEntryList.reserve(bindGroupDesc.entries.numElem());
+
 	WGPUBindGroupDescriptor rhiBindGroupDesc = {};
 
 	// samplers are created in FillWGPUBindGroupEntries
@@ -646,7 +672,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUComputePipeline* comp
 	};
 
 	const CWGPUComputePipeline* pipelineImpl = static_cast<const CWGPUComputePipeline*>(computePipeline);
-	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList, *pipelineImpl->m_shaderInfo, pipelineImpl->m_computeShaderModuleIdx);
+	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList, *pipelineImpl->m_shaderInfo, ArrayCRef(&pipelineImpl->m_computeShaderModuleIdx, 1));
 
 	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
 	rhiBindGroupDesc.layout = wgpuComputePipelineGetBindGroupLayout(pipelineImpl->m_rhiComputePipeline, bindGroupDesc.groupIdx);

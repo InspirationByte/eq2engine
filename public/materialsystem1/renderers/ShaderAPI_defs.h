@@ -681,7 +681,6 @@ FLUENT_END_TYPE
 //------------------------------------------------------------
 // BindGroup builder
 
-// FIXME: rename to ResourceBindGroupDesc ???
 struct BindGroupDesc
 {
 	struct Entry

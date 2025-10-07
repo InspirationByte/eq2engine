@@ -118,7 +118,8 @@ public:
 	virtual IGPURenderPipelinePtr		CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout = nullptr) const = 0;
 	virtual IGPUComputePipelinePtr		CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout = nullptr) const = 0;
 
-	// constructs bind group using explicit user-defined pipeline layoyt
+	// constructs relaxed bind group using explicit user-defined pipeline layoyt
+	// useful where bind group is used between different shader and stages
 	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayout* pipelineLayout, const BindGroupDesc& bindGroupDesc) const = 0;
 	
 	// constructs bind group using render pipeline layout  defined by shader module
