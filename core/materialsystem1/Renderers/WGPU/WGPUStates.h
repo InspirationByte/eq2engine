@@ -2,6 +2,8 @@
 #include "WGPUBackend.h"
 #include "renderers/IShaderAPI.h"
 
+struct ShaderInfo;
+
 class CWGPUPipelineLayout : public IGPUPipelineLayout
 {
 public:
@@ -19,6 +21,9 @@ public:
 
 	// TODO: name
 	WGPURenderPipeline		m_rhiRenderPipeline{ nullptr };
+	const ShaderInfo*		m_shaderInfo{ nullptr };
+	int						m_vertexShaderModuleIdx{ -1 };
+	int						m_fragmentShaderModuleIdx{ -1 };
 };
 
 class CWGPUComputePipeline : public IGPUComputePipeline
@@ -28,6 +33,8 @@ public:
 
 	// TODO: name
 	WGPUComputePipeline		m_rhiComputePipeline{ nullptr };
+	const ShaderInfo*		m_shaderInfo{ nullptr };
+	int						m_computeShaderModuleIdx{ -1 };
 };
 
 class CWGPUBindGroup : public IGPUBindGroup
