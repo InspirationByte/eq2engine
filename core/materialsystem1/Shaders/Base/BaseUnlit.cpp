@@ -65,9 +65,9 @@ BEGIN_SHADER_CLASS(
 			{
 				const ITexturePtr& baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetErrorCheckerboardTexture();
 				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-					.Buffer(0, m_materialParamsBuffer)
-					.Sampler(1, SamplerStateParams(m_texFilter, m_texAddressMode))
-					.Texture(2, baseTexture)
+					.Buffer(StringIdConst24("materialParams"), m_materialParamsBuffer)
+					.Sampler(StringIdConst24("BaseTextureSampler"), SamplerStateParams(m_texFilter, m_texAddressMode))
+					.Texture(StringIdConst24("BaseTexture"), baseTexture)
 					.End();
 				CreatePersistentBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 			}
@@ -97,7 +97,7 @@ BEGIN_SHADER_CLASS(
 			}
 
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, cameraParamsBuffer)
+				.Buffer(StringIdConst24("camera"), cameraParamsBuffer)
 				.End();
 			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 		}
@@ -109,7 +109,7 @@ BEGIN_SHADER_CLASS(
 				ASSERT(setupParams.uniformBuffers[0].signature == RenderBoneTransformID);
 
 				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-					.Buffer(0, setupParams.uniformBuffers[0].bufferView)
+					.Buffer(StringIdConst24("BonesBuffer"), setupParams.uniformBuffers[0].bufferView)
 					.End();
 				return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 			}

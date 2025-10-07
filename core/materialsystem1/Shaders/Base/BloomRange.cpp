@@ -47,9 +47,9 @@ BEGIN_SHADER_CLASS(BloomRange)
 		{
 			const ITexturePtr& baseTexture = m_bloomSource.Get() ? m_bloomSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, m_proxyBuffer)
-				.Sampler(1, baseTexture->GetSamplerState())
-				.Texture(2, baseTexture)
+				.Buffer(StringIdConst24("materialParams"), m_proxyBuffer)
+				.Sampler(StringIdConst24("BaseTextureSampler"), baseTexture->GetSamplerState())
+				.Texture(StringIdConst24("BaseTexture"), baseTexture)
 				.End();
 			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 		}

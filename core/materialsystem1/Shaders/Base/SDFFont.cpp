@@ -196,10 +196,10 @@ BEGIN_SHADER_CLASS(
 
 			GPUBufferView materialParamsBuffer = g_matSystem->GetTransientUniformBuffer(bufferData.ptr(), sizeof(bufferData[0]) * bufferData.numElem());
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, cameraParamsBuffer)
-				.Buffer(1, materialParamsBuffer)
-				.Sampler(2, baseTexture.texture->GetSamplerState())
-				.Texture(3, baseTexture)
+				.Buffer(StringIdConst24("camera"), cameraParamsBuffer)
+				.Buffer(StringIdConst24("materialParams"), materialParamsBuffer)
+				.Sampler(StringIdConst24("BaseTextureSampler"), baseTexture.texture->GetSamplerState())
+				.Texture(StringIdConst24("BaseTexture"), baseTexture)
 				.End();
 			IGPUBindGroupPtr materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 			return materialBindGroup;

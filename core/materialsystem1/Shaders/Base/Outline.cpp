@@ -36,15 +36,6 @@ BEGIN_SHADER_CLASS(Outline)
 		SHADER_PARAM_TEXTURE_FIND(SourceDepth, m_sourceTex);
 	}
 
-	/*void FillBindGroupLayout_Constant(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const override
-	{
-		Builder<BindGroupLayoutDesc>(bindGroupLayout)
-			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
-			.Sampler("DepthSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_NONFILTERING)
-			.Texture("DepthTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
-			.End();
-	}*/
-
 	void UpdateProxy(IGPUCommandRecorder* cmdRecorder) const override
 	{
 		OutlineParams materialParams;
@@ -60,9 +51,9 @@ BEGIN_SHADER_CLASS(Outline)
 		{
 			const ITexturePtr& baseTexture = m_sourceTex.Get() ? m_sourceTex.Get() : g_matSystem->GetErrorCheckerboardTexture();
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, m_proxyBuffer)
-				.Sampler(1, baseTexture->GetSamplerState())
-				.Texture(2, baseTexture)
+				.Buffer(StringIdConst24("materialParams"), m_proxyBuffer)
+				.Sampler(StringIdConst24("DepthSampler"), baseTexture->GetSamplerState())
+				.Texture(StringIdConst24("DepthTexture"), baseTexture)
 				.End();
 
 			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
