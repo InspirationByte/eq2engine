@@ -747,7 +747,7 @@ WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfo& shaderI
 			return nullptr;
 		}
 
-		rhiShaderModule = CreateShaderSPIRV(reinterpret_cast<uint32*>(shaderBlobData.GetBasePointer()), shaderBlobData.GetSize(), dbgName ? dbgName : shaderModuleName);
+		rhiShaderModule = CreateShaderSPIRV(reinterpret_cast<uint32*>(shaderBlobData.GetBasePointer()), shaderBlobData.GetSize(), dbgName ? dbgName : shaderModuleName.ToCString());
 	}
 
 	if (!rhiShaderModule && mod.fileIndex[SHADERMODULE_WGSL] != -1)
