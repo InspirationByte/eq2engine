@@ -11,27 +11,6 @@ uint ShaderInfo::PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int k
 	return hash;
 }
 
-uint ShaderInfo::MakeBindingId(int descriptorSetIdx, int index)
-{
-	return static_cast<uint64>(descriptorSetIdx | (index << 8));
-}
-
-void ShaderInfo::UnpackBindingId(uint bindingIdx, int& descriptorSetIdx, int& index)
-{
-	descriptorSetIdx = bindingIdx & 255;
-	index = bindingIdx >> 8;
-}
-
-uint64 ShaderInfo::MakeShaderBindingId(uint shaderModuleId, uint bindingIdx)
-{
-	return static_cast<uint64>(shaderModuleId) | (static_cast<uint64>(bindingIdx) << 32);
-}
-
-uint64 ShaderInfo::MakeShaderBindingId(uint shaderModuleId, int descriptorSetIdx, int index)
-{
-	return MakeShaderBindingId(shaderModuleId, MakeBindingId(descriptorSetIdx, index));
-}
-
 ShaderInfo::ShaderInfo(ShaderInfo&& other) noexcept
 	: shaderName(std::move(other.shaderName))
 	, shaderPackFile(std::move(other.shaderPackFile))
@@ -132,7 +111,8 @@ void ShaderInfo::ParseModuleBindings(const KVSection& bindingsSec, uint shaderMo
 		bindingSec.GetValues(typeName, rwFlagsStr, binding.descriptorSetIdx, binding.index, rangeTypeIdx, binding.registerIdx);
 
 		binding.type = GetBindingTypeByName(typeName);
-		binding.nameId = StringId24(bindingSec.GetName());
+		binding.name = bindingSec.GetName();
+		binding.nameId = StringId24(binding.name);
 		binding.rangeType = static_cast<EBindingRangeType>(rangeTypeIdx);
 		ASSERT(binding.type >= 0);
 
@@ -170,13 +150,11 @@ void ShaderInfo::ParseModuleBindings(const KVSection& bindingsSec, uint shaderMo
 			usedBindingSlots.insert(bindingId, idx);
 		}
 
-		const uint64 key = MakeShaderBindingId(shaderModuleId, binding.descriptorSetIdx, binding.index);
-		bindingMap.insert(key, idx);
-		bindingIds.append(MakeBindingId(binding.descriptorSetIdx, binding.index));
+		bindingIds.append(idx);
 	}
 }
 
-ArrayCRef<uint>	ShaderInfo::GetBindingIds(const ShaderInfo::Module& module) const
+ArrayCRef<int> ShaderInfo::GetBindingIds(const ShaderInfo::Module& module) const
 {
 	return ArrayCRef(&bindingIds[module.bindingsStart + 1], bindingIds[module.bindingsStart]);
 }
@@ -262,6 +240,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 
 			modInfo.kind = static_cast<EShaderKind>(kind);
 			modInfo.entryPoint = entryPointName;
+			modInfo.id = shaderModuleId;
 
 			// parse module pipeline layout
 			if (parseBindings)
