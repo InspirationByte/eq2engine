@@ -963,16 +963,6 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 		return false;
 	}
 
-	if(0)
-	{
-		const char* diagStr = (const char*)slangCompileRequest->getDiagnosticOutput();
-		if(diagStr && *diagStr)
-		{
-			MsgWarning(diagStr);
-			MsgWarning("\n");
-		}
-	}
-
 	// construct bindings for PipelineLayout
 	{
 		slang::ShaderReflection* shaderReflection = slang::ShaderReflection::get(slangCompileRequest);
@@ -1006,6 +996,40 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 
 		int bindingTypeCounter[8][SLANG_BINDING_TYPE_PUSH_CONSTANT + 1]{ 0 };
 
+		auto parseResourceBinding = [&](slang::VariableLayoutReflection* param, slang::TypeReflection* type, const char* paramName, EBindingRangeType bindingRangeType) {
+			ShaderInfo::Binding& binding = bindings.append();
+			binding.name = paramName;
+
+			binding.descriptorSetIdx = param->getBindingSpace();
+			binding.index = param->getBindingIndex();
+
+			const int registerIndex = bindingTypeCounter[param->getBindingSpace()][static_cast<int>(bindingRangeType)]++;
+			binding.rangeType = bindingRangeType;
+			binding.registerIdx = registerIndex;
+
+			switch (type->getResourceShape())
+			{
+			case SLANG_STRUCTURED_BUFFER:
+			case SLANG_BYTE_ADDRESS_BUFFER:
+				binding.type = BINDENTRY_BUFFER; break;
+			default:
+				binding.type = BINDENTRY_TEXTURE;
+			}
+
+			switch (type->getResourceAccess())
+			{
+			case SLANG_RESOURCE_ACCESS_READ_WRITE:
+				binding.rwFlags = RWFLAG_READ | RWFLAG_WRITE; break;
+			case SLANG_RESOURCE_ACCESS_READ:
+				binding.rwFlags = RWFLAG_READ; break;
+			case SLANG_RESOURCE_ACCESS_WRITE:
+				binding.rwFlags = RWFLAG_WRITE; break;
+			}
+
+			if (binding.type == BINDENTRY_TEXTURE && binding.rwFlags != RWFLAG_UNIFORM)
+				binding.type = BINDENTRY_STORAGETEXTURE;
+		};
+
 		const int paramCount = shaderReflection->getParameterCount();
 		for (int i = 0; i < paramCount; i++)
 		{
@@ -1019,40 +1043,25 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 
 			switch (type->getKind())
 			{
+			case slang::TypeReflection::Kind::Struct:
+			{
+				// check for first field in struct
+				// must be byte address buffer or structured buffer
+				auto layout = param->getTypeLayout();
+				for (int f = 0; f < layout->getFieldCount(); f++)
+				{
+					auto field = layout->getFieldByIndex(f);
+					auto type = field->getType();
+					if (type->getKind() == slang::TypeReflection::Kind::Struct || type->getKind() == slang::TypeReflection::Kind::Array)
+						continue;
+					parseResourceBinding(param, type, paramName, bindingRangeType);
+				}
+
+				break;
+			}
 			case slang::TypeReflection::Kind::Resource:
 			{
-				ShaderInfo::Binding& binding = bindings.append();
-				binding.name = paramName;
-
-				binding.descriptorSetIdx = param->getBindingSpace();
-				binding.index = param->getBindingIndex();
-
-				const int registerIndex = bindingTypeCounter[param->getBindingSpace()][static_cast<int>(bindingRangeType)]++;
-				binding.rangeType = bindingRangeType;
-				binding.registerIdx = registerIndex;
-
-				switch (type->getResourceShape())
-				{
-				case SLANG_STRUCTURED_BUFFER:
-				case SLANG_BYTE_ADDRESS_BUFFER:
-					binding.type = BINDENTRY_BUFFER; break;
-				default:
-					binding.type = BINDENTRY_TEXTURE;
-				}
-
-				switch (type->getResourceAccess())
-				{
-				case SLANG_RESOURCE_ACCESS_READ_WRITE:
-					binding.rwFlags = RWFLAG_READ | RWFLAG_WRITE; break;
-				case SLANG_RESOURCE_ACCESS_READ:
-					binding.rwFlags = RWFLAG_READ; break;
-				case SLANG_RESOURCE_ACCESS_WRITE:
-					binding.rwFlags = RWFLAG_WRITE; break;
-				}
-
-				if (binding.type == BINDENTRY_TEXTURE && binding.rwFlags != RWFLAG_UNIFORM)
-					binding.type = BINDENTRY_STORAGETEXTURE;
-
+				parseResourceBinding(param, type, paramName, bindingRangeType);
 				break;
 			}
 			case slang::TypeReflection::Kind::SamplerState:
