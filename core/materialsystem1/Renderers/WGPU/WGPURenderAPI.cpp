@@ -726,7 +726,7 @@ WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfo& shaderI
 	{
 		IFileStreamPtr shaderFile = shaderInfo.shaderPackFile->Open(mod.fileIndex[type], FS_OPEN_READ);
 		if (!shaderFile)
-			return nullptr;
+			return;
 
 		shaderBlobData.Close();
 		shaderBlobData.Open(FS_OPEN_WRITE | FS_OPEN_READ);
