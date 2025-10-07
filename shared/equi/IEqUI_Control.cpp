@@ -867,7 +867,7 @@ IUIControl* IUIControl::Get(const char* pathToElem)
 {
 	IUIControl* currentElement = this;
 
-	EqString path = pathToElem;
+	EqString& path = EqStringRef::GetTempString(pathToElem);
 	char* iter = path.GetData();
 	while (iter && *iter)
 	{
