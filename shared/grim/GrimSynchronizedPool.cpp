@@ -57,13 +57,13 @@ void GRIMBaseSyncrhronizedPool::RunUpdatePipeline(IGPUCommandRecorder* cmdRecord
 
 	Builder<BindGroupDesc> bindGroupDesc;
 	bindGroupDesc.GroupIndex(0)
-		.Buffer(0, idxsBuffer)
-		.Buffer(1, dataBuffer);
+		.Buffer(StringIdConst24("sourceInfo"), idxsBuffer)
+		.Buffer(StringIdConst24("sourceData"), dataBuffer);
 
 	if (targetData.GetType() == GRIMResource::BUFFER)
-		bindGroupDesc.Buffer(2, targetData.Get<IGPUBuffer>());
+		bindGroupDesc.Buffer(StringIdConst24("destData"), targetData.Get<IGPUBuffer>());
 	else if (targetData.GetType() == GRIMResource::TEXTURE)
-		bindGroupDesc.StorageTexture(2, targetData.Get<ITexture>());
+		bindGroupDesc.StorageTexture(StringIdConst24("destData"), targetData.Get<ITexture>());
 
 	IGPUBindGroupPtr bindGroup = g_renderAPI->CreateBindGroup(updatePipeline, bindGroupDesc.End());
 

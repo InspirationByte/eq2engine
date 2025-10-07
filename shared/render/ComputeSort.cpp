@@ -176,8 +176,8 @@ void ComputeSortShader::RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUC
 		computePassRecorder->SetPipeline(m_prepareParamBufferPipeline);
 		computePassRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(m_prepareParamBufferPipeline, Builder<BindGroupDesc>()
 			.GroupIndex(0)
-			.Buffer(0, m_tmpParamsBuffer)
-			.Buffer(1, m_paramsBuffer)
+			.Buffer(StringIdConst24("srcParams"), m_tmpParamsBuffer)
+			.Buffer(StringIdConst24("dstParams"), m_paramsBuffer)
 			.End()
 		));
 
@@ -190,8 +190,8 @@ void ComputeSortShader::RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUC
 	computePassRecorder->SetPipeline(sortPipeline);
 	computePassRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(sortPipeline, Builder<BindGroupDesc>()
 		.GroupIndex(0)
-		.Buffer(0, keys)
-		.Buffer(1, values)
+		.Buffer(StringIdConst24("keyData"), keys)
+		.Buffer(StringIdConst24("values"), values)
 		.End()
 	));
 	
@@ -199,7 +199,7 @@ void ComputeSortShader::RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUC
 	{
 		IGPUBindGroupPtr paramsBindGroup = g_renderAPI->CreateBindGroup(sortPipeline, Builder<BindGroupDesc>()
 			.GroupIndex(1)
-			.Buffer(0, m_paramsBuffer, alignedParamSize * i, sizeof(ParamsData))
+			.Buffer(StringIdConst24("params"), m_paramsBuffer, alignedParamSize * i, sizeof(ParamsData))
 			.End()
 		);
 		computePassRecorder->SetBindGroup(1, paramsBindGroup);

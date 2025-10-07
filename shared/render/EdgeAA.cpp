@@ -99,8 +99,8 @@ void CRenderFullScreenEdgeAA::PreRender(IGPUCommandRecorder* cmdRecorder)
 	computePassRecorder->SetPipeline(m_edgeAALumaPipeline);
 	computePassRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(m_edgeAALumaPipeline,
 		Builder<BindGroupDesc>().GroupIndex(0)
-		.Texture(0, framebufferSrcTex)
-		.StorageTexture(1, m_lumaFramebuffer)
+		.StorageTexture(StringIdConst24("FBSrcTexture"), framebufferSrcTex)
+		.StorageTexture(StringIdConst24("FBDstTexture"), m_lumaFramebuffer)
 		.End())
 	);
 	computePassRecorder->DispatchWorkgroups(workgroupCount.x, workgroupCount.y);

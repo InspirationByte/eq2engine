@@ -65,8 +65,8 @@ ComputeBlurShader::ComputeBlurShader(int iterations, int filterSize, int blurFla
 	m_bindGroupConst = g_renderAPI->CreateBindGroup(m_pipeline, Builder<BindGroupDesc>()
 		.GroupIndex(0)
 		.Name("BlurConst")
-		.Sampler(0, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
-		.Buffer(1, g_renderAPI->CreateBuffer(BufferInfo(&blurParams, 1), BUFFERUSAGE_UNIFORM, "ParamsBuffer"))
+		.Sampler(StringIdConst24("Sampler"), SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
+		.Buffer(StringIdConst24("params"), g_renderAPI->CreateBuffer(BufferInfo(&blurParams, 1), BUFFERUSAGE_UNIFORM, "ParamsBuffer"))
 		.End());
 }
 
@@ -97,17 +97,17 @@ void ComputeBlurShader::SetDestinationTexture(ITexture* dest)
 	m_bindGroupStg1 = g_renderAPI->CreateBindGroup(m_pipeline, Builder<BindGroupDesc>()
 		.GroupIndex(1)
 		.Name("BlurParams1")
-		.Texture(0, m_blurTemp1)
-		.StorageTexture(1, m_blurTemp2)
-		.Buffer(2, m_switchBuffer1)
+		.Texture(StringIdConst24("BaseTexture"), m_blurTemp1)
+		.StorageTexture(StringIdConst24("OutputTexture"), m_blurTemp2)
+		.Buffer(StringIdConst24("flip"), m_switchBuffer1)
 		.End());
 
 	m_bindGroupStg2 = g_renderAPI->CreateBindGroup(m_pipeline, Builder<BindGroupDesc>()
 		.GroupIndex(1)
 		.Name("BlurParams2")
-		.Texture(0, m_blurTemp2)
-		.StorageTexture(1, m_blurTemp1)
-		.Buffer(2, m_switchBuffer0)
+		.Texture(StringIdConst24("BaseTexture"), m_blurTemp2)
+		.StorageTexture(StringIdConst24("OutputTexture"), m_blurTemp1)
+		.Buffer(StringIdConst24("flip"), m_switchBuffer0)
 		.End());
 }
 
@@ -120,9 +120,9 @@ void ComputeBlurShader::SetupExecute(IGPUCommandRecorder* commandRecorder, int a
 	IGPUBindGroupPtr bindGroupStg0 = g_renderAPI->CreateBindGroup(m_pipeline, Builder<BindGroupDesc>()
 		.GroupIndex(1)
 		.Name("BlurParams")
-		.Texture(0, m_srcTexture, arraySlice == -1 ? ITexture::DEFAULT_VIEW : ITexture::ViewArraySlice(arraySlice))
-		.StorageTexture(1, m_blurTemp1)
-		.Buffer(2, m_switchBuffer0)
+		.Texture(StringIdConst24("BaseTexture"), m_srcTexture, arraySlice == -1 ? ITexture::DEFAULT_VIEW : ITexture::ViewArraySlice(arraySlice))
+		.StorageTexture(StringIdConst24("OutputTexture"), m_blurTemp1)
+		.Buffer(StringIdConst24("flip"), m_switchBuffer0)
 		.End());
 
 	IGPUComputePassRecorderPtr blurPassRecorder = commandRecorder->BeginComputePass("ComputeBlur");
