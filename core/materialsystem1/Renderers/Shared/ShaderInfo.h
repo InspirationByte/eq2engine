@@ -76,6 +76,7 @@ struct ShaderInfo
 
 	struct Module
 	{
+		BitArray			usedBindings{ PP_SL };
 		void*				rhiModule{ nullptr };
 		EqString			entryPoint;
 		int					fileIndex[SHADERMODULE_TYPES]{ -1 };

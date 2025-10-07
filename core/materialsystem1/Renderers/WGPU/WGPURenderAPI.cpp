@@ -508,9 +508,12 @@ static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& 
 
 	const ShaderInfo::Module& shaderModule = shaderInfo.modules[shaderModuleIdx];
 	ArrayCRef<int> bindingIds = shaderInfo.GetBindingIds(shaderModule);
-	for (const int bid : bindingIds)
+	for (int i = 0; i < bindingIds.numElem(); ++i)
 	{
-		const ShaderInfo::Binding& binding = shaderInfo.bindings[bid];
+		if (!shaderModule.usedBindings[i])
+			continue;
+
+		const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIds[i]];
 		if(binding.descriptorSetIdx == bindGroupDesc.groupIdx)
 			++bindingsToResolve;
 
@@ -721,6 +724,9 @@ WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfo& shaderI
 	if (mod.rhiModule)
 		return reinterpret_cast<WGPUShaderModule>(mod.rhiModule);
 
+	BitArray& usedBindings = mod.usedBindings;
+	usedBindings.resize(shaderInfo.GetBindingIds(mod).numElem());
+
 	CMemoryStream shaderBlobData(PP_SL);
 	auto loadShaderBlob = [&](EShaderModuleType type)
 	{
@@ -730,7 +736,13 @@ WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfo& shaderI
 
 		shaderBlobData.Close();
 		shaderBlobData.Open(FS_OPEN_WRITE | FS_OPEN_READ);
-		shaderBlobData.AppendStream(shaderFile);
+
+		int blobSize;
+		shaderFile->ReadObj(blobSize);
+		shaderBlobData.AppendStream(shaderFile, blobSize);
+
+		shaderFile->Seek(blobSize, FS_SEEK_CUR);
+		shaderFile->ReadArray(usedBindings.ptr(), bitArray2Dword(usedBindings.numBits()) );
 	};
 
 	const EqString shaderModuleName = EqString::Format("%s-%d", shaderInfo.shaderName.ToCString(), shaderModuleIdx);
