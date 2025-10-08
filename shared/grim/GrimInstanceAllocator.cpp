@@ -121,6 +121,8 @@ void GRIMBaseInstanceAllocator::FreeAll(bool dealloc, bool reserve)
 
 	// alloc default (zero) instance
 	m_instances.setNum(1);
+	m_syncInstances.resize(1);
+
 	m_updated.insert(0);
 
 	if (reserve)
