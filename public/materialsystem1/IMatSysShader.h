@@ -26,8 +26,8 @@ struct RenderPassContext;
 class IGPURenderPipeline;
 using IGPURenderPipelinePtr = CRefPtr<IGPURenderPipeline>;
 
-class IGPUPipelineLayout;
-using IGPUPipelineLayoutPtr = CRefPtr<IGPUPipelineLayout>;
+class IGPUBindingLayout;
+using IGPUBindingLayoutPtr = CRefPtr<IGPUBindingLayout>;
 
 class IGPUBindGroup;
 using IGPUBindGroupPtr = CRefPtr<IGPUBindGroup>;
@@ -60,7 +60,7 @@ struct MatSysShaderPipelineCache
 	struct Pipeline
 	{
 		Future<IGPURenderPipelinePtr>	future;
-		IGPUPipelineLayoutPtr			layout;
+		IGPUBindingLayoutPtr			layout;
 		IGPURenderPipelinePtr			pipeline;
 	};
 	using PipelineMap = Map<uint, Pipeline>;
@@ -73,7 +73,7 @@ class IShaderMeshInstanceProvider
 {
 public:
 	virtual void	FillBindGroupLayoutDesc(BindGroupLayoutDesc& bindGroupLayout) const = 0;
-	virtual void	GetInstancesBindGroup(int bindGroupIdx, IGPUPipelineLayout* pipelineLayout, IGPUBindGroupPtr& outBindGroup, uint& lastUpdateToken) const = 0;
+	virtual void	GetInstancesBindGroup(int bindGroupIdx, IGPUBindingLayout* pipelineLayout, IGPUBindGroupPtr& outBindGroup, uint& lastUpdateToken) const = 0;
 };
 
 class IMatSystemShader

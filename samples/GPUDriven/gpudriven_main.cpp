@@ -258,7 +258,7 @@ void CState_GpuDrivenDemo::StepGame(float fDt)
 
 		{
 			int rotatingInterval = obj_rotate_interval.GetInt();
-			if (ImGui::SliderInt("Rotation Objects interval", &rotatingInterval, 1, 10000))
+			if (ImGui::SliderInt("Rotation Objects interval", &rotatingInterval, 1, 100))
 				obj_rotate_interval.SetInt(rotatingInterval);
 		}
 

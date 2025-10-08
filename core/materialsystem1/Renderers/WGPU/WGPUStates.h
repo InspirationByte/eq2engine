@@ -4,10 +4,10 @@
 
 struct ShaderInfo;
 
-class CWGPUPipelineLayout : public IGPUPipelineLayout
+class CWGPUBindingLayout : public IGPUBindingLayout
 {
 public:
-	~CWGPUPipelineLayout();
+	~CWGPUBindingLayout();
 
 	// TODO: name
 	FixedArray<WGPUBindGroupLayout, MAX_BINDGROUPS>	m_rhiBindGroupLayout;
@@ -24,6 +24,7 @@ public:
 	const ShaderInfo*		m_shaderInfo{ nullptr };
 	int						m_vertexShaderModuleIdx{ -1 };
 	int						m_fragmentShaderModuleIdx{ -1 };
+	uint					m_pipelineId{ COM_UINT_MAX };
 };
 
 class CWGPUComputePipeline : public IGPUComputePipeline
@@ -35,6 +36,7 @@ public:
 	WGPUComputePipeline		m_rhiComputePipeline{ nullptr };
 	const ShaderInfo*		m_shaderInfo{ nullptr };
 	int						m_computeShaderModuleIdx{ -1 };
+	uint					m_pipelineId{ COM_UINT_MAX };
 };
 
 class CWGPUBindGroup : public IGPUBindGroup

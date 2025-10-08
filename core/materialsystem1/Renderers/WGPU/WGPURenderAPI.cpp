@@ -376,7 +376,7 @@ IGPUBufferPtr CWGPURenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int buf
 	return IGPUBufferPtr(buffer);
 }
 
-IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const
+IGPUBindingLayoutPtr CWGPURenderAPI::CreateBindingLayout(const BindingLayoutDesc& layoutDesc) const
 {
 	FixedArray<WGPUBindGroupLayout, MAX_BINDGROUPS> rhiBindGroupLayout;
 	static thread_local Array<WGPUBindGroupLayoutEntry> rhiBindGroupLayoutEntry(PP_SL);
@@ -438,10 +438,10 @@ IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const PipelineLayoutD
 	if (!rhiPipelineLayout)
 		return nullptr;
 
-	CRefPtr<CWGPUPipelineLayout> pipelineLayout = CRefPtr_new(CWGPUPipelineLayout);
+	CRefPtr<CWGPUBindingLayout> pipelineLayout = CRefPtr_new(CWGPUBindingLayout);
 	pipelineLayout->m_rhiBindGroupLayout.append(rhiBindGroupLayout);
 	pipelineLayout->m_rhiPipelineLayout = rhiPipelineLayout;
-	return IGPUPipelineLayoutPtr(pipelineLayout);
+	return IGPUBindingLayoutPtr(pipelineLayout);
 }
 
 static void FindWGPUBindGroupEntry(WGPUDevice rhiDevice, WGPUBindGroupEntry& rhiBindGroupEntryDesc, const BindGroupDesc::Entry& bindGroupEntry, const char* dbgName)
@@ -554,7 +554,7 @@ static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& 
 	ASSERT_MSG(rhiBindGroupEntryList.numElem() == bindingsToResolve, "Incorrect binding ids, resolved: %d, expected %d", rhiBindGroupEntryList.numElem(), bindingsToResolve);
 }
 
-IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layoutDesc, const BindGroupDesc& bindGroupDesc) const
+IGPUBindGroupPtr CWGPURenderAPI::CreateSharedBindGroup(const IGPUBindingLayout* layoutDesc, const BindGroupDesc& bindGroupDesc) const
 {
 	if (!layoutDesc)
 	{
@@ -562,7 +562,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layou
 		return nullptr;
 	}
 
-	const CWGPUPipelineLayout* pipelineLayout = static_cast<const CWGPUPipelineLayout*>(layoutDesc);
+	const CWGPUBindingLayout* pipelineLayout = static_cast<const CWGPUBindingLayout*>(layoutDesc);
 
 	const ArrayCRef<WGPUBindGroupLayout> rhiLayout = pipelineLayout->m_rhiBindGroupLayout;
 	if (!rhiLayout.inRange(bindGroupDesc.groupIdx))
@@ -861,7 +861,7 @@ void CWGPURenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqStrin
 	}
 }
 
-IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout) const
+IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUBindingLayout* pipelineLayout) const
 {
 	PROF_EVENT("CreateRenderPipeline");
 
@@ -935,7 +935,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 	WGPURenderPipelineDescriptor rhiRenderPipelineDesc = {};
 	if (pipelineLayout)
 	{
-		rhiRenderPipelineDesc.layout = static_cast<const CWGPUPipelineLayout*>(pipelineLayout)->m_rhiPipelineLayout;
+		rhiRenderPipelineDesc.layout = static_cast<const CWGPUBindingLayout*>(pipelineLayout)->m_rhiPipelineLayout;
 	}
 
 	// Setup vertex pipeline
@@ -1184,6 +1184,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 		renderPipeline->m_shaderInfo = &shaderInfo;
 		renderPipeline->m_vertexShaderModuleIdx = vertexShaderModuleIdx;
 		renderPipeline->m_fragmentShaderModuleIdx = fragmentShaderModuleIdx;
+		renderPipeline->m_pipelineId = m_pipelineIdCounter++;
 
 		return IGPURenderPipelinePtr(renderPipeline);
 	}
@@ -1253,7 +1254,7 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 	return IGPURenderPassRecorderPtr(renderPass);
 }
 
-IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout) const
+IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUBindingLayout* pipelineLayout) const
 {
 	const int shaderNameHash = StringId24(pipelineDesc.shaderName);
 	auto shaderIt = m_shaderCache.find(shaderNameHash);
@@ -1331,7 +1332,7 @@ IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipeli
 	rhiComputePipelineDesc.compute.module = rhiComputeShaderModule;
 
 	if (pipelineLayout)
-		rhiComputePipelineDesc.layout = static_cast<const CWGPUPipelineLayout*>(pipelineLayout)->m_rhiPipelineLayout;
+		rhiComputePipelineDesc.layout = static_cast<const CWGPUBindingLayout*>(pipelineLayout)->m_rhiPipelineLayout;
 
 	EqString pipelineName = EqString::Format("%s-%s:%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[layoutIdx].name.ToCString(), shaderInfo.GetShaderQueryStr(pipelineDesc.shaderQuery).ToCString());
 	rhiComputePipelineDesc.label = _WSTR(pipelineName);
@@ -1348,12 +1349,13 @@ IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipeli
 			return nullptr;
 		}
 
-		CRefPtr<CWGPUComputePipeline> renderPipeline = CRefPtr_new(CWGPUComputePipeline);
-		renderPipeline->m_rhiComputePipeline = rhiComputePipeline;
-		renderPipeline->m_shaderInfo = &shaderInfo;
-		renderPipeline->m_computeShaderModuleIdx = computeShaderModuleIdx;
+		CRefPtr<CWGPUComputePipeline> computePipeline = CRefPtr_new(CWGPUComputePipeline);
+		computePipeline->m_rhiComputePipeline = rhiComputePipeline;
+		computePipeline->m_shaderInfo = &shaderInfo;
+		computePipeline->m_computeShaderModuleIdx = computeShaderModuleIdx;
+		computePipeline->m_pipelineId = m_pipelineIdCounter++;
 
-		return IGPUComputePipelinePtr(renderPipeline);
+		return IGPUComputePipelinePtr(computePipeline);
 	}
 }
 

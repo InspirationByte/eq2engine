@@ -147,7 +147,7 @@ protected:
 	{
 		mutable IGPUBindGroupPtr	bindGroup[MAX_BINDGROUPS];
 		IGPURenderPipelinePtr		pipeline;
-		IGPUPipelineLayoutPtr		layout;
+		IGPUBindingLayoutPtr		layout;
 		int							vertexLayoutId{ 0 };
 		mutable uint				instMngToken{ COM_UINT_MAX };
 		mutable uint				renderPassVersion{ COM_UINT_MAX };

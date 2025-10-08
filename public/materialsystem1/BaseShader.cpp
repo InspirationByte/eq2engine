@@ -128,11 +128,11 @@ IGPUBindGroupPtr CBaseShader::CreatePersistentBindGroup(BindGroupDesc& bindGroup
 	if (pipelineInfo.layout)
 	{
 		//bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
-		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupDesc);
+		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateSharedBindGroup(pipelineInfo.layout, bindGroupDesc);
 	}
 	else
 	{
-		//bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
+		//bindGroupDesc.name = EqString::Format("%s-%s-BindingLayout", GetName(), s_bindGroupNames[bindGroupId]);
 		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.pipeline, bindGroupDesc);
 	}
 
@@ -145,11 +145,11 @@ IGPUBindGroupPtr CBaseShader::CreateBindGroup(BindGroupDesc& bindGroupDesc, EBin
 	if(pipelineInfo.layout)
 	{
 		//bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
-		return renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupDesc);
+		return renderAPI->CreateSharedBindGroup(pipelineInfo.layout, bindGroupDesc);
 	}
 	else
 	{
-		//bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
+		//bindGroupDesc.name = EqString::Format("%s-%s-BindingLayout", GetName(), s_bindGroupNames[bindGroupId]);
 		return renderAPI->CreateBindGroup(pipelineInfo.pipeline, bindGroupDesc);
 	}
 }
@@ -164,7 +164,7 @@ IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGrou
 	{
 		BindGroupDesc emptyBindGroupDesc;
 		emptyBindGroupDesc.groupIdx = bindGroupId;
-		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.layout, emptyBindGroupDesc);
+		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateSharedBindGroup(pipelineInfo.layout, emptyBindGroupDesc);
 	}
 	return pipelineInfo.bindGroup[bindGroupId];
 }
@@ -408,23 +408,21 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 		//		- Bind group persists across single render pass
 		//	BINDGROUP_TRANSIENT
 		//		- Bind group is unique for each draw call
-		//
-		// you're not obligated to use all of them
 
-		PipelineLayoutDesc pipelineLayoutDesc;
-		pipelineLayoutDesc.name = GetName();
+		BindingLayoutDesc bindingLayoutDesc;
+		bindingLayoutDesc.name = GetName();
 
-		FillBindGroupLayout_Constant(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
-		FillBindGroupLayout_RenderPass(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
-		FillBindGroupLayout_Transient(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+		FillBindGroupLayout_Constant(inputParams.meshInstFormat, bindingLayoutDesc.bindGroups.append());
+		FillBindGroupLayout_RenderPass(inputParams.meshInstFormat, bindingLayoutDesc.bindGroups.append());
+		FillBindGroupLayout_Transient(inputParams.meshInstFormat, bindingLayoutDesc.bindGroups.append());
 
 		if (inputParams.meshInstProvider)
-			inputParams.meshInstProvider->FillBindGroupLayoutDesc(pipelineLayoutDesc.bindGroups.append());
+			inputParams.meshInstProvider->FillBindGroupLayoutDesc(bindingLayoutDesc.bindGroups.append());
 
 		int shaderLayoutBindGroup = 0;
 
 		int piplineLayoutIdx = 0;
-		for (const BindGroupLayoutDesc& layout : pipelineLayoutDesc.bindGroups)
+		for (const BindGroupLayoutDesc& layout : bindingLayoutDesc.bindGroups)
 		{
 			if (layout.entries.numElem() > 0)
 				shaderLayoutBindGroup |= (1 << piplineLayoutIdx);
@@ -432,7 +430,7 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 		}
 
 		if (shaderLayoutBindGroup)
-			newPipelineInfo.layout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
+			newPipelineInfo.layout = renderAPI->CreateBindingLayout(bindingLayoutDesc);
 	}
 
 	RenderPipelineDesc renderPipelineDesc;
@@ -562,11 +560,11 @@ bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputPara
 void CBaseShader::FillBindGroupLayout_Constant_Samplers(BindGroupLayoutDesc& bindGroupLayout) const
 {
 	Builder<BindGroupLayoutDesc>(bindGroupLayout)
-		.Sampler("MaterialSampler", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-		.Sampler("LinearMirrorWrapSampler", 1, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-		.Sampler("LinearClampSampler", 2, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-		.Sampler("NearestSampler", 3, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-		.Sampler("NoSampler", 4, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_NONFILTERING);
+		.Sampler(StringIdConst24("MaterialSampler"), 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+		.Sampler(StringIdConst24("LinearMirrorWrapSampler"), 1, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+		.Sampler(StringIdConst24("LinearClampSampler"), 2, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+		.Sampler(StringIdConst24("NearestSampler"), 3, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+		.Sampler(StringIdConst24("NoSampler"), 4, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_NONFILTERING);
 }
 
 void CBaseShader::FillBindGroup_Constant_Samplers(BindGroupDesc& bindGroupDesc) const

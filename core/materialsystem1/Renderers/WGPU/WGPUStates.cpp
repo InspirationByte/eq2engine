@@ -2,7 +2,7 @@
 
 #include "WGPUStates.h"
 
-CWGPUPipelineLayout::~CWGPUPipelineLayout()
+CWGPUBindingLayout::~CWGPUBindingLayout()
 {
 	if(m_rhiPipelineLayout)
 		wgpuPipelineLayoutRelease(m_rhiPipelineLayout);

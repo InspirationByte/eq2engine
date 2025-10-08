@@ -71,7 +71,7 @@ void GRIMBaseRenderer::Init()
 		Builder<ComputePipelineDesc>()
 		.ShaderName(SHADERNAME_CULL_INSTANCES)
 		.End()
-	, m_cullInstancesPipelineLayout);
+	, m_cullInstancesBindingLayout);
 
 	m_filterInstancesPipeline = g_renderAPI->CreateComputePipeline(
 		Builder<ComputePipelineDesc>()
@@ -132,7 +132,7 @@ void GRIMBaseRenderer::Shutdown()
 	m_updateBindGroup0 = nullptr;
 	
 	m_cullInstancesPipeline = nullptr;
-	m_cullInstancesPipelineLayout = nullptr;
+	m_cullInstancesBindingLayout = nullptr;
 	m_cullBindGroup0 = nullptr;
 }
 
