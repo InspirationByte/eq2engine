@@ -2,11 +2,6 @@
 
 static const char s_boilerPlateStrSlang[] = R"~(
 
-public static const uint BINDGROUP_CONSTANT = 0;
-public static const uint BINDGROUP_RENDERPASS = 1;
-public static const uint BINDGROUP_TRANSIENT = 2;
-public static const uint BINDGROUP_INSTANCES = 3;
-
 // below declarations from glsl.meta.slang
 // P.S.     
 //      I kinda find it pretty nice that you can extend Slang in this way

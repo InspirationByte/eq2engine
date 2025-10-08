@@ -50,7 +50,7 @@ BEGIN_SHADER_CLASS(
 			if (!setupParams.pipelineInfo.bindGroup[bindGroupId])
 			{
 				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-					.Buffer(0, m_materialParamsBuffer)
+					.Buffer(StringIdConst24("GridParams"), m_materialParamsBuffer)
 					.End();
 				CreatePersistentBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 			}
@@ -80,7 +80,7 @@ BEGIN_SHADER_CLASS(
 			}
 
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, cameraParamsBuffer)
+				.Buffer(StringIdConst24("camera"), cameraParamsBuffer)
 				.End();
 			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 		}

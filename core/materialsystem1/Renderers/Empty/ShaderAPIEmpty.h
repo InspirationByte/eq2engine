@@ -16,7 +16,7 @@ using namespace Threading;
 extern CEqMutex	g_sapi_TextureMutex;
 
 class CEmptyBindGroup : public IGPUBindGroup {};
-class CEmptyIPipelineLayout : public IGPUPipelineLayout {};
+class CEmptyBindingLayout : public IGPUBindingLayout {};
 class CEmptyCommandBuffer : public IGPUCommandBuffer {};
 class CEmptyRenderPipeline : public IGPURenderPipeline {};
 class CEmptyComputePipeline : public IGPUComputePipeline {};
@@ -207,13 +207,13 @@ public:
 //-------------------------------------------------------------
 // Pipeline management
 
-	IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const { return IGPUPipelineLayoutPtr(CRefPtr_new(CEmptyIPipelineLayout)); }
-	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayout* pipelineLayout, const BindGroupDesc& bindGroupDesc) const { return IGPUBindGroupPtr(CRefPtr_new(CEmptyBindGroup)); }
+	IGPUBindingLayoutPtr		CreateBindingLayout(const BindingLayoutDesc& layoutDesc) const { return IGPUBindingLayoutPtr(CRefPtr_new(CEmptyBindingLayout)); }
+	IGPUBindGroupPtr			CreateSharedBindGroup(const IGPUBindingLayout* pipelineLayout, const BindGroupDesc& bindGroupDesc) const { return IGPUBindGroupPtr(CRefPtr_new(CEmptyBindGroup)); }
 	IGPUBindGroupPtr			CreateBindGroup(const IGPURenderPipeline* renderPipeline, const BindGroupDesc& bindGroupDesc) const { return IGPUBindGroupPtr(CRefPtr_new(CEmptyBindGroup)); }
 	IGPUBindGroupPtr			CreateBindGroup(const IGPUComputePipeline* computePipeline, const BindGroupDesc& bindGroupDesc) const { return IGPUBindGroupPtr(CRefPtr_new(CEmptyBindGroup)); }
 
-	IGPURenderPipelinePtr		CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout = nullptr) const { return IGPURenderPipelinePtr(CRefPtr_new(CEmptyRenderPipeline)); }
-	IGPUComputePipelinePtr		CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout = nullptr) const { return IGPUComputePipelinePtr(CRefPtr_new(CEmptyComputePipeline)); }
+	IGPURenderPipelinePtr		CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUBindingLayout* pipelineLayout = nullptr) const { return IGPURenderPipelinePtr(CRefPtr_new(CEmptyRenderPipeline)); }
+	IGPUComputePipelinePtr		CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUBindingLayout* pipelineLayout = nullptr) const { return IGPUComputePipelinePtr(CRefPtr_new(CEmptyComputePipeline)); }
 
 //-------------------------------------------------------------
 // Buffer management

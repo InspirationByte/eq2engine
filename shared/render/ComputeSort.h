@@ -26,7 +26,6 @@ protected:
 	Array<IGPUBufferPtr>	m_blocks{ PP_SL };
 	IGPUComputePipelinePtr	m_initPipeline;
 	IGPUComputePipelinePtr	m_prepareParamBufferPipeline;
-	IGPUPipelineLayoutPtr	m_sortPipelineLayout;
 	IGPUBufferPtr			m_paramsBuffer;
 	IGPUBufferPtr			m_tmpParamsBuffer;
 

@@ -2,14 +2,20 @@
 #include "WGPUBackend.h"
 #include "renderers/IShaderAPI.h"
 
-class CWGPUPipelineLayout : public IGPUPipelineLayout
+struct ShaderInfo;
+
+class CWGPUBindingLayout : public IGPUBindingLayout
 {
 public:
-	~CWGPUPipelineLayout();
+	~CWGPUBindingLayout();
+
+	using BindGroupLayoutMap = Map<int, int>;
 
 	// TODO: name
-	Array<WGPUBindGroupLayout>	m_rhiBindGroupLayout{ PP_SL };
-	WGPUPipelineLayout			m_rhiPipelineLayout{ nullptr };
+	FixedArray<BindGroupLayoutMap, MAX_BINDGROUPS>	m_layoutMap;
+	FixedArray<WGPUBindGroupLayout, MAX_BINDGROUPS>	m_rhiBindGroupLayout;
+	WGPUPipelineLayout								m_rhiPipelineLayout{ nullptr };
+	int												m_maxBindingIndex[MAX_BINDGROUPS]{ 0 };
 };
 
 class CWGPURenderPipeline : public IGPURenderPipeline
@@ -19,6 +25,10 @@ public:
 
 	// TODO: name
 	WGPURenderPipeline		m_rhiRenderPipeline{ nullptr };
+	const ShaderInfo*		m_shaderInfo{ nullptr };
+	int						m_vertexShaderModuleIdx{ -1 };
+	int						m_fragmentShaderModuleIdx{ -1 };
+	uint					m_pipelineId{ COM_UINT_MAX };
 };
 
 class CWGPUComputePipeline : public IGPUComputePipeline
@@ -28,6 +38,9 @@ public:
 
 	// TODO: name
 	WGPUComputePipeline		m_rhiComputePipeline{ nullptr };
+	const ShaderInfo*		m_shaderInfo{ nullptr };
+	int						m_computeShaderModuleIdx{ -1 };
+	uint					m_pipelineId{ COM_UINT_MAX };
 };
 
 class CWGPUBindGroup : public IGPUBindGroup

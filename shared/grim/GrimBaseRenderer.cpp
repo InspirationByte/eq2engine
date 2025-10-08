@@ -71,7 +71,7 @@ void GRIMBaseRenderer::Init()
 		Builder<ComputePipelineDesc>()
 		.ShaderName(SHADERNAME_CULL_INSTANCES)
 		.End()
-	, m_cullInstancesPipelineLayout);
+	, m_cullInstancesBindingLayout);
 
 	m_filterInstancesPipeline = g_renderAPI->CreateComputePipeline(
 		Builder<ComputePipelineDesc>()
@@ -132,7 +132,7 @@ void GRIMBaseRenderer::Shutdown()
 	m_updateBindGroup0 = nullptr;
 	
 	m_cullInstancesPipeline = nullptr;
-	m_cullInstancesPipelineLayout = nullptr;
+	m_cullInstancesBindingLayout = nullptr;
 	m_cullBindGroup0 = nullptr;
 }
 
@@ -675,17 +675,17 @@ void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 	m_updateBindGroup0 = g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(0)
-		.Buffer(0, m_drawBatchs.GetGPUData().Get<IGPUBuffer>())
-		.Buffer(1, m_drawLodInfos.GetGPUData().Get<IGPUBuffer>())
-		.Buffer(2, m_drawLodsList.GetGPUData().Get<IGPUBuffer>())
+		.Buffer(StringIdConst24("drawBatchs"), m_drawBatchs.GetGPUData().Get<IGPUBuffer>())
+		.Buffer(StringIdConst24("drawLodInfos"), m_drawLodInfos.GetGPUData().Get<IGPUBuffer>())
+		.Buffer(StringIdConst24("drawLodsList"), m_drawLodsList.GetGPUData().Get<IGPUBuffer>())
 		.End()
 	);
 
 	m_cullBindGroup0 = g_renderAPI->CreateBindGroup(m_cullInstancesPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(0)
-		.Buffer(0, m_drawLodInfos.GetGPUData().Get<IGPUBuffer>())
-		.Buffer(1, m_drawLodsList.GetGPUData().Get<IGPUBuffer>())
+		.Buffer(StringIdConst24("drawLodInfos"), m_drawLodInfos.GetGPUData().Get<IGPUBuffer>())
+		.Buffer(StringIdConst24("drawLodsList"), m_drawLodsList.GetGPUData().Get<IGPUBuffer>())
 		.End()
 	);
 }
@@ -767,16 +767,16 @@ void GRIMBaseRenderer::FilterInstances_Compute(IntermediateState& intermediate)
 		computeRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(m_filterInstancesPipeline,
 			Builder<BindGroupDesc>()
 			.GroupIndex(0)
-			.Buffer(0, m_instAllocator.GetInstanceArchetypesBuffer())
-			.Buffer(1, m_instAllocator.GetInstanceGroupMaskBuffer())
-			.Buffer(2, rendState.filterParamsBuffer, 0, sizeof(params))
+			.Buffer(StringIdConst24("archetypeIds"), m_instAllocator.GetInstanceArchetypesBuffer())
+			.Buffer(StringIdConst24("groupMasks"), m_instAllocator.GetInstanceGroupMaskBuffer())
+			.Buffer(StringIdConst24("drawParams"), rendState.filterParamsBuffer, 0, sizeof(params))
 			.End()
 		));
 		computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_filterInstancesPipeline,
 			Builder<BindGroupDesc>()
 			.GroupIndex(1)
-			.Buffer(0, filteredInstanceInfosBuffer)
-			.Buffer(1, filteredInstanceCountBuffer)
+			.Buffer(StringIdConst24("instanceInfos"), filteredInstanceInfosBuffer)
+			.Buffer(StringIdConst24("countBuffer"), filteredInstanceCountBuffer)
 			.End()
 		));
 
@@ -789,7 +789,7 @@ void GRIMBaseRenderer::FilterInstances_Compute(IntermediateState& intermediate)
 		computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_filterCalcWorkGroupsPipeline,
 			Builder<BindGroupDesc>()
 			.GroupIndex(1)
-			.Buffer(1, filteredInstanceCountBuffer)
+			.Buffer(StringIdConst24("countBuffer"), filteredInstanceCountBuffer)
 			.End()
 		));
 		computeRecorder->DispatchWorkgroups(1);
@@ -858,15 +858,15 @@ void GRIMBaseRenderer::UpdateInstanceBounds_Compute(IntermediateState& intermedi
 	computeRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(m_instCalcBoundsPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(0)
-		.Buffer(0, rendState.culledInstanceInfosBuffer)
-		.Buffer(1, rendState.sortedInstanceIdsBuffer)
+		.Buffer(StringIdConst24("instanceInfos"), rendState.culledInstanceInfosBuffer)
+		.Buffer(StringIdConst24("instanceSrcIds"), rendState.sortedInstanceIdsBuffer)
 		.End())
 	);
 	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_instCalcBoundsPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(1)
-		.Buffer(0, rendState.drawInstanceBoundsBuffer)
-		.Buffer(1, rendState.instanceIdsBuffer)
+		.Buffer(StringIdConst24("drawInstanceBounds"), rendState.drawInstanceBoundsBuffer)
+		.Buffer(StringIdConst24("instanceIds"), rendState.instanceIdsBuffer)
 		.End())
 	);
 
@@ -888,13 +888,13 @@ void GRIMBaseRenderer::UpdateIndirectInstances_Compute(IntermediateState& interm
 	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(1)
-		.Buffer(0, rendState.drawInstanceBoundsBuffer)
+		.Buffer(StringIdConst24("drawInstanceBounds"), rendState.drawInstanceBoundsBuffer)
 		.End())
 	);
 	computeRecorder->SetBindGroup(2, g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(2)
-		.Buffer(0, rendState.drawInvocationsBuffer)
+		.Buffer(StringIdConst24("indirectDraws"), rendState.drawInvocationsBuffer)
 		.End())
 	);
 

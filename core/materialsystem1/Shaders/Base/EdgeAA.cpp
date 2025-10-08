@@ -37,9 +37,9 @@ BEGIN_SHADER_CLASS(EdgeAA)
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-				.Sampler(0, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
-				.Texture(1, m_baseTexture.Get())
-				.Buffer(2, m_settingsBuffer)
+				.Sampler(StringIdConst24("LinearClampSampler"), SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
+				.Texture(StringIdConst24("BaseTexture"), m_baseTexture.Get())
+				.Buffer(StringIdConst24("fxaaSettings"), m_settingsBuffer)
 				.End();
 
 			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);

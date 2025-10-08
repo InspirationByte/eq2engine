@@ -64,6 +64,7 @@ static VertexLayoutDesc& GetDynamicMeshLayout()
 }
 
 DECLARE_CVAR(r_vSync, "0", "Vertical syncronization", CV_ARCHIVE);
+DECLARE_CVAR(r_pipelineCacheDisable, "0", "Disable pipeline cache and reusing compatible pipelines", CV_CHEAT);
 DECLARE_CVAR(r_showPipelineCacheMisses, "0", "Show warning messages about shader pipeline cache misses", CV_ARCHIVE);
 
 DECLARE_CVAR_CLAMP(r_loadmiplevel, "0", 0, 3, "Mipmap level to load, needs texture reloading", CV_ARCHIVE);
@@ -72,13 +73,13 @@ DECLARE_CVAR_CLAMP(r_anisotropic, "4", 1, 16, "Mipmap anisotropic filtering qual
 DECLARE_CVAR(r_depthBias, "-0.000001", nullptr, CV_CHEAT);
 DECLARE_CVAR(r_slopeDepthBias, "-1.5", nullptr, CV_CHEAT);
 
-DECLARE_CMD(mat_reload_all, "Reloads all materials", CV_CHEAT)
+DECLARE_CMD(mat_reloadAll, "Reloads all materials", CV_CHEAT)
 {
 	s_matsystem.ReloadAllMaterials();
 	s_matsystem.WaitAllMaterialsLoaded();
 }
 
-DECLARE_CMD(mat_reload_shader, "Reloads specific shader", CV_CHEAT)
+DECLARE_CMD(mat_reloadShader, "Reloads specific shader", CV_CHEAT)
 {
 	if(CMD_ARGC > 0)
 	{
@@ -451,18 +452,23 @@ void CMaterialSystem::Shutdown()
 
 	FreeMaterials();
 
-	m_renderPipelineCache.clear();
-	m_shaderOverrideList.clear();
-	m_proxyFactoryList.clear();
+	m_renderPipelineCache.clear(true);
+	m_shaderOverrideList.clear(true);
+	m_proxyFactoryList.clear(true);
 
 	m_shaderAPI->Shutdown();
+	m_shaderAPI = nullptr;
+	g_renderAPI = nullptr;
+
 	m_renderLibrary->ExitAPI();
 
 	for(OSModule* shaderModule : m_shaderLibs)
 		g_eqCore->CloseModule(shaderModule);
+	m_shaderLibs.clear(true);
 
 	// shutdown render libraries, all shaders and other
 	g_eqCore->CloseModule( m_rendermodule );
+	m_rendermodule = nullptr;
 }
 
 void CMaterialSystem::CreateWhiteTexture()

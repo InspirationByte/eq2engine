@@ -28,9 +28,9 @@ BEGIN_SHADER_CLASS(UIOverlayMask)
 		{
 			const ITexturePtr& maskTexture = m_maskTexture.Get() ? m_maskTexture.Get() : g_matSystem->GetErrorCheckerboardTexture();
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-				.Sampler(0, SamplerStateParams(m_texFilter, m_texAddressMode))
-				.Texture(1, m_baseTexture.Get())
-				.Texture(2, maskTexture)
+				.Sampler(StringIdConst24("BaseTextureSampler"), SamplerStateParams(m_texFilter, m_texAddressMode))
+				.Texture(StringIdConst24("BaseTexture"), m_baseTexture.Get())
+				.Texture(StringIdConst24("MaskTexture"), maskTexture)
 				.End();
 
 			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
@@ -59,7 +59,7 @@ BEGIN_SHADER_CLASS(UIOverlayMask)
 			}
 
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, cameraParamsBuffer)
+				.Buffer(StringIdConst24("camera"), cameraParamsBuffer)
 				.End();
 			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 		}

@@ -15,7 +15,7 @@ class IGPUBuffer;
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
 
 struct BindGroupLayoutDesc;
-class IGPUPipelineLayout;
+class IGPUBindingLayout;
 class IGPUBindGroup;
 using IGPUBindGroupPtr = CRefPtr<IGPUBindGroup>;
 

@@ -117,6 +117,8 @@ IGPUBufferPtr MakeParameterUniformBuffer(Args... data)
 }
 
 
+using Threading::CEqReadWriteLock;
+
 // base shader class
 class CBaseShader : public IMatSystemShader
 {
@@ -145,7 +147,7 @@ protected:
 	{
 		mutable IGPUBindGroupPtr	bindGroup[MAX_BINDGROUPS];
 		IGPURenderPipelinePtr		pipeline;
-		IGPUPipelineLayoutPtr		layout;
+		IGPUBindingLayoutPtr		layout;
 		int							vertexLayoutId{ 0 };
 		mutable uint				instMngToken{ COM_UINT_MAX };
 		mutable uint				renderPassVersion{ COM_UINT_MAX };
@@ -199,25 +201,28 @@ protected:
 	// makes a texture transform (scale + offset)
 	Vector4D					GetTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar) const;
 
-	mutable Map<uint, PipelineInfo>	m_renderPipelines{ PP_SL };
-	MatSysShaderPipelineCache*		m_pipelineCache{ nullptr };
+	using PipelineInfoMap = Map<uint, PipelineInfo>;
 
-	IMaterial*						m_material{ nullptr };
+	mutable PipelineInfoMap		m_renderPipelines{ PP_SL };
+	MatSysShaderPipelineCache*	m_pipelineCache{ nullptr };
 
-	MatVec2Proxy					m_baseTextureTransformVar;
-	MatVec2Proxy					m_baseTextureScaleVar;
-	MatIntProxy						m_baseTextureFrame;
+	IMaterial*					m_material{ nullptr };
 
-	Array<MatTextureProxy>			m_usedTextures{ PP_SL };
+	MatVec2Proxy				m_baseTextureTransformVar;
+	MatVec2Proxy				m_baseTextureScaleVar;
+	MatIntProxy					m_baseTextureFrame;
 
-	ETexAddressMode					m_texAddressMode{ TEXADDRESS_WRAP };
-	ETexFilterMode					m_texFilter{ TEXFILTER_TRILINEAR_ANISO };
-	EShaderBlendMode				m_blendMode{ SHADER_BLEND_NONE };
+	Array<MatTextureProxy>		m_usedTextures{ PP_SL };
 
-	Array<EqString>					m_shaderQuery{ PP_SL };
-	int								m_shaderQueryId{ 0 };
-	int								m_flags{ 0 };
-	bool							m_isInit{ false };
+	ETexAddressMode				m_texAddressMode{ TEXADDRESS_WRAP };
+	ETexFilterMode				m_texFilter{ TEXFILTER_TRILINEAR_ANISO };
+	EShaderBlendMode			m_blendMode{ SHADER_BLEND_NONE };
+
+	Array<EqString>				m_shaderQuery{ PP_SL };
+	mutable CEqReadWriteLock	m_renderPipelinesLock;
+	int							m_shaderQueryId{ 0 };
+	int							m_flags{ 0 };
+	bool						m_isInit{ false };
 };
 
 // DEPRECATED

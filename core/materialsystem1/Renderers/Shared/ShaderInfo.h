@@ -45,11 +45,6 @@ struct ShaderInfo
 	static bool		ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shaderPackFile, const KVSection& shaderInfoKvs, int& filesFound, bool parseBindings = true);
 	void			ParseModuleBindings(const KVSection& bindingsSec, uint shaderModuleId, Module& moduleInfo, Map<uint, int>& usedBindingSlots);
 
-	static uint		MakeBindingId(int descriptorSetIdx, int index);
-	static void		UnpackBindingId(uint bindingIdx, int& descriptorSetIdx, int& index);
-	static uint64	MakeShaderBindingId(uint shaderModuleId, uint bindingIdx);
-	static uint64	MakeShaderBindingId(uint shaderModuleId, int descriptorSetIdx, int index);
-
 	ShaderInfo() = default;
 	ShaderInfo(ShaderInfo&& other) noexcept;
 	ShaderInfo& operator=(ShaderInfo&& other) noexcept;
@@ -57,7 +52,7 @@ struct ShaderInfo
 	bool			GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const;
 	EqStringRef		GetShaderQueryStr(ArrayCRef<EqString> findDefines) const;
 
-	ArrayCRef<uint>	GetBindingIds(const ShaderInfo::Module& module) const;
+	ArrayCRef<int>	GetBindingIds(const ShaderInfo::Module& module) const;
 
 	struct VertLayout
 	{
@@ -69,6 +64,7 @@ struct ShaderInfo
 	struct Binding
 	{
 		EqString			name;
+		int					nameId{ 0 };
 		EBindEntryType		type{ BINDENTRY_BUFFER };
 		int					rwFlags{ RWFLAG_UNIFORM };
 
@@ -80,16 +76,17 @@ struct ShaderInfo
 
 	struct Module
 	{
+		BitArray			usedBindings{ PP_SL };
 		void*				rhiModule{ nullptr };
 		EqString			entryPoint;
 		int					fileIndex[SHADERMODULE_TYPES]{ -1 };
 		EShaderKind			kind{ };
 		int					bindingsStart{ 0 };
+		uint				id{ 0 };
 	};
 
 	Array<Binding>			bindings{ PP_SL };
-	Map<uint64, int>		bindingMap{ PP_SL };		// kind:descriptorSetIdx:index to bindings via MakeBindingIdx
-	Array<uint>				bindingIds{ PP_SL };		// binding ids per module, start by Module::bindingsStart storing count, rest is ids
+	Array<int>				bindingIds{ PP_SL };		// binding ids per module, start by Module::bindingsStart storing count, rest is ids
 
 	EqString				shaderName;
 	IPackFileReaderPtr		shaderPackFile{ nullptr };

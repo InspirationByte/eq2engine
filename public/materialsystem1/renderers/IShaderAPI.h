@@ -35,8 +35,8 @@ struct ShaderAPIParams
 
 //---------------------------------
 // Pipeline layout. Used for creating bind groups and pipelines
-class IGPUPipelineLayout : public RefCountedObject<IGPUPipelineLayout> {};
-using IGPUPipelineLayoutPtr = CRefPtr<IGPUPipelineLayout>;
+class IGPUBindingLayout : public RefCountedObject<IGPUBindingLayout> {};
+using IGPUBindingLayoutPtr = CRefPtr<IGPUBindingLayout>;
 
 //---------------------------------
 // Render pipeline. Used for rendering things
@@ -114,12 +114,13 @@ public:
 //-------------------------------------------------------------
 // Pipeline management
 
-	virtual IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const = 0;
-	virtual IGPURenderPipelinePtr		CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout = nullptr) const = 0;
-	virtual IGPUComputePipelinePtr		CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout = nullptr) const = 0;
+	virtual IGPUBindingLayoutPtr		CreateBindingLayout(const BindingLayoutDesc& layoutDesc) const = 0;
+	virtual IGPURenderPipelinePtr		CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUBindingLayout* pipelineLayout = nullptr) const = 0;
+	virtual IGPUComputePipelinePtr		CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUBindingLayout* pipelineLayout = nullptr) const = 0;
 
-	// constructs bind group using explicit user-defined pipeline layoyt
-	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayout* pipelineLayout, const BindGroupDesc& bindGroupDesc) const = 0;
+	// constructs relaxed bind group using explicit user-defined pipeline layoyt
+	// useful where bind group is used between different shader and stages
+	virtual IGPUBindGroupPtr			CreateSharedBindGroup(const IGPUBindingLayout* pipelineLayout, const BindGroupDesc& bindGroupDesc) const = 0;
 	
 	// constructs bind group using render pipeline layout  defined by shader module
 	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPURenderPipeline* renderPipeline, const BindGroupDesc& bindGroupDesc) const = 0;

@@ -125,8 +125,10 @@ IEXPORTS int ProfBeginMarker(const char* text)
 
 	int eventId = tlsCV_events->pushedEvents.numElem();
 	cvSpanHolder& spanHld = tlsCV_events->pushedEvents.append();
-	EqWString wText;
+
+	thread_local static EqWString wText;
 	AnsiUnicodeConverter(wText, text);
+
 	new(spanHld.data) span(*series, normal_importance, wText.ToCString());
 
 	return eventId;

@@ -310,7 +310,6 @@ void CWGPUTexture::Unlock(IGPUCommandRecorder* writeCmdRecorder)
 		if (writeCmdRecorder)
 		{
 			CWGPUCommandRecorder* recorder = static_cast<CWGPUCommandRecorder*>(writeCmdRecorder);
-			// TODO: all of this must be CWGPUCommandRecorder::WriteTexture();
 
 			CWGPUBuffer tmpBuffer(BufferInfo(1, data.lockByteCount), BUFFERUSAGE_COPY_SRC | BUFFERUSAGE_COPY_DST, "TexLockWriteBuffer");
 			writeCmdRecorder->WriteBuffer(&tmpBuffer, data.lockData, data.lockByteCount, 0);

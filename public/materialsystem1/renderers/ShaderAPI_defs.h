@@ -593,7 +593,7 @@ struct BindGroupLayoutDesc
 			BindTexture			texture;
 			BindStorageTexture	storageTexture;
 		};
-		EqString		name;
+		int				nameId;
 		EBindEntryType	type{ BINDENTRY_BUFFER };
 		int				binding{ 0 };
 		int				visibility{ 0 };	// EShaderKind
@@ -606,72 +606,71 @@ struct BindGroupLayoutDesc
 
 FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	FLUENT_SET_VALUE(name, Name)
-	ThisType& Buffer(const char* name, int binding, int shaderKind, EBufferBindType bindType, bool hasDynamicOffset = false)
+	ThisType& Buffer(int nameId, int binding, int shaderKind, EBufferBindType bindType, bool hasDynamicOffset = false)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding);
-		Entry& entry = ref.entries.append();
-		entry.name = name;
-		entry.visibility = shaderKind;
-		entry.binding = binding;
-		entry.type = BINDENTRY_BUFFER;
-		entry.buffer = BindBuffer();
+		Entry& entry = AddEntry(BINDENTRY_BUFFER, nameId, binding, shaderKind);
+
+		entry.buffer = {};
 		entry.buffer.bindType = bindType;
 		entry.buffer.hasDynamicOffset = hasDynamicOffset;
 		return *this; 
 	}
-	ThisType& Sampler(const char* name, int binding, int shaderKind, ESamplerBindType bindType)
+	ThisType& Sampler(int nameId, int binding, int shaderKind, ESamplerBindType bindType)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
-		Entry& entry = ref.entries.append();
-		entry.name = name;
-		entry.visibility = shaderKind;
-		entry.binding = binding;
-		entry.type = BINDENTRY_SAMPLER;
-		entry.sampler = BindSampler();
+		Entry& entry = AddEntry(BINDENTRY_SAMPLER, nameId, binding, shaderKind);
+
+		entry.sampler = {};
 		entry.sampler.bindType = bindType;
 		return *this;
 	}
-	ThisType& Texture(const char* name, int binding, int shaderKind, ETextureSampleType sampleType, ETextureDimension dimension, bool multisample = false)
+	ThisType& Texture(int nameId, int binding, int shaderKind, ETextureSampleType sampleType, ETextureDimension dimension, bool multisample = false)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
-		Entry& entry = ref.entries.append();
-		entry.name = name;
-		entry.visibility = shaderKind;
-		entry.binding = binding;
-		entry.type = BINDENTRY_TEXTURE;
-		entry.texture = BindTexture();
+		Entry& entry = AddEntry(BINDENTRY_TEXTURE, nameId, binding, shaderKind);
+
+		entry.texture = {};
 		entry.texture.sampleType = sampleType;
 		entry.texture.dimension = dimension;
 		entry.texture.multisampled = multisample;
 		return *this;
 	}
-	ThisType& StorageTexture(const char* name, int binding, int shaderKind, ETextureFormat format, EStorageTextureAccess access, ETextureDimension dimension)
+	ThisType& StorageTexture(int nameId, int binding, int shaderKind, ETextureFormat format, EStorageTextureAccess access, ETextureDimension dimension)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
-		Entry& entry = ref.entries.append();
-		entry.name = name;
-		entry.visibility = shaderKind;
-		entry.binding = binding;
-		entry.type = BINDENTRY_STORAGETEXTURE;
-		entry.storageTexture = BindStorageTexture();
+		Entry& entry = AddEntry(BINDENTRY_STORAGETEXTURE, nameId, binding, shaderKind);
+
+		entry.storageTexture = {};
 		entry.storageTexture.format = format;
 		entry.storageTexture.access = access;
 		entry.storageTexture.dimension = dimension;
 		return *this;
 	}
+
+	Entry& AddEntry(EBindEntryType type, int nameId, int binding, int shaderKind)
+	{
+		Entry& entry = ref.entries.append();
+		entry.nameId = nameId;
+		entry.visibility = shaderKind;
+		entry.binding = binding;
+		entry.type = type;
+		return entry;
+	}
 FLUENT_END_TYPE
 
-struct PipelineLayoutDesc
+struct BindingLayoutDesc
 {
-	using BindGroupDescList = Array<BindGroupLayoutDesc>;
-	BindGroupDescList	bindGroups{ PP_SL };
+	using BindGroupDescList = FixedArray<BindGroupLayoutDesc, MAX_BINDGROUPS>;
+	BindGroupDescList	bindGroups;
 	EqString			name;
 };
 
-FLUENT_BEGIN_TYPE(PipelineLayoutDesc)
+FLUENT_BEGIN_TYPE(BindingLayoutDesc)
 	FLUENT_SET_VALUE(name, Name)
 	ThisType& Group(BindGroupLayoutDesc&& x)
 	{
+		ASSERT(!ref.bindGroups.isFull());
 		ref.bindGroups.append(std::move(x));
 		return *this; 
 	}
@@ -680,7 +679,6 @@ FLUENT_END_TYPE
 //------------------------------------------------------------
 // BindGroup builder
 
-// FIXME: rename to ResourceBindGroupDesc ???
 struct BindGroupDesc
 {
 	struct Entry

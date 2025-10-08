@@ -128,11 +128,11 @@ IGPUBindGroupPtr CBaseShader::CreatePersistentBindGroup(BindGroupDesc& bindGroup
 	if (pipelineInfo.layout)
 	{
 		//bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
-		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupDesc);
+		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateSharedBindGroup(pipelineInfo.layout, bindGroupDesc);
 	}
 	else
 	{
-		//bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
+		//bindGroupDesc.name = EqString::Format("%s-%s-BindingLayout", GetName(), s_bindGroupNames[bindGroupId]);
 		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.pipeline, bindGroupDesc);
 	}
 
@@ -145,11 +145,11 @@ IGPUBindGroupPtr CBaseShader::CreateBindGroup(BindGroupDesc& bindGroupDesc, EBin
 	if(pipelineInfo.layout)
 	{
 		//bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
-		return renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupDesc);
+		return renderAPI->CreateSharedBindGroup(pipelineInfo.layout, bindGroupDesc);
 	}
 	else
 	{
-		//bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
+		//bindGroupDesc.name = EqString::Format("%s-%s-BindingLayout", GetName(), s_bindGroupNames[bindGroupId]);
 		return renderAPI->CreateBindGroup(pipelineInfo.pipeline, bindGroupDesc);
 	}
 }
@@ -164,21 +164,22 @@ IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGrou
 	{
 		BindGroupDesc emptyBindGroupDesc;
 		emptyBindGroupDesc.groupIdx = bindGroupId;
-		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.layout, emptyBindGroupDesc);
+		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateSharedBindGroup(pipelineInfo.layout, emptyBindGroupDesc);
 	}
 	return pipelineInfo.bindGroup[bindGroupId];
 }
 
 uint CBaseShader::GetRenderPipelineId(const PipelineInputParams& inputParams) const
 {
-	const bool translucentZWrite = !inputParams.depthReadOnly && ((m_flags & MATERIAL_FLAG_TRANSPARENT) ? inputParams.colorTargetFormat.numElem() > 0 : true);
+	const int flags = m_flags;
+	const bool translucentZWrite = !inputParams.depthReadOnly && ((flags & MATERIAL_FLAG_TRANSPARENT) ? inputParams.colorTargetFormat.numElem() > 0 : true);
 
-	const bool onlyZ = inputParams.skipFragmentPipeline || (m_flags & MATERIAL_FLAG_ONLY_Z);
-	const bool depthTestEnable = (m_flags & MATERIAL_FLAG_NO_Z_TEST) == 0;
-	const bool depthWriteEnable = translucentZWrite && (m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0;
-	const bool polyOffsetEnable = (m_flags & MATERIAL_FLAG_DECAL);
+	const bool onlyZ = inputParams.skipFragmentPipeline || (flags & MATERIAL_FLAG_ONLY_Z);
+	const bool depthTestEnable = (flags & MATERIAL_FLAG_NO_Z_TEST) == 0;
+	const bool depthWriteEnable = translucentZWrite && (flags & MATERIAL_FLAG_NO_Z_WRITE) == 0;
+	const bool polyOffsetEnable = (flags & MATERIAL_FLAG_DECAL);
 	const bool withMeshInstProvider = inputParams.meshInstProvider ? true : false;
-	const ECullMode cullMode = (m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
+	const ECullMode cullMode = (flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
 
 	const uint pipelineFlags = 
 		  static_cast<uint>(cullMode)
@@ -203,9 +204,7 @@ uint CBaseShader::GetRenderPipelineId(const PipelineInputParams& inputParams) co
 		if (format == FORMAT_NONE)
 			break;
 		hash *= 31;
-		hash += static_cast<uint>(i);
-		hash *= 31;
-		hash += static_cast<uint>(format);
+		hash += static_cast<uint>(i) | static_cast<uint>(format) << 8;
 	}
 	hash *= 31;
 	hash += static_cast<uint>(inputParams.depthTargetFormat);
@@ -214,13 +213,14 @@ uint CBaseShader::GetRenderPipelineId(const PipelineInputParams& inputParams) co
 
 void CBaseShader::FillRenderPipelineDesc(const PipelineInputParams& inputParams, RenderPipelineDesc& renderPipelineDesc) const
 {
-	const bool translucentZWrite = !inputParams.depthReadOnly && ((m_flags & MATERIAL_FLAG_TRANSPARENT) ? inputParams.colorTargetFormat.numElem() > 0 : true);
+	const int flags = m_flags;
+	const bool translucentZWrite = !inputParams.depthReadOnly && ((flags & MATERIAL_FLAG_TRANSPARENT) ? inputParams.colorTargetFormat.numElem() > 0 : true);
 
-	const bool onlyZ = inputParams.skipFragmentPipeline || (m_flags & MATERIAL_FLAG_ONLY_Z);
-	const bool depthTestEnable = (m_flags & MATERIAL_FLAG_NO_Z_TEST) == 0;
-	const bool depthWriteEnable = translucentZWrite && (m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0;
-	const bool polyOffsetEnable = (m_flags & MATERIAL_FLAG_DECAL);
-	const ECullMode cullMode = (m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
+	const bool onlyZ = inputParams.skipFragmentPipeline || (flags & MATERIAL_FLAG_ONLY_Z);
+	const bool depthTestEnable = (flags & MATERIAL_FLAG_NO_Z_TEST) == 0;
+	const bool depthWriteEnable = translucentZWrite && (flags & MATERIAL_FLAG_NO_Z_WRITE) == 0;
+	const bool polyOffsetEnable = (flags & MATERIAL_FLAG_DECAL);
+	const ECullMode cullMode = (flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
 
 	// TODO: variant
 	const bool isStripIdx = inputParams.primitiveTopology == PRIM_TRIANGLE_STRIP || inputParams.primitiveTopology == PRIM_LINE_STRIP;
@@ -349,47 +349,53 @@ void CBaseShader::PipelineCreatorJob::Execute()
 
 const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* renderAPI, const PipelineInputParams& inputParams, bool onInit)
 {
-	static PipelineInfo noPipeline;
-	noPipeline.pipeline = nullptr;
+	using namespace Threading;
 
 	HOOK_TO_CVAR(r_showPipelineCacheMisses);
+	HOOK_TO_CVAR(r_pipelineCacheDisable);
+	const bool usePipelineCache = r_pipelineCacheDisable->GetBool() == false;
 
 	const uint pipelineId = GetRenderPipelineId(inputParams);
-
-	if (!m_pipelineCache)
-		m_pipelineCache = &g_matSystem->GetRenderPipelineCache(GetNameHash());
-
-	m_pipelineCache->rwLock.LockRead();
-	auto it = m_renderPipelines.find(pipelineId);
-	m_pipelineCache->rwLock.UnlockRead();
-
-	if (!it.atEnd())
-		return *it;
-
+	PipelineInfoMap::Iterator it;
+	
 	{
-		Threading::CScopedWriteLocker lock(m_pipelineCache->rwLock);
+		CScopedReadLocker lock(m_renderPipelinesLock);
+		it = m_renderPipelines.find(pipelineId);
+		if (it)
+			return *it;
+	}
+	{
+		CScopedWriteLocker lock(m_renderPipelinesLock);
 		it = m_renderPipelines.insert(pipelineId);
 	}
 
 	PipelineInfo& newPipelineInfo = *it;
 	newPipelineInfo.vertexLayoutId = inputParams.meshInstFormat.formatId;
 
-	m_pipelineCache->rwLock.LockRead();
-	auto cacheIt = m_pipelineCache->pipelines.find(pipelineId);
-	m_pipelineCache->rwLock.UnlockRead();
-	if (!cacheIt.atEnd())
+	MatSysShaderPipelineCache::PipelineMap::Iterator cacheIt;
+	if (usePipelineCache)
 	{
-		if ((*cacheIt).future.IsValid())
-		{
-			(*cacheIt).future.AddCallback([&cache = *cacheIt, &newPipelineInfo](const FutureResult<IGPURenderPipelinePtr>& result) {
-				cache.pipeline = *result;
-				newPipelineInfo.pipeline = *result;
-				});
-		}
+		if (!m_pipelineCache)
+			m_pipelineCache = &g_matSystem->GetRenderPipelineCache(GetNameHash());
 
-		newPipelineInfo.pipeline = (*cacheIt).pipeline;
-		newPipelineInfo.layout = (*cacheIt).layout;
-		return newPipelineInfo;
+		{
+			CScopedReadLocker lock(m_pipelineCache->rwLock);
+			cacheIt = m_pipelineCache->pipelines.find(pipelineId);
+		}
+		if (cacheIt)
+		{
+			if ((*cacheIt).future)
+			{
+				(*cacheIt).future.AddCallback([&cache = *cacheIt, &newPipelineInfo](const FutureResult<IGPURenderPipelinePtr>& result) {
+					cache.pipeline = *result;
+					newPipelineInfo.pipeline = *result;
+				});
+			}
+
+			newPipelineInfo.pipeline = (*cacheIt).pipeline;
+			newPipelineInfo.layout = (*cacheIt).layout;
+			return newPipelineInfo;
+		}
 	}
 
 	// Create pipeline layout
@@ -402,23 +408,21 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 		//		- Bind group persists across single render pass
 		//	BINDGROUP_TRANSIENT
 		//		- Bind group is unique for each draw call
-		//
-		// you're not obligated to use all of them
 
-		PipelineLayoutDesc pipelineLayoutDesc;
-		pipelineLayoutDesc.name = GetName();
+		BindingLayoutDesc bindingLayoutDesc;
+		bindingLayoutDesc.name = GetName();
 
-		FillBindGroupLayout_Constant(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
-		FillBindGroupLayout_RenderPass(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
-		FillBindGroupLayout_Transient(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+		FillBindGroupLayout_Constant(inputParams.meshInstFormat, bindingLayoutDesc.bindGroups.append());
+		FillBindGroupLayout_RenderPass(inputParams.meshInstFormat, bindingLayoutDesc.bindGroups.append());
+		FillBindGroupLayout_Transient(inputParams.meshInstFormat, bindingLayoutDesc.bindGroups.append());
 
 		if (inputParams.meshInstProvider)
-			inputParams.meshInstProvider->FillBindGroupLayoutDesc(pipelineLayoutDesc.bindGroups.append());
+			inputParams.meshInstProvider->FillBindGroupLayoutDesc(bindingLayoutDesc.bindGroups.append());
 
 		int shaderLayoutBindGroup = 0;
 
 		int piplineLayoutIdx = 0;
-		for (const BindGroupLayoutDesc& layout : pipelineLayoutDesc.bindGroups)
+		for (const BindGroupLayoutDesc& layout : bindingLayoutDesc.bindGroups)
 		{
 			if (layout.entries.numElem() > 0)
 				shaderLayoutBindGroup |= (1 << piplineLayoutIdx);
@@ -426,31 +430,31 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 		}
 
 		if (shaderLayoutBindGroup)
-		{
-			newPipelineInfo.layout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
-		}
+			newPipelineInfo.layout = renderAPI->CreateBindingLayout(bindingLayoutDesc);
 	}
 
 	RenderPipelineDesc renderPipelineDesc;
 	FillRenderPipelineDesc(inputParams, renderPipelineDesc);
 
+	// create pipeline
 	if (onInit || renderAPI->IsDeviceValidationActive())
 	{
-		IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, newPipelineInfo.layout);
-		if (!renderPipeline)
+		newPipelineInfo.pipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, newPipelineInfo.layout);
+		if (!newPipelineInfo.pipeline)
 		{
 			MsgError("Failed to create render pipeline for shader %s", GetName());
 			return newPipelineInfo;
 		}
 
-		MatSysShaderPipelineCache::Pipeline cachePipeline;
-		cachePipeline.layout = newPipelineInfo.layout;
-		cachePipeline.pipeline = renderPipeline;
+		if (usePipelineCache)
 		{
-			Threading::CScopedWriteLocker lock(m_pipelineCache->rwLock);
+			CScopedWriteLocker lock(m_pipelineCache->rwLock);
+
+			MatSysShaderPipelineCache::Pipeline cachePipeline;
+			cachePipeline.layout = newPipelineInfo.layout;
+			cachePipeline.pipeline = newPipelineInfo.pipeline;
 			m_pipelineCache->pipelines.insert(pipelineId, cachePipeline);
 		}
-		newPipelineInfo.pipeline = renderPipeline;
 	}
 	else
 	{
@@ -458,19 +462,21 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 		pipelineJob->InitJob();
 		pipelineJob->DeleteOnFinish();
 
-		MatSysShaderPipelineCache::Pipeline cachePipeline;
-		cachePipeline.layout = newPipelineInfo.layout;
-		cachePipeline.future = pipelineJob->m_pipelinePromise.CreateFuture();
+		if (usePipelineCache)
 		{
-			Threading::CScopedWriteLocker lock(m_pipelineCache->rwLock);
-			cacheIt = m_pipelineCache->pipelines.insert(pipelineId, cachePipeline);
-		}
-		cachePipeline.future.AddCallback([&cache = *cacheIt, &newPipelineInfo, onInit, inputParams, this](const FutureResult<IGPURenderPipelinePtr>& result) {
-			if (result.IsError())
+			MatSysShaderPipelineCache::Pipeline cachePipeline;
+			cachePipeline.layout = newPipelineInfo.layout;
+			cachePipeline.future = pipelineJob->m_pipelinePromise.CreateFuture();
 			{
-				MsgError("%s\n", result.GetErrorMessage());
-				return;
+				CScopedWriteLocker lock(m_pipelineCache->rwLock);
+				cacheIt = m_pipelineCache->pipelines.insert(pipelineId, cachePipeline);
 			}
+			cachePipeline.future.AddCallback([&cache = *cacheIt, &newPipelineInfo, onInit, inputParams, this](const FutureResult<IGPURenderPipelinePtr>& result) {
+				if (result.IsError())
+				{
+					MsgError("%s\n", result.GetErrorMessage());
+					return;
+				}
 
 #ifndef _RETAIL
 
@@ -485,29 +491,42 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 ((byte) & 0x02 ? '1' : '0'), \
 ((byte) & 0x01 ? '1' : '0') 
 
-			if (*result && r_showPipelineCacheMisses->GetBool())
-			{
-				if (onInit)
+				if (*result && r_showPipelineCacheMisses->GetBool())
 				{
-					MsgInfo("Pre-create pipeline %s-%s_" BYTE_TO_BINARY_PATTERN "-PT%d-DF%d-CF%d\n",
-						GetName(), inputParams.meshInstFormat.name,
-						BYTE_TO_BINARY(inputParams.meshInstFormat.usedLayoutBits),
-						inputParams.primitiveTopology, inputParams.depthTargetFormat, inputParams.colorTargetFormat[0]);
+					if (onInit)
+					{
+						MsgInfo("Pre-create pipeline %s-%s_" BYTE_TO_BINARY_PATTERN "-PT%d-DF%d-CF%d\n",
+							GetName(), inputParams.meshInstFormat.name,
+							BYTE_TO_BINARY(inputParams.meshInstFormat.usedLayoutBits),
+							inputParams.primitiveTopology, inputParams.depthTargetFormat, inputParams.colorTargetFormat[0]);
+					}
+					else
+					{
+						MsgWarning("Render pipeline %s-%s_" BYTE_TO_BINARY_PATTERN "-PT%d-DF%d-CF%d was not pre-created\n",
+							GetName(), inputParams.meshInstFormat.name,
+							BYTE_TO_BINARY(inputParams.meshInstFormat.usedLayoutBits),
+							inputParams.primitiveTopology, inputParams.depthTargetFormat, inputParams.colorTargetFormat[0]);
+					}
 				}
-				else
-				{
-					MsgWarning("Render pipeline %s-%s_" BYTE_TO_BINARY_PATTERN "-PT%d-DF%d-CF%d was not pre-created\n",
-						GetName(), inputParams.meshInstFormat.name,
-						BYTE_TO_BINARY(inputParams.meshInstFormat.usedLayoutBits),
-						inputParams.primitiveTopology, inputParams.depthTargetFormat, inputParams.colorTargetFormat[0]);
-				}
-			}
 #endif // !_RETAIL
 
-			cache.pipeline = *result;
-			newPipelineInfo.pipeline = *result;
-			cache.future = nullptr;
-		});
+				cache.pipeline = *result;
+				newPipelineInfo.pipeline = *result;
+				cache.future = nullptr;
+			});
+		}
+		else
+		{
+			Future<IGPURenderPipelinePtr> pipelineFuture = pipelineJob->m_pipelinePromise.CreateFuture();
+			pipelineFuture.AddCallback([&newPipelineInfo, onInit, inputParams, this](const FutureResult<IGPURenderPipelinePtr>& result) {
+				if (result.IsError())
+				{
+					MsgError("%s\n", result.GetErrorMessage());
+					return;
+				}
+				newPipelineInfo.pipeline = *result;
+			});
+		}
 		g_parallelJobs->GetJobMng()->StartJob(pipelineJob);
 	}
 
@@ -541,11 +560,11 @@ bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputPara
 void CBaseShader::FillBindGroupLayout_Constant_Samplers(BindGroupLayoutDesc& bindGroupLayout) const
 {
 	Builder<BindGroupLayoutDesc>(bindGroupLayout)
-		.Sampler("MaterialSampler", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-		.Sampler("LinearMirrorWrapSampler", 1, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-		.Sampler("LinearClampSampler", 2, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-		.Sampler("NearestSampler", 3, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-		.Sampler("NoSampler", 4, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_NONFILTERING);
+		.Sampler(StringIdConst24("MaterialSampler"), 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+		.Sampler(StringIdConst24("LinearMirrorWrapSampler"), 1, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+		.Sampler(StringIdConst24("LinearClampSampler"), 2, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+		.Sampler(StringIdConst24("NearestSampler"), 3, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+		.Sampler(StringIdConst24("NoSampler"), 4, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_NONFILTERING);
 }
 
 void CBaseShader::FillBindGroup_Constant_Samplers(BindGroupDesc& bindGroupDesc) const

@@ -852,6 +852,12 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 
 	// currently using as hack for crashing extern struct
 	slangCompileRequest->addPreprocessorDefine("VERTEX_LAYOUT", vertexLayout.name);
+
+	// define bind group ids
+	slangCompileRequest->addPreprocessorDefine("BINDGROUP_CONSTANT", "0");
+	slangCompileRequest->addPreprocessorDefine("BINDGROUP_RENDERPASS", "1");
+	slangCompileRequest->addPreprocessorDefine("BINDGROUP_TRANSIENT", "2");
+	slangCompileRequest->addPreprocessorDefine("BINDGROUP_INSTANCES", "3");
 	
 	for(CompileTargetData& tgtData : targetData)
 	{
@@ -934,7 +940,6 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 			slangCompileRequest->addPreprocessorDefine(compileData.switchDefines[i], enabledSwitches[i] ? "1" : "0");
 	}
 
-	ComPtr<slang::IEntryPoint> slangEntryPoint;
 	auto slangAddSourceFile = [&](const char* name, const char* path) {
 		const int idx = slangCompileRequest->addTranslationUnit(srcLang, name);
 		slangCompileRequest->addTranslationUnitSourceFile(idx, path);
@@ -961,16 +966,6 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 
 		Atomic::Store(compileData.compileErrors, true);
 		return false;
-	}
-
-	if(0)
-	{
-		const char* diagStr = (const char*)slangCompileRequest->getDiagnosticOutput();
-		if(diagStr && *diagStr)
-		{
-			MsgWarning(diagStr);
-			MsgWarning("\n");
-		}
 	}
 
 	// construct bindings for PipelineLayout
@@ -1006,6 +1001,40 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 
 		int bindingTypeCounter[8][SLANG_BINDING_TYPE_PUSH_CONSTANT + 1]{ 0 };
 
+		auto parseResourceBinding = [&](slang::VariableLayoutReflection* param, slang::TypeReflection* type, const char* paramName, EBindingRangeType bindingRangeType) {
+			ShaderInfo::Binding& binding = bindings.append();
+			binding.name = paramName;
+
+			binding.descriptorSetIdx = param->getBindingSpace();
+			binding.index = param->getBindingIndex();
+
+			const int registerIndex = bindingTypeCounter[param->getBindingSpace()][static_cast<int>(bindingRangeType)]++;
+			binding.rangeType = bindingRangeType;
+			binding.registerIdx = registerIndex;
+
+			switch (type->getResourceShape())
+			{
+			case SLANG_STRUCTURED_BUFFER:
+			case SLANG_BYTE_ADDRESS_BUFFER:
+				binding.type = BINDENTRY_BUFFER; break;
+			default:
+				binding.type = BINDENTRY_TEXTURE;
+			}
+
+			switch (type->getResourceAccess())
+			{
+			case SLANG_RESOURCE_ACCESS_READ_WRITE:
+				binding.rwFlags = RWFLAG_READ | RWFLAG_WRITE; break;
+			case SLANG_RESOURCE_ACCESS_READ:
+				binding.rwFlags = RWFLAG_READ; break;
+			case SLANG_RESOURCE_ACCESS_WRITE:
+				binding.rwFlags = RWFLAG_WRITE; break;
+			}
+
+			if (binding.type == BINDENTRY_TEXTURE && binding.rwFlags != RWFLAG_UNIFORM)
+				binding.type = BINDENTRY_STORAGETEXTURE;
+		};
+
 		const int paramCount = shaderReflection->getParameterCount();
 		for (int i = 0; i < paramCount; i++)
 		{
@@ -1019,40 +1048,25 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 
 			switch (type->getKind())
 			{
+			case slang::TypeReflection::Kind::Struct:
+			{
+				// check for first field in struct
+				// must be byte address buffer or structured buffer
+				auto layout = param->getTypeLayout();
+				for (int f = 0; f < layout->getFieldCount(); f++)
+				{
+					auto field = layout->getFieldByIndex(f);
+					auto type = field->getType();
+					if (type->getKind() == slang::TypeReflection::Kind::Struct || type->getKind() == slang::TypeReflection::Kind::Array)
+						continue;
+					parseResourceBinding(param, type, paramName, bindingRangeType);
+				}
+
+				break;
+			}
 			case slang::TypeReflection::Kind::Resource:
 			{
-				ShaderInfo::Binding& binding = bindings.append();
-				binding.name = paramName;
-
-				binding.descriptorSetIdx = param->getBindingSpace();
-				binding.index = param->getBindingIndex();
-
-				const int registerIndex = bindingTypeCounter[param->getBindingSpace()][static_cast<int>(bindingRangeType)]++;
-				binding.rangeType = bindingRangeType;
-				binding.registerIdx = registerIndex;
-
-				switch (type->getResourceShape())
-				{
-				case SLANG_STRUCTURED_BUFFER:
-				case SLANG_BYTE_ADDRESS_BUFFER:
-					binding.type = BINDENTRY_BUFFER; break;
-				default:
-					binding.type = BINDENTRY_TEXTURE;
-				}
-
-				switch (type->getResourceAccess())
-				{
-				case SLANG_RESOURCE_ACCESS_READ_WRITE:
-					binding.rwFlags = RWFLAG_READ | RWFLAG_WRITE; break;
-				case SLANG_RESOURCE_ACCESS_READ:
-					binding.rwFlags = RWFLAG_READ; break;
-				case SLANG_RESOURCE_ACCESS_WRITE:
-					binding.rwFlags = RWFLAG_WRITE; break;
-				}
-
-				if (binding.type == BINDENTRY_TEXTURE && binding.rwFlags != RWFLAG_UNIFORM)
-					binding.type = BINDENTRY_STORAGETEXTURE;
-
+				parseResourceBinding(param, type, paramName, bindingRangeType);
 				break;
 			}
 			case slang::TypeReflection::Kind::SamplerState:
@@ -1088,22 +1102,66 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 			}
 		}
 
-		for (const ShaderInfo::Binding& binding : bindings)
-		{
-			Msg("[vk_layout(%d,%d)] %s %s %s : register(%d, space%d)\n", binding.index, binding.descriptorSetIdx, GetRWFlagsString(binding.rwFlags).ToCString(), s_bindingTypeNames[binding.type], binding.name.ToCString(), binding.registerIdx, binding.descriptorSetIdx);
-		}
+		//for (const ShaderInfo::Binding& binding : bindings)
+		//{
+		//	Msg("[vk_layout(%d,%d)] %s %s %s : register(%d, space%d)\n", binding.index, binding.descriptorSetIdx, GetRWFlagsString(binding.rwFlags).ToCString(), s_bindingTypeNames[binding.type], binding.name.ToCString(), binding.registerIdx, binding.descriptorSetIdx);
+		//}
 	}
 
 	for (CompileTargetData& tgtData : targetData)
 	{
+		ComPtr<slang::IComponentType> slangEntryPoint;
+		slangCompileRequest->getProgramWithEntryPoints(slangEntryPoint.writeRef());
+
+		ComPtr<slang::IMetadata> slangMetadata;
+		slangEntryPoint->getEntryPointMetadata(0, tgtData.targetIdx, slangMetadata.writeRef());
+
+		BitArray usedBindings(PP_SL);
+		usedBindings.resize(bindings.numElem());
+
+		//Msg("TGT %d\n", tgtData.type);
+
+		// build a bit set of used parameters for each target
+		// used in RHI later to set or not set stuff
+		for(int i = 0; i < bindings.numElem(); ++i)
+		{
+			const ShaderInfo::Binding& binding = bindings[i];
+			bool isUsed = false;
+			if (tgtData.type == SHADERMODULE_SPIRV || tgtData.type == SHADERMODULE_WGSL)
+			{
+				slangMetadata->isParameterLocationUsed(SLANG_PARAMETER_CATEGORY_DESCRIPTOR_TABLE_SLOT, binding.descriptorSetIdx, binding.index, isUsed);
+			}
+			else
+			{
+				// why?
+				static const SlangParameterCategory rangeToCategory[] = {
+					SLANG_PARAMETER_CATEGORY_SHADER_RESOURCE,
+					SLANG_PARAMETER_CATEGORY_SHADER_RESOURCE,
+					SLANG_PARAMETER_CATEGORY_CONSTANT_BUFFER,
+					SLANG_PARAMETER_CATEGORY_SHADER_RESOURCE
+				};
+				slangMetadata->isParameterLocationUsed(rangeToCategory[binding.rangeType], binding.descriptorSetIdx, binding.registerIdx, isUsed);
+			}
+			usedBindings.set(i, isUsed);
+			//Msg("[vk_layout(%d,%d)] %s %s %s : register(%d, space%d) USED: %d\n", binding.index, binding.descriptorSetIdx, GetRWFlagsString(binding.rwFlags).ToCString(), s_bindingTypeNames[binding.type], binding.name.ToCString(), binding.registerIdx, binding.descriptorSetIdx, isUsed);
+		}
+
 		ComPtr<ISlangBlob> slangTargetBlob;
 		slangCompileRequest->getEntryPointCodeBlob(0, tgtData.targetIdx, slangTargetBlob.writeRef());
 
 		CMemoryStream blobData(PP_SL);
 		blobData.Open((uint8_t*)slangTargetBlob->getBufferPointer(), slangTargetBlob->getBufferSize());
 
+		const int blobSize = blobData.GetSize();
+
 		tgtData.resultData.Open(FS_OPEN_WRITE);
+
+		// store blob size and blob itself
+		tgtData.resultData.WriteObj(blobSize);
 		tgtData.resultData.AppendStream(&blobData);
+
+		// store binding usage bits
+		tgtData.resultData.WriteArray(usedBindings.ptr(), bitArray2Dword(usedBindings.numBits()));
 	}
 
 	return true;
@@ -1227,7 +1285,10 @@ bool CShaderCooker::CompileShaderShadercSpirV(ShaderPackageCompileData& compileD
 	CMemoryStream resultStream;
 	resultStream.Open((const ubyte*)spvCompilationResult.begin(), (spvCompilationResult.end() - spvCompilationResult.begin()) * sizeof(spvCompilationResult.begin()[0]));
 
+	const int blobSize = resultStream.GetSize();
+
 	targetData[0].resultData.Open(FS_OPEN_WRITE);
+	targetData[0].resultData.WriteObj(blobSize);
 	targetData[0].resultData.AppendStream(&resultStream);
 
 	return true;

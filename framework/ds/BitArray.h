@@ -250,8 +250,10 @@ class BitArray
 public:
 	using STORAGE_TYPE = BIT_STORAGE_TYPE;
 
-	BitArray(PPSourceLine sl, int bitCount = 64);
+	BitArray(PPSourceLine sl, int bitCount = 0);
 	BitArray(STORAGE_TYPE* storage, int bitCount);
+	BitArray(const BitArray& other);
+	BitArray(BitArray&& other);
 	~BitArray();
 
 	const bool				operator[](int index) const;
@@ -289,28 +291,51 @@ public:
 
 private:
 
+	const PPSourceLine		m_sl;
 	STORAGE_TYPE*			m_pListPtr{ nullptr };
 	int						m_nSize{ 0 };
-	const PPSourceLine		m_sl;
 	bool					m_ownData{ false };
 };
 
 inline BitArray::BitArray(PPSourceLine sl, int bitCount)
 	: m_sl(sl)
+	, m_ownData(true)
 {
 	m_ownData = true;
 	resize(bitCount);
 }
 
 inline BitArray::BitArray(STORAGE_TYPE* storage, int bitCount)
-	: m_pListPtr(storage), m_nSize(bitCount)
+	: m_pListPtr(storage)
+	, m_nSize(bitCount)
+	, m_ownData(false)
 {
+}
+
+inline BitArray::BitArray(const BitArray& other)
+	: m_sl(other.m_sl)
+	, m_ownData(true)
+{
+	resize(other.m_nSize);
+
+	const int typeSize = bitArray2Dword(m_nSize);
+	for (int i = 0; i < typeSize; i++)
+		m_pListPtr[i] = other.m_pListPtr[i];
+}
+
+inline BitArray::BitArray(BitArray&& other)
+	: m_sl(other.m_sl)
+	, m_ownData(other.m_ownData)
+	, m_nSize(other.m_nSize)
+	, m_pListPtr(other.m_pListPtr)
+{
+	other.m_ownData = false;
 }
 
 inline BitArray::~BitArray()
 {
 	if(m_ownData)
-		delete[] m_pListPtr;
+		PPFree(m_pListPtr);
 }
 
 inline BitArray& BitArray::operator=(const BitArray& other)
@@ -318,11 +343,8 @@ inline BitArray& BitArray::operator=(const BitArray& other)
 	resize(other.m_nSize);
 
 	const int typeSize = bitArray2Dword(m_nSize);
-	if (typeSize)
-	{
-		for (int i = 0; i < typeSize; i++)
-			m_pListPtr[i] = other.m_pListPtr[i];
-	}
+	for (int i = 0; i < typeSize; i++)
+		m_pListPtr[i] = other.m_pListPtr[i];
 
 	return *this;
 }
@@ -356,14 +378,7 @@ inline void BitArray::resize(int newBitCount, bool newBitsValue)
 	{
 		if(newTypeSize)
 		{
-			STORAGE_TYPE* temp = m_pListPtr;
-			m_pListPtr = PPNewSL(m_sl) STORAGE_TYPE[newTypeSize];
-			if (temp)
-			{
-				for (int i = 0; i < min(newTypeSize, oldTypeSize); ++i)
-					m_pListPtr[i] = temp[i];
-				delete[] temp;
-			}
+			m_pListPtr = (STORAGE_TYPE*)PPDReAlloc(m_pListPtr, newTypeSize * sizeof(STORAGE_TYPE), m_sl);
 
 			// new data must be reset to zero
 			for (int i = oldTypeSize; i < newTypeSize; ++i)
@@ -371,7 +386,7 @@ inline void BitArray::resize(int newBitCount, bool newBitsValue)
 		}
 		else
 		{
-			delete[] m_pListPtr;
+			PPFree(m_pListPtr);
 			m_pListPtr = nullptr;
 		}
 	}
