@@ -444,9 +444,9 @@ static void FillNVRHIBindGroupEntries(nvrhi::IDevice* rhiDevice, const BindGroup
 	}
 }
 
-IGPUPipelineLayoutPtr CNVRHIRenderAPI::CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const
+IGPUBindingLayoutPtr CNVRHIRenderAPI::CreateBindingLayout(const BindingLayoutDesc& layoutDesc) const
 {
-	CRefPtr<CNVRHIPipelineLayout> pipelineLayout = CRefPtr_new(CNVRHIPipelineLayout);
+	CRefPtr<CNVRHIBindingLayout> pipelineLayout = CRefPtr_new(CNVRHIBindingLayout);
 	pipelineLayout->m_dbgName = layoutDesc.name;
 
 	// Pipeline layout and bind group layout
@@ -470,7 +470,7 @@ IGPUPipelineLayoutPtr CNVRHIRenderAPI::CreatePipelineLayout(const PipelineLayout
 		++bindGroupIndex;
 	}
 
-	return IGPUPipelineLayoutPtr(pipelineLayout);
+	return IGPUBindingLayoutPtr(pipelineLayout);
 }
 
 IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(NVRHIBindingLayoutsCRef rhiBindingLayouts, const BindGroupDesc& bindGroupDesc) const
@@ -497,7 +497,7 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(NVRHIBindingLayoutsCRef rh
 	return IGPUBindGroupPtr(bindGroup);
 }
 
-IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUPipelineLayout* layoutDesc, const BindGroupDesc& bindGroupDesc) const
+IGPUBindGroupPtr CNVRHIRenderAPI::CreateSharedBindGroup(const IGPUBindingLayout* layoutDesc, const BindGroupDesc& bindGroupDesc) const
 {
 	if (!layoutDesc)
 	{
@@ -683,7 +683,7 @@ static void nvrhiAddBindingLayout(ArrayRef<nvrhi::BindingLayoutDesc> layoutDesc,
 	}
 }
 
-IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout) const
+IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUBindingLayout* pipelineLayout) const
 {
 	PROF_EVENT("CreateRenderPipeline");
 
@@ -909,22 +909,18 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	{
 		// create shader pipeline layout
 		int maxBindGroupIdx = -1;
-		for (const uint bindingId : shaderInfo.GetBindingIds(*vertexShaderModule))
+		for (const int bindingIdx : shaderInfo.GetBindingIds(*vertexShaderModule))
 		{
-			int descriptorSetIdx, bindingIdx;
-			ShaderInfo::UnpackBindingId(bindingId, descriptorSetIdx, bindingIdx);
-
-			maxBindGroupIdx = max(maxBindGroupIdx, descriptorSetIdx);
+			const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIdx];
+			maxBindGroupIdx = max(maxBindGroupIdx, binding.descriptorSetIdx);
 		}
 
 		if (fragmentShaderModule)
 		{
-			for (const uint bindingId : shaderInfo.GetBindingIds(*fragmentShaderModule))
+			for (const int bindingIdx : shaderInfo.GetBindingIds(*fragmentShaderModule))
 			{
-				int descriptorSetIdx, bindingIdx;
-				ShaderInfo::UnpackBindingId(bindingId, descriptorSetIdx, bindingIdx);
-
-				maxBindGroupIdx = max(maxBindGroupIdx, descriptorSetIdx);
+				const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIdx];
+				maxBindGroupIdx = max(maxBindGroupIdx, binding.descriptorSetIdx);
 			}
 		}
 
@@ -944,26 +940,21 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 
 			Set<uint> usedBindingSlots{ PP_SL };
 
-			for (const uint bindingId : shaderInfo.GetBindingIds(*vertexShaderModule))
+			for (const int bindingIdx : shaderInfo.GetBindingIds(*vertexShaderModule))
 			{
-				auto mapIt = shaderInfo.bindingMap.find(ShaderInfo::MakeShaderBindingId(vertexShaderModuleId, bindingId));
-				ASSERT_MSG(mapIt, "Bad binding map in shader");
-				nvrhiAddBindingLayout(rhiBindingLayoutDescList, shaderInfo.bindings[*mapIt]);
-
-				usedBindingSlots.insert(bindingId);
+				nvrhiAddBindingLayout(rhiBindingLayoutDescList, shaderInfo.bindings[bindingIdx]);
+				usedBindingSlots.insert(bindingIdx);
 			}
 
 			// add bindings from fragment shader and mark visibility appropriately
 			if (fragmentShaderModule)
 			{
-				for (const uint bindingId : shaderInfo.GetBindingIds(*fragmentShaderModule))
+				for (const int bindingIdx : shaderInfo.GetBindingIds(*fragmentShaderModule))
 				{
-					if (usedBindingSlots.find(bindingId))
+					if (usedBindingSlots.find(bindingIdx))
 						continue;
 
-					auto mapIt = shaderInfo.bindingMap.find(ShaderInfo::MakeShaderBindingId(vertexShaderModuleId, bindingId));
-					ASSERT_MSG(mapIt, "Bad binding map in shader");
-					nvrhiAddBindingLayout(rhiBindingLayoutDescList, shaderInfo.bindings[*mapIt]);
+					nvrhiAddBindingLayout(rhiBindingLayoutDescList, shaderInfo.bindings[bindingIdx]);
 				}
 			}
 
@@ -1018,7 +1009,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	return IGPURenderPipelinePtr(renderPipeline);
 }
 
-IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout) const
+IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUBindingLayout* pipelineLayout) const
 {
 	const int shaderNameHash = StringId24(pipelineDesc.shaderName);
 	auto shaderIt = m_shaderCache.find(shaderNameHash);
@@ -1083,12 +1074,10 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 	{
 		// create shader pipeline layout
 		int maxBindGroupIdx = -1;
-		for (const uint bindingId : shaderInfo.GetBindingIds(*computeShaderModule))
+		for (const int bindingIdx : shaderInfo.GetBindingIds(*computeShaderModule))
 		{
-			int descriptorSetIdx, bindingIdx;
-			ShaderInfo::UnpackBindingId(bindingId, descriptorSetIdx, bindingIdx);
-
-			maxBindGroupIdx = max(maxBindGroupIdx, descriptorSetIdx);
+			const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIdx];
+			maxBindGroupIdx = max(maxBindGroupIdx, binding.descriptorSetIdx);
 		}
 
 		if (maxBindGroupIdx >= 0)
@@ -1105,11 +1094,9 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 				}
 			}
 
-			for (const uint bindingId : shaderInfo.GetBindingIds(*computeShaderModule))
+			for (const int bindingIdx : shaderInfo.GetBindingIds(*computeShaderModule))
 			{
-				auto mapIt = shaderInfo.bindingMap.find(ShaderInfo::MakeShaderBindingId(computeShaderModuleId, bindingId));
-				ASSERT_MSG(mapIt, "Bad binding map in shader");
-				nvrhiAddBindingLayout(rhiBindingLayoutDescList, shaderInfo.bindings[*mapIt]);
+				nvrhiAddBindingLayout(rhiBindingLayoutDescList, shaderInfo.bindings[bindingIdx]);
 			}
 
 			for (nvrhi::BindingLayoutDesc& rhiDesc : rhiBindingLayoutDescList)

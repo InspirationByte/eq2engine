@@ -6,10 +6,10 @@ using NVRHIBindingLayoutsCRef = ArrayCRef<nvrhi::BindingLayoutHandle>;
 
 // this shit is really for purposes of delaying bindgroup validation
 // need to get rid of this
-class CNVRHIPipelineLayout : public IGPUPipelineLayout
+class CNVRHIBindingLayout : public IGPUBindingLayout
 {
 public:
-	PipelineLayoutDesc				m_pipelineLayoutDesc;
+	BindingLayoutDesc				m_pipelineLayoutDesc;
 	EqString						m_dbgName;
 };
 
