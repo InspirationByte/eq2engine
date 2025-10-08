@@ -441,10 +441,23 @@ IGPUBindingLayoutPtr CWGPURenderAPI::CreateBindingLayout(const BindingLayoutDesc
 	CRefPtr<CWGPUBindingLayout> pipelineLayout = CRefPtr_new(CWGPUBindingLayout);
 	pipelineLayout->m_rhiBindGroupLayout.append(rhiBindGroupLayout);
 	pipelineLayout->m_rhiPipelineLayout = rhiPipelineLayout;
+
+	// make name to index map
+	int bindGroupIdx = 0;
+	for (const BindGroupLayoutDesc& bindGroupDesc : layoutDesc.bindGroups)
+	{
+		CWGPUBindingLayout::BindGroupLayoutMap& bindGroupNameMap = pipelineLayout->m_layoutMap.append();
+		for (const BindGroupLayoutDesc::Entry& entry : bindGroupDesc.entries)
+		{
+			bindGroupNameMap.insert(entry.nameId, entry.binding);
+			pipelineLayout->m_maxBindingIndex[bindGroupIdx] = max(pipelineLayout->m_maxBindingIndex[bindGroupIdx], entry.binding);
+		}
+		++bindGroupIdx;
+	}
 	return IGPUBindingLayoutPtr(pipelineLayout);
 }
 
-static void FindWGPUBindGroupEntry(WGPUDevice rhiDevice, WGPUBindGroupEntry& rhiBindGroupEntryDesc, const BindGroupDesc::Entry& bindGroupEntry, const char* dbgName)
+static void FindWGPUBindGroupEntry(WGPUDevice rhiDevice, const BindGroupDesc::Entry& bindGroupEntry, const char* dbgName, WGPUBindGroupEntry& rhiBindGroupEntryDesc)
 {
 	rhiBindGroupEntryDesc.binding = bindGroupEntry.binding;
 	switch (bindGroupEntry.type)
@@ -488,17 +501,23 @@ static void FindWGPUBindGroupEntry(WGPUDevice rhiDevice, WGPUBindGroupEntry& rhi
 	}
 }
 
-static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& bindGroupDesc, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList)
+static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& bindGroupDesc, const CWGPUBindingLayout::BindGroupLayoutMap& bindGroupMap, int maxBindingIndex, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList)
 {
 	for (const BindGroupDesc::Entry& bindGroupEntry : bindGroupDesc.entries)
 	{
-		WGPUBindGroupEntry rhiBindGroupEntryDesc = {};
-		FindWGPUBindGroupEntry(rhiDevice, rhiBindGroupEntryDesc, bindGroupEntry, "");
-		rhiBindGroupEntryList.append(rhiBindGroupEntryDesc);
+		WGPUBindGroupEntry& rhiBindGroupEntryDesc = rhiBindGroupEntryList.append();
+		FindWGPUBindGroupEntry(rhiDevice, bindGroupEntry, "", rhiBindGroupEntryDesc);
+
+		if (bindGroupEntry.binding > maxBindingIndex)
+		{
+			auto it = bindGroupMap.find(bindGroupEntry.binding);
+			if (it)
+				rhiBindGroupEntryDesc.binding = *it;
+		}
 	}
 }
 
-static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& bindGroupDesc, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs)
+static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList)
 {
 	int bindingsToResolve = 0;
 
@@ -543,7 +562,7 @@ static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& 
 
 			const BindGroupDesc::Entry& bindGroupEntry = bindGroupDesc.entries[entryIdx];
 			WGPUBindGroupEntry& rhiBindGroupEntryDesc = rhiBindGroupEntryList.append();
-			FindWGPUBindGroupEntry(rhiDevice, rhiBindGroupEntryDesc, bindGroupEntry, "");
+			FindWGPUBindGroupEntry(rhiDevice, bindGroupEntry, "", rhiBindGroupEntryDesc);
 
 			// store correct index
 			rhiBindGroupEntryDesc.binding = binding.index;
@@ -554,17 +573,17 @@ static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& 
 	ASSERT_MSG(rhiBindGroupEntryList.numElem() == bindingsToResolve, "Incorrect binding ids, resolved: %d, expected %d", rhiBindGroupEntryList.numElem(), bindingsToResolve);
 }
 
-IGPUBindGroupPtr CWGPURenderAPI::CreateSharedBindGroup(const IGPUBindingLayout* layoutDesc, const BindGroupDesc& bindGroupDesc) const
+IGPUBindGroupPtr CWGPURenderAPI::CreateSharedBindGroup(const IGPUBindingLayout* bindingLayout, const BindGroupDesc& bindGroupDesc) const
 {
-	if (!layoutDesc)
+	if (!bindingLayout)
 	{
 		ASSERT_FAIL("layoutDesc is null");
 		return nullptr;
 	}
 
-	const CWGPUBindingLayout* pipelineLayout = static_cast<const CWGPUBindingLayout*>(layoutDesc);
+	const CWGPUBindingLayout* bindingLayoutImpl = static_cast<const CWGPUBindingLayout*>(bindingLayout);
 
-	const ArrayCRef<WGPUBindGroupLayout> rhiLayout = pipelineLayout->m_rhiBindGroupLayout;
+	ArrayCRef<WGPUBindGroupLayout> rhiLayout = bindingLayoutImpl->m_rhiBindGroupLayout;
 	if (!rhiLayout.inRange(bindGroupDesc.groupIdx))
 		return nullptr;
 
@@ -583,7 +602,8 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateSharedBindGroup(const IGPUBindingLayout* 
 		}
 	};
 
-	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
+	const int groupIdx = bindGroupDesc.groupIdx;
+	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, bindingLayoutImpl->m_layoutMap[groupIdx], bindingLayoutImpl->m_maxBindingIndex[groupIdx], rhiBindGroupEntryList);
 	
 	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
 	rhiBindGroupDesc.layout = rhiLayout[bindGroupDesc.groupIdx];
@@ -630,7 +650,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPURenderPipeline* rende
 		pipelineImpl->m_vertexShaderModuleIdx,
 		pipelineImpl->m_fragmentShaderModuleIdx
 	};
-	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList, *pipelineImpl->m_shaderInfo, moduleIds);
+	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, *pipelineImpl->m_shaderInfo, moduleIds, rhiBindGroupEntryList);
 
 	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
 	rhiBindGroupDesc.layout = wgpuRenderPipelineGetBindGroupLayout(pipelineImpl->m_rhiRenderPipeline, bindGroupDesc.groupIdx);
@@ -672,7 +692,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUComputePipeline* comp
 	};
 
 	const CWGPUComputePipeline* pipelineImpl = static_cast<const CWGPUComputePipeline*>(computePipeline);
-	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList, *pipelineImpl->m_shaderInfo, ArrayCRef(&pipelineImpl->m_computeShaderModuleIdx, 1));
+	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, *pipelineImpl->m_shaderInfo, ArrayCRef(&pipelineImpl->m_computeShaderModuleIdx, 1), rhiBindGroupEntryList);
 
 	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
 	rhiBindGroupDesc.layout = wgpuComputePipelineGetBindGroupLayout(pipelineImpl->m_rhiComputePipeline, bindGroupDesc.groupIdx);
