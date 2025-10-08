@@ -171,8 +171,7 @@ EqStringRef fnmPathExtractPath(EqStringRef path)
 
 EqStringRef fnmPathCombineF(int num, ...)
 {
-	static thread_local EqString outPath;
-	outPath.Empty();
+	EqString& outPath = EqStringRef::GetTempString(nullptr, 0);
 
 	va_list	argptr;
 	va_start(argptr, num);
