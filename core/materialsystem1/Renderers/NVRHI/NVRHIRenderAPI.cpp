@@ -542,6 +542,9 @@ const ShaderInfo::Module& CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInf
 	if (mod.rhiModule)
 		return mod;
 
+	BitArray& usedBindings = mod.usedBindings;
+	usedBindings.resize(shaderInfo.GetBindingIds(mod).numElem());
+
 	CMemoryStream shaderBlobData(PP_SL);
 	auto loadShaderBlob = [&](EShaderModuleType type)
 	{
@@ -550,7 +553,12 @@ const ShaderInfo::Module& CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInf
 			return;
 
 		shaderBlobData.Open(FS_OPEN_WRITE | FS_OPEN_READ);
-		shaderBlobData.AppendStream(shaderFile);
+		int blobSize;
+		shaderFile->ReadObj(blobSize);
+		shaderBlobData.AppendStream(shaderFile, blobSize);
+
+		shaderFile->Seek(blobSize, FS_SEEK_CUR);
+		shaderFile->ReadArray(usedBindings.ptr(), bitArray2Dword(usedBindings.numBits()));
 	};
 
 	const EqString shaderModuleName = EqString::Format("%s-%d", shaderInfo.shaderName.ToCString(), shaderModuleIdx);
