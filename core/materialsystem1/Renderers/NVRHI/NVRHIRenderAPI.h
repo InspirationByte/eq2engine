@@ -109,7 +109,7 @@ public:
 
 protected:
 	nvrhi::BindingLayoutHandle	CreateBindingLayout(const BindGroupLayoutDesc& bindGroupDesc, int bindGroupIndex) const;
-	IGPUBindGroupPtr			CreateBindGroupImpl(NVRHIBindingLayoutsCRef rhiBindingLayouts, const BindGroupDesc& bindGroupDesc) const;
+	IGPUBindGroupPtr			CreateBindGroupImpl(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHIBindingLayoutsCRef rhiBindingLayouts) const;
 
 	const ShaderInfo::Module&	GetOrLoadShaderModule(const ShaderInfo& shaderInfo, int shaderModuleIdx, const char* dbgName = nullptr) const;
 

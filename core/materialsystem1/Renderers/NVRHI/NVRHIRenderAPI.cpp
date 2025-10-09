@@ -387,61 +387,109 @@ nvrhi::BindingLayoutHandle CNVRHIRenderAPI::CreateBindingLayout(const BindGroupL
 	return m_rhiDevice->createBindingLayout(rhiBindingLayoutDesc);
 }
 
-static void FillNVRHIBindGroupEntries(nvrhi::IDevice* rhiDevice, const BindGroupDesc& bindGroupDesc, Array<nvrhi::SamplerHandle>& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc)
+static void FillNVRHIBinding(nvrhi::IDevice* rhiDevice, const BindGroupDesc::Entry& bindGroupEntry, const ShaderInfo::Binding& binding, Array<nvrhi::SamplerHandle>& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc)
 {
-	for (const BindGroupDesc::Entry& bindGroupEntry : bindGroupDesc.entries)
+	switch (bindGroupEntry.type)
 	{
-		//const bool isSRV = (entry.visibility & (SHADERKIND_VERTEX | SHADERKIND_FRAGMENT));
-		//const bool isUAV = (entry.visibility & (SHADERKIND_COMPUTE));
-
-		switch (bindGroupEntry.type)
+	case BINDENTRY_BUFFER:
+	{
+		CNVRHIBuffer* buffer = static_cast<CNVRHIBuffer*>(bindGroupEntry.buffer.buffer.Ptr());
+		if (buffer)
 		{
-		case BINDENTRY_BUFFER:
-		{
-			CNVRHIBuffer* buffer = static_cast<CNVRHIBuffer*>(bindGroupEntry.buffer.buffer.Ptr());
-			if (buffer)
-			{
-				const uint64 bufferSize = bindGroupEntry.buffer.size < 0 ? nvrhi::EntireBuffer.byteSize : bindGroupEntry.buffer.size;
-				rhiBindingSetDesc.addItem(nvrhi::BindingSetItem()
-					.RawBuffer_SRV(bindGroupEntry.binding, buffer->GetNVRHIBufferHandle(), bindGroupEntry.buffer.size < 0 ? nvrhi::EntireBuffer : nvrhi::BufferRange(bindGroupEntry.buffer.offset, bufferSize))
-				);
-			}
-			else
-				ASSERT_FAIL("NULL buffer for bindGroup %d binding %d", bindGroupDesc.groupIdx, bindGroupEntry.binding);
-
-			break;
-		}
-		case BINDENTRY_SAMPLER:
-		{
-			auto rhiSamplerDesc = nvrhi::SamplerDesc();
-			FillNVRHISamplerDescriptor(bindGroupEntry.sampler, rhiSamplerDesc);
-
-			nvrhi::SamplerHandle rhiSampler = rhiDevice->createSampler(rhiSamplerDesc);
-			ASSERT(bindGroupEntry.sampler.maxAnisotropy > 0);
-
-			rhiBindingSetDesc.addItem(nvrhi::BindingSetItem()
-				.Sampler(bindGroupEntry.binding, rhiSampler)
+			const uint64 bufferSize = bindGroupEntry.buffer.size < 0 ? nvrhi::EntireBuffer.byteSize : bindGroupEntry.buffer.size;
+			rhiBindingSetDesc.addItem(
+				nvrhi::BindingSetItem()
+				.RawBuffer_SRV(binding.registerIdx, buffer->GetNVRHIBufferHandle(), bindGroupEntry.buffer.size < 0 ? nvrhi::EntireBuffer : nvrhi::BufferRange(bindGroupEntry.buffer.offset, bufferSize))
 			);
-			rhiSamplers.append(rhiSampler);
-			break;
 		}
-		case BINDENTRY_STORAGETEXTURE:
-		case BINDENTRY_TEXTURE:
-			CNVRHITexture* texture = static_cast<CNVRHITexture*>(bindGroupEntry.texture.texture.Ptr());
+		else
+			ASSERT_FAIL("NULL buffer for binding %d", bindGroupEntry.binding);
 
-			// NOTE: animated textures aren't that supported, so it would need array lookup through the shader
-			if (texture)
-			{
-				ASSERT_MSG(texture->GetNVRHITextureViewCount(), "Texture '%s' has no views", texture->GetName());
-				rhiBindingSetDesc.addItem(nvrhi::BindingSetItem()
-					.Texture_SRV(bindGroupEntry.binding, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, texture->GetNVRHITextureView(bindGroupEntry.texture.arraySlice))
-				);
-			}
-			else
-				ASSERT_FAIL("NULL texture for bindGroup %d binding %d", bindGroupDesc.groupIdx, bindGroupEntry.binding);
-			break;
+		break;
+	}
+	case BINDENTRY_SAMPLER:
+	{
+		auto rhiSamplerDesc = nvrhi::SamplerDesc();
+		FillNVRHISamplerDescriptor(bindGroupEntry.sampler, rhiSamplerDesc);
+
+		nvrhi::SamplerHandle rhiSampler = rhiDevice->createSampler(rhiSamplerDesc);
+		ASSERT(bindGroupEntry.sampler.maxAnisotropy > 0);
+
+		rhiBindingSetDesc.addItem(
+			nvrhi::BindingSetItem()
+			.Sampler(binding.registerIdx, rhiSampler)
+		);
+		rhiSamplers.append(rhiSampler);
+		break;
+	}
+	case BINDENTRY_STORAGETEXTURE:
+	case BINDENTRY_TEXTURE:
+		CNVRHITexture* texture = static_cast<CNVRHITexture*>(bindGroupEntry.texture.texture.Ptr());
+
+		// NOTE: animated textures aren't that supported, so it would need array lookup through the shader
+		if (texture)
+		{
+			ASSERT_MSG(texture->GetNVRHITextureViewCount(), "Texture '%s' has no views", texture->GetName());
+			rhiBindingSetDesc.addItem(
+				nvrhi::BindingSetItem()
+				.Texture_SRV(binding.registerIdx, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, texture->GetNVRHITextureView(bindGroupEntry.texture.arraySlice))
+			);
+		}
+		else
+			ASSERT_FAIL("NULL texture for binding %d", bindGroupEntry.binding);
+		break;
+	}
+}
+
+static void FillNVRHIBindGroupEntries(nvrhi::IDevice* rhiDevice, const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, Array<nvrhi::SamplerHandle>& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc)
+{
+	int bindingsToResolve = 0;
+
+	static thread_local BitArray::STORAGE_TYPE usedBindEntryBits[32];
+	memset(usedBindEntryBits, 0, sizeof(usedBindEntryBits));
+
+	BitArray usedBindingEntries(usedBindEntryBits, sizeof(usedBindEntryBits) * 8);
+
+	for (const int moduleIdx : shaderModuleIdxs)
+	{
+		if (moduleIdx < 0)
+			continue;
+
+		const ShaderInfo::Module& shaderModule = shaderInfo.modules[moduleIdx];
+		ArrayCRef<int> bindingIds = shaderInfo.GetBindingIds(shaderModule);
+		for (int i = 0; i < bindingIds.numElem(); ++i)
+		{
+			if (usedBindingEntries[bindingIds[i]])
+				continue;
+
+			if (!shaderModule.usedBindings[i])
+				continue;
+
+			const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIds[i]];
+			if (binding.descriptorSetIdx != bindGroupDesc.groupIdx)
+				continue;
+
+			++bindingsToResolve;
+
+			const int entryIdx = arrayFindIndexF(bindGroupDesc.entries, [&](const BindGroupDesc::Entry& bindGroupEntry) {
+				// check if name id is used
+				if (bindGroupEntry.binding > bindingIds.numElem())
+					return bindGroupEntry.binding == binding.nameId;
+
+				return bindGroupDesc.groupIdx == binding.descriptorSetIdx && bindGroupEntry.binding == binding.index;
+			});
+
+			if (entryIdx == -1)
+				continue;
+
+			usedBindingEntries.setTrue(bindingIds[i]);
+
+			FillNVRHIBinding(rhiDevice, bindGroupDesc.entries[entryIdx], binding, rhiSamplers, rhiBindingSetDesc);
 		}
 	}
+
+	ASSERT_MSG(bindGroupDesc.entries.numElem() >= bindingsToResolve, "Bad binding entry count: %d, expected %d", bindGroupDesc.entries.numElem(), bindingsToResolve);
+	ASSERT_MSG(rhiBindingSetDesc.bindings.size() == bindingsToResolve, "Incorrect binding ids, resolved: %d, expected %d", rhiBindingSetDesc.bindings.size(), bindingsToResolve);
 }
 
 IGPUBindingLayoutPtr CNVRHIRenderAPI::CreateBindingLayout(const BindingLayoutDesc& layoutDesc) const
@@ -473,7 +521,7 @@ IGPUBindingLayoutPtr CNVRHIRenderAPI::CreateBindingLayout(const BindingLayoutDes
 	return IGPUBindingLayoutPtr(pipelineLayout);
 }
 
-IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(NVRHIBindingLayoutsCRef rhiBindingLayouts, const BindGroupDesc& bindGroupDesc) const
+IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHIBindingLayoutsCRef rhiBindingLayouts) const
 {
 	if (!rhiBindingLayouts.inRange(bindGroupDesc.groupIdx))
 	{
@@ -484,7 +532,7 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(NVRHIBindingLayoutsCRef rh
 	Array<nvrhi::SamplerHandle> rhiSamplers(PP_SL);
 
 	auto rhiBindingSetDesc = nvrhi::BindingSetDesc();
-	FillNVRHIBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiSamplers, rhiBindingSetDesc);
+	FillNVRHIBindGroupEntries(m_rhiDevice, bindGroupDesc, shaderInfo, shaderModuleIdxs, rhiSamplers, rhiBindingSetDesc);
 
 	nvrhi::BindingSetHandle rhiBindSet = m_rhiDevice->createBindingSet(rhiBindingSetDesc, rhiBindingLayouts[bindGroupDesc.groupIdx]);
 	if (!rhiBindSet)
@@ -519,9 +567,13 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPURenderPipeline* rend
 		return nullptr;
 	}
 
-	const CNVRHIRenderPipeline* renderPipelineImpl = static_cast<const CNVRHIRenderPipeline*>(renderPipeline);
-	const nvrhi::BindingLayoutVector& bindingLayouts = renderPipelineImpl->m_rhiPipelineDesc.bindingLayouts;
-	return CreateBindGroupImpl(ArrayCRef(&bindingLayouts.front(), bindingLayouts.size()), bindGroupDesc);
+	const CNVRHIRenderPipeline* pipelineImpl = static_cast<const CNVRHIRenderPipeline*>(renderPipeline);
+	const int moduleIds[] = {
+		pipelineImpl->m_vertexShaderModuleIdx,
+		pipelineImpl->m_fragmentShaderModuleIdx
+	};
+	const nvrhi::BindingLayoutVector& bindingLayouts = pipelineImpl->m_rhiPipelineDesc.bindingLayouts;
+	return CreateBindGroupImpl(bindGroupDesc, *pipelineImpl->m_shaderInfo, moduleIds, ArrayCRef(&bindingLayouts.front(), bindingLayouts.size()));
 }
 
 IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUComputePipeline* computePipeline, const BindGroupDesc& bindGroupDesc) const
@@ -532,8 +584,8 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUComputePipeline* com
 		return nullptr;
 	}
 
-	const CNVRHIComputePipeline* computePipelineImpl = static_cast<const CNVRHIComputePipeline*>(computePipeline);
-	return CreateBindGroupImpl(computePipelineImpl->m_rhiBindingLayout, bindGroupDesc);
+	const CNVRHIComputePipeline* pipelineImpl = static_cast<const CNVRHIComputePipeline*>(computePipeline);
+	return CreateBindGroupImpl(bindGroupDesc, *pipelineImpl->m_shaderInfo, ArrayCRef(&pipelineImpl->m_computeShaderModuleIdx, 1), pipelineImpl->m_rhiBindingLayout);
 }
 
 const ShaderInfo::Module& CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInfo& shaderInfo, int shaderModuleIdx, const char* dbgName) const
@@ -757,27 +809,25 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	// Setup vertex pipeline
 	// Required
 	nvrhi::InputLayoutHandle rhiInputLayout;
-	uint vertexShaderModuleId = 0;
-	uint fragmentShaderModuleId = 0;
+	int vertexShaderModuleIdx = -1;
+	int fragmentShaderModuleIdx = -1;
 	const ShaderInfo::Module* vertexShaderModule = nullptr;
 	const ShaderInfo::Module* fragmentShaderModule = nullptr;
 	{
 		ASSERT_MSG(pipelineDesc.vertex.shaderEntryPoint.Length(), "No vertex shader entrypoint set");
 
 		{
-			vertexShaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_VERTEX, StringId24(pipelineDesc.vertex.shaderEntryPoint));
-			auto itShaderModuleId = shaderInfo.modulesMap.find(vertexShaderModuleId);
-			if (!itShaderModuleId.atEnd())
+			const uint shaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_VERTEX, StringId24(pipelineDesc.vertex.shaderEntryPoint));
+			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
+			if (itShaderModuleId)
 			{
-				EqString queryStr;
-				for (const EqString& str : pipelineDesc.shaderQuery)
-				{
-					if (queryStr.Length())
-						queryStr.Append("|");
-					queryStr.Append(str);
-				}
-				ASSERT_MSG(shaderInfo.modules[*itShaderModuleId].kind == SHADERKIND_VERTEX, "Incorrect shader kind for %s %s in shader package %s", shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
-				vertexShaderModule = &GetOrLoadShaderModule(shaderInfo, *itShaderModuleId);
+				vertexShaderModuleIdx = *itShaderModuleId;
+				ASSERT_MSG(shaderInfo.modules[vertexShaderModuleIdx].kind == SHADERKIND_VERTEX,
+					"Incorrect shader kind for %s %s in shader package %s",
+					shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString(),
+					shaderInfo.GetShaderQueryStr(pipelineDesc.shaderQuery).ToCString(),
+					pipelineDesc.shaderName.ToCString());
+				vertexShaderModule = &GetOrLoadShaderModule(shaderInfo, vertexShaderModuleIdx);
 			}
 		}
 
@@ -863,19 +913,19 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	if(pipelineDesc.fragment.shaderEntryPoint.Length())
 	{
 		{
-			fragmentShaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_FRAGMENT, StringId24(pipelineDesc.fragment.shaderEntryPoint));
-			auto itShaderModuleId = shaderInfo.modulesMap.find(fragmentShaderModuleId);
-			if (!itShaderModuleId.atEnd())
+			const uint shaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_FRAGMENT, StringId24(pipelineDesc.fragment.shaderEntryPoint));
+			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
+			if (itShaderModuleId)
 			{
-				EqString queryStr;
-				for (const EqString& str : pipelineDesc.shaderQuery)
-				{
-					if (queryStr.Length())
-						queryStr.Append("|");
-					queryStr.Append(str);
-				}
-				ASSERT_MSG(shaderInfo.modules[*itShaderModuleId].kind == SHADERKIND_FRAGMENT, "Incorrect shader kind for %s %s in shader package %s", shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
-				fragmentShaderModule = &GetOrLoadShaderModule(shaderInfo, *itShaderModuleId);
+				fragmentShaderModuleIdx = *itShaderModuleId;
+
+				ASSERT_MSG(shaderInfo.modules[fragmentShaderModuleIdx].kind == SHADERKIND_FRAGMENT,
+					"Incorrect shader kind for %s %s in shader package %s",
+					shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString(), 
+					shaderInfo.GetShaderQueryStr(pipelineDesc.shaderQuery).ToCString(),
+					pipelineDesc.shaderName.ToCString());
+
+				fragmentShaderModule = &GetOrLoadShaderModule(shaderInfo, fragmentShaderModuleIdx);
 			}
 		}
 
@@ -950,8 +1000,10 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 
 			for (const int bindingIdx : shaderInfo.GetBindingIds(*vertexShaderModule))
 			{
-				nvrhiAddBindingLayout(rhiBindingLayoutDescList, shaderInfo.bindings[bindingIdx]);
-				usedBindingSlots.insert(bindingIdx);
+				const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIdx];
+				nvrhiAddBindingLayout(rhiBindingLayoutDescList, binding);
+
+				usedBindingSlots.insert(binding.descriptorSetIdx | (binding.index << 8));
 			}
 
 			// add bindings from fragment shader and mark visibility appropriately
@@ -959,10 +1011,11 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 			{
 				for (const int bindingIdx : shaderInfo.GetBindingIds(*fragmentShaderModule))
 				{
-					if (usedBindingSlots.find(bindingIdx))
+					const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIdx];
+					if (usedBindingSlots.find(binding.descriptorSetIdx | (binding.index << 8)))
 						continue;
 
-					nvrhiAddBindingLayout(rhiBindingLayoutDescList, shaderInfo.bindings[bindingIdx]);
+					nvrhiAddBindingLayout(rhiBindingLayoutDescList, binding);
 				}
 			}
 
@@ -1007,11 +1060,12 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	}
 #else
 	renderPipeline = CRefPtr_new(CNVRHIRenderPipeline);
+	renderPipeline->m_shaderInfo = &shaderInfo;
 	renderPipeline->m_rhiFramebufferinfo = rhiFramebufferInfo;
 	renderPipeline->m_rhiPipelineDesc = rhiGraphicsPipelineDesc;
 	renderPipeline->m_dbgName = std::move(pipelineName);
-	renderPipeline->m_vertexShaderModuleId = vertexShaderModuleId;
-	renderPipeline->m_fragmentShaderModuleId = fragmentShaderModuleId;
+	renderPipeline->m_vertexShaderModuleIdx = vertexShaderModuleIdx;
+	renderPipeline->m_fragmentShaderModuleIdx = fragmentShaderModuleIdx;
 #endif
 
 	return IGPURenderPipelinePtr(renderPipeline);
@@ -1056,23 +1110,22 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		layoutIdx = shaderInfo.vertexLayouts[layoutIdx].aliasOf;
 
 	const ShaderInfo::Module* computeShaderModule = nullptr;
-	uint computeShaderModuleId = 0;
+	int computeShaderModuleIdx = -1;
 	{
 		const int entryPointStrHash = StringId24(pipelineDesc.shaderEntryPoint);
-		computeShaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, layoutIdx, SHADERKIND_COMPUTE, entryPointStrHash);
-		auto itShaderModuleId = shaderInfo.modulesMap.find(computeShaderModuleId);
+		const uint shaderModuleId = ShaderInfo::PackShaderModuleId(queryStrHash, layoutIdx, SHADERKIND_COMPUTE, entryPointStrHash);
+		auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 
-		if (!itShaderModuleId.atEnd())
+		if (itShaderModuleId)
 		{
-			EqString queryStr;
-			for (const EqString& str : pipelineDesc.shaderQuery)
-			{
-				if (queryStr.Length())
-					queryStr.Append("|");
-				queryStr.Append(str);
-			}
-			ASSERT_MSG(shaderInfo.modules[*itShaderModuleId].kind == SHADERKIND_COMPUTE, "Incorrect shader kind for %s %s in shader package %s", shaderInfo.vertexLayouts[layoutIdx].name.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
-			computeShaderModule = &GetOrLoadShaderModule(shaderInfo, *itShaderModuleId);
+			computeShaderModuleIdx = *itShaderModuleId;
+			ASSERT_MSG(shaderInfo.modules[computeShaderModuleIdx].kind == SHADERKIND_COMPUTE,
+				"Incorrect shader kind for %s %s in shader package %s", 
+				shaderInfo.vertexLayouts[layoutIdx].name.ToCString(),
+				shaderInfo.GetShaderQueryStr(pipelineDesc.shaderQuery).ToCString(),
+				pipelineDesc.shaderName.ToCString());
+
+			computeShaderModule = &GetOrLoadShaderModule(shaderInfo, computeShaderModuleIdx);
 		}
 	}
 
@@ -1124,8 +1177,10 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		}
 
 		CRefPtr<CNVRHIComputePipeline> computePipeline = CRefPtr_new(CNVRHIComputePipeline);
+		computePipeline->m_shaderInfo = &shaderInfo;
 		computePipeline->m_rhiComputePipeline = rhiComputePipeline;
 		computePipeline->m_dbgName = std::move(pipelineName);
+		computePipeline->m_computeShaderModuleIdx = computeShaderModuleIdx;
 		for(int i = 0; i < rhiComputePipelineDesc.bindingLayouts.size(); ++i)
 			computePipeline->m_rhiBindingLayout.append(rhiComputePipelineDesc.bindingLayouts[i]);
 
