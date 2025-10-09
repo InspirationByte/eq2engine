@@ -23,8 +23,6 @@
 #include "../RenderWorker.h"
 #include "NVRHIComputePassRecorder.h"
 
-#pragma optimize("", off)
-
 constexpr EqStringRef s_shaderKindVertexName = "Vertex";
 constexpr EqStringRef s_shaderKindFragmentName = "Fragment";
 constexpr EqStringRef s_shaderKindComputeName = "Compute";

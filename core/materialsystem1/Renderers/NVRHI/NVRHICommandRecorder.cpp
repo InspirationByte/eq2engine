@@ -24,9 +24,15 @@ void CNVRHICommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, in
 
 	if (bufferImpl->IsFirstUpdate())
 	{
-		m_rhiCommandList->beginTrackingBufferState(bufferImpl->GetNVRHIBufferHandle(), nvrhi::ResourceStates::Common);
+		const nvrhi::ResourceStates rhiResStates = bufferImpl->GetNVRHIResourceStates();
+		nvrhi::ResourceStates rhiTrackingState = nvrhi::ResourceStates::Common;
+		if(static_cast<int>(rhiResStates) & static_cast<int>(nvrhi::ResourceStates::VertexBuffer | nvrhi::ResourceStates::IndexBuffer | nvrhi::ResourceStates::IndirectArgument))
+			rhiTrackingState = nvrhi::ResourceStates::CopyDest;
+
+		m_rhiCommandList->beginTrackingBufferState(bufferImpl->GetNVRHIBufferHandle(), rhiTrackingState);
 		m_rhiCommandList->writeBuffer(bufferImpl->GetNVRHIBufferHandle(), data, writeDataSize, offset);
-		m_rhiCommandList->setPermanentBufferState(bufferImpl->GetNVRHIBufferHandle(), bufferImpl->GetNVRHIResourceStates());
+		m_rhiCommandList->setPermanentBufferState(bufferImpl->GetNVRHIBufferHandle(), rhiResStates);
+		//m_rhiCommandList->commitBarriers();
 
 		bufferImpl->OnUpdated();
 	}
