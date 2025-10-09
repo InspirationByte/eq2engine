@@ -393,14 +393,43 @@ static void FillNVRHIBinding(nvrhi::IDevice* rhiDevice, const BindGroupDesc::Ent
 	{
 	case BINDENTRY_BUFFER:
 	{
+		ASSERT(binding.type == bindGroupEntry.type);
+		// TODO: check buffer usage
+
 		CNVRHIBuffer* buffer = static_cast<CNVRHIBuffer*>(bindGroupEntry.buffer.buffer.Ptr());
 		if (buffer)
 		{
-			const uint64 bufferSize = bindGroupEntry.buffer.size < 0 ? nvrhi::EntireBuffer.byteSize : bindGroupEntry.buffer.size;
-			rhiBindingSetDesc.addItem(
-				nvrhi::BindingSetItem()
-				.RawBuffer_SRV(binding.registerIdx, buffer->GetNVRHIBufferHandle(), bindGroupEntry.buffer.size < 0 ? nvrhi::EntireBuffer : nvrhi::BufferRange(bindGroupEntry.buffer.offset, bufferSize))
-			);
+			int64 minAligment = binding.rangeType == BINDING_RANGE_CBV ? 
+				CNVRHIRenderAPI::Instance.GetCaps().minUniformBufferOffsetAlignment :
+				CNVRHIRenderAPI::Instance.GetCaps().minStorageBufferOffsetAlignment;
+
+			ASSERT((bindGroupEntry.buffer.offset & CNVRHIRenderAPI::Instance.GetCaps().minUniformBufferOffsetAlignment) == 0, "Invalid buffer offset alignment");
+
+			int64 minAligmentMask = minAligment - 1;
+			const int alignedSize = min(bindGroupEntry.buffer.size + minAligmentMask & ~minAligmentMask, buffer->GetSize() - bindGroupEntry.buffer.offset);
+			nvrhi::BufferRange bufferRange = bindGroupEntry.buffer.size < 0 ? nvrhi::EntireBuffer : nvrhi::BufferRange(bindGroupEntry.buffer.offset, alignedSize);
+
+			switch (binding.rangeType)
+			{
+			case BINDING_RANGE_CBV:
+				rhiBindingSetDesc.addItem(
+					nvrhi::BindingSetItem()
+					.ConstantBuffer(binding.registerIdx, buffer->GetNVRHIBufferHandle(), bufferRange)
+				);
+				break;
+			case BINDING_RANGE_SRV:
+				rhiBindingSetDesc.addItem(
+					nvrhi::BindingSetItem()
+					.RawBuffer_SRV(binding.registerIdx, buffer->GetNVRHIBufferHandle(), bufferRange)
+				);
+				break;
+			case BINDING_RANGE_UAV:
+				rhiBindingSetDesc.addItem(
+					nvrhi::BindingSetItem()
+					.RawBuffer_UAV(binding.registerIdx, buffer->GetNVRHIBufferHandle(), bufferRange)
+				);
+				break;
+			}
 		}
 		else
 			ASSERT_FAIL("NULL buffer for binding %d", bindGroupEntry.binding);
@@ -409,6 +438,9 @@ static void FillNVRHIBinding(nvrhi::IDevice* rhiDevice, const BindGroupDesc::Ent
 	}
 	case BINDENTRY_SAMPLER:
 	{
+		ASSERT(binding.type == bindGroupEntry.type);
+		ASSERT(binding.rangeType == BINDING_RANGE_SAMPLER);
+
 		auto rhiSamplerDesc = nvrhi::SamplerDesc();
 		FillNVRHISamplerDescriptor(bindGroupEntry.sampler, rhiSamplerDesc);
 
@@ -424,16 +456,28 @@ static void FillNVRHIBinding(nvrhi::IDevice* rhiDevice, const BindGroupDesc::Ent
 	}
 	case BINDENTRY_STORAGETEXTURE:
 	case BINDENTRY_TEXTURE:
+		ASSERT(binding.type == BINDENTRY_STORAGETEXTURE || binding.type == BINDENTRY_TEXTURE);
+		// TODO: check texture usage
 		CNVRHITexture* texture = static_cast<CNVRHITexture*>(bindGroupEntry.texture.texture.Ptr());
-
-		// NOTE: animated textures aren't that supported, so it would need array lookup through the shader
 		if (texture)
 		{
 			ASSERT_MSG(texture->GetNVRHITextureViewCount(), "Texture '%s' has no views", texture->GetName());
-			rhiBindingSetDesc.addItem(
-				nvrhi::BindingSetItem()
-				.Texture_SRV(binding.registerIdx, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, texture->GetNVRHITextureView(bindGroupEntry.texture.arraySlice))
-			);
+
+			switch (binding.rangeType)
+			{
+			case BINDING_RANGE_SRV:
+				rhiBindingSetDesc.addItem(
+					nvrhi::BindingSetItem()
+					.Texture_SRV(binding.registerIdx, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, texture->GetNVRHITextureView(bindGroupEntry.texture.arraySlice))
+				);
+				break;
+			case BINDING_RANGE_UAV:
+				rhiBindingSetDesc.addItem(
+					nvrhi::BindingSetItem()
+					.Texture_UAV(binding.registerIdx, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, texture->GetNVRHITextureView(bindGroupEntry.texture.arraySlice))
+				);
+				break;
+			}
 		}
 		else
 			ASSERT_FAIL("NULL texture for binding %d", bindGroupEntry.binding);
