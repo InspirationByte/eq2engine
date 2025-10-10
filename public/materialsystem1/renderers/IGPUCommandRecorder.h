@@ -124,14 +124,6 @@ inline void IGPURenderCommandsRecorder::SetIndexBufferView(const GPUBufferView& 
 }
 
 //---------------------------------
-// Render bundle recorder
-class IGPURenderBundleRecorder : public IGPURenderCommandsRecorder
-{
-public:
-	EType							GetType() const { return PASS_RECORDER; }
-};
-
-//---------------------------------
 // Render pass recorder
 class IGPURenderPassRecorder : public IGPURenderCommandsRecorder
 {
