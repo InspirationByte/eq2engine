@@ -23,6 +23,8 @@
 #include "../RenderWorker.h"
 #include "NVRHIComputePassRecorder.h"
 
+#pragma optimize("", off)
+
 constexpr EqStringRef s_shaderKindVertexName = "Vertex";
 constexpr EqStringRef s_shaderKindFragmentName = "Fragment";
 constexpr EqStringRef s_shaderKindComputeName = "Compute";
@@ -401,7 +403,7 @@ static void FillNVRHIBinding(nvrhi::IDevice* rhiDevice, const BindGroupDesc::Ent
 				CNVRHIRenderAPI::Instance.GetCaps().minUniformBufferOffsetAlignment :
 				CNVRHIRenderAPI::Instance.GetCaps().minStorageBufferOffsetAlignment;
 
-			ASSERT((bindGroupEntry.buffer.offset & CNVRHIRenderAPI::Instance.GetCaps().minUniformBufferOffsetAlignment) == 0, "Invalid buffer offset alignment");
+			ASSERT_MSG((bindGroupEntry.buffer.offset & CNVRHIRenderAPI::Instance.GetCaps().minUniformBufferOffsetAlignment) == 0, "Invalid buffer offset alignment");
 
 			int64 minAligmentMask = minAligment - 1;
 			const int alignedSize = min(bindGroupEntry.buffer.size + minAligmentMask & ~minAligmentMask, buffer->GetSize() - bindGroupEntry.buffer.offset);
@@ -898,16 +900,19 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 				ASSERT_MSG(!rhiVertexAttribList.isFull(), "Too many vertex attributes");
 
 				auto rhiVertAttr = rhiVertexAttribList.append()
+					.setName(attrib.name.ToCString())
 					.setFormat(g_nvrhiVertexFormats[attrib.format][attrib.count - 1])
 					.setOffset(attrib.offset)
-					.setBufferIndex(attrib.location)
+					//.setBufferIndex(attrib.location)	// TODO: figure out!
 					.setIsInstanced(vertexLayout.stepMode == VERTEX_STEPMODE_INSTANCE)
 					.setElementStride(vertexLayout.stride);
-				rhiVertAttr.name = attrib.name.ToCString();
 			}
 		}
 
-		ASSERT_MSG(!rhiVertexAttribList.isEmpty(), "No vertex attributes - invalid vertex format");
+		if(!pipelineDesc.vertex.vertexLayout.isEmpty())
+		{
+			ASSERT_MSG(!rhiVertexAttribList.isEmpty(), "No vertex attributes - invalid vertex format");
+		}
 
 		rhiInputLayout = m_rhiDevice->createInputLayout(rhiVertexAttribList.ptr(), rhiVertexAttribList.numElem(), reinterpret_cast<nvrhi::IShader*>(vertexShaderModule->rhiModule));
 		rhiGraphicsPipelineDesc.setVertexShader(reinterpret_cast<nvrhi::IShader*>(vertexShaderModule->rhiModule));
@@ -947,6 +952,13 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 		rhiDepthStencil.frontFaceStencil.failOp = g_nvrhiStencilOp[pipelineDesc.depthStencil.stencilFront.failOp];
 		rhiDepthStencil.frontFaceStencil.depthFailOp = g_nvrhiStencilOp[pipelineDesc.depthStencil.stencilFront.depthFailOp];
 		rhiDepthStencil.frontFaceStencil.passOp = g_nvrhiStencilOp[pipelineDesc.depthStencil.stencilFront.passOp];
+	}
+	else
+	{
+		auto& rhiDepthStencil = rhiGraphicsPipelineDesc.renderState.depthStencilState;
+		rhiDepthStencil.depthTestEnable = false;
+		rhiDepthStencil.depthWriteEnable = false;
+		rhiDepthStencil.stencilEnable = false;
 	}
 
 	// Setup fragment pipeline
@@ -1239,7 +1251,7 @@ IGPUCommandRecorderPtr CNVRHIRenderAPI::CreateCommandRecorder(const char* name, 
 	rhiCommandList->open();
 
 	CRefPtr<CNVRHICommandRecorder> commandRecorder = CRefPtr_new(CNVRHICommandRecorder);
-	commandRecorder->m_dbgLabel = name;
+	commandRecorder->m_dbgName = name;
 	commandRecorder->m_rhiCommandList = rhiCommandList;
 	commandRecorder->m_userData = userData;
 

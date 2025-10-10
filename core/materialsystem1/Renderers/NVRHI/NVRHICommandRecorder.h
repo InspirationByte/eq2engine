@@ -24,7 +24,7 @@ public:
 
 	IGPUCommandBufferPtr		End();
 
-	EqString					m_dbgLabel;
+	EqString					m_dbgName;
 	nvrhi::CommandListHandle	m_rhiCommandList{ nullptr };
 	void*						m_userData{ nullptr };
 };

@@ -45,7 +45,7 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 	if (bufferUsageFlags & BUFFERUSAGE_COPY_DST)
 	{
 		rhiBufferDesc.setInitialState(nvrhi::ResourceStates::CopyDest);
-		//rhiBufferDesc.keepInitialState = true;
+		rhiBufferDesc.keepInitialState = true;
 	}
 	if (bufferUsageFlags & BUFFERUSAGE_VERTEX)	rhiBufferDesc.setIsVertexBuffer(true);
 	if (bufferUsageFlags & BUFFERUSAGE_INDEX)	rhiBufferDesc.setIsIndexBuffer(true);

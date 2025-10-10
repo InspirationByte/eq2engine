@@ -159,12 +159,12 @@ IGPUCommandBufferPtr CNVRHICommandRecorder::End()
 		ASSERT_FAIL("Command recorder was already ended");
 		return nullptr;
 	}
-
 	m_rhiCommandList->close();
 
 	// simply transfer command list
 	CRefPtr<CNVRHICommandBuffer> commandBuffer = CRefPtr_new(CNVRHICommandBuffer);
 	commandBuffer->m_rhiCommandList = m_rhiCommandList;
+	commandBuffer->m_dbgName = std::move(m_dbgName);
 	m_rhiCommandList = nullptr;
 
 	return IGPUCommandBufferPtr(commandBuffer);

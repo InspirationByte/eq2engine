@@ -22,8 +22,6 @@ public:
 	void					DbgPushGroup(const char* groupLabel) const;
 	void					DbgAddMarker(const char* label) const;
 
-	void					AddBundle(IGPURenderBundleRecorder* bundle);
-
 	void					SetPipeline(IGPURenderPipeline* pipeline);
 	IGPURenderPipelinePtr	GetPipeline() const { return m_pipeline; }
 
@@ -78,7 +76,7 @@ public:
 	IGPURenderPipelinePtr		m_pipeline;
 	nvrhi::CommandListHandle	m_rhiCommandList{ nullptr };
 
-	EqString					m_dbgLabel;
+	EqString					m_dbgName;
 	void*						m_userData{ nullptr };
 
 	bool						m_graphicsStateDirty{ true };

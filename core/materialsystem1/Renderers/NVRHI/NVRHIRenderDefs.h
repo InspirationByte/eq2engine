@@ -182,13 +182,23 @@ static nvrhi::TextureDimension g_nvrhiTexViewDimensions[] = {
 //	nvrhi::CpuAccessMode::Read | nvrhi::CpuAccessMode::Write,
 //};
 
+// EVertAttribType
+static const char* g_nvrhiVertexSemantics[] = {
+	"UNKNOWN",
+	"POSITION" ,
+	"TEXCOORD",
+	"NORMAL",
+	"TANGENT",
+	"BINORMAL",
+	"COLOR"
+};
+
 // EVertAttribFormat
 static nvrhi::Format g_nvrhiVertexFormats[][4] = {
 	{
 		nvrhi::Format::UNKNOWN, nvrhi::Format::UNKNOWN, nvrhi::Format::UNKNOWN, nvrhi::Format::UNKNOWN
 	},
 	{
-		// HACK: GLSL does not support vector of Uint8 so we use WGPUVertexFormat_Uint32 instead of Uint8x4
 		nvrhi::Format::R8_UINT, nvrhi::Format::RG8_UINT, nvrhi::Format::UNKNOWN, nvrhi::Format::R32_UINT
 	},
 	{

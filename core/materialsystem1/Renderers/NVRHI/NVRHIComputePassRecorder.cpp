@@ -38,8 +38,6 @@ void CNVRHIComputePassRecorder::CommitComputeState(nvrhi::IBuffer* indirectBuffe
 		CNVRHIBindGroup* bindGroupImpl = static_cast<CNVRHIBindGroup*>(bindGroup);
 		if (bindGroupImpl)
 			rhiComputeState.addBindingSet(bindGroupImpl->m_rhiBindingSet);
-		else
-			rhiComputeState.addBindingSet(nullptr);
 	}
 
 	m_rhiCommandList->setComputeState(rhiComputeState);
@@ -88,18 +86,16 @@ void CNVRHIComputePassRecorder::Complete()
 
 IGPUCommandBufferPtr CNVRHIComputePassRecorder::End()
 {
-	Complete();
-
 	if (!m_rhiCommandList)
 	{
 		ASSERT_FAIL("Compute pass recorder was already ended or is owned by GPUCommandRecorder, use Complete in this case");
 		return nullptr;
 	}
-
 	m_rhiCommandList->close();
 
 	CRefPtr<CNVRHICommandBuffer> commandBuffer = CRefPtr_new(CNVRHICommandBuffer);
 	commandBuffer->m_rhiCommandList = m_rhiCommandList;
+	commandBuffer->m_dbgName = std::move(m_dbgName);
 	m_rhiCommandList = nullptr;
 
 	return IGPUCommandBufferPtr(commandBuffer);

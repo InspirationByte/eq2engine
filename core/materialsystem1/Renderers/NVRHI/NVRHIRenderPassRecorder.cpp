@@ -26,11 +26,6 @@ void CNVRHIRenderPassRecorder::DbgAddMarker(const char* label) const
 	m_rhiCommandList->endMarker();
 }
 
-void CNVRHIRenderPassRecorder::AddBundle(IGPURenderBundleRecorder* bundle)
-{
-	ASSERT_FAIL("NOT IMPLEMENTED");
-}
-
 void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffer)
 {
 	if (!m_graphicsStateDirty)
@@ -44,8 +39,13 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 	CNVRHIRenderPipeline* pipelineImpl = static_cast<CNVRHIRenderPipeline*>(m_pipeline.Ptr());
 	ASSERT(pipelineImpl);
 
+	// time to create graphics pipeline instance
+	// TODO: don't do it, use framebuffer desc in CreatePipeline
+	// TODO: Vulkan dynamic rendering ext support in NVRHI
+	nvrhi::GraphicsPipelineHandle rhiPipeline = CNVRHIRenderAPI::Instance.GetNVRHIDevice()->createGraphicsPipeline(pipelineImpl->m_rhiPipelineDesc, m_rhiFramebuffer);
+
 	auto rhiGraphicsState = nvrhi::GraphicsState()
-		.setPipeline(pipelineImpl->m_rhiRenderPipeline)
+		.setPipeline(rhiPipeline)
 		.setFramebuffer(m_rhiFramebuffer)
 		.setViewport(rhiViewportState)
 		.setIndirectParams(indirectBuffer);
@@ -54,6 +54,7 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 	if (indexBufferImpl)
 	{
 		ASSERT_MSG(indexBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDEX, "buffer doesn't have Index buffer usage bit");
+
 		auto rhiIndexBuffer = nvrhi::IndexBufferBinding()
 			.setBuffer(indexBufferImpl->GetNVRHIBufferHandle())
 			.setOffset(m_indexBuffer.offset)
@@ -84,9 +85,10 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 		CNVRHIBindGroup* bindGroupImpl = static_cast<CNVRHIBindGroup*>(bindGroup);
 		if(bindGroupImpl)
 			rhiGraphicsState.addBindingSet(bindGroupImpl->m_rhiBindingSet);
-		else
-			rhiGraphicsState.addBindingSet(nullptr);
+		//else
+		//	rhiGraphicsState.addBindingSet(nullptr);
 	}
+
 	m_rhiCommandList->setGraphicsState(rhiGraphicsState);
 }
 
@@ -197,9 +199,8 @@ void CNVRHIRenderPassRecorder::MultiDrawIndirect(IGPUBuffer* indirectBuffer, int
 	ASSERT_FAIL("Unsupported on this RHI");
 }
 
-static void NVRHIBeginRenderPass(const RenderPassDesc& renderPassDesc, nvrhi::CommandListHandle rhiCmdList)
+static void NVRHIBeginRenderPass(const RenderPassDesc& renderPassDesc, nvrhi::CommandListHandle rhiCmdList, nvrhi::FramebufferDesc& rhiFramebufferDesc)
 {
-	auto rhiFramebufferDesc = nvrhi::FramebufferDesc();
 	for (const RenderPassDesc::ColorTargetDesc& colorTarget : renderPassDesc.colorTargets)
 	{
 		const CNVRHITexture* targetTexture = static_cast<CNVRHITexture*>(colorTarget.target.texture.Ptr());
@@ -236,15 +237,15 @@ static void NVRHIBeginRenderPass(const RenderPassDesc& renderPassDesc, nvrhi::Co
 		// TODO
 		// stencilStoreOp
 	}
-
-	nvrhi::FramebufferHandle rhiFramebuffer = CNVRHIRenderAPI::Instance.GetNVRHIDevice()->createFramebuffer(rhiFramebufferDesc);
-	rhiCmdList->setResourceStatesForFramebuffer(rhiFramebuffer);
 }
 
 void CNVRHIRenderPassRecorder::InternalBeginRenderPass(const RenderPassDesc& renderPassDesc)
 {
 	auto rhiFramebufferDesc = nvrhi::FramebufferDesc();
-	NVRHIBeginRenderPass(renderPassDesc, m_rhiCommandList);
+	NVRHIBeginRenderPass(renderPassDesc, m_rhiCommandList, rhiFramebufferDesc);
+
+	m_rhiFramebuffer = CNVRHIRenderAPI::Instance.GetNVRHIDevice()->createFramebuffer(rhiFramebufferDesc);
+	m_rhiCommandList->setResourceStatesForFramebuffer(m_rhiFramebuffer);
 
 	IVector2D renderTargetDims = 0;
 	for (int i = 0; i < renderPassDesc.colorTargets.numElem(); ++i)
@@ -271,7 +272,7 @@ void CNVRHIRenderPassRecorder::InternalBeginRenderPass(const RenderPassDesc& ren
 	m_depthReadOnly = renderPassDesc.depthReadOnly;
 	m_stencilReadOnly = renderPassDesc.stencilReadOnly;
 	m_renderTargetDims = renderTargetDims;
-	m_dbgLabel = renderPassDesc.name;
+	m_dbgName = renderPassDesc.name;
 
 	const AARectangle defaultViewportRectangle(vec2_zero, Vector2D(renderTargetDims));
 	SetViewport(defaultViewportRectangle, 0.0f, 1.0f);
@@ -305,18 +306,16 @@ void CNVRHIRenderPassRecorder::Complete()
 
 IGPUCommandBufferPtr CNVRHIRenderPassRecorder::End()
 {
-	Complete();
-
 	if (!m_rhiCommandList)
 	{
 		ASSERT_FAIL("Render pass recorder was already ended or is owned by GPUCommandRecorder, use Complete in this case");
 		return nullptr;
 	}
-
 	m_rhiCommandList->close();
 
 	CRefPtr<CNVRHICommandBuffer> commandBuffer = CRefPtr_new(CNVRHICommandBuffer);
 	commandBuffer->m_rhiCommandList = m_rhiCommandList;
+	commandBuffer->m_dbgName = std::move(m_dbgName);
 	m_rhiCommandList = nullptr;
 
 	return IGPUCommandBufferPtr(commandBuffer);
