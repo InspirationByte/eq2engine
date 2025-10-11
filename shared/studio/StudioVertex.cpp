@@ -50,8 +50,8 @@ const VertexLayoutDesc& EGFHwVertex::PositionUV::GetVertexLayoutDesc()
 	static const VertexLayoutDesc g_EGFVertexUvFormat = Builder<VertexLayoutDesc>()
 		.UserId(EGFHwVertex::VERT_POS_UV | EGFHwVertex::EGF_FLAG)
 		.Stride(sizeof(EGFHwVertex::PositionUV))
-		.Attribute(VERTEXATTRIB_POSITION, "position", 0, offsetOf(EGFHwVertex::PositionUV, pos), ATTRIBUTEFORMAT_HALF, 4)
-		.Attribute(VERTEXATTRIB_TEXCOORD, "texCoord", 1, offsetOf(EGFHwVertex::PositionUV, texcoord), ATTRIBUTEFORMAT_HALF, 2)
+		.Attribute(StringIdConst24("_position"), offsetOf(EGFHwVertex::PositionUV, pos), ATTRIBUTEFORMAT_HALF, 4)
+		.Attribute(StringIdConst24("_texCoord"), offsetOf(EGFHwVertex::PositionUV, texcoord), ATTRIBUTEFORMAT_HALF, 2)
 		.End();
 	return g_EGFVertexUvFormat;
 }
@@ -61,9 +61,9 @@ const VertexLayoutDesc& EGFHwVertex::TBN::GetVertexLayoutDesc()
 	static const VertexLayoutDesc g_EGFTBNFormat = Builder<VertexLayoutDesc>()
 		.UserId(EGFHwVertex::VERT_TBN | EGFHwVertex::EGF_FLAG)
 		.Stride(sizeof(EGFHwVertex::TBN))
-		.Attribute(VERTEXATTRIB_TEXCOORD, "tangent", 2, offsetOf(EGFHwVertex::TBN, tangent), ATTRIBUTEFORMAT_HALF, 4)
-		.Attribute(VERTEXATTRIB_TEXCOORD, "binormal", 3, offsetOf(EGFHwVertex::TBN, binormal), ATTRIBUTEFORMAT_HALF, 4)
-		.Attribute(VERTEXATTRIB_TEXCOORD, "normal", 4, offsetOf(EGFHwVertex::TBN, normal), ATTRIBUTEFORMAT_HALF, 4)
+		.Attribute(StringIdConst24("_tangent"), offsetOf(EGFHwVertex::TBN, tangent), ATTRIBUTEFORMAT_HALF, 4)
+		.Attribute(StringIdConst24("_binormal"), offsetOf(EGFHwVertex::TBN, binormal), ATTRIBUTEFORMAT_HALF, 4)
+		.Attribute(StringIdConst24("_normal"), offsetOf(EGFHwVertex::TBN, normal), ATTRIBUTEFORMAT_HALF, 4)
 		.End();
 	return g_EGFTBNFormat;
 }
@@ -73,8 +73,8 @@ const VertexLayoutDesc& EGFHwVertex::BoneWeights::GetVertexLayoutDesc()
 	static const VertexLayoutDesc g_EGFBoneWeightsFormat = Builder<VertexLayoutDesc>()
 		.UserId(EGFHwVertex::VERT_BONEWEIGHT | EGFHwVertex::EGF_FLAG)
 		.Stride(sizeof(EGFHwVertex::BoneWeights))
-		.Attribute(VERTEXATTRIB_TEXCOORD, "boneId", 5, offsetOf(EGFHwVertex::BoneWeights, boneIndices), ATTRIBUTEFORMAT_UINT8, 4)
-		.Attribute(VERTEXATTRIB_TEXCOORD, "boneWt", 6, offsetOf(EGFHwVertex::BoneWeights, boneWeights), ATTRIBUTEFORMAT_HALF, 4)
+		.Attribute(StringIdConst24("_boneIndex"), offsetOf(EGFHwVertex::BoneWeights, boneIndices), ATTRIBUTEFORMAT_UINT8, 4)
+		.Attribute(StringIdConst24("_boneWeight"), offsetOf(EGFHwVertex::BoneWeights, boneWeights), ATTRIBUTEFORMAT_HALF, 4)
 		.End();
 	return g_EGFBoneWeightsFormat;
 }
@@ -84,7 +84,7 @@ const VertexLayoutDesc& EGFHwVertex::Color::GetVertexLayoutDesc()
 	static const VertexLayoutDesc g_EGFColorFormat = Builder<VertexLayoutDesc>()
 		.UserId(EGFHwVertex::VERT_COLOR | EGFHwVertex::EGF_FLAG)
 		.Stride(sizeof(EGFHwVertex::Color))
-		.Attribute(VERTEXATTRIB_TEXCOORD, "color", 7, offsetOf(EGFHwVertex::Color, color), ATTRIBUTEFORMAT_UINT8, 4)
+		.Attribute(StringIdConst24("_color"), offsetOf(EGFHwVertex::Color, color), ATTRIBUTEFORMAT_UINT8, 4)
 		.End();
 	return g_EGFColorFormat;
 }

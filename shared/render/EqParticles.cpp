@@ -33,9 +33,9 @@ const VertexLayoutDesc& PFXVertex::GetVertexLayoutDesc()
 {
 	static VertexLayoutDesc s_PFXVertexLayoutDesc = Builder<VertexLayoutDesc>()
 		.Stride(sizeof(PFXVertex))
-		.Attribute(VERTEXATTRIB_POSITION, "position", 0, 0, ATTRIBUTEFORMAT_FLOAT, 3)
-		.Attribute(VERTEXATTRIB_TEXCOORD, "texCoord", 1, offsetOf(PFXVertex, texcoord), ATTRIBUTEFORMAT_HALF, 2)
-		.Attribute(VERTEXATTRIB_COLOR, "color", 2, offsetOf(PFXVertex, color), ATTRIBUTEFORMAT_UINT8, 4)
+		.Attribute(StringIdConst24("_position"), 0, ATTRIBUTEFORMAT_FLOAT, 3)
+		.Attribute(StringIdConst24("_texCoord"), offsetOf(PFXVertex, texcoord), ATTRIBUTEFORMAT_HALF, 2)
+		.Attribute(StringIdConst24("_color"), offsetOf(PFXVertex, color), ATTRIBUTEFORMAT_UINT8, 4)
 		.End();
 	return s_PFXVertexLayoutDesc;
 }

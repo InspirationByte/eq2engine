@@ -247,20 +247,6 @@ struct PipelineConst
 	double		value{ 0.0f };
 };
 
-enum EVertAttribType : int // used for hinting
-{
-	VERTEXATTRIB_UNKNOWN = 0,
-
-	VERTEXATTRIB_POSITION ,
-	VERTEXATTRIB_TEXCOORD,
-	VERTEXATTRIB_NORMAL,
-	VERTEXATTRIB_TANGENT,
-	VERTEXATTRIB_BINORMAL,
-	VERTEXATTRIB_COLOR,
-
-	VERTEXATTRIB_COUNT,
-};
-
 // Attribute format
 enum EVertAttribFormat : int
 {
@@ -288,12 +274,10 @@ struct VertexLayoutDesc
 {
 	struct AttribDesc
 	{
-		EqString			name;
-		int					location{ 0 };
+		int					nameId{ 0 };	// StringId24
 		int					offset{ 0 };	// in bytes
 		EVertAttribFormat	format{ ATTRIBUTEFORMAT_FLOAT };
 		int					count{ 0 };
-		EVertAttribType		type{ VERTEXATTRIB_UNKNOWN };	// hint that used for MeshBuilder and older renderers
 	};
 
 	using VertexAttribList = Array<AttribDesc>;
@@ -309,10 +293,10 @@ FLUENT_BEGIN_TYPE(VertexLayoutDesc)
 	FLUENT_SET_VALUE(stride, Stride)
 	FLUENT_SET_VALUE(stepMode, StepMode)
 	ThisType& Attribute(AttribDesc&& x) { ref.attributes.append(std::move(x)); return *this; }
-	ThisType& Attribute(EVertAttribType type, const char* name, int location, int offset, EVertAttribFormat format, int count)
+	ThisType& Attribute(int nameId, int offset, EVertAttribFormat format, int count)
 	{
 		ASSERT_MSG(count > 0 && count <= 4, "Vertex attribute count incorrect (%d, while must be <= 4)", count);
-		ref.attributes.append({ name, location, offset, format, count, type });
+		ref.attributes.append({ nameId, offset, format, count });
 		return *this; 
 	}
 FLUENT_END_TYPE
@@ -593,7 +577,7 @@ struct BindGroupLayoutDesc
 			BindTexture			texture;
 			BindStorageTexture	storageTexture;
 		};
-		int				nameId;
+		int				nameId;				// StringId24
 		EBindEntryType	type{ BINDENTRY_BUFFER };
 		int				binding{ 0 };
 		int				visibility{ 0 };	// EShaderKind

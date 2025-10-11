@@ -42,8 +42,9 @@ struct ShaderInfo
 	struct Module;
 
 	static uint		PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, int entryPointStrHash);
-	static bool		ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shaderPackFile, const KVSection& shaderInfoKvs, int& filesFound, bool parseBindings = true);
+	static bool		ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shaderPackFile, const KVSection& shaderInfoKvs, int& filesFound);
 	void			ParseModuleBindings(const KVSection& bindingsSec, uint shaderModuleId, Module& moduleInfo, Map<uint, int>& usedBindingSlots);
+	void			ParseVertexAttribs(const KVSection& vertexSec, uint shaderModuleId, Module& moduleInfo, Map<uint, int>& usedVertexAttribs);
 
 	ShaderInfo() = default;
 	ShaderInfo(ShaderInfo&& other) noexcept;
@@ -53,6 +54,7 @@ struct ShaderInfo
 	EqStringRef		GetShaderQueryStr(ArrayCRef<EqString> findDefines) const;
 
 	ArrayCRef<int>	GetBindingIds(const ShaderInfo::Module& module) const;
+	ArrayCRef<int>	GetVertexAttribIds(const ShaderInfo::Module& module) const;
 
 	struct VertLayout
 	{
@@ -61,9 +63,16 @@ struct ShaderInfo
 		int			aliasOf{ -1 };
 	};
 
+	struct VertexAttrib
+	{
+		EqString	name;
+		EqString	semantic;
+		int			nameId{ 0 };
+		int			location{ -1 };
+	};
+
 	struct Binding
 	{
-		EqString			name;
 		int					nameId{ 0 };
 		EBindEntryType		type{ BINDENTRY_BUFFER };
 		int					rwFlags{ RWFLAG_UNIFORM };
@@ -81,12 +90,16 @@ struct ShaderInfo
 		EqString			entryPoint;
 		int					fileIndex[SHADERMODULE_TYPES]{ -1 };
 		EShaderKind			kind{ };
-		int					bindingsStart{ 0 };
+		int					bindingsStart{ -1 };
+		int					vertexAttribsStart{ -1 };
 		uint				id{ 0 };
 	};
 
 	Array<Binding>			bindings{ PP_SL };
 	Array<int>				bindingIds{ PP_SL };		// binding ids per module, start by Module::bindingsStart storing count, rest is ids
+
+	Array<VertexAttrib>		vertexAttribs{ PP_SL };
+	Array<int>				vertexAttribIds{ PP_SL };	// vertex attrib ids per module, start by Module::vertexAttribsStart storing count, rest is ids
 
 	EqString				shaderName;
 	IPackFileReaderPtr		shaderPackFile{ nullptr };

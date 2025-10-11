@@ -111,8 +111,7 @@ void ShaderInfo::ParseModuleBindings(const KVSection& bindingsSec, uint shaderMo
 		bindingSec.GetValues(typeName, rwFlagsStr, binding.descriptorSetIdx, binding.index, rangeTypeIdx, binding.registerIdx);
 
 		binding.type = GetBindingTypeByName(typeName);
-		binding.name = bindingSec.GetName();
-		binding.nameId = StringId24(binding.name);
+		binding.nameId = StringId24(bindingSec.GetName());
 		binding.rangeType = static_cast<EBindingRangeType>(rangeTypeIdx);
 		ASSERT(binding.type >= 0);
 
@@ -154,12 +153,66 @@ void ShaderInfo::ParseModuleBindings(const KVSection& bindingsSec, uint shaderMo
 	}
 }
 
+
+void ShaderInfo::ParseVertexAttribs(const KVSection& vertexSec, uint shaderModuleId, Module& moduleInfo, Map<uint, int>& usedVertexAttribs)
+{
+	const int attribCount = vertexSec.KeyCount();
+	if (attribCount == 0)
+		return;
+	moduleInfo.vertexAttribsStart = vertexAttribIds.numElem();
+
+	// store attrib count
+	vertexAttribIds.reserve(vertexAttribIds.numElem() + attribCount + 1);
+	vertexAttribIds.append(attribCount);
+
+	vertexAttribs.reserve(vertexAttribs.numElem() + attribCount);
+	for (const KVSection& attribSec : vertexSec.Keys())
+	{
+		VertexAttrib attrib;
+
+		attribSec.GetValues(attrib.location, attrib.semantic);
+		attrib.name = attribSec.GetName();
+		attrib.nameId = StringId24(attrib.name);
+
+		uint attribId = attrib.nameId | (attrib.location << 24);
+		attribId *= 31;
+		attribId += StringId24(attrib.semantic);
+
+		auto it = usedVertexAttribs.find(attribId);
+		int idx = -1;
+		if (!it.atEnd())
+		{
+			idx = *it;
+			const VertexAttrib& foundAttrib = vertexAttribs[idx];
+			ASSERT_MSG(foundAttrib.nameId == attrib.nameId, "attribId hash collision");
+			ASSERT_MSG(foundAttrib.semantic == attrib.semantic, "attribId hash collision");
+			ASSERT_MSG(foundAttrib.location == attrib.location, "attribId hash collision");
+		}
+		else
+		{
+			idx = vertexAttribs.append(attrib);
+			usedVertexAttribs.insert(attribId, idx);
+		}
+
+		vertexAttribIds.append(idx);
+	}
+}
+
 ArrayCRef<int> ShaderInfo::GetBindingIds(const ShaderInfo::Module& module) const
 {
+	if (module.bindingsStart < 0)
+		return nullptr;
 	return ArrayCRef(&bindingIds[module.bindingsStart + 1], bindingIds[module.bindingsStart]);
 }
 
-bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shaderPackFile, const KVSection& shaderInfoKvs, int& filesFound, bool parseBindings)
+ArrayCRef<int> ShaderInfo::GetVertexAttribIds(const ShaderInfo::Module& module) const
+{
+	if (module.vertexAttribsStart < 0)
+		return nullptr;
+	return ArrayCRef(&vertexAttribIds[module.vertexAttribsStart + 1], vertexAttribIds[module.vertexAttribsStart]);
+}
+
+bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shaderPackFile, const KVSection& shaderInfoKvs, int& filesFound)
 {
 	shaderInfo.shaderPackFile = shaderPackFile;
 	shaderInfo.shaderName = shaderInfoKvs.GetName();
@@ -208,6 +261,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 	};
 
 	Map<uint, int> usedBindingSlots(PP_SL);
+	Map<uint, int> usedVertexAttribs(PP_SL);
 
 	filesFound = 0;
 	const KVSection* fileListSec = shaderInfoKvs["FileList"];
@@ -242,9 +296,9 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 			modInfo.entryPoint = entryPointName;
 			modInfo.id = shaderModuleId;
 
-			// parse module pipeline layout
-			if (parseBindings)
-				shaderInfo.ParseModuleBindings(itemSec, shaderModuleId, modInfo, usedBindingSlots);
+			shaderInfo.ParseModuleBindings(itemSec.Get("Bindings"), shaderModuleId, modInfo, usedBindingSlots);
+			if(kind == SHADERKIND_VERTEX)
+				shaderInfo.ParseVertexAttribs(itemSec.Get("Vertex"), shaderModuleId, modInfo, usedVertexAttribs);
 		}
 
 		{

@@ -79,13 +79,6 @@ enum EShaderSourceType : int
 	SHADERSOURCE_COUNT,
 };
 
-static shaderc_source_language s_sourceLanguage[] = {
-	shaderc_source_language_hlsl,
-	shaderc_source_language_hlsl,
-	shaderc_source_language_glsl,
-};
-static_assert(SHADERSOURCE_COUNT == elementsOf(s_sourceLanguage), "SHADERSOURCE_COUNT doesn't match s_sourceLanguage count");
-
 struct ShaderInfo
 {
 	enum EType
@@ -105,7 +98,6 @@ struct ShaderInfo
 		int					index{ -1 };
 		EBindingRangeType	rangeType{};
 		int					registerIdx{ 0 };
-
 	};
 	struct VertLayout
 	{
@@ -119,18 +111,25 @@ struct ShaderInfo
 		int				baseVariant{ -1 };
 		Array<EqString>	defines{ PP_SL };
 	};
+	struct VertexAttrib
+	{
+		EqString name;
+		EqString semantic;
+		int location;
+	};
 	struct Result
 	{
 		mutable CMemoryStream	data[SHADERMODULE_TYPES];
 		uint32					crc32[SHADERMODULE_TYPES]{ 0 };
 
-		EqString		queryStr;
-		int				entryPointIdx{ -1 };
-		int				kindFlag{ -1 };
-		int				refResult{ -1 };
-		int				vertLayoutIdx{ -1 };
-		Array<Binding>	bindings{ PP_SL };
-		bool			isError{ false };
+		EqString			queryStr;
+		int					entryPointIdx{ -1 };
+		int					kindFlag{ -1 };
+		int					refResult{ -1 };
+		int					vertLayoutIdx{ -1 };
+		Array<Binding>		bindings{ PP_SL };
+		Array<VertexAttrib>	vertexAttribs{ PP_SL };
+		bool				isError{ false };
 	};
 	struct SkipCombo
 	{
