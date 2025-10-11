@@ -66,9 +66,10 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 
 	if (bufferUsageFlags & BUFFERUSAGE_INDEX) 
 	{
+		rhiBufferDesc.setFormat(bufferInfo.elementSize == 2 ? nvrhi::Format::R16_UINT : nvrhi::Format::R32_UINT);
 		rhiBufferDesc.setIsIndexBuffer(true);
-		//rhiBufferDesc.setCanHaveRawViews(true);
-		//rhiBufferDesc.setCanHaveTypedViews(true);
+		rhiBufferDesc.setCanHaveRawViews(true);
+		rhiBufferDesc.setCanHaveTypedViews(true);
 	}
 	if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)
 		rhiBufferDesc.setIsDrawIndirectArgs(true);
