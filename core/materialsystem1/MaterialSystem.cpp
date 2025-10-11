@@ -55,10 +55,10 @@ static VertexLayoutDesc& GetDynamicMeshLayout()
 	const int stride = sizeof(DynMeshVertexProto);
 	static VertexLayoutDesc s_levModelDrawVertLayout = Builder<VertexLayoutDesc>()
 		.Stride(stride)
-		.Attribute(VERTEXATTRIB_POSITION, "position", 0, offsetOf(DynMeshVertexProto, pos), ATTRIBUTEFORMAT_FLOAT, 4)
-		.Attribute(VERTEXATTRIB_TEXCOORD, "texCoord", 1, offsetOf(DynMeshVertexProto, texCoord), ATTRIBUTEFORMAT_HALF, 4)
-		.Attribute(VERTEXATTRIB_COLOR, "color", 2, offsetOf(DynMeshVertexProto, color), ATTRIBUTEFORMAT_UINT8, 4)
-		.Attribute(VERTEXATTRIB_NORMAL, "normal", 3, offsetOf(DynMeshVertexProto, normal), ATTRIBUTEFORMAT_HALF, 4)
+		.Attribute(StringIdConst24("_position"), offsetOf(DynMeshVertexProto, pos), ATTRIBUTEFORMAT_FLOAT, 4)
+		.Attribute(StringIdConst24("_texCoord"), offsetOf(DynMeshVertexProto, texCoord), ATTRIBUTEFORMAT_HALF, 4)
+		.Attribute(StringIdConst24("_color"), offsetOf(DynMeshVertexProto, color), ATTRIBUTEFORMAT_UINT8, 4)
+		.Attribute(StringIdConst24("_normal"), offsetOf(DynMeshVertexProto, normal), ATTRIBUTEFORMAT_HALF, 4)
 		.End();
 	return s_levModelDrawVertLayout;
 }

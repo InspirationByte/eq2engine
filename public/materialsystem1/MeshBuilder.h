@@ -105,7 +105,7 @@ protected:
 	{
 		int8				offset{ -1 };
 		int8				count{ 0 };
-		EVertAttribFormat	format{VERTEXATTRIB_UNKNOWN};
+		EVertAttribFormat	format{ ATTRIBUTEFORMAT_NONE };
 		Vector4D			value{ 0 };
 	};
 
@@ -140,34 +140,29 @@ inline void CMeshBuilder::Init(IDynamicMeshPtr mesh)
 
 	for (const VertexLayoutDesc::AttribDesc& attrib : vertexDesc.attributes)
 	{
-		const EVertAttribFormat format = attrib.format;
-		const EVertAttribType type = attrib.type;
-		const int vecCount = attrib.count;
-		const int attribSize = vecCount * s_attributeSize[format];
-
-		if (type == VERTEXATTRIB_POSITION)
+		if (attrib.nameId == StringIdConst24("_position"))
 		{
 			m_position.offset = attrib.offset;
-			m_position.count = vecCount;
-			m_position.format = format;
+			m_position.count = attrib.count;
+			m_position.format = attrib.format;
 		}
-		else if (type == VERTEXATTRIB_NORMAL)
+		else if (attrib.nameId == StringIdConst24("_normal"))
 		{
 			m_normal.offset = attrib.offset;
-			m_normal.count = vecCount;
-			m_normal.format = format;
+			m_normal.count = attrib.count;
+			m_normal.format = attrib.format;
 		}
-		else if (type == VERTEXATTRIB_TEXCOORD)
+		else if (attrib.nameId == StringIdConst24("_texCoord"))
 		{
 			m_texcoord.offset = attrib.offset;
-			m_texcoord.count = vecCount;
-			m_texcoord.format = format;
+			m_texcoord.count = attrib.count;
+			m_texcoord.format = attrib.format;
 		}
-		else if (type == VERTEXATTRIB_COLOR)
+		else if (attrib.nameId == StringIdConst24("_color"))
 		{
 			m_color.offset = attrib.offset;
-			m_color.count = vecCount;
-			m_color.format = format;
+			m_color.count = attrib.count;
+			m_color.format = attrib.format;
 		}
 
 		// TODO: add Tangent and Binormal

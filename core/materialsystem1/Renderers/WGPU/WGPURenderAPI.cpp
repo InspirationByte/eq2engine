@@ -164,7 +164,7 @@ void CWGPURenderAPI::ReloadShaderPackage(int id)
 	shaderInfo = {};
 
 	int filesFound = 0;
-	if (!ShaderInfo::ParseShaderInfo(shaderInfo, shaderPackFile, shaderInfoKvs, filesFound, false))
+	if (!ShaderInfo::ParseShaderInfo(shaderInfo, shaderPackFile, shaderInfoKvs, filesFound))
 	{
 		return;
 	}
@@ -985,6 +985,9 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 			}
 		}
 
+		ArrayCRef<int> vertexAttribIds = shaderInfo.GetVertexAttribIds(shaderInfo.modules[vertexShaderModuleIdx]);
+		BitArray usedVertexAttribs(PP_SL, vertexAttribIds.numElem());
+
 		for (const VertexLayoutDesc& vertexLayout : pipelineDesc.vertex.vertexLayout)
 		{
 			const int firstVertexAttrib = rhiVertexAttribList.numElem();
@@ -993,19 +996,41 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 				if (attrib.format == ATTRIBUTEFORMAT_NONE)
 					continue;
 
-				WGPUVertexAttribute vertAttr = {};
+				const int attribIdIdx = arrayFindIndexF(vertexAttribIds, [&](const int attribIdx) {
+					const ShaderInfo::VertexAttrib& shaderAttrib = shaderInfo.vertexAttribs[attribIdx];
+					return shaderAttrib.nameId == attrib.nameId;
+				});
+
+				if (attribIdIdx == -1)
+					continue;	// not used, check later
+
+				const ShaderInfo::VertexAttrib& shaderAttrib = shaderInfo.vertexAttribs[vertexAttribIds[attribIdIdx]];
+				usedVertexAttribs.setTrue(attribIdIdx);
+
+				WGPUVertexAttribute& vertAttr = rhiVertexAttribList.append();
 				vertAttr.format = g_wgpuVertexFormats[attrib.format][attrib.count - 1];
 				vertAttr.offset = attrib.offset;
-				vertAttr.shaderLocation = attrib.location;
-				rhiVertexAttribList.append(vertAttr);
+				vertAttr.shaderLocation = shaderAttrib.location;
 			}
 
-			WGPUVertexBufferLayout rhiVertexBufferLayout = {};
+			WGPUVertexBufferLayout& rhiVertexBufferLayout = rhiVertexBufferLayoutList.append();
+			rhiVertexBufferLayout.stepMode = g_wgpuVertexStepMode[vertexLayout.stepMode];
 			rhiVertexBufferLayout.arrayStride = vertexLayout.stride;
 			rhiVertexBufferLayout.attributeCount = rhiVertexAttribList.numElem() - firstVertexAttrib;
-			rhiVertexBufferLayout.attributes = &rhiVertexAttribList[firstVertexAttrib];
-			rhiVertexBufferLayout.stepMode = g_wgpuVertexStepMode[vertexLayout.stepMode];
-			rhiVertexBufferLayoutList.append(rhiVertexBufferLayout);
+			if(rhiVertexBufferLayout.attributeCount > 0)
+				rhiVertexBufferLayout.attributes = &rhiVertexAttribList[firstVertexAttrib];
+		}
+
+		if (usedVertexAttribs.numTrue() < vertexAttribIds.numElem())
+		{
+			for (int i = 0; i < vertexAttribIds.numElem(); ++i)
+			{
+				if (usedVertexAttribs[i])
+					continue;
+
+				const ShaderInfo::VertexAttrib& shaderAttrib = shaderInfo.vertexAttribs[vertexAttribIds[i]];
+				ASSERT_FAIL("Vertex attrib %s not used while creating pipeline %s:%s", shaderAttrib.name.ToCString(), shaderInfo.shaderName.ToCString(), shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString());
+			}
 		}
 
 		WGPUVertexState& rhiVertexState = rhiRenderPipelineDesc.vertex;
