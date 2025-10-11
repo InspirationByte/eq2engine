@@ -1315,22 +1315,31 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 				shaderBlobSec.AddValue(shaderInfo.entryPoints[result.entryPointIdx].name);
 				shaderBlobSec.AddValue(result.queryStr);
 
-				for (const ShaderInfo::VertexAttrib& vertAttribs : result.vertexAttribs)
+				if (result.kindFlag == SHADERKIND_VERTEX)
 				{
-					KVSection& vertAttribSec = shaderBlobSec.CreateSection(vertAttribs.name.ToCString());
-					vertAttribSec.AddValue(vertAttribs.location);
-					vertAttribSec.AddValue(vertAttribs.semantic);
+					KVSection& vertexSec = shaderBlobSec.CreateSection("Vertex");
+					vertexSec.AddValue(layout.name);
+					for (const ShaderInfo::VertexAttrib& vertAttribs : result.vertexAttribs)
+					{
+						KVSection& vertAttribSec = vertexSec.CreateSection(vertAttribs.name.ToCString());
+						vertAttribSec.AddValue(vertAttribs.location);
+						vertAttribSec.AddValue(vertAttribs.semantic);
+					}
 				}
 
-				for (const ShaderInfo::Binding& binding : result.bindings)
+				if (!result.bindings.isEmpty())
 				{
-					KVSection& bindingSec = shaderBlobSec.CreateSection(binding.name.ToCString());
-					bindingSec.AddValue(s_bindingTypeNames[binding.type]);
-					bindingSec.AddValue(GetRWFlagsString(binding.rwFlags));
-					bindingSec.AddValue(binding.descriptorSetIdx);
-					bindingSec.AddValue(binding.index);
-					bindingSec.AddValue(binding.rangeType);
-					bindingSec.AddValue(binding.registerIdx);
+					KVSection& bindingsSec = shaderBlobSec.CreateSection("Bindings");
+					for (const ShaderInfo::Binding& binding : result.bindings)
+					{
+						KVSection& entrySec = bindingsSec.CreateSection(binding.name.ToCString());
+						entrySec.AddValue(s_bindingTypeNames[binding.type]);
+						entrySec.AddValue(GetRWFlagsString(binding.rwFlags));
+						entrySec.AddValue(binding.descriptorSetIdx);
+						entrySec.AddValue(binding.index);
+						entrySec.AddValue(binding.rangeType);
+						entrySec.AddValue(binding.registerIdx);
+					}
 				}
 
 				// Write shader bytecode files
