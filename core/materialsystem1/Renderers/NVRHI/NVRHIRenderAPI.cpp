@@ -903,7 +903,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 					.setName(attrib.name.ToCString())
 					.setFormat(g_nvrhiVertexFormats[attrib.format][attrib.count - 1])
 					.setOffset(attrib.offset)
-					//.setBufferIndex(attrib.location)	// TODO: figure out!
+					//.setBufferIndex(vertexLayout.bufferIndex)	// TODO
 					.setIsInstanced(vertexLayout.stepMode == VERTEX_STEPMODE_INSTANCE)
 					.setElementStride(vertexLayout.stride);
 			}
