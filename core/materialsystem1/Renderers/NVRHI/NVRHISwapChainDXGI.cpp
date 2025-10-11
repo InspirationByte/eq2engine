@@ -27,6 +27,7 @@ CNVRHISwapChainDXGI::CNVRHISwapChainDXGI(const RenderWindowInfo& windowInfo, ITe
 		.setNumMipLevels(nvrhi::TextureSubresourceSet::AllMipLevels)
 		.setNumArraySlices(nvrhi::TextureSubresourceSet::AllArraySlices);
 	m_textureRef->m_rhiViews.append(rhiDefaultTexViewDesc);
+	m_textureRef->m_format = FORMAT_RGBA8;
 
 	m_dxgiSwapChainDesc = {};
 	m_dxgiSwapChainDesc.Width = 800;
@@ -41,9 +42,11 @@ CNVRHISwapChainDXGI::CNVRHISwapChainDXGI(const RenderWindowInfo& windowInfo, ITe
 	{
 	case nvrhi::Format::SRGBA8_UNORM:
 		m_dxgiSwapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		m_textureRef->m_format = MakeTexFormat(FORMAT_RGBA8, TEXFORMAT_FLAG_SRGB);
 		break;
 	case nvrhi::Format::SBGRA8_UNORM:
 		m_dxgiSwapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+		m_textureRef->m_format = MakeTexFormat(FORMAT_RGBA8, TEXFORMAT_FLAG_SWAP_RB | TEXFORMAT_FLAG_SRGB);
 		break;
 	default:
 		m_dxgiSwapChainDesc.Format = nvrhi::d3d12::convertFormat(m_swapChainFormat);
