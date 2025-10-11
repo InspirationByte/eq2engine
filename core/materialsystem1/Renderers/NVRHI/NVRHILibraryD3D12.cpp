@@ -283,7 +283,7 @@ ISwapChainPtr CNVRHIRenderLibD3D12::CreateSwapChain(const RenderWindowInfo& wind
 	dxgiFullScreenDesc.RefreshRate.Numerator = 0;
 	dxgiFullScreenDesc.RefreshRate.Denominator = 1;
 	dxgiFullScreenDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE;
-	dxgiFullScreenDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	dxgiFullScreenDesc.Scaling = DXGI_MODE_SCALING_STRETCHED;
 	dxgiFullScreenDesc.Windowed = false;
 
 	RefCountPtr<IDXGISwapChain1> pSwapChain1;

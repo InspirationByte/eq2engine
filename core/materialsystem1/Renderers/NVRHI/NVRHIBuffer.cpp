@@ -17,11 +17,21 @@ CNVRHIBuffer::~CNVRHIBuffer()
 
 CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* label)
 {
-	const int sizeInBytes = bufferInfo.elementSize * bufferInfo.elementCapacity;
-	const int writeDataSize = (bufferInfo.dataSize + 3) & ~3;
+	m_dbgName = label;
+
+	const bool isConstantOrUAV = (bufferUsageFlags & (BUFFERUSAGE_UNIFORM | BUFFERUSAGE_STORAGE));
+	int64 minAligment = 4;
+	if (bufferUsageFlags & BUFFERUSAGE_UNIFORM)
+		minAligment = max(minAligment, CNVRHIRenderAPI::Instance.GetCaps().minStorageBufferOffsetAlignment);
+	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)
+		minAligment = max(minAligment, CNVRHIRenderAPI::Instance.GetCaps().minStorageBufferOffsetAlignment);
+	const int64 minAlignmentMask = minAligment - 1;
+
+	const int64 sizeInBytes = bufferInfo.elementSize * bufferInfo.elementCapacity;
+	const int64 writeDataSize = (bufferInfo.dataSize + 3) & ~3;
 	const bool hasData = bufferInfo.data && bufferInfo.dataSize;
 
-	m_bufSize = (sizeInBytes + 3) & ~3;
+	m_bufSize = (sizeInBytes + minAlignmentMask) & ~minAlignmentMask;
 	m_usageFlags = bufferUsageFlags;
 
 	nvrhi::CpuAccessMode cpuAccessMode = nvrhi::CpuAccessMode::None;
@@ -42,22 +52,42 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 		.setByteSize(m_bufSize)
 		.setDebugName(label);
 
-	if (bufferUsageFlags & BUFFERUSAGE_COPY_DST)
+	rhiBufferDesc.setInitialState(nvrhi::ResourceStates::Common);
+	if(bufferUsageFlags & BUFFERUSAGE_COPY_DST)
 	{
 		rhiBufferDesc.setInitialState(nvrhi::ResourceStates::CopyDest);
 		rhiBufferDesc.keepInitialState = true;
 	}
-	if (bufferUsageFlags & BUFFERUSAGE_VERTEX)	rhiBufferDesc.setIsVertexBuffer(true);
-	if (bufferUsageFlags & BUFFERUSAGE_INDEX)	rhiBufferDesc.setIsIndexBuffer(true);
-	if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)rhiBufferDesc.setIsDrawIndirectArgs(true);
-	if (bufferUsageFlags & BUFFERUSAGE_UNIFORM)	rhiBufferDesc.setIsConstantBuffer(true);
+
+	m_needsTrackingState = rhiBufferDesc.keepInitialState == false;
+
+	if (bufferUsageFlags & BUFFERUSAGE_VERTEX)
+		rhiBufferDesc.setIsVertexBuffer(true);
+
+	if (bufferUsageFlags & BUFFERUSAGE_INDEX) 
+	{
+		rhiBufferDesc.setIsIndexBuffer(true);
+		//rhiBufferDesc.setCanHaveRawViews(true);
+		//rhiBufferDesc.setCanHaveTypedViews(true);
+	}
+	if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)
+		rhiBufferDesc.setIsDrawIndirectArgs(true);
+
+	if (bufferUsageFlags & BUFFERUSAGE_UNIFORM)	
+		rhiBufferDesc.setIsConstantBuffer(true);
+
 	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)
 	{
-		if(cpuAccessMode != nvrhi::CpuAccessMode::Write)
-			rhiBufferDesc.setCanHaveUAVs(true);
+		if (bufferUsageFlags & BUFFERUSAGE_COPY_DST)
+			rhiBufferDesc.setInitialState(nvrhi::ResourceStates::CopyDest);// | nvrhi::ResourceStates::UnorderedAccess);
+		//else
+		//	rhiBufferDesc.setInitialState(nvrhi::ResourceStates::UnorderedAccess);
+
+		//if (bufferUsageFlags & BUFFERUSAGE_COPY_SRC)
+		//	rhiBufferDesc.setCanHaveUAVs(true);
 
 		rhiBufferDesc.setCanHaveRawViews(true);
-		rhiBufferDesc.setCanHaveTypedViews(true); 
+		rhiBufferDesc.setCanHaveTypedViews(true);
 	}
 
 	rhiBufferDesc.debugName = label;
@@ -67,11 +97,15 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 	m_rhiBuffer = rhiDevice->createBuffer(rhiBufferDesc);
 	ASSERT_MSG(m_rhiBuffer, "Failed to create buffer %s", label);
 
+	//MsgInfo("NVRHI: created buffer %s - %lld bytes\n", GetDbgName(), sizeInBytes);
+
 	if (!m_rhiBuffer)
 		return;
 
 	if (hasData)
 	{
+		//MsgInfo("NVRHI: map and update buffer %s with %lld bytes (CNVRHIBuffer ctor)\n", GetDbgName(), writeDataSize);
+
 		void* outData = rhiDevice->mapBuffer(m_rhiBuffer, nvrhi::CpuAccessMode::Write);
 		ASSERT_MSG(outData, "Buffer mapped range is NULL");
 		memcpy(outData, bufferInfo.data, writeDataSize);
@@ -79,13 +113,19 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 	}
 }
 
+void CNVRHIBuffer::OnUpdated()
+{
+	if (!(m_usageFlags & BUFFERUSAGE_COPY_DST))
+		m_needsTrackingState = false; 
+}
+
 nvrhi::ResourceStates CNVRHIBuffer::GetNVRHIResourceStates() const
 {
 	// TODO: figure out resource states, D3D12 validation fails with RESOURCE_MANIPULATION ERROR #526: RESOURCE_BARRIER_INVALID_COMBINATION
 	const int bufferUsageFlags = m_usageFlags;
 	nvrhi::ResourceStates resStates = nvrhi::ResourceStates::Unknown;
-	//if (bufferUsageFlags & BUFFERUSAGE_COPY_DST) resStates = resStates | nvrhi::ResourceStates::CopyDest;
-	//if (bufferUsageFlags & BUFFERUSAGE_COPY_SRC) resStates = resStates | nvrhi::ResourceStates::CopySource;
+	if (bufferUsageFlags & BUFFERUSAGE_COPY_DST) resStates = resStates | nvrhi::ResourceStates::CopyDest;
+	if (bufferUsageFlags & BUFFERUSAGE_COPY_SRC) resStates = resStates | nvrhi::ResourceStates::CopySource;
 	if (bufferUsageFlags & BUFFERUSAGE_VERTEX)	resStates = resStates | nvrhi::ResourceStates::VertexBuffer;
 	if (bufferUsageFlags & BUFFERUSAGE_INDEX)	resStates = resStates | nvrhi::ResourceStates::IndexBuffer;
 	if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)resStates = resStates | nvrhi::ResourceStates::IndirectArgument;
@@ -115,15 +155,17 @@ void CNVRHIBuffer::Update(const void* data, int64 size, int64 offset)
 	nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList(rhiCmdListParams);
 	writeCmd->open();
 
-	if (m_firstUpdate)
+	if (m_needsTrackingState)
 	{
+		MsgInfo("NVRHI: tracked update buffer %s with %lld bytes (CNVRHIBuffer::Update)\n", GetDbgName(), writeDataSize);
 		writeCmd->beginTrackingBufferState(m_rhiBuffer, nvrhi::ResourceStates::Common);
 		writeCmd->writeBuffer(m_rhiBuffer, data, writeDataSize, offset);
 		writeCmd->setPermanentBufferState(m_rhiBuffer, GetNVRHIResourceStates());
-		m_firstUpdate = false;
+		OnUpdated();
 	}
 	else
 	{
+		MsgInfo("NVRHI: un-tracked update buffer %s with %lld bytes (CNVRHIBuffer::Update)\n", GetDbgName(), writeDataSize);
 		writeCmd->writeBuffer(m_rhiBuffer, data, writeDataSize, offset);
 	}
 

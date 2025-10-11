@@ -121,7 +121,7 @@ void CNVRHIRenderPassRecorder::SetViewport(const AARectangle& rectangle, float m
 {
 	const Vector2D rectLT = rectangle.GetLeftTop();
 	const Vector2D rectRB = rectangle.GetRightBottom();
-	m_rhiViewport = nvrhi::Viewport(rectLT.x, rectRB.y, rectLT.y, rectRB.y, minDepth, maxDepth);
+	m_rhiViewport = nvrhi::Viewport(rectLT.x, rectRB.x, rectLT.y, rectRB.y, minDepth, maxDepth);
 	m_graphicsStateDirty = true;
 }
 

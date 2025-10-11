@@ -25,14 +25,19 @@ public:
 
 	nvrhi::BufferHandle		GetNVRHIBufferHandle() const { return m_rhiBuffer; }
 	nvrhi::ResourceStates	GetNVRHIResourceStates() const;
-	bool					IsFirstUpdate() const { return m_firstUpdate; }
-	void					OnUpdated() { m_firstUpdate = false; }
+
+	bool					IsNeedsTrackingState() const { return m_needsTrackingState; }
+	void					OnUpdated();
+
 	int						GetUsageFlags() const { return m_usageFlags; }
 
+	const char*				GetDbgName() const { return m_dbgName; }
 private:
+	EqString	m_dbgName;
+
 	nvrhi::BufferHandle	m_rhiBuffer{ nullptr };
 	int			m_bufSize{ 0 };
 	int			m_usageFlags{ 0 };
 	bool		m_isLocked{ false };
-	bool		m_firstUpdate{ true };
+	bool		m_needsTrackingState{ true };
 };

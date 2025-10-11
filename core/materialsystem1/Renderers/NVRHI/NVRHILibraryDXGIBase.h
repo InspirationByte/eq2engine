@@ -20,6 +20,8 @@ class CNVRHIRenderLibDXGIBase
 {
 	friend class CNVRHISwapChainDXGI;
 public:
+	static CNVRHIRenderLibDXGIBase* Instance;
+
 	CNVRHIRenderLibDXGIBase();
 
 	void			ExitAPI();
@@ -40,6 +42,7 @@ public:
 	bool			CaptureScreenshot(CImage &img);
 
 	virtual ISwapChainPtr	CreateSwapChain(const RenderWindowInfo& windowInfo);
+	virtual bool			CreateSwapchainTargets(CNVRHISwapChainDXGI* swapChain) const = 0;
 protected:
 
 	// Find an adapter whose name contains the given string.

@@ -23,8 +23,6 @@
 #include "../RenderWorker.h"
 #include "NVRHIComputePassRecorder.h"
 
-#pragma optimize("", off)
-
 constexpr EqStringRef s_shaderKindVertexName = "Vertex";
 constexpr EqStringRef s_shaderKindFragmentName = "Fragment";
 constexpr EqStringRef s_shaderKindComputeName = "Compute";
@@ -254,9 +252,11 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 
 	const int arrayLayerCount = isCubeMap ? ITexture::CubeArraySlice(0, newSize.arraySize) : newSize.arraySize;
 	rhiTextureDesc
+		.setDebugName(texture->GetName())
 		.setWidth((uint)newSize.width)
 		.setHeight((uint)newSize.height)
-		.setArraySize((uint)newSize.arraySize);
+		.setArraySize((uint)newSize.arraySize)
+		.setIsRenderTarget(true);
 
 	if (flags & TEXFLAG_CUBEMAP)
 	{
@@ -403,7 +403,7 @@ static void FillNVRHIBinding(nvrhi::IDevice* rhiDevice, const BindGroupDesc::Ent
 				CNVRHIRenderAPI::Instance.GetCaps().minUniformBufferOffsetAlignment :
 				CNVRHIRenderAPI::Instance.GetCaps().minStorageBufferOffsetAlignment;
 
-			ASSERT_MSG((bindGroupEntry.buffer.offset & CNVRHIRenderAPI::Instance.GetCaps().minUniformBufferOffsetAlignment) == 0, "Invalid buffer offset alignment");
+			//ASSERT_MSG((bindGroupEntry.buffer.offset & CNVRHIRenderAPI::Instance.GetCaps().minUniformBufferOffsetAlignment) == 0, "Invalid buffer offset alignment");
 
 			int64 minAligmentMask = minAligment - 1;
 			const int alignedSize = min(bindGroupEntry.buffer.size + minAligmentMask & ~minAligmentMask, buffer->GetSize() - bindGroupEntry.buffer.offset);
@@ -889,7 +889,11 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 			return nullptr;
 		}
 
+		ArrayCRef<int> vertexAttribIds = shaderInfo.GetVertexAttribIds(shaderInfo.modules[vertexShaderModuleIdx]);
+		BitArray usedVertexAttribs(PP_SL, vertexAttribIds.numElem());
+
 		FixedArray<nvrhi::VertexAttributeDesc, 48> rhiVertexAttribList;
+		int bufferIndex = 0;
 		for (const VertexLayoutDesc& vertexLayout : pipelineDesc.vertex.vertexLayout)
 		{
 			for (const VertexLayoutDesc::AttribDesc& attrib : vertexLayout.attributes)
@@ -897,15 +901,39 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 				if (attrib.format == ATTRIBUTEFORMAT_NONE)
 					continue;
 
+				const int attribIdIdx = arrayFindIndexF(vertexAttribIds, [&](const int attribIdx) {
+					const ShaderInfo::VertexAttrib& shaderAttrib = shaderInfo.vertexAttribs[attribIdx];
+					return shaderAttrib.nameId == attrib.nameId;
+				});
+
+				if (attribIdIdx == -1)
+					continue;	// not used, check later
+
+				const ShaderInfo::VertexAttrib& shaderAttrib = shaderInfo.vertexAttribs[vertexAttribIds[attribIdIdx]];
+				usedVertexAttribs.setTrue(attribIdIdx);
+
 				ASSERT_MSG(!rhiVertexAttribList.isFull(), "Too many vertex attributes");
 
 				auto rhiVertAttr = rhiVertexAttribList.append()
-					.setName(attrib.name.ToCString())
+					.setName(shaderAttrib.semantic.ToCString())
 					.setFormat(g_nvrhiVertexFormats[attrib.format][attrib.count - 1])
 					.setOffset(attrib.offset)
-					//.setBufferIndex(vertexLayout.bufferIndex)	// TODO
+					.setBufferIndex(bufferIndex)	// TODO
 					.setIsInstanced(vertexLayout.stepMode == VERTEX_STEPMODE_INSTANCE)
 					.setElementStride(vertexLayout.stride);
+			}
+			++bufferIndex;
+		}
+
+		if (usedVertexAttribs.numTrue() < vertexAttribIds.numElem())
+		{
+			for (int i = 0; i < vertexAttribIds.numElem(); ++i)
+			{
+				if (usedVertexAttribs[i])
+					continue;
+
+				const ShaderInfo::VertexAttrib& shaderAttrib = shaderInfo.vertexAttribs[vertexAttribIds[i]];
+				ASSERT_FAIL("Vertex attrib %s not used while creating pipeline %s:%s", shaderAttrib.name.ToCString(), shaderInfo.shaderName.ToCString(), shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString());
 			}
 		}
 

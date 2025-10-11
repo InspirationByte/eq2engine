@@ -27,6 +27,8 @@
 
 DECLARE_CVAR(dxgi_adapter, "", "Graphics adapter to use", CV_ARCHIVE);
 
+CNVRHIRenderLibDXGIBase* CNVRHIRenderLibDXGIBase::Instance = nullptr;
+
 RefCountPtr<IDXGIAdapter> CNVRHIRenderLibDXGIBase::FindAdapter(const wchar_t* targetName)
 {
 	RefCountPtr<IDXGIAdapter> rhiTargetAdapter;
@@ -80,6 +82,7 @@ RefCountPtr<IDXGIAdapter> CNVRHIRenderLibDXGIBase::FindAdapter(const wchar_t* ta
 
 CNVRHIRenderLibDXGIBase::CNVRHIRenderLibDXGIBase()
 {
+	CNVRHIRenderLibDXGIBase::Instance = this;
 	m_endFrameWait.Raise();
 }
 
@@ -136,7 +139,7 @@ ISwapChainPtr CNVRHIRenderLibDXGIBase::CreateSwapChain(const RenderWindowInfo& w
 
 	ASSERT_MSG(justCreated, "%s texture already has been created", texName.ToCString());
 
-	CRefPtr<CNVRHISwapChainDXGI> swapChain = CRefPtr_new(CNVRHISwapChainDXGI, this, windowInfo, swapChainTexture);
+	CRefPtr<CNVRHISwapChainDXGI> swapChain = CRefPtr_new(CNVRHISwapChainDXGI, windowInfo, swapChainTexture);
 
 	return ISwapChainPtr(swapChain);
 }

@@ -8,6 +8,7 @@
 #include "core/core_common.h"
 #include "NVRHIBackend.h"
 #include "NVRHISwapChainDXGI.h"
+#include "NVRHILibraryDXGIBase.h"
 #include "NVRHIRenderDefs.h"
 #include <nvrhi/d3d12.h>
 
@@ -18,9 +19,8 @@ constexpr int SWAP_CHAIN_BUFFERS = 3;
 
 //DECLARE_CVAR_E(dxgi_maxFrameLatency);
 
-CNVRHISwapChainDXGI::CNVRHISwapChainDXGI(CNVRHIRenderLibDXGIBase* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture)
-	: m_host(host)
-	, m_winInfo(windowInfo)
+CNVRHISwapChainDXGI::CNVRHISwapChainDXGI(const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture)
+	: m_winInfo(windowInfo)
 {
 	m_textureRef = CRefPtr<CNVRHITexture>(static_cast<CNVRHITexture*>(swapChainTexture.Ptr()));
 	auto rhiDefaultTexViewDesc = nvrhi::TextureSubresourceSet()
@@ -82,17 +82,41 @@ void CNVRHISwapChainDXGI::GetBackbufferSize(int& wide, int& tall) const
 void CNVRHISwapChainDXGI::SetVSync(bool enable)
 {
 	if((m_vSync > 0) != enable)
-		m_vSync = TOGGLE_BIT | (int)enable;
+		m_vSync = (int)enable;
 }
 
 bool CNVRHISwapChainDXGI::UpdateResize()
 {
-	if ((m_vSync & TOGGLE_BIT) == 0 && m_textureRef->GetWidth() == m_dxgiSwapChainDesc.Width && m_textureRef->GetHeight() == m_dxgiSwapChainDesc.Height)
+	if (m_textureRef->GetWidth() == m_dxgiSwapChainDesc.Width && m_textureRef->GetHeight() == m_dxgiSwapChainDesc.Height)
 		return true;
 
-	m_vSync &= ~TOGGLE_BIT;
+	// Make sure all frame is finished
+	nvrhi::DeviceHandle nvrhiDevice = CNVRHIRenderLibDXGIBase::Instance->m_nvrhiDevice;
+	if (!nvrhiDevice->waitForIdle())
+		return false;
+	nvrhiDevice->runGarbageCollection();
+
+	// release render targets
+	m_d3d12SwapChainBuffers.clear();
+	m_rhiSwapChainTextures.clear();
+	m_textureRef->m_rhiTexture = nullptr;
 
 	m_textureRef->SetDimensions(m_dxgiSwapChainDesc.Width, m_dxgiSwapChainDesc.Height);
+
+	const HRESULT hr = m_dxgiSwapChain->ResizeBuffers(m_dxgiSwapChainDesc.BufferCount,
+		m_dxgiSwapChainDesc.Width,
+		m_dxgiSwapChainDesc.Height,
+		m_dxgiSwapChainDesc.Format,
+		m_dxgiSwapChainDesc.Flags);
+
+	if (FAILED(hr))
+	{
+		MsgError("CNVRHISwapChainDXGI UpdateResize failed\n");
+		return false;
+	}
+
+	CNVRHIRenderLibDXGIBase::Instance->CreateSwapchainTargets(this);
+	m_textureRef->m_rhiTexture = nullptr;
 
 	return true;
 }
@@ -106,7 +130,11 @@ bool CNVRHISwapChainDXGI::SetBackbufferSize(int wide, int tall)
 	 
 bool CNVRHISwapChainDXGI::SwapBuffers()
 {
-	//if (m_surface)
-	//	wgpuSurfacePresent(m_surface);
+	UINT presentFlags = 0;
+	//if (m_vSync == 0 && m_swapChainTearingSupported)
+	//	presentFlags |= DXGI_PRESENT_ALLOW_TEARING;
+
+	m_dxgiSwapChain->Present(m_vSync, presentFlags);
+
 	return true;
 }

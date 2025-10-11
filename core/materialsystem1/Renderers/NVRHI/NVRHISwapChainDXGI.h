@@ -24,7 +24,7 @@ public:
 	friend class CNVRHIRenderLibD3D12;
 
 	~CNVRHISwapChainDXGI();
-	CNVRHISwapChainDXGI(CNVRHIRenderLibDXGIBase* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture);
+	CNVRHISwapChainDXGI(const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture);
 
 	void			SetVSync(bool enable);
 
@@ -50,9 +50,6 @@ protected:
 	CRefPtr<CNVRHITexture>		m_textureRef;
 	nvrhi::Format				m_swapChainFormat{ nvrhi::Format::RGBA8_UNORM };
 
-	CNVRHIRenderLibDXGIBase*	m_host{ nullptr };
 	RenderWindowInfo			m_winInfo;
-
-	//WGPUSurface				m_surface{ nullptr };
-	int							m_vSync{ -1 };
+	int							m_vSync{ 0 };
 };

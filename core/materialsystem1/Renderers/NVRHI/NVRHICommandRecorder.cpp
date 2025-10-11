@@ -22,13 +22,14 @@ void CNVRHICommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, in
 	ASSERT_MSG(bufferImpl->GetUsageFlags() & BUFFERUSAGE_COPY_DST, "buffer must have BUFFERUSAGE_COPY_DST usage bit");
 	ASSERT_MSG(offset >= 0 && offset + writeDataSize <= bufferImpl->GetSize(), "Offset and/or Size outside buffer range");
 
-	if (bufferImpl->IsFirstUpdate())
+	if (bufferImpl->IsNeedsTrackingState())
 	{
 		const nvrhi::ResourceStates rhiResStates = bufferImpl->GetNVRHIResourceStates();
 		nvrhi::ResourceStates rhiTrackingState = nvrhi::ResourceStates::Common;
-		if(static_cast<int>(rhiResStates) & static_cast<int>(nvrhi::ResourceStates::VertexBuffer | nvrhi::ResourceStates::IndexBuffer | nvrhi::ResourceStates::IndirectArgument))
-			rhiTrackingState = nvrhi::ResourceStates::CopyDest;
+		//if(static_cast<int>(rhiResStates) & static_cast<int>(nvrhi::ResourceStates::VertexBuffer | nvrhi::ResourceStates::IndexBuffer | nvrhi::ResourceStates::IndirectArgument))
+		//	rhiTrackingState = nvrhi::ResourceStates::CopyDest;
 
+		//MsgInfo("NVRHI: tracked write to buffer %s with %lld bytes (%s cmd)\n", bufferImpl->GetDbgName(), writeDataSize, m_dbgName.ToCString());
 		m_rhiCommandList->beginTrackingBufferState(bufferImpl->GetNVRHIBufferHandle(), rhiTrackingState);
 		m_rhiCommandList->writeBuffer(bufferImpl->GetNVRHIBufferHandle(), data, writeDataSize, offset);
 		m_rhiCommandList->setPermanentBufferState(bufferImpl->GetNVRHIBufferHandle(), rhiResStates);
@@ -37,7 +38,10 @@ void CNVRHICommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, in
 		bufferImpl->OnUpdated();
 	}
 	else
+	{
+		//MsgInfo("NVRHI: un-tracked write to buffer %s with %lld bytes (%s cmd)\n", bufferImpl->GetDbgName(), writeDataSize, m_dbgName.ToCString());
 		m_rhiCommandList->writeBuffer(bufferImpl->GetNVRHIBufferHandle(), data, writeDataSize, offset);
+	}	
 }
 
 void CNVRHICommandRecorder::CopyBufferToBuffer(IGPUBuffer* source, int64 sourceOffset, IGPUBuffer* destination, int64 destinationOffset, int64 size) const
@@ -61,6 +65,7 @@ void CNVRHICommandRecorder::CopyBufferToBuffer(IGPUBuffer* source, int64 sourceO
 	ASSERT_MSG(sourceOffset >= 0 && sourceOffset + copyDataSize <= sourceImpl->GetSize(), "Offset and/or Size outside source buffer range");
 	ASSERT_MSG(destinationOffset >= 0 && destinationOffset + copyDataSize <= destinationImpl->GetSize(), "Offset and/or Size outside destination buffer range");
 
+	//MsgInfo("NVRHI: copy buffer %s to %s (ofs %lld of %lld bytes) (%s cmd)\n", sourceImpl->GetDbgName(), destinationImpl->GetDbgName(), destinationOffset, copyDataSize, m_dbgName.ToCString());
 	m_rhiCommandList->copyBuffer(destinationImpl->GetNVRHIBufferHandle(), destinationOffset, sourceImpl->GetNVRHIBufferHandle(), sourceOffset, copyDataSize);
 }
 
