@@ -1156,7 +1156,9 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 					{
 						CMemoryStream shaderBlobData(PP_SL);
 						shaderBlobData.Open(FS_OPEN_WRITE | FS_OPEN_READ);
-						shaderBlobData.AppendStream(shaderFile);
+						int size;
+						shaderFile->ReadObj(size);
+						shaderBlobData.AppendStream(shaderFile, size);
 						int _zero = 0;
 						shaderBlobData.WriteObj(&_zero);
 
@@ -1180,7 +1182,9 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 					{
 						CMemoryStream shaderBlobData(PP_SL);
 						shaderBlobData.Open(FS_OPEN_WRITE | FS_OPEN_READ);
-						shaderBlobData.AppendStream(shaderFile);
+						int size;
+						shaderFile->ReadObj(size);
+						shaderBlobData.AppendStream(shaderFile, size);
 						int _zero = 0;
 						shaderBlobData.WriteObj(&_zero);
 
