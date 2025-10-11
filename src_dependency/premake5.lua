@@ -8,7 +8,6 @@ if IS_ANDROID then
 else
 	include(DependencyPath.openal)
 	include(DependencyPath.libsdl)
-	include "shaderc"
 	include "wxWidgets"
 end
 

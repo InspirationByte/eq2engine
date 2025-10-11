@@ -1,4 +1,3 @@
-#include <shaderc/shaderc.hpp>	// TODO: remove some day
 #include <slang.h>
 #include <slang-com-helper.h>
 
@@ -38,10 +37,6 @@ ShaderIncluderImpl::IncludeResult* ShaderIncluderImpl::GetInclude(const char* fi
 
 		result->includeName = fileName;
 		result->isError = false;
-		result->resultData.content = (const char*)result->includeContent.GetBasePointer();
-		result->resultData.content_length = result->includeContent.Tell();
-		result->resultData.source_name = result->includeName;
-		result->resultData.source_name_length = result->includeName.Length();
 	}
 	else if (!CString::Compare(fileName, "VertexLayout"))
 	{
@@ -142,18 +137,11 @@ ShaderIncluderImpl::IncludeResult* ShaderIncluderImpl::TryOpenIncludeFile(const 
 		result.includeContent.WriteObj(_zero);
 		result.includeContent.Seek(-1, FS_SEEK_CUR);
 		result.isError = false;
-
-		result.resultData.content = (const char*)result.includeContent.GetBasePointer();
-		result.resultData.content_length = result.includeContent.Tell();
-		result.resultData.source_name = result.includeName;
-		result.resultData.source_name_length = result.includeName.Length();
 		return &result;
 	}
 
 	result.includeContent.Open(FS_OPEN_READ | FS_OPEN_WRITE);
 	result.includeContent.Print("Could not open %s", fileName);
-	result.resultData.content = (const char*)result.includeContent.GetBasePointer();
-	result.resultData.content_length = result.includeContent.Tell();
 
 	// leave source_name and source_name_length empty
 	return &result;
@@ -176,25 +164,6 @@ void ShaderIncluderImpl::ReleaseInclude(IncludeResult* data)
 	}
 }
 
-//----------------------------------------------
-
-ShadercIncluder::ShadercIncluder(ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths)
-	: ShaderIncluderImpl(shaderInfo, includePaths)
-{
-}
-
-void ShadercIncluder::ReleaseInclude(shaderc_include_result* data)
-{
-	IncludeResult* incRes = reinterpret_cast<IncludeResult*>(data);
-	ShaderIncluderImpl::ReleaseInclude(incRes);
-}
-
-shaderc_include_result* ShadercIncluder::GetInclude(const char* requested_source, shaderc_include_type type, const char* requesting_source, size_t include_depth)
-{
-	IncludeResult* result = ShaderIncluderImpl::GetInclude(requested_source, type == shaderc_include_type_relative, fnmPathExtractPath(requesting_source));
-
-	return result ? &result->resultData : nullptr;
-}
 
 //----------------------------------------------
 
@@ -226,7 +195,7 @@ SLANG_NO_THROW SlangResult SLANG_MCALL SlangFileSystemIncluder::loadFile(char co
 	EqString fileName = fnmRemoveCommonPath(basePath, mbcFilename);
 
 	IncludeResult* result = ShaderIncluderImpl::GetInclude(fileName, true, basePath);
-	if (result->resultData.source_name == nullptr)
+	if (result->isError)
 	{
 		ReleaseInclude(result);
 		return SLANG_E_NOT_FOUND;

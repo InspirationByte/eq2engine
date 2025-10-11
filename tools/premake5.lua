@@ -67,32 +67,19 @@ project "texcooker"
 	
 ----------------------------------------------
 -- Shader cooker
-
-local VULKAN_SDK_LOCATION = os.getenv("VULKAN_SDK")	-- TODO: remove
-
-if VULKAN_SDK_LOCATION ~= nil and VULKAN_SDK_LOCATION ~= "" then
-	project "shadercooker"
-		kind "ConsoleApp"
-		properties { "unitybuild", "tools", "app" }
-		uses {
-			"corelib", "frameworkLib",
-			"e2Core",
-			"dpkLib",
-			"shaderc",
-			"slang"
-		}
-		files {
-			"shadercooker/*.cpp",
-			"shadercooker/*.h"
-		}
-		filter "system:Windows"
-			links {
-				"d3dcompiler",
-				"dxcompiler"
-			}
-else
-	print("WARNING: Vulkan SDK is missing (env VULKAN_SDK not found), ShaderCooker will not be built")
-end
+project "shadercooker"
+	kind "ConsoleApp"
+	properties { "unitybuild", "tools", "app" }
+	uses {
+		"corelib", "frameworkLib",
+		"e2Core",
+		"dpkLib",
+		"slang"
+	}
+	files {
+		"shadercooker/*.cpp",
+		"shadercooker/*.h"
+	}
 
 if ENABLE_GUI_TOOLS then
 	

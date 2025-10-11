@@ -5,7 +5,6 @@
 // Description: Shader module compiler
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <shaderc/shaderc.hpp>	// TODO: remove some day
 #include <slang.h>
 #include <slang-com-ptr.h>
 #include <slang-com-helper.h>
@@ -75,8 +74,10 @@ private:
 	void				InitShaderVariants(ShaderInfo& shaderInfo, int baseVariant, const KVSection& section);
 	void				ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob);
 
-	bool				CompileShaderShadercSpirV(ShaderPackageCompileData& compileData, int entryPointIdx, int vertLayoutIdx, EqStringRef queryStr, ArrayRef<CompileTargetData> targetData, Array<ShaderInfo::Binding>& bindings);
-	bool				CompileShaderSlang(ShaderPackageCompileData& compileData, int entryPointIdx, int vertLayoutIdx, EqStringRef queryStr, ArrayRef<CompileTargetData> targetData, Array<ShaderInfo::Binding>& bindings);
+	bool				CompileShaderSlang(ShaderPackageCompileData& compileData, 
+											int entryPointIdx, int vertLayoutIdx, EqStringRef queryStr, 
+											ArrayRef<CompileTargetData> targetData, 
+											Array<ShaderInfo::Binding>& bindings, Array<ShaderInfo::VertexAttrib>& vertexAttribs);
 
 	void				AddOrReferenceCompilationResult(ShaderInfo& shaderInfo, ShaderInfo::Result& outResult, CompileTargetData& targetData, int entryPointIdx, int vertLayoutIdx, EqStringRef queryStr);
 
@@ -698,104 +699,14 @@ static void ProcessIncludesRecursively(const char* fileName, const char* source,
 	}
 }
 
-// this build root signature
-static void ParseShaderResourceBindings(Array<ShaderInfo::Binding>& bindings, EShaderKind shaderKind, const char* name, char* source, int length)
-{
-	if (CString::CompareCaseIns(name, "ShaderCooker") == 0)
-		return;
-
-	Tokenizer tokenizer(2);
-	static const char BIND_MARKER[] = "__sc_bind__";
-
-	char* bindBegin = CString::SubString((char*)source, BIND_MARKER);
-	while (bindBegin)
-	{
-		tokenizer.setString(bindBegin);
-		char* tok = tokenizer.next();
-
-		ShaderInfo::Binding& newBinding = bindings.append();
-		tok = tokenizer.next();
-		if (*tok == '(')
-		{
-			tok = tokenizer.next();
-
-			{
-				newBinding.descriptorSetIdx = atoi(tok);
-				tok = tokenizer.next();
-				if (*tok != ',')
-				{
-					ASSERT_FAIL("%s* expects value after comma\n", BIND_MARKER, name);
-					bindBegin = CString::SubString(bindBegin + sizeof(BIND_MARKER), BIND_MARKER);
-					continue;
-				}
-				tok = tokenizer.next();
-			}
-
-			newBinding.index = atoi(tok);
-
-			tok = tokenizer.next();
-
-			// skip extra arguments (image formats etc)
-			while (*tok != ')')
-				tok = tokenizer.next();
-
-			// replace bind decl with spaces to make valid source file again (see GLSLBoilerPlate/HLSLBoilerPlate)
-			{
-				const int tokPos = tokenizer.getPos();
-				for (int i = 0; i <= tokPos; ++i)
-					bindBegin[i] = ' ';
-			}
-
-			tok = tokenizer.next();
-
-			// skip this pointless keyword
-			if (!CString::Compare(tok, "uniform"))
-				tok = tokenizer.next();
-
-			if (!CString::Compare(tok, "readonly"))
-			{
-				newBinding.rwFlags = RWFLAG_READ;
-				tok = tokenizer.next();
-			}
-			else if (!CString::Compare(tok, "writeonly"))
-			{
-				newBinding.rwFlags = RWFLAG_WRITE;
-				tok = tokenizer.next();
-			}
-
-			// skip this pointless keyword
-			if (!CString::Compare(tok, "uniform"))
-				tok = tokenizer.next();
-
-			if (!CString::Compare(tok, "image1D") || !CString::Compare(tok, "image2D") || !CString::Compare(tok, "image3D") || !CString::Compare(tok, "imageCube")
-				|| !CString::Compare(tok, "image1DArray") || !CString::Compare(tok, "image2DArray") || !CString::Compare(tok, "image3DArray") || !CString::Compare(tok, "imageCubeArray"))
-				newBinding.type = BINDENTRY_STORAGETEXTURE;
-			else if (!CString::Compare(tok, "texture1D") || !CString::Compare(tok, "texture2D") || !CString::Compare(tok, "texture3D") || !CString::Compare(tok, "textureCube")
-				|| !CString::Compare(tok, "texture1DArray") || !CString::Compare(tok, "texture2DArray") || !CString::Compare(tok, "texture3DArray") || !CString::Compare(tok, "textureCubeArray"))
-				newBinding.type = BINDENTRY_TEXTURE;
-			else if (!CString::Compare(tok, "sampler"))
-				newBinding.type = BINDENTRY_SAMPLER;
-			else if (!CString::Compare(tok, "buffer"))
-				newBinding.type = BINDENTRY_BUFFER;
-			else // everything else is a uniform buffer
-			{
-				newBinding.type = BINDENTRY_BUFFER;
-				newBinding.rwFlags = RWFLAG_UNIFORM;
-			}
-
-			if(newBinding.type != BINDENTRY_BUFFER)
-				tok = tokenizer.next();
-
-			newBinding.name = tok;
-		}
-
-		bindBegin = CString::SubString(bindBegin + sizeof(BIND_MARKER), BIND_MARKER);
-	}
-}
 
 static Threading::CEqMutex s_slangMutex;
 
-bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, int entryPointIdx, int vertLayoutIdx, EqStringRef queryStr, ArrayRef<CompileTargetData> targetData, Array<ShaderInfo::Binding>& bindings)
+bool CShaderCooker::CompileShaderSlang(
+	ShaderPackageCompileData& compileData, 
+	int entryPointIdx, int vertLayoutIdx, EqStringRef queryStr,
+	ArrayRef<CompileTargetData> targetData,
+	Array<ShaderInfo::Binding>& bindings, Array<ShaderInfo::VertexAttrib>& vertexAttribs)
 {
 	using namespace Slang;
 	using namespace Threading;
@@ -968,9 +879,10 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 		return false;
 	}
 
+	slang::ShaderReflection* shaderReflection = slang::ShaderReflection::get(slangCompileRequest);
+
 	// construct bindings for PipelineLayout
 	{
-		slang::ShaderReflection* shaderReflection = slang::ShaderReflection::get(slangCompileRequest);
 		slang::VariableLayoutReflection* varLayoutReflection = shaderReflection->getGlobalParamsVarLayout();
 		slang::TypeLayoutReflection* typeLayoutReflection = varLayoutReflection->getTypeLayout();
 
@@ -1060,6 +972,7 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 					if (type->getKind() == slang::TypeReflection::Kind::Struct || type->getKind() == slang::TypeReflection::Kind::Array)
 						continue;
 					parseResourceBinding(param, type, paramName, bindingRangeType);
+					break;
 				}
 
 				break;
@@ -1108,6 +1021,46 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 		//}
 	}
 
+	// get vertex layout
+	if (entryPoint.kind == SHADERKIND_VERTEX)
+	{
+		slang::EntryPointReflection* slangEntryPointReflection = shaderReflection->getEntryPointByIndex(0);
+		const int inputParamCount = slangEntryPointReflection->getParameterCount();
+		for (int i = 0; i < inputParamCount; ++i)
+		{
+			slang::VariableLayoutReflection* param = slangEntryPointReflection->getParameterByIndex(i);
+			slang::TypeReflection* type = param->getType();
+			switch (type->getKind())
+			{
+			case slang::TypeReflection::Kind::Struct:
+			{
+				// check for first field in struct
+				auto layout = param->getTypeLayout();
+				for (int f = 0; f < layout->getFieldCount(); f++)
+				{
+					auto field = layout->getFieldByIndex(f);
+					auto type = field->getType();
+					if (type->getKind() == slang::TypeReflection::Kind::Struct || type->getKind() == slang::TypeReflection::Kind::Array)
+						continue;
+
+					ShaderInfo::VertexAttrib& attrib = vertexAttribs.append();
+					attrib.name = field->getName();
+					attrib.semantic = field->getSemanticName();
+					attrib.location = param->getBindingIndex() + field->getBindingIndex();
+				}
+				break;
+			}
+			default:
+			{
+				ShaderInfo::VertexAttrib& attrib = vertexAttribs.append();
+				attrib.name = param->getName();
+				attrib.semantic = param->getSemanticName();
+				attrib.location = param->getBindingIndex();
+			}
+			}
+		}
+	}
+
 	for (CompileTargetData& tgtData : targetData)
 	{
 		ComPtr<slang::IComponentType> slangEntryPoint;
@@ -1153,7 +1106,6 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 		blobData.Open((uint8_t*)slangTargetBlob->getBufferPointer(), slangTargetBlob->getBufferSize());
 
 		const int blobSize = blobData.GetSize();
-
 		tgtData.resultData.Open(FS_OPEN_WRITE);
 
 		// store blob size and blob itself
@@ -1166,134 +1118,6 @@ bool CShaderCooker::CompileShaderSlang(ShaderPackageCompileData& compileData, in
 
 	return true;
 }
-
-bool CShaderCooker::CompileShaderShadercSpirV(ShaderPackageCompileData& compileData, int entryPointIdx, int vertLayoutIdx, EqStringRef queryStr, ArrayRef<CompileTargetData> targetData, Array<ShaderInfo::Binding>& bindings)
-{
-	ASSERT(targetData[0].type == SHADERMODULE_SPIRV);
-
-	ShaderInfo& shaderInfo = compileData.shaderInfo;
-	const ShaderInfo::EntryPoint& entryPoint = shaderInfo.entryPoints[entryPointIdx];
-	const ShaderInfo::VertLayout& vertexLayout = shaderInfo.vertexLayouts[vertLayoutIdx];
-
-	EqStringRef kindMacroStr;
-	EqStringRef entryPointPrefix;
-	shaderc_shader_kind shaderCKind;
-	if (entryPoint.kind == SHADERKIND_VERTEX)
-	{
-		kindMacroStr = "VERTEX";
-		shaderCKind = shaderc_vertex_shader;
-	}
-	else if (entryPoint.kind == SHADERKIND_FRAGMENT)
-	{
-		kindMacroStr = "FRAGMENT";
-		shaderCKind = shaderc_fragment_shader;
-	}
-	else if (entryPoint.kind == SHADERKIND_COMPUTE)
-	{
-		kindMacroStr = "COMPUTE";
-		shaderCKind = shaderc_compute_shader;
-	}
-	
-	shaderc::CompileOptions options;
-	{
-		std::unique_ptr<ShadercIncluder> includer = std::make_unique<ShadercIncluder>(shaderInfo, m_targetProps.includePaths);
-		includer->SetVertexLayout(vertexLayout.name);
-		options.SetIncluder(std::move(includer));
-	}
-	options.SetSourceLanguage(s_sourceLanguage[shaderInfo.sourceType]);
-	options.AddMacroDefinition(kindMacroStr.ToCString());
-
-	// add vertex layout defines
-	for (int i = 0; i < shaderInfo.vertexLayouts.numElem(); ++i)
-	{
-		const ShaderInfo::VertLayout& layout = shaderInfo.vertexLayouts[i];
-		const int vertexId = layout.aliasOf != -1 ? layout.aliasOf : i;
-
-		options.AddMacroDefinition(EqString::Format("VID_%s", layout.name).ToCString(), EqString::Format("%u", StringId24(shaderInfo.vertexLayouts[vertexId].name)).ToCString());
-	}
-	options.AddMacroDefinition("CURRENT_VERTEX_ID", EqString::Format("%u", StringId24(vertexLayout.name)).ToCString());
-
-	// add macros from query string
-	if (queryStr)
-	{
-		char* macros = const_cast<char*>(queryStr.GetData());
-		char* macrosEnd = macros + queryStr.Length();
-		while (macros < macrosEnd)
-		{
-			char* next = strchr(macros, '|');
-			if (!next)
-				next = macrosEnd;
-
-			options.AddMacroDefinition(macros, next - macros, nullptr, 0u);
-			macros = next + 1;
-		}
-	}
-
-	if (shaderInfo.skipOptimize)
-		options.SetOptimizationLevel(shaderc_optimization_level_zero);
-	else
-		options.SetOptimizationLevel(shaderc_optimization_level_performance);
-
-	if (shaderInfo.debugInfo)
-		options.SetGenerateDebugInfo();
-
-	if (shaderInfo.sourceType == SHADERSOURCE_GLSL)
-	{
-		options.SetForcedVersionProfile(450, shaderc_profile_none);
-		options.SetTargetEnvironment(shaderc_target_env_webgpu, 0);
-	}
-
-	// first we need to pre-process our file and collect bindings for pipeline layouts
-	shaderc::Compiler compiler;
-	shaderc::PreprocessedSourceCompilationResult preprocessResult = compiler.PreprocessGlsl(
-		(const char*)compileData.shaderSourceString.GetBasePointer(),
-		compileData.shaderSourceString.GetSize(),
-		shaderCKind,
-		compileData.shaderSourceFullName,
-		options);			
-
-	const shaderc_compilation_status preprocessStatus = preprocessResult.GetCompilationStatus();
-	if (preprocessStatus != shaderc_compilation_status_success)
-	{
-		MsgError("Failed pre-processing %s %s\n%s\n", vertexLayout.name.ToCString(), queryStr.ToCString(), preprocessResult.GetErrorMessage().c_str());
-		if (preprocessStatus == shaderc_compilation_status_compilation_error)
-			Atomic::Store(compileData.compileErrors, true);
-		return false;
-	}
-
-	// we need to parse shader resources from pre-processed text
-	ParseShaderResourceBindings(bindings, entryPoint.kind, compileData.shaderSourceFullName, const_cast<char*>(preprocessResult.begin()), preprocessResult.end() - preprocessResult.begin());
-
-	shaderc::SpvCompilationResult spvCompilationResult = compiler.CompileGlslToSpv(
-		preprocessResult.begin(),
-		preprocessResult.end() - preprocessResult.begin(),
-		shaderCKind,
-		compileData.shaderSourceFullName,
-		entryPoint.name,
-		options
-	);
-
-	const shaderc_compilation_status compileStatus = spvCompilationResult.GetCompilationStatus();
-	if (compileStatus != shaderc_compilation_status_success)
-	{
-		MsgError("ShaderC Failed compiling %s %s %s\n%s\n", shaderInfo.name.ToCString(), vertexLayout.name.ToCString(), queryStr.ToCString(), spvCompilationResult.GetErrorMessage().c_str());
-		if (compileStatus == shaderc_compilation_status_compilation_error)
-			Atomic::Store(compileData.compileErrors, true);
-		return false;
-	}
-	
-	CMemoryStream resultStream;
-	resultStream.Open((const ubyte*)spvCompilationResult.begin(), (spvCompilationResult.end() - spvCompilationResult.begin()) * sizeof(spvCompilationResult.begin()[0]));
-
-	const int blobSize = resultStream.GetSize();
-
-	targetData[0].resultData.Open(FS_OPEN_WRITE);
-	targetData[0].resultData.WriteObj(blobSize);
-	targetData[0].resultData.AppendStream(&resultStream);
-
-	return true;
-};
-
 
 static Threading::CEqMutex s_resultsMutex;
 
@@ -1466,12 +1290,12 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 
 				if (result.refResult != -1)
 					continue;
-
-				EqString shaderFileName = EqString::Format("%s-%s", layout.name.ToCString(), result.queryStr.ToCString());
+				referenceRemap[i] = shaderFileCount++;
 
 				KVSection& shaderBlobSec = fileListSec.CreateSection("blob");
 				shaderBlobSec.AddValue(result.vertLayoutIdx);
-			
+
+				EqString shaderFileName = EqString::Format("%s-%s", layout.name.ToCString(), result.queryStr.ToCString());
 				if (result.kindFlag == SHADERKIND_VERTEX)
 				{
 					shaderBlobSec.AddValue("Vertex");
@@ -1491,7 +1315,14 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 				shaderBlobSec.AddValue(shaderInfo.entryPoints[result.entryPointIdx].name);
 				shaderBlobSec.AddValue(result.queryStr);
 
-				for (ShaderInfo::Binding& binding : result.bindings)
+				for (const ShaderInfo::VertexAttrib& vertAttribs : result.vertexAttribs)
+				{
+					KVSection& vertAttribSec = shaderBlobSec.CreateSection(vertAttribs.name.ToCString());
+					vertAttribSec.AddValue(vertAttribs.location);
+					vertAttribSec.AddValue(vertAttribs.semantic);
+				}
+
+				for (const ShaderInfo::Binding& binding : result.bindings)
 				{
 					KVSection& bindingSec = shaderBlobSec.CreateSection(binding.name.ToCString());
 					bindingSec.AddValue(s_bindingTypeNames[binding.type]);
@@ -1511,14 +1342,11 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 					shaderPackFile.Add(&result.data[SHADERMODULE_DXIL], shaderFileName + s_shaderModuleTypeExt[SHADERMODULE_DXIL]);
 				if (result.data[SHADERMODULE_WGSL].IsValid())
 					shaderPackFile.Add(&result.data[SHADERMODULE_WGSL], shaderFileName + s_shaderModuleTypeExt[SHADERMODULE_WGSL]);
-
-				referenceRemap[i] = shaderFileCount++;
 			}
 
 			for (const ShaderInfo::Result& result : shaderInfo.results)
 			{
 				const ShaderInfo::VertLayout& layout = shaderInfo.vertexLayouts[result.vertLayoutIdx];
-
 				if (result.refResult == -1)
 					continue;
 
@@ -1662,28 +1490,14 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 						result.kindFlag = shaderInfo.entryPoints[entryPointIdx].kind;
 
 						FixedArray<CompileTargetData, SHADERMODULE_TYPES> compileTargets;
+						for(EShaderModuleType blobType : m_targetProps.blobTypes)
+							compileTargets.append({ blobType });
 
-						if (shaderInfo.sourceType == SHADERSOURCE_GLSL)
+						// Slang can compile into SPIRV, DXIL, WGSL
+						if (!CompileShaderSlang(compileData.Ref(), entryPointIdx, vertLayoutIdx, queryStr, compileTargets, result.bindings, result.vertexAttribs))
 						{
-							// Legacy source
-							compileTargets.append({ SHADERMODULE_SPIRV });
-							if (!CompileShaderShadercSpirV(compileData.Ref(), entryPointIdx, vertLayoutIdx, queryStr, compileTargets, result.bindings))
-							{
-								result.isError = true;
-								break;
-							}
-						}
-						else
-						{
-							for(EShaderModuleType blobType : m_targetProps.blobTypes)
-								compileTargets.append({ blobType });
-
-							// Slang can compile into SPIRV, DXIL, WGSL
-							if (!CompileShaderSlang(compileData.Ref(), entryPointIdx, vertLayoutIdx, queryStr, compileTargets, result.bindings))
-							{
-								result.isError = true;
-								break;
-							}
+							result.isError = true;
+							break;
 						}
 
 						for (CompileTargetData& tgtData : compileTargets)
@@ -1697,9 +1511,6 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 				compileVariantJob->DeleteOnFinish();
 				completeJob->AddWait(compileVariantJob);
 				m_jobMng.InitStartJob(compileVariantJob);
-
-				if (compileData->compileErrors)
-					break;
 			}
 		}
 	}
