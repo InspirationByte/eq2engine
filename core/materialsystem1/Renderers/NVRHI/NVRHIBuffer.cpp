@@ -35,14 +35,14 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 	m_usageFlags = bufferUsageFlags;
 
 	nvrhi::CpuAccessMode cpuAccessMode = nvrhi::CpuAccessMode::None;
-	if ((bufferUsageFlags & BUFFERUSAGE_READ))
+	if (bufferUsageFlags & BUFFERUSAGE_READ)
 	{
 		//ASSERT_MSG(hasData, "Buffer can't have READ usage when data is specified");
-		//ASSERT_MSG(bufferUsageFlags & BUFFERUSAGE_WRITE, "Buffer can't have both WRITE and READ usages");
+		ASSERT_MSG((bufferUsageFlags & BUFFERUSAGE_WRITE) == 0, "Buffer can't have both WRITE and READ usages");
 		cpuAccessMode = nvrhi::CpuAccessMode::Read;
 	}
 
-	if ((bufferUsageFlags & BUFFERUSAGE_WRITE) || hasData)
+	if (bufferUsageFlags & BUFFERUSAGE_WRITE)
 	{
 		cpuAccessMode = nvrhi::CpuAccessMode::Write;
 	}
@@ -52,7 +52,7 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 		.setByteSize(m_bufSize)
 		.setDebugName(label);
 
-	rhiBufferDesc.setInitialState(nvrhi::ResourceStates::Common);
+	rhiBufferDesc.setInitialState(hasData ? nvrhi::ResourceStates::CopyDest : nvrhi::ResourceStates::Common);
 	if(bufferUsageFlags & BUFFERUSAGE_COPY_DST)
 	{
 		rhiBufferDesc.setInitialState(nvrhi::ResourceStates::CopyDest);
@@ -87,7 +87,7 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 		//if (bufferUsageFlags & BUFFERUSAGE_COPY_SRC)
 		//	rhiBufferDesc.setCanHaveUAVs(true);
 
-		//rhiBufferDesc.setCanHaveUAVs(true);
+		rhiBufferDesc.setCanHaveUAVs(true);
 		rhiBufferDesc.setCanHaveRawViews(true);
 		rhiBufferDesc.setCanHaveTypedViews(true);
 	}
@@ -106,12 +106,19 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 
 	if (hasData)
 	{
-		//MsgInfo("NVRHI: map and update buffer %s with %lld bytes (CNVRHIBuffer ctor)\n", GetDbgName(), writeDataSize);
+		if (cpuAccessMode == nvrhi::CpuAccessMode::Write)
+		{
+			//MsgInfo("NVRHI: map and update buffer %s with %lld bytes (CNVRHIBuffer ctor)\n", GetDbgName(), writeDataSize);
 
-		void* outData = rhiDevice->mapBuffer(m_rhiBuffer, nvrhi::CpuAccessMode::Write);
-		ASSERT_MSG(outData, "Buffer mapped range is NULL");
-		memcpy(outData, bufferInfo.data, writeDataSize);
-		rhiDevice->unmapBuffer(m_rhiBuffer);
+			void* outData = rhiDevice->mapBuffer(m_rhiBuffer, nvrhi::CpuAccessMode::Write);
+			ASSERT_MSG(outData, "Buffer mapped range is NULL");
+			memcpy(outData, bufferInfo.data, writeDataSize);
+			rhiDevice->unmapBuffer(m_rhiBuffer);
+		}
+		else
+		{
+			Update(bufferInfo.data, writeDataSize, 0);
+		}
 	}
 }
 
@@ -172,7 +179,12 @@ void CNVRHIBuffer::Update(const void* data, int64 size, int64 offset)
 	}
 
 	writeCmd->close();
-	rhiDevice->executeCommandList(writeCmd);
+
+	{
+		extern CEqMutex g_sapi_commandListMutex;
+		CScopedMutex m(g_sapi_commandListMutex);
+		rhiDevice->executeCommandList(writeCmd);
+	}
 }
 
 Future<BufferMapData> CNVRHIBuffer::Lock(int lockOfs, int sizeToLock, int flags)
