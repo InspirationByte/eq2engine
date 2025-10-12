@@ -242,7 +242,10 @@ ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const TextureDesc& texDesc, 
 		return nullptr;	// don't generate error
 	}
 
-	return CreateTexture(genTex, texDesc.sampler, texDesc.flags);
+	// procedural textures might be a copy destination
+	const int flags = texDesc.flags | TEXFLAG_COPY_DST;
+
+	return CreateTexture(genTex, texDesc.sampler, flags);
 }
 
 // returns vertex format
