@@ -39,11 +39,8 @@ public:
 	void						PrintAPIInfo() const;
 	bool						IsDeviceActive() const;
 
-	// shader API class type for shader developers.
-	EShaderAPIType				GetShaderAPIClass()		{ return SHADERAPI_D3D12; }
-
-	// Renderer string (ex: OpenGL, D3D9)
-	const char*					GetRendererName() const { return "D3D12"; }
+	EShaderAPIType				GetShaderAPIClass() const { return SHADERAPI_NVRHI; }
+	const char*					GetRendererName() const;
 
 //-------------------------------------------------------------
 // MT Synchronization
@@ -110,7 +107,8 @@ protected:
 
 	Map<int, ShaderInfo>		m_shaderCache{ PP_SL };
 	nvrhi::DeviceHandle			m_rhiDevice{ nullptr };
-	ENVRHIBackendType			m_backendType;
+	ENVRHIBackendType			m_rhiBackendType;
+
 	bool						m_deviceLost{ false };
 	bool						m_isValidationActive{ false };
 };

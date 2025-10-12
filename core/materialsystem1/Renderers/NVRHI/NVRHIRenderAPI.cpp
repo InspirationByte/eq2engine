@@ -160,6 +160,20 @@ bool CNVRHIRenderAPI::IsDeviceActive() const
 	return !m_deviceLost;
 }
 
+const char* CNVRHIRenderAPI::GetRendererName() const
+{
+	switch (m_rhiBackendType)
+	{
+	case NVRHI_BACKEND_D3D11:
+		return "NVRHI/D3D11";
+	case NVRHI_BACKEND_D3D12:
+		return "NVRHI/D3D12";
+	case NVRHI_BACKEND_VULKAN:
+		return "NVRHI/Vulkan";
+	}
+	return "NVRHI/UNK";
+}
+
 //-------------------------------------------------------------
 // Textures
 
@@ -651,11 +665,11 @@ const ShaderInfo::Module& CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInf
 		break;
 	}
 
-	if (m_backendType == NVRHI_BACKEND_D3D11)
+	if (m_rhiBackendType == NVRHI_BACKEND_D3D11)
 		loadShaderBlob(SHADERMODULE_DXBC);
-	else if (m_backendType == NVRHI_BACKEND_D3D12)
+	else if (m_rhiBackendType == NVRHI_BACKEND_D3D12)
 		loadShaderBlob(SHADERMODULE_DXIL);
-	else if (m_backendType == NVRHI_BACKEND_VULKAN)
+	else if (m_rhiBackendType == NVRHI_BACKEND_VULKAN)
 		loadShaderBlob(SHADERMODULE_SPIRV);
 
 	if (!shaderBlobData.IsValid())

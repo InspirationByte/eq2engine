@@ -56,6 +56,8 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
 
 bool CNVRHIRenderLibD3D12::InitCaps()
 {
+	CNVRHIRenderAPI::Instance.m_rhiBackendType = NVRHI_BACKEND_D3D12;
+
 	m_d3d12Lib = LoadLibraryA("d3d12.dll");
 	if (!m_d3d12Lib) {
 		MsgError("Failed to load d3d12.dll");
@@ -252,8 +254,6 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 		CNVRHIRenderAPI::Instance.m_rhiDevice = nvrhi::validation::createValidationLayer(m_nvrhiDevice);
 	else
 		CNVRHIRenderAPI::Instance.m_rhiDevice = m_nvrhiDevice;
-
-	CNVRHIRenderAPI::Instance.m_backendType = NVRHI_BACKEND_D3D12;
 
 	// create default swap chain
 	if (params.windowInfo.windowType != RHI_WINDOW_HANDLE_UNKNOWN)
