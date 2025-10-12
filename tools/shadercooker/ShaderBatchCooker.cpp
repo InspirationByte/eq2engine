@@ -891,21 +891,20 @@ bool CShaderCooker::CompileShaderSlang(
 			{
 			case SLANG_BINDING_TYPE_SAMPLER:
 				return BINDING_RANGE_SAMPLER;
-			case SLANG_BINDING_TYPE_TEXTURE:
-				switch (accessType)
-				{
-					case SLANG_RESOURCE_ACCESS_READ_WRITE:
-					case SLANG_RESOURCE_ACCESS_WRITE:
-						return BINDING_RANGE_UAV;
-					default:
-						return BINDING_RANGE_SRV;
-				}
 			case SLANG_BINDING_TYPE_CONSTANT_BUFFER:
 				return BINDING_RANGE_CBV;
+			case SLANG_BINDING_TYPE_TEXTURE:
 			case SLANG_BINDING_TYPE_PARAMETER_BLOCK:
 			case SLANG_BINDING_TYPE_TYPED_BUFFER:
 			case SLANG_BINDING_TYPE_RAW_BUFFER:
-				return BINDING_RANGE_UAV;
+				switch (accessType)
+				{
+				case SLANG_RESOURCE_ACCESS_READ_WRITE:
+				case SLANG_RESOURCE_ACCESS_WRITE:
+					return BINDING_RANGE_UAV;
+				default:
+					return BINDING_RANGE_SRV;
+				}
 			default:
 				return BINDING_RANGE_SRV;
 			}
