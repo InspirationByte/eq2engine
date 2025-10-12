@@ -185,7 +185,12 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 	writeCmd->setPermanentTextureState(rhiTexture, nvrhi::ResourceStates::ShaderResource);
 	writeCmd->commitBarriers();
 	writeCmd->close();
-	rhiDevice->executeCommandList(writeCmd);
+
+	{
+		extern CEqMutex g_sapi_commandListMutex;
+		CScopedMutex m(g_sapi_commandListMutex);
+		rhiDevice->executeCommandList(writeCmd);
+	}
 
 	return true;
 }
@@ -288,7 +293,11 @@ bool CNVRHITexture::Lock(LockInOutData& data)
 		copyCmd->open();
 		copyCmd->copyTexture(rhiStagingTexture, rhiDstSlice, m_rhiTexture, rhiSrcSlice);
 		copyCmd->close();
-		rhiDevice->executeCommandList(copyCmd);
+		{
+			extern CEqMutex g_sapi_commandListMutex;
+			CScopedMutex m(g_sapi_commandListMutex);
+			rhiDevice->executeCommandList(copyCmd);
+		}
 
 		size_t rowPitch = 0;
 		void* mapData = rhiDevice->mapStagingTexture(rhiStagingTexture, rhiDstSlice, nvrhi::CpuAccessMode::Read, &rowPitch);
@@ -329,7 +338,12 @@ void CNVRHITexture::Unlock(IGPUCommandRecorder* writeCmdRecorder)
 			writeCmd->open();
 			writeCmd->writeTexture(m_rhiTexture, data.lockOrigin.arraySlice, data.lockOrigin.mipLevel, data.lockData, data.lockPitch);
 			writeCmd->close();
-			rhiDevice->executeCommandList(writeCmd);
+
+			{
+				extern CEqMutex g_sapi_commandListMutex;
+				CScopedMutex m(g_sapi_commandListMutex);
+				rhiDevice->executeCommandList(writeCmd);
+			}
 		}
 	}
 

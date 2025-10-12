@@ -34,6 +34,8 @@ CNVRHIRenderAPI CNVRHIRenderAPI::Instance;
 ShaderAPI_Base& ShaderAPI_Base::Instance = CNVRHIRenderAPI::Instance;
 IShaderAPI* g_renderAPI = &CNVRHIRenderAPI::Instance;
 
+CEqMutex g_sapi_commandListMutex;
+
 //------------------------------------------
 
 void CNVRHIRenderAPI::Shutdown()
@@ -250,6 +252,8 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 		.setIsUAV((flags & TEXFLAG_STORAGE) != 0)
 		.setFormat(GetNVRHITextureFormat(texture->GetFormat()));
 
+	const bool isDepth = IsDepthFormat(texture->GetFormat());
+
 	const int arrayLayerCount = isCubeMap ? ITexture::CubeArraySlice(0, newSize.arraySize) : newSize.arraySize;
 	rhiTextureDesc
 		.setDebugName(texture->GetName())
@@ -257,6 +261,13 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 		.setHeight((uint)newSize.height)
 		.setArraySize((uint)newSize.arraySize)
 		.setIsRenderTarget(true);
+
+	if (!isDepth)
+	{
+		rhiTextureDesc
+			.setInitialState(nvrhi::ResourceStates::RenderTarget)
+			.setKeepInitialState(true);
+	}
 
 	if (flags & TEXFLAG_CUBEMAP)
 	{
@@ -1316,8 +1327,11 @@ void CNVRHIRenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBu
 		rhiSubmitBuffers.append(bufferImpl->m_rhiCommandList);
 	}
 
-	uint64_t lastSubmitInstance = m_rhiDevice->executeCommandLists(rhiSubmitBuffers.ptr(), rhiSubmitBuffers.numElem());
-	m_rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
+	{
+		CScopedMutex m(g_sapi_commandListMutex);
+		uint64_t lastSubmitInstance = m_rhiDevice->executeCommandLists(rhiSubmitBuffers.ptr(), rhiSubmitBuffers.numElem());
+		m_rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
+	}
 }
 
 
@@ -1338,8 +1352,11 @@ Future<bool> CNVRHIRenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUComman
 	if (!rhiSubmitBuffers.numElem())
 		return Future<bool>::Succeed(true);
 
-	const uint64_t lastSubmitInstance = m_rhiDevice->executeCommandLists(rhiSubmitBuffers.ptr(), rhiSubmitBuffers.numElem());
-	m_rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
+	{
+		CScopedMutex m(g_sapi_commandListMutex);
+		const uint64_t lastSubmitInstance = m_rhiDevice->executeCommandLists(rhiSubmitBuffers.ptr(), rhiSubmitBuffers.numElem());
+		m_rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
+	}
 
 	Promise<bool> promise;
 
