@@ -182,7 +182,7 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 			--mipMapLevel;
 		}
 	}
-	//writeCmd->setPermanentTextureState(rhiTexture, nvrhi::ResourceStates::ShaderResource);
+	writeCmd->setPermanentTextureState(rhiTexture, nvrhi::ResourceStates::ShaderResource);
 	writeCmd->commitBarriers();
 	writeCmd->close();
 	rhiDevice->executeCommandList(writeCmd);
