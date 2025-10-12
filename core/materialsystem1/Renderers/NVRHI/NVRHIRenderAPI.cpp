@@ -264,7 +264,7 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 	nvrhi::TextureHandle rhiTexture = m_rhiDevice->createTexture(rhiTextureDesc);
 	if (!rhiTexture)
 	{
-		ErrorMsg("Failed to create render target %s\n", texture->GetName());
+		ASSERT_FAIL("Failed to create render target %s\n", texture->GetName());
 		return;
 	}
 
@@ -1227,7 +1227,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		nvrhi::ComputePipelineHandle rhiComputePipeline = m_rhiDevice->createComputePipeline(rhiComputePipelineDesc);
 		if (!rhiComputePipeline)
 		{
-			ASSERT_FAIL("Compute pipeline creation failed");
+			ASSERT_FAIL("Compute pipeline %s creation failed", pipelineName.ToCString());
 			return nullptr;
 		}
 
