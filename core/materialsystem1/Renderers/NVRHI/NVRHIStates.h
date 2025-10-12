@@ -11,7 +11,7 @@ using NVRHIBindingLayoutsCRef = ArrayCRef<nvrhi::BindingLayoutHandle>;
 class CNVRHIBindingLayout : public IGPUBindingLayout
 {
 public:
-	BindingLayoutDesc				m_pipelineLayoutDesc;
+	BindingLayoutDesc				m_layoutDesc;
 	EqString						m_dbgName;
 };
 

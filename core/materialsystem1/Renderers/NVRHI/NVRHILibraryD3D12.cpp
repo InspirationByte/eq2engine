@@ -146,6 +146,18 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 		}
 	}
 
+	{
+		RefCountPtr<IDXGIFactory5> pDxgiFactory5;
+		if (SUCCEEDED(m_dxgiFactory->QueryInterface(IID_PPV_ARGS(&pDxgiFactory5))))
+		{
+			BOOL supported = 0;
+			if (SUCCEEDED(pDxgiFactory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &supported, sizeof(supported))))
+			{
+				m_dxgiTearingSupported = (supported != 0);
+			}
+		}
+	}
+
 	rhiAdapter->QueryInterface(IID_PPV_ARGS(&m_dxgiAdapter));
 
 	D3D12_COMMAND_QUEUE_DESC rhiQueueDesc;
@@ -272,12 +284,14 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 		return false;
 	}
 
-	return true;
+	return CNVRHIRenderLibDXGIBase::InitAPI(params);
 }
 
 ISwapChainPtr CNVRHIRenderLibD3D12::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	ISwapChainPtr swapChain = CNVRHIRenderLibDXGIBase::CreateSwapChain(windowInfo);
+
+	CNVRHISwapChainDXGI* swapChainImpl = static_cast<CNVRHISwapChainDXGI*>(swapChain.Ptr());
 
 	DXGI_SWAP_CHAIN_FULLSCREEN_DESC dxgiFullScreenDesc = {};
 	dxgiFullScreenDesc.RefreshRate.Numerator = 0;
@@ -289,12 +303,12 @@ ISwapChainPtr CNVRHIRenderLibD3D12::CreateSwapChain(const RenderWindowInfo& wind
 	RefCountPtr<IDXGISwapChain1> pSwapChain1;
 	HRESULT hr = m_dxgiFactory->CreateSwapChainForHwnd(m_rhiGraphicsQueue,
 		(HWND)windowInfo.get(windowInfo.userData, RenderWindowInfo::WINDOW),
-		&m_defaultSwapChain->m_dxgiSwapChainDesc, &m_dxgiFullScreenDesc, nullptr,
+		&swapChainImpl->m_dxgiSwapChainDesc, &m_dxgiFullScreenDesc, nullptr,
 		&pSwapChain1);
 
 	HR_ASSERT(hr, "Failed to create main swap chain");
 
-	hr = pSwapChain1->QueryInterface(IID_PPV_ARGS(&m_defaultSwapChain->m_dxgiSwapChain));
+	hr = pSwapChain1->QueryInterface(IID_PPV_ARGS(&swapChainImpl->m_dxgiSwapChain));
 	HR_ASSERT(hr, "Failed to create main swap chain");
 
 	if (!CreateSwapchainTargets(static_cast<CNVRHISwapChainDXGI*>(swapChain.Ptr())))
@@ -338,16 +352,13 @@ bool CNVRHIRenderLibD3D12::CreateSwapchainTargets(CNVRHISwapChainDXGI* swapChain
 
 void CNVRHIRenderLibD3D12::ExitAPI()
 {
-	FreeModule(m_d3d12Lib);
-	m_d3d12Lib = nullptr;
-
 	g_consoleCommands->UnregisterCommand(&d3d12_adapter);
 	g_consoleCommands->UnregisterCommand(&d3d12_validation);
 
 	CNVRHIRenderLibDXGIBase::ExitAPI();
 
-	CNVRHIRenderAPI::Instance.m_rhiDevice = nullptr;
-	m_nvrhiDevice = nullptr;
+	FreeModule(m_d3d12Lib);
+	m_d3d12Lib = nullptr;
 
 	g_renderWorker.Shutdown();
 }

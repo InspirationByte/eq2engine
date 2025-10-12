@@ -24,10 +24,11 @@ public:
 
 	CNVRHIRenderLibDXGIBase();
 
-	void			ExitAPI();
+	virtual bool	InitAPI(const ShaderAPIParams& params);
+	virtual void	ExitAPI();
 
-	void			BeginFrame(ISwapChain* swapChain = nullptr);
-	void			EndFrame();
+	virtual void	BeginFrame(ISwapChain* swapChain = nullptr);
+	virtual void	EndFrame();
 
 	IShaderAPI*		GetRenderer() const;
 	ITexturePtr		GetCurrentBackbuffer() const;
@@ -52,12 +53,12 @@ protected:
 	RefCountPtr<IDXGIFactory2>		m_dxgiFactory;
 	RefCountPtr<IDXGIAdapter3>		m_dxgiAdapter;
 	nvrhi::DeviceHandle				m_nvrhiDevice;
-	
-	Threading::CEqSignal			m_endFrameWait;
+	nvrhi::EventQueryHandle			m_nvrhiFrameWaitQuery;
 
-	int								m_swapChainCounter{ 0 };
 	CRefPtr<CNVRHISwapChainDXGI>	m_currentSwapChain;
 	CRefPtr<CNVRHISwapChainDXGI>	m_defaultSwapChain;
+	int								m_swapChainCounter{ 0 };
 	bool							m_windowed{ true };
+	bool							m_dxgiTearingSupported{ false };
 };
 

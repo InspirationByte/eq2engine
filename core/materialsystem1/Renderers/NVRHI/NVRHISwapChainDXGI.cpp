@@ -12,8 +12,6 @@
 #include "NVRHIRenderDefs.h"
 #include <nvrhi/d3d12.h>
 
-constexpr int TOGGLE_BIT = 0x80000000;
-
 // Triple buffering for NVRHI with command queue event query sync method
 constexpr int SWAP_CHAIN_BUFFERS = 3;
 
@@ -38,6 +36,9 @@ CNVRHISwapChainDXGI::CNVRHISwapChainDXGI(const RenderWindowInfo& windowInfo, ITe
 	m_dxgiSwapChainDesc.BufferCount = SWAP_CHAIN_BUFFERS;
 	m_dxgiSwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
+	if (CNVRHIRenderLibDXGIBase::Instance->m_dxgiTearingSupported)
+		m_dxgiSwapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+
 	switch (m_swapChainFormat)
 	{
 	case nvrhi::Format::SRGBA8_UNORM:
@@ -53,12 +54,6 @@ CNVRHISwapChainDXGI::CNVRHISwapChainDXGI(const RenderWindowInfo& windowInfo, ITe
 		break;
 	}
 	//m_dxgiSwapChainDesc.Flags = (dxgi_maxFrameLatency.GetInt() > 0 ? DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT : 0);
-}
-
-CNVRHISwapChainDXGI::~CNVRHISwapChainDXGI()
-{
-	//if(m_surface)
-	//	NVRHISurfaceRelease(m_surface);
 }
 
 void* CNVRHISwapChainDXGI::GetWindow() const
@@ -95,8 +90,7 @@ bool CNVRHISwapChainDXGI::UpdateResize()
 
 	// Make sure all frame is finished
 	nvrhi::DeviceHandle nvrhiDevice = CNVRHIRenderLibDXGIBase::Instance->m_nvrhiDevice;
-	if (!nvrhiDevice->waitForIdle())
-		return false;
+	nvrhiDevice->waitForIdle();
 	nvrhiDevice->runGarbageCollection();
 
 	// release render targets
@@ -134,8 +128,8 @@ bool CNVRHISwapChainDXGI::SetBackbufferSize(int wide, int tall)
 bool CNVRHISwapChainDXGI::SwapBuffers()
 {
 	UINT presentFlags = 0;
-	//if (m_vSync == 0 && m_swapChainTearingSupported)
-	//	presentFlags |= DXGI_PRESENT_ALLOW_TEARING;
+	if (m_vSync == 0 && (m_dxgiSwapChainDesc.Flags & DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING))
+		presentFlags |= DXGI_PRESENT_ALLOW_TEARING;
 
 	m_dxgiSwapChain->Present(m_vSync, presentFlags);
 

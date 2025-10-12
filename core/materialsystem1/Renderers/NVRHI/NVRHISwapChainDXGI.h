@@ -23,7 +23,6 @@ public:
 	friend class CNVRHIRenderLibD3D11;
 	friend class CNVRHIRenderLibD3D12;
 
-	~CNVRHISwapChainDXGI();
 	CNVRHISwapChainDXGI(const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture);
 
 	void			SetVSync(bool enable);
@@ -43,8 +42,8 @@ protected:
 	void			UpdateBackbufferView() const;
 
 	DXGI_SWAP_CHAIN_DESC1				m_dxgiSwapChainDesc{};
-	Array<RefCountPtr<ID3D12Resource>>	m_d3d12SwapChainBuffers{ PP_SL };
 	Array<nvrhi::TextureHandle>			m_rhiSwapChainTextures{ PP_SL };
+	Array<RefCountPtr<ID3D12Resource>>	m_d3d12SwapChainBuffers{ PP_SL };
 	RefCountPtr<IDXGISwapChain3>		m_dxgiSwapChain;
 	
 	CRefPtr<CNVRHITexture>		m_textureRef;

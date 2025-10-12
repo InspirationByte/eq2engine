@@ -83,7 +83,6 @@ RefCountPtr<IDXGIAdapter> CNVRHIRenderLibDXGIBase::FindAdapter(const wchar_t* ta
 CNVRHIRenderLibDXGIBase::CNVRHIRenderLibDXGIBase()
 {
 	CNVRHIRenderLibDXGIBase::Instance = this;
-	m_endFrameWait.Raise();
 }
 
 IShaderAPI* CNVRHIRenderLibDXGIBase::GetRenderer() const
@@ -91,19 +90,34 @@ IShaderAPI* CNVRHIRenderLibDXGIBase::GetRenderer() const
 	return &CNVRHIRenderAPI::Instance;
 }
 
+bool CNVRHIRenderLibDXGIBase::InitAPI(const ShaderAPIParams& params)
+{
+	m_nvrhiFrameWaitQuery = m_nvrhiDevice->createEventQuery();
+	m_nvrhiDevice->setEventQuery(m_nvrhiFrameWaitQuery, nvrhi::CommandQueue::Graphics);
+
+	return true;
+}
+
 void CNVRHIRenderLibDXGIBase::ExitAPI()
 {
-	m_endFrameWait.Wait(500);
+	if (m_defaultSwapChain)
+		m_defaultSwapChain->m_dxgiSwapChain->SetFullscreenState(false, nullptr);
+
+	m_nvrhiDevice->waitForIdle();
+	m_nvrhiDevice->runGarbageCollection();
 
 	m_defaultSwapChain = nullptr;
 	m_currentSwapChain = nullptr;
+
+	CNVRHIRenderAPI::Instance.m_rhiDevice = nullptr;
+	m_nvrhiDevice = nullptr;
+	m_nvrhiFrameWaitQuery = nullptr;
+	m_dxgiFactory = nullptr;
+	m_dxgiAdapter = nullptr;
 }
 
 void CNVRHIRenderLibDXGIBase::BeginFrame(ISwapChain* swapChain)
 {
-	m_nvrhiDevice->runGarbageCollection();
-	m_endFrameWait.Wait();
-
 	CNVRHIRenderAPI::Instance.m_deviceLost = false;
 	m_currentSwapChain.Assign(swapChain ? static_cast<CNVRHISwapChainDXGI*>(swapChain) : m_defaultSwapChain);
 
@@ -119,7 +133,25 @@ void CNVRHIRenderLibDXGIBase::EndFrame()
 {
 	//g_renderWorker.Execute(__func__, [this]() {
 		m_currentSwapChain->SwapBuffers();
-		m_endFrameWait.Raise();
+
+		const int bufferCount = m_currentSwapChain->m_rhiSwapChainTextures.numElem();
+
+		if (bufferCount > 2)
+		{
+			// sync on previous frame's command queue completion
+			m_nvrhiDevice->waitEventQuery(m_nvrhiFrameWaitQuery);
+		}
+
+		m_nvrhiDevice->resetEventQuery(m_nvrhiFrameWaitQuery);
+		m_nvrhiDevice->setEventQuery(m_nvrhiFrameWaitQuery, nvrhi::CommandQueue::Graphics);
+
+		if (bufferCount < 3)
+		{
+			// sync on current frame's command queue completion for double buffering
+			m_nvrhiDevice->waitEventQuery(m_nvrhiFrameWaitQuery);
+		}
+
+		m_nvrhiDevice->runGarbageCollection();
 	//	return 0;
 	//});
 }

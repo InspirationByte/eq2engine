@@ -47,6 +47,6 @@ protected:
 	RefCountPtr<ID3D12Device>		m_rhiDevice12;
 	RefCountPtr<ID3D12CommandQueue>	m_rhiGraphicsQueue;
 	RefCountPtr<ID3D12CommandQueue>	m_rhiComputeQueue;
-	RefCountPtr<ID3D12CommandQueue>	m_rhiCopyQueue; 
+	RefCountPtr<ID3D12CommandQueue>	m_rhiCopyQueue;
 };
 
