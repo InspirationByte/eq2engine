@@ -163,6 +163,7 @@ IGPUCommandBufferPtr CNVRHICommandRecorder::End()
 		ASSERT_FAIL("Command recorder was already ended");
 		return nullptr;
 	}
+	m_rhiCommandList->commitBarriers();
 	m_rhiCommandList->close();
 
 	// simply transfer command list

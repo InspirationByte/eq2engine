@@ -159,7 +159,7 @@ void CNVRHIBuffer::Update(const void* data, int64 size, int64 offset)
 
 	if (m_needsTrackingState)
 	{
-		MsgInfo("NVRHI: tracked update buffer %s with %lld bytes (CNVRHIBuffer::Update)\n", GetDbgName(), writeDataSize);
+		//MsgInfo("NVRHI: tracked update buffer %s with %lld bytes (CNVRHIBuffer::Update)\n", GetDbgName(), writeDataSize);
 		writeCmd->beginTrackingBufferState(m_rhiBuffer, nvrhi::ResourceStates::Common);
 		writeCmd->writeBuffer(m_rhiBuffer, data, writeDataSize, offset);
 		writeCmd->setPermanentBufferState(m_rhiBuffer, GetNVRHIResourceStates());
@@ -167,7 +167,7 @@ void CNVRHIBuffer::Update(const void* data, int64 size, int64 offset)
 	}
 	else
 	{
-		MsgInfo("NVRHI: un-tracked update buffer %s with %lld bytes (CNVRHIBuffer::Update)\n", GetDbgName(), writeDataSize);
+		//MsgInfo("NVRHI: un-tracked update buffer %s with %lld bytes (CNVRHIBuffer::Update)\n", GetDbgName(), writeDataSize);
 		writeCmd->writeBuffer(m_rhiBuffer, data, writeDataSize, offset);
 	}
 
