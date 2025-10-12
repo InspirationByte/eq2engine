@@ -85,7 +85,8 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 	auto rhiTextureDesc = nvrhi::TextureDesc()
 		.setMipLevels(mipCount)
 		.setIsUAV((flags & TEXFLAG_STORAGE) != 0)
-		.setFormat(GetNVRHITextureFormat(imgFmt));
+		.setFormat(GetNVRHITextureFormat(imgFmt))
+		.setInitialState(nvrhi::ResourceStates::CopyDest);
 
 	if (IsCompressedFormat(imgFmt))
 	{
@@ -182,7 +183,11 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 			--mipMapLevel;
 		}
 	}
-	writeCmd->setPermanentTextureState(rhiTexture, nvrhi::ResourceStates::ShaderResource);
+
+	// procedural textures remain in CopyDst state
+	if (!(m_flags & TEXFLAG_COPY_DST))
+		writeCmd->setPermanentTextureState(rhiTexture, nvrhi::ResourceStates::ShaderResource);
+
 	writeCmd->commitBarriers();
 	writeCmd->close();
 
