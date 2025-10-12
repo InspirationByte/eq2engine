@@ -321,9 +321,9 @@ IGPUBufferPtr CNVRHIRenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int bu
 
 nvrhi::BindingLayoutHandle CNVRHIRenderAPI::CreateBindingLayout(const BindGroupLayoutDesc& bindGroupDesc, int bindGroupIndex) const
 {
-	auto rhiBindingLayoutDesc = nvrhi::BindingLayoutDesc()
-		.setRegisterSpace(bindGroupIndex)
-		.setRegisterSpaceIsDescriptorSet(true);
+	auto rhiBindingLayoutDesc = nvrhi::BindingLayoutDesc();
+		//.setRegisterSpace(bindGroupIndex)
+		//.setRegisterSpaceIsDescriptorSet(true);
 
 	int constantCount = 0;
 	int uavCount = 0;
@@ -1045,8 +1045,8 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 				int bindGroupIdx = 0;
 				for (nvrhi::BindingLayoutDesc& rhiDesc : rhiBindingLayoutDescList)
 				{
-					rhiDesc.setVisibility(nvrhi::ShaderType::Vertex | (fragmentShaderModule ? nvrhi::ShaderType::Pixel : nvrhi::ShaderType::None))
-						.setRegisterSpace(bindGroupIdx);
+					rhiDesc.setVisibility(nvrhi::ShaderType::Vertex | (fragmentShaderModule ? nvrhi::ShaderType::Pixel : nvrhi::ShaderType::None));
+						//.setRegisterSpace(bindGroupIdx);
 					++bindGroupIdx;
 				}
 			}
@@ -1204,8 +1204,8 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 				int bindGroupIdx = 0;
 				for (nvrhi::BindingLayoutDesc& rhiDesc : rhiBindingLayoutDescList)
 				{
-					rhiDesc.setVisibility(nvrhi::ShaderType::Compute)
-						.setRegisterSpace(bindGroupIdx);
+					rhiDesc.setVisibility(nvrhi::ShaderType::Compute);
+						//.setRegisterSpace(bindGroupIdx);
 					++bindGroupIdx;
 				}
 			}
@@ -1301,7 +1301,8 @@ void CNVRHIRenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBu
 		rhiSubmitBuffers.append(bufferImpl->m_rhiCommandList);
 	}
 
-	uint64_t cmdListInstance = m_rhiDevice->executeCommandLists(rhiSubmitBuffers.ptr(), rhiSubmitBuffers.numElem());
+	uint64_t lastSubmitInstance = m_rhiDevice->executeCommandLists(rhiSubmitBuffers.ptr(), rhiSubmitBuffers.numElem());
+	m_rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
 }
 
 
@@ -1323,11 +1324,11 @@ Future<bool> CNVRHIRenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUComman
 		return Future<bool>::Succeed(true);
 
 	const uint64_t lastSubmitInstance = m_rhiDevice->executeCommandLists(rhiSubmitBuffers.ptr(), rhiSubmitBuffers.numElem());
+	m_rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
 
 	Promise<bool> promise;
 
 	// TODO: proper wait
-	m_rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
 	promise.SetResult(true);
 
 	return promise.CreateFuture();

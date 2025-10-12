@@ -79,14 +79,15 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 
 	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)
 	{
-		if (bufferUsageFlags & BUFFERUSAGE_COPY_DST)
-			rhiBufferDesc.setInitialState(nvrhi::ResourceStates::CopyDest);// | nvrhi::ResourceStates::UnorderedAccess);
+		//if (bufferUsageFlags & BUFFERUSAGE_COPY_DST)
+		//	rhiBufferDesc.setInitialState(nvrhi::ResourceStates::CopyDest | nvrhi::ResourceStates::UnorderedAccess);
 		//else
 		//	rhiBufferDesc.setInitialState(nvrhi::ResourceStates::UnorderedAccess);
 
 		//if (bufferUsageFlags & BUFFERUSAGE_COPY_SRC)
 		//	rhiBufferDesc.setCanHaveUAVs(true);
 
+		//rhiBufferDesc.setCanHaveUAVs(true);
 		rhiBufferDesc.setCanHaveRawViews(true);
 		rhiBufferDesc.setCanHaveTypedViews(true);
 	}

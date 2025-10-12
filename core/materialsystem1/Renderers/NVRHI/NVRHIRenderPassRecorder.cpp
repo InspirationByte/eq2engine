@@ -94,6 +94,9 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 
 void CNVRHIRenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)
 {
+	for (int i = 0; i < MAX_BINDGROUPS; ++i)
+		m_bindings[i] = nullptr;
+
 	m_pipeline.Assign(pipeline);
 	m_graphicsStateDirty = true;
 }
