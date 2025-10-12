@@ -15,7 +15,7 @@ BEGIN_SHADER_CLASS(EdgeAA)
 		m_flags |= MATERIAL_FLAG_NO_Z_TEST | MATERIAL_FLAG_NO_CULL;
 		m_edgeAASettings = GetMaterialVar("Settings", "[0.75 0.125 0.0625]");
 
-		m_settingsBuffer = MakeParameterUniformBuffer(
+		m_settingsBuffer = MakeParameterUniformBuffer("edgeAAParams", BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST,
 			m_edgeAASettings.Get()
 		);
 	}
