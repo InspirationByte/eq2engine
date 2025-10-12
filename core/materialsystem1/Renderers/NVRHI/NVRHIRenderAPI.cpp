@@ -247,6 +247,7 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 	if (flags & TEXFLAG_CUBEMAP)
 	{
 		rhiTextureDesc.dimension = (newSize.arraySize > 1) ? nvrhi::TextureDimension::TextureCubeArray : nvrhi::TextureDimension::TextureCube;
+		rhiTextureDesc.arraySize *= 6;
 	}
 	else
 	{
