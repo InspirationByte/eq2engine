@@ -23,9 +23,6 @@ public:
 	bool			InitAPI(const ShaderAPIParams& params);
 	void			ExitAPI();
 
-	void			BeginFrame(ISwapChain* swapChain = nullptr);
-	void			EndFrame();
-
 	IShaderAPI*		GetRenderer() const;
 
 	ISwapChainPtr	CreateSwapChain(const RenderWindowInfo& windowInfo) override;

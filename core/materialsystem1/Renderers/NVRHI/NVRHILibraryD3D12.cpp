@@ -363,16 +363,6 @@ void CNVRHIRenderLibD3D12::ExitAPI()
 	g_renderWorker.Shutdown();
 }
 
-void CNVRHIRenderLibD3D12::BeginFrame(ISwapChain* swapChain)
-{
-	CNVRHIRenderLibDXGIBase::BeginFrame(swapChain);
-}
-
-void CNVRHIRenderLibD3D12::EndFrame()
-{
-	CNVRHIRenderLibDXGIBase::EndFrame();
-}
-
 bool CNVRHIRenderLibD3D12::IsMainThread(uintptr_t threadId) const
 {
 	return g_renderWorker.GetThreadID() == threadId; // always run in separate thread
