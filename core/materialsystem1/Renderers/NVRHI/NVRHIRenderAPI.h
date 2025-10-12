@@ -11,7 +11,6 @@
 #include "ShaderAPI.h"
 #include "NVRHITexture.h"
 #include "NVRHIBuffer.h"
-#include "NVRHIVertexFormat.h"
 #include "NVRHIStates.h"
 #include "ShaderInfo.h"
 
