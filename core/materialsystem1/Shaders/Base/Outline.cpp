@@ -28,7 +28,7 @@ BEGIN_SHADER_CLASS(Outline)
 		materialParams.outlineColor = m_outlineColor.Get();
 		materialParams.outlineWidth = m_outlineWidth.Get();
 
-		m_proxyBuffer = MakeParameterUniformBuffer(materialParams);
+		m_proxyBuffer = MakeParameterUniformBuffer("outlineProxy", BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST, materialParams);
 	}
 
 	SHADER_INIT_TEXTURES()

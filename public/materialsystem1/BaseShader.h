@@ -89,7 +89,7 @@ constexpr int CalculateMaxBufferSize()
 }
 
 template<typename... Args>
-IGPUBufferPtr MakeParameterUniformBuffer(Args... data)
+IGPUBufferPtr MakeParameterUniformBuffer(const char* name, int bufferUsageFlags, Args... data)
 {
     // Calculate the maximum buffer size at compile-time using constexpr
     constexpr int MaxBufferSize = bufferutil::CalculateMaxBufferSize<Args...>();
@@ -113,7 +113,7 @@ IGPUBufferPtr MakeParameterUniformBuffer(Args... data)
     (packData(data), ...);
 
     // Create the buffer on GPU with the packed data
-    return g_matSystem->GetShaderAPI()->CreateBuffer(BufferInfo(buffer, offset), BUFFERUSAGE_UNIFORM | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "materialParams");
+    return g_matSystem->GetShaderAPI()->CreateBuffer(BufferInfo(buffer, offset), bufferUsageFlags, name);
 }
 
 

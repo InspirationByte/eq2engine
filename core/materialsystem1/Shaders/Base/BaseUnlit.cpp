@@ -22,7 +22,7 @@ BEGIN_SHADER_CLASS(
 	SHADER_INIT_PARAMS()
 	{
 		m_colorVar = GetMaterialVar("color", "[1 1 1 1]");
-		m_materialParamsBuffer = MakeParameterUniformBuffer(
+		m_materialParamsBuffer = MakeParameterUniformBuffer("unlitMaterialParams", BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST,
 			m_colorVar.Get(),
 			Vector4D(1, 1, 0, 0)
 		);

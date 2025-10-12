@@ -22,7 +22,7 @@ BEGIN_SHADER_CLASS(
 		m_blendMode = SHADER_BLEND_TRANSLUCENT;
 		m_flags |= MATERIAL_FLAG_NO_Z_WRITE;
 
-		m_materialParamsBuffer = MakeParameterUniformBuffer(
+		m_materialParamsBuffer = MakeParameterUniformBuffer("gridMaterialParams", BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST,
 			m_lineWidth.Get(), 
 			m_lineSpacing.Get(),
 			0.0f,
