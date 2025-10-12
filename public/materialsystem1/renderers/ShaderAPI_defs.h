@@ -786,10 +786,10 @@ enum EBufferUsage
 	BUFFERUSAGE_INDIRECT	= (1 << 3),
 	BUFFERUSAGE_STORAGE		= (1 << 4),
 
-	BUFFERUSAGE_READ		= (1 << 5),	// allows reading from buffer to system memory
-	BUFFERUSAGE_WRITE		= (1 << 6),	// allows writing to buffer (effectively marking it as dynamic)
+	BUFFERUSAGE_READ		= (1 << 5),	// allows buffer to be mapped for read
+	BUFFERUSAGE_WRITE		= (1 << 6),	// allows buffer to be mapped for write
 	BUFFERUSAGE_COPY_SRC	= (1 << 7),	// buffer can be used as Copy source
-	BUFFERUSAGE_COPY_DST	= (1 << 8),	// buffer can be used as Copy destination
+	BUFFERUSAGE_COPY_DST	= (1 << 8),	// buffer can be used as Copy destination (also allows Update/WriteBuffer)
 };
 
 struct BufferInfo
