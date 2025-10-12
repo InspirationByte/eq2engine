@@ -84,12 +84,11 @@ void CNVRHICommandRecorder::ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 
 
 	if(offset > 0 || size < bufferImpl->GetSize())
 	{
-		static void* tmpClearMem = PPAlloc(size);
+		static thread_local Array<uint> tmpClearMem(PP_SL);
+		tmpClearMem.reserve(clearDataSize / 4 + 1);
 
-		memset(tmpClearMem, 0, size);
-		m_rhiCommandList->writeBuffer(bufferImpl->GetNVRHIBufferHandle(), tmpClearMem, size, offset);
-
-		PPFree(tmpClearMem);
+		memset(tmpClearMem.ptr(), 0, clearDataSize);
+		m_rhiCommandList->writeBuffer(bufferImpl->GetNVRHIBufferHandle(), tmpClearMem.ptr(), clearDataSize, offset);
 	}
 	else
 	{
