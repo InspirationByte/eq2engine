@@ -919,6 +919,19 @@ bool CShaderCooker::CompileShaderSlang(
 			binding.descriptorSetIdx = param->getBindingSpace();
 			binding.index = param->getBindingIndex();
 
+			switch (type->getResourceAccess())
+			{
+			case SLANG_RESOURCE_ACCESS_READ_WRITE:
+				binding.rwFlags = RWFLAG_READ | RWFLAG_WRITE; break;
+			case SLANG_RESOURCE_ACCESS_READ:
+				binding.rwFlags = RWFLAG_READ; break;
+			case SLANG_RESOURCE_ACCESS_WRITE:
+				binding.rwFlags = RWFLAG_WRITE; break;
+			}
+
+			if (bindingRangeType == BINDING_RANGE_SRV && (binding.rwFlags & RWFLAG_WRITE))
+				bindingRangeType = BINDING_RANGE_UAV;
+
 			const int bindingSpace = 0;	// currently hardcoded - Slang is buggy as hell!
 			const int registerIndex = bindingTypeCounter[bindingSpace][static_cast<int>(bindingRangeType)]++;
 			binding.rangeType = bindingRangeType;
@@ -931,16 +944,6 @@ bool CShaderCooker::CompileShaderSlang(
 				binding.type = BINDENTRY_BUFFER; break;
 			default:
 				binding.type = BINDENTRY_TEXTURE;
-			}
-
-			switch (type->getResourceAccess())
-			{
-			case SLANG_RESOURCE_ACCESS_READ_WRITE:
-				binding.rwFlags = RWFLAG_READ | RWFLAG_WRITE; break;
-			case SLANG_RESOURCE_ACCESS_READ:
-				binding.rwFlags = RWFLAG_READ; break;
-			case SLANG_RESOURCE_ACCESS_WRITE:
-				binding.rwFlags = RWFLAG_WRITE; break;
 			}
 
 			if (binding.type == BINDENTRY_TEXTURE && binding.rwFlags != RWFLAG_UNIFORM)
