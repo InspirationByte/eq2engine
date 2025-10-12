@@ -32,8 +32,10 @@
 //__declspec(dllexport) const char* D3D12SDKPath = u8".\\D3D12\\";
 //}
 
+// +seti d3d12_validation 1 +seti nvrhi_validation 1
+
 DECLARE_CVAR(d3d12_adapter, "", "Adapter to use", CV_UNREGISTERED);
-DECLARE_CVAR(d3d12_validation, "1", nullptr, CV_UNREGISTERED);
+DECLARE_CVAR(d3d12_validation, "0", nullptr, CV_UNREGISTERED);
 DECLARE_CVAR_F(nvrhi_validation);
 
 #define HR_RETURN(hr, fmt, ...) if(FAILED(hr)) { MsgError("ERROR: D3D12 failure - " fmt "\n", __VA_ARGS__); return false; }

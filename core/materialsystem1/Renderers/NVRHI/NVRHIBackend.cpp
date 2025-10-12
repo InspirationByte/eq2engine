@@ -7,8 +7,8 @@
 
 CNVRHIMessageCallback CNVRHIMessageCallback::Instance;
 
-DECLARE_CVAR_G(nvrhi_validation, "1", nullptr, 0);
-DECLARE_CVAR(nvrhi_breakOnError, "1", nullptr, 0);
+DECLARE_CVAR_G(nvrhi_validation, "0", nullptr, 0);
+DECLARE_CVAR(nvrhi_breakOnError, "0", nullptr, 0);
 
 void CNVRHIMessageCallback::message(nvrhi::MessageSeverity severity, const char* messageText)
 {
