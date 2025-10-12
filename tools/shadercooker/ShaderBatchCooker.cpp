@@ -913,14 +913,15 @@ bool CShaderCooker::CompileShaderSlang(
 
 		int bindingTypeCounter[8][SLANG_BINDING_TYPE_PUSH_CONSTANT + 1]{ 0 };
 
-		auto parseResourceBinding = [&](slang::VariableLayoutReflection* param, slang::TypeReflection* type, const char* paramName, EBindingRangeType bindingRangeType) {
+		auto parseResourceBinding = [&](slang::VariableLayoutReflection* param, slang::TypeLayoutReflection* type, const char* paramName, EBindingRangeType bindingRangeType) {
 			ShaderInfo::Binding& binding = bindings.append();
 			binding.name = paramName;
 
 			binding.descriptorSetIdx = param->getBindingSpace();
 			binding.index = param->getBindingIndex();
 
-			const int registerIndex = bindingTypeCounter[param->getBindingSpace()][static_cast<int>(bindingRangeType)]++;
+			const int bindingSpace = 0;	// currently hardcoded - Slang is buggy as hell!
+			const int registerIndex = bindingTypeCounter[bindingSpace][static_cast<int>(bindingRangeType)]++;
 			binding.rangeType = bindingRangeType;
 			binding.registerIdx = registerIndex;
 
@@ -947,14 +948,11 @@ bool CShaderCooker::CompileShaderSlang(
 				binding.type = BINDENTRY_STORAGETEXTURE;
 		};
 
-		const int paramCount = shaderReflection->getParameterCount();
-		for (int i = 0; i < paramCount; i++)
+		auto parseBinding = [&](slang::VariableLayoutReflection* param, const slang::BindingType bindingType)
 		{
-			auto param = shaderReflection->getParameterByIndex(i);
 			auto paramName = param->getName();
-			auto type = param->getType();
+			auto type = param->getTypeLayout();
 
-			const slang::BindingType bindingType = typeLayoutReflection->getBindingRangeType(i);
 			const SlangResourceAccess accessType = type->getResourceAccess();
 			const EBindingRangeType bindingRangeType = slangBindingTypeToD3DRangeType(static_cast<SlangBindingType>(bindingType), accessType);
 
@@ -965,10 +963,11 @@ bool CShaderCooker::CompileShaderSlang(
 				// check for first field in struct
 				// must be byte address buffer or structured buffer
 				auto layout = param->getTypeLayout();
-				for (int f = 0; f < layout->getFieldCount(); f++)
+				const int fieldCount = layout->getFieldCount();
+				for (int f = 0; f < fieldCount; f++)
 				{
 					auto field = layout->getFieldByIndex(f);
-					auto type = field->getType();
+					auto type = field->getTypeLayout();
 					if (type->getKind() == slang::TypeReflection::Kind::Struct || type->getKind() == slang::TypeReflection::Kind::Array)
 						continue;
 					parseResourceBinding(param, type, paramName, bindingRangeType);
@@ -992,7 +991,8 @@ bool CShaderCooker::CompileShaderSlang(
 				binding.descriptorSetIdx = param->getBindingSpace();
 				binding.index = param->getBindingIndex();
 
-				const int registerIndex = bindingTypeCounter[param->getBindingSpace()][static_cast<int>(bindingRangeType)]++;
+				const int bindingSpace = 0;	// currently hardcoded - Slang is buggy as hell!
+				const int registerIndex = bindingTypeCounter[bindingSpace][static_cast<int>(bindingRangeType)]++;
 				binding.rangeType = bindingRangeType;
 				binding.registerIdx = registerIndex;
 				break;
@@ -1007,11 +1007,41 @@ bool CShaderCooker::CompileShaderSlang(
 				binding.descriptorSetIdx = param->getBindingSpace();
 				binding.index = param->getBindingIndex();
 
-				const int registerIndex = bindingTypeCounter[param->getBindingSpace()][static_cast<int>(bindingRangeType)]++;
+				const int bindingSpace = 0;	// currently hardcoded - Slang is buggy as hell!
+				const int registerIndex = bindingTypeCounter[bindingSpace][static_cast<int>(bindingRangeType)]++;
 				binding.rangeType = bindingRangeType;
 				binding.registerIdx = registerIndex;
 				break;
 			}
+			}
+		};
+
+		const int paramCount = shaderReflection->getParameterCount();
+		for (int i = 0; i < paramCount; i++)
+		{
+			auto param = shaderReflection->getParameterByIndex(i);
+			const slang::BindingType bindingType = typeLayoutReflection->getBindingRangeType(i);
+
+			auto layout = param->getTypeLayout();
+			switch (layout->getKind())
+			{
+			case slang::TypeReflection::Kind::ParameterBlock:
+			{
+				ASSERT_FAIL("ParameterBlock binding parsing is not implemented yet");
+
+				//auto resType = layout->getElementVarLayout()->getTypeLayout();
+				//const int fieldCount = resType->getFieldCount();
+				//for (int f = 0; f < fieldCount; f++)
+				//{
+				//	auto field = resType->getFieldByIndex(f);
+				//	auto type = field->getType();
+				//	
+				//	break;
+				//}
+				break;
+			}
+			default:
+				parseBinding(param, bindingType);
 			}
 		}
 
@@ -1061,6 +1091,13 @@ bool CShaderCooker::CompileShaderSlang(
 		}
 	}
 
+	if (entryPoint.kind == SHADERKIND_VERTEX)
+		DevMsg(DEVMSG_GAME, "Vertex\n");
+	else if (entryPoint.kind == SHADERKIND_FRAGMENT)
+		DevMsg(DEVMSG_GAME, "Fragment\n");
+	else if (entryPoint.kind == SHADERKIND_COMPUTE)
+		DevMsg(DEVMSG_GAME, "Compute\n");
+
 	for (CompileTargetData& tgtData : targetData)
 	{
 		ComPtr<slang::IComponentType> slangEntryPoint;
@@ -1072,7 +1109,7 @@ bool CShaderCooker::CompileShaderSlang(
 		BitArray usedBindings(PP_SL);
 		usedBindings.resize(bindings.numElem());
 
-		//Msg("TGT %d\n", tgtData.type);
+		DevMsg(DEVMSG_GAME, "\tTarget %s\n", s_shaderModuleTypeName[tgtData.type]);
 
 		// build a bit set of used parameters for each target
 		// used in RHI later to set or not set stuff
@@ -1093,10 +1130,11 @@ bool CShaderCooker::CompileShaderSlang(
 					SLANG_PARAMETER_CATEGORY_CONSTANT_BUFFER,
 					SLANG_PARAMETER_CATEGORY_SHADER_RESOURCE
 				};
-				slangMetadata->isParameterLocationUsed(rangeToCategory[binding.rangeType], binding.descriptorSetIdx, binding.registerIdx, isUsed);
+				const int bindingSpace = 0;	// currently hardcoded - Slang is buggy as hell!
+				slangMetadata->isParameterLocationUsed(rangeToCategory[binding.rangeType], bindingSpace, binding.registerIdx, isUsed);
 			}
 			usedBindings.set(i, isUsed);
-			//Msg("[vk_layout(%d,%d)] %s %s %s : register(%d, space%d) USED: %d\n", binding.index, binding.descriptorSetIdx, GetRWFlagsString(binding.rwFlags).ToCString(), s_bindingTypeNames[binding.type], binding.name.ToCString(), binding.registerIdx, binding.descriptorSetIdx, isUsed);
+			DevMsg(DEVMSG_GAME, "\t\t[vk_layout(%d,%d)] %s %s %s : register(%d, space%d) USED: %d\n", binding.index, binding.descriptorSetIdx, GetRWFlagsString(binding.rwFlags).ToCString(), s_bindingTypeNames[binding.type], binding.name.ToCString(), binding.registerIdx, binding.descriptorSetIdx, isUsed);
 		}
 
 		ComPtr<ISlangBlob> slangTargetBlob;

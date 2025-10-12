@@ -577,7 +577,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateSharedBindGroup(const IGPUBindingLayout* 
 {
 	if (!bindingLayout)
 	{
-		ASSERT_FAIL("layoutDesc is null");
+		ASSERT_FAIL("bindingLayout is null");
 		return nullptr;
 	}
 
