@@ -37,8 +37,8 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 	nvrhi::CpuAccessMode cpuAccessMode = nvrhi::CpuAccessMode::None;
 	if ((bufferUsageFlags & BUFFERUSAGE_READ))
 	{
-		ASSERT_MSG(hasData, "Buffer can't have READ usage when data is specified");
-		ASSERT_MSG(bufferUsageFlags & BUFFERUSAGE_WRITE, "Buffer can't have both WRITE and READ usages");
+		//ASSERT_MSG(hasData, "Buffer can't have READ usage when data is specified");
+		//ASSERT_MSG(bufferUsageFlags & BUFFERUSAGE_WRITE, "Buffer can't have both WRITE and READ usages");
 		cpuAccessMode = nvrhi::CpuAccessMode::Read;
 	}
 
