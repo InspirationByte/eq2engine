@@ -160,20 +160,6 @@ bool CNVRHIRenderAPI::IsDeviceActive() const
 	return !m_deviceLost;
 }
 
-IVertexFormatPtr CNVRHIRenderAPI::CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc)
-{
-	IVertexFormatPtr pVF = IVertexFormatPtr(CRefPtr_new(CNVRHIVertexFormat, name, formatDesc));
-	m_VFList.append(pVF);
-	return pVF;
-}
-
-// Destroy vertex format
-void CNVRHIRenderAPI::DestroyVertexFormat(IVertexFormat* pFormat)
-{
-	if (m_VFList.fastRemove(pFormat))
-		delete pFormat;
-}
-
 //-------------------------------------------------------------
 // Textures
 
@@ -387,7 +373,9 @@ nvrhi::BindingLayoutHandle CNVRHIRenderAPI::CreateBindingLayout(const BindGroupL
 	return m_rhiDevice->createBindingLayout(rhiBindingLayoutDesc);
 }
 
-static void FillNVRHIBinding(nvrhi::IDevice* rhiDevice, const BindGroupDesc::Entry& bindGroupEntry, const ShaderInfo::Binding& binding, Array<nvrhi::SamplerHandle>& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc)
+using NVRHISamplerHandleList = FixedArray<nvrhi::SamplerHandle, 128>;
+
+static void FillNVRHIBinding(nvrhi::IDevice* rhiDevice, const BindGroupDesc::Entry& bindGroupEntry, const ShaderInfo::Binding& binding, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc)
 {
 	switch (bindGroupEntry.type)
 	{
@@ -485,7 +473,7 @@ static void FillNVRHIBinding(nvrhi::IDevice* rhiDevice, const BindGroupDesc::Ent
 	}
 }
 
-static void FillNVRHIBindGroupEntries(nvrhi::IDevice* rhiDevice, const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, Array<nvrhi::SamplerHandle>& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc)
+static void FillNVRHIBindGroupEntries(nvrhi::IDevice* rhiDevice, const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc)
 {
 	int bindingsToResolve = 0;
 
@@ -538,31 +526,11 @@ static void FillNVRHIBindGroupEntries(nvrhi::IDevice* rhiDevice, const BindGroup
 
 IGPUBindingLayoutPtr CNVRHIRenderAPI::CreateBindingLayout(const BindingLayoutDesc& layoutDesc) const
 {
-	CRefPtr<CNVRHIBindingLayout> pipelineLayout = CRefPtr_new(CNVRHIBindingLayout);
-	pipelineLayout->m_dbgName = layoutDesc.name;
+	CRefPtr<CNVRHIBindingLayout> bindingLayout = CRefPtr_new(CNVRHIBindingLayout);
+	bindingLayout->m_dbgName = layoutDesc.name;
+	bindingLayout->m_layoutDesc = layoutDesc;
 
-	// Pipeline layout and bind group layout
-	// are also objects of IGPURenderPipeline
-	// There are 3 distinctive bind groups or buffers as our MatSystem design defines:
-	//		- Material Constant Properties (static buffer)
-	//		- Material Proxy Properties (buffers of these group updated every frame)
-	//		- Scene Properties (camera, transform, fog, clip planes)
-
-	int bindGroupIndex = 0;
-	for(const BindGroupLayoutDesc& bindGroupDesc : layoutDesc.bindGroups)
-	{
-		nvrhi::BindingLayoutHandle rhiBindingLayout = CreateBindingLayout(bindGroupDesc, bindGroupIndex);
-		if (!rhiBindingLayout)
-		{
-			ASSERT_FAIL("Failed to create pipeline layout for bind group %d", bindGroupIndex);
-			return nullptr;
-		}
-
-		//pipelineLayout->m_rhiBindingLayout[pipelineLayout] = rhiBindingLayout;
-		++bindGroupIndex;
-	}
-
-	return IGPUBindingLayoutPtr(pipelineLayout);
+	return IGPUBindingLayoutPtr(bindingLayout);
 }
 
 IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHIBindingLayoutsCRef rhiBindingLayouts) const
@@ -573,7 +541,8 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(const BindGroupDesc& bindG
 		return nullptr;
 	}
 
-	Array<nvrhi::SamplerHandle> rhiSamplers(PP_SL);
+	static thread_local NVRHISamplerHandleList rhiSamplers;
+	rhiSamplers.clear();
 
 	auto rhiBindingSetDesc = nvrhi::BindingSetDesc();
 	FillNVRHIBindGroupEntries(m_rhiDevice, bindGroupDesc, shaderInfo, shaderModuleIdxs, rhiSamplers, rhiBindingSetDesc);
@@ -589,16 +558,20 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(const BindGroupDesc& bindG
 	return IGPUBindGroupPtr(bindGroup);
 }
 
-IGPUBindGroupPtr CNVRHIRenderAPI::CreateSharedBindGroup(const IGPUBindingLayout* layoutDesc, const BindGroupDesc& bindGroupDesc) const
+IGPUBindGroupPtr CNVRHIRenderAPI::CreateSharedBindGroup(const IGPUBindingLayout* bindingLayout, const BindGroupDesc& bindGroupDesc) const
 {
-	if (!layoutDesc)
+	if (!bindingLayout)
 	{
-		ASSERT_FAIL("layoutDesc is null");
+		ASSERT_FAIL("bindingLayout is null");
 		return nullptr;
 	}
 
+	const CNVRHIBindingLayout* bindingLayoutImpl = static_cast<const CNVRHIBindingLayout*>(bindingLayout);
+
 	ASSERT_FAIL("Unimplemented");
+
 	return nullptr;
+
 	//const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(layoutDesc);
 	//return CreateBindGroupImpl(pipelineLayoutImpl->m_rhiBindingLayout, bindGroupDesc);
 }

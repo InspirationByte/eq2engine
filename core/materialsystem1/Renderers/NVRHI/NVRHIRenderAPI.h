@@ -98,10 +98,6 @@ public:
 	void						SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const;
 	Future<bool>				SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const;
 
-// DEPRECATED
-	IVertexFormatPtr			CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc);
-	void						DestroyVertexFormat(IVertexFormat* pFormat);
-
 //-------------------------------------------------------------
 // Private access
 
