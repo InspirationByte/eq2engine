@@ -294,7 +294,7 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 	WGPUTexture rhiTexture = wgpuDeviceCreateTexture(m_rhiDevice, &rhiTextureDesc);
 	if (!rhiTexture)
 	{
-		ErrorMsg("Failed to create render target %s\n", texture->GetName());
+		ASSERT_FAIL("Failed to create render target %s\n", texture->GetName());
 		return;
 	}
 
