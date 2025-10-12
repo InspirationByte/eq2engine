@@ -39,6 +39,11 @@ void CWGPURenderAPI::Shutdown()
 	m_rhiQueue = nullptr;
 }
 
+const char* CWGPURenderAPI::GetRendererName() const
+{
+	return EqString::Format("WebGPU/%s", GetWGPUBackendTypeStr(m_rhiBackendType));
+}
+
 void CWGPURenderAPI::FreeShaderPackage(int id)
 {
 	if (id == 0)

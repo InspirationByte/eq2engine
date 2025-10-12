@@ -37,3 +37,23 @@ struct WGPUDeviceErrorContext
 
 	bool hasError = false;
 };
+
+static const char* GetWGPUBackendTypeStr(WGPUBackendType backendType)
+{
+	switch (backendType)
+	{
+	case WGPUBackendType_D3D11:
+		return "D3D11";
+	case WGPUBackendType_D3D12:
+		return "D3D12";
+	case WGPUBackendType_Metal:
+		return "Metal";
+	case WGPUBackendType_Vulkan:
+		return "Vulkan";
+	case WGPUBackendType_OpenGL:
+		return "OpenGL";
+	case WGPUBackendType_OpenGLES:
+		return "OpenGLES";
+	}
+	return "Unknown";
+}
