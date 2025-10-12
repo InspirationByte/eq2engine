@@ -36,11 +36,8 @@ public:
 	bool						IsDeviceActive() const { return !m_deviceLost; }
 	bool						IsDeviceValidationActive() const { return m_isValidationActive; }
 
-	// shader API class type for shader developers.
-	EShaderAPIType				GetShaderAPIClass()		{ return SHADERAPI_WEBGPU; }
-
-	// Renderer string (ex: OpenGL, D3D9)
-	const char*					GetRendererName() const { return "WebGPU"; }
+	EShaderAPIType				GetShaderAPIClass()	const { return SHADERAPI_WEBGPU; }
+	const char*					GetRendererName() const ;
 
 //-------------------------------------------------------------
 // MT Synchronization
@@ -111,6 +108,7 @@ protected:
 	WGPUInstance				m_rhiInstance{ nullptr };
 	WGPUDevice					m_rhiDevice{ nullptr };
 	WGPUQueue					m_rhiQueue{ nullptr };
+	WGPUBackendType				m_rhiBackendType;
 
 	mutable uint				m_pipelineIdCounter{ 0 };
 

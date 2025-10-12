@@ -127,26 +127,6 @@ IShaderAPI* CWGPURenderLib::GetRenderer() const
 	return &CWGPURenderAPI::Instance;
 }
 
-static const char* GetWGPUBackendTypeStr(WGPUBackendType backendType)
-{
-	switch (backendType)
-	{
-		case WGPUBackendType_D3D11:
-			return "D3D11";
-		case WGPUBackendType_D3D12:
-			return "D3D12";
-		case WGPUBackendType_Metal:
-			return "Metal";
-		case WGPUBackendType_Vulkan:
-			return "Vulkan";
-		case WGPUBackendType_OpenGL:
-			return "OpenGL";
-		case WGPUBackendType_OpenGLES:
-			return "OpenGLES";
-	}
-	return "Unknown";
-}
-
 static const char* GetWGPUAdapterTypeStr(WGPUAdapterType adapterType)
 {
 	switch (adapterType)
@@ -381,6 +361,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	CWGPURenderAPI::Instance.m_rhiInstance = m_instance;
 	CWGPURenderAPI::Instance.m_rhiDevice = m_rhiDevice;
 	CWGPURenderAPI::Instance.m_rhiQueue = m_deviceQueue;
+	CWGPURenderAPI::Instance.m_rhiBackendType = m_rhiBackendType;
 
 	return true;
 }

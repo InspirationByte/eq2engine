@@ -28,7 +28,6 @@ public:
 
 	const ShaderAPIParams&	GetParams() const { return m_params; }
 	const ShaderAPICapabilities&	GetCaps() const {return m_caps;}
-	virtual EShaderAPIType	GetShaderAPIClass() const {return SHADERAPI_EMPTY;}
 
 	static void				GetConsoleTextureList(const ConCommandBase* base, Array<EqString>&, const char* query);
 
