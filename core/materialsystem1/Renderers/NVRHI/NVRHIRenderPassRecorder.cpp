@@ -83,10 +83,18 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 	for (IGPUBindGroup* bindGroup : m_bindings)
 	{
 		CNVRHIBindGroup* bindGroupImpl = static_cast<CNVRHIBindGroup*>(bindGroup);
-		if(bindGroupImpl)
+		if (!bindGroupImpl)
+			continue;
+
+		if (bindGroupImpl->m_bindingLayout)
+		{
+			// we need to create binding set for this shader using provided layout
+			ASSERT_FAIL("Unimplemented: shared bind groups");
+		}
+		else
+		{
 			rhiGraphicsState.addBindingSet(bindGroupImpl->m_rhiBindingSet);
-		//else
-		//	rhiGraphicsState.addBindingSet(nullptr);
+		}
 	}
 
 	m_rhiCommandList->setGraphicsState(rhiGraphicsState);

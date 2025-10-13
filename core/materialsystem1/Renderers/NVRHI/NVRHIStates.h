@@ -45,8 +45,12 @@ public:
 class CNVRHIBindGroup : public IGPUBindGroup
 {
 public:
-	CNVRHIBindingLayoutPtr		m_bindingLayout;	// if set, it's a shared bind group
+	~CNVRHIBindGroup();
 
+	void						MakeResourceRefs(const BindGroupDesc& sourceDesc);
+
+	CNVRHIBindingLayoutPtr		m_bindingLayout;	// if set, it's a shared bind group
+	BindGroupDesc				m_bindGroupDesc;
 	nvrhi::BindingSetHandle		m_rhiBindingSet;
 	EqString					m_dbgName;
 };

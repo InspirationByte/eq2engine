@@ -410,7 +410,7 @@ static void FillNVRHIBinding(nvrhi::IDevice* rhiDevice, const BindGroupDesc::Ent
 		ASSERT(binding.type == bindGroupEntry.type);
 		// TODO: check buffer usage
 
-		CNVRHIBuffer* buffer = static_cast<CNVRHIBuffer*>(bindGroupEntry.buffer.buffer.Ptr());
+		CNVRHIBuffer* buffer = static_cast<CNVRHIBuffer*>(bindGroupEntry.buffer.ptr);
 		if (buffer)
 		{
 			int64 minAligment = binding.rangeType == BINDING_RANGE_CBV ? 
@@ -472,7 +472,7 @@ static void FillNVRHIBinding(nvrhi::IDevice* rhiDevice, const BindGroupDesc::Ent
 	case BINDENTRY_TEXTURE:
 		ASSERT(binding.type == BINDENTRY_STORAGETEXTURE || binding.type == BINDENTRY_TEXTURE);
 		// TODO: check texture usage
-		CNVRHITexture* texture = static_cast<CNVRHITexture*>(bindGroupEntry.texture.texture.Ptr());
+		CNVRHITexture* texture = static_cast<CNVRHITexture*>(bindGroupEntry.texture.ptr);
 		if (texture)
 		{
 			ASSERT_MSG(texture->GetNVRHITextureViewCount(), "Texture '%s' has no views", texture->GetName());
@@ -606,19 +606,19 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateSharedBindGroup(const IGPUBindingLayout*
 
 	const CNVRHIBindingLayout* bindingLayoutImpl = static_cast<const CNVRHIBindingLayout*>(bindingLayout);
 
-	ASSERT_FAIL("Unimplemented");
+	CRefPtr<CNVRHIBindGroup> bindGroup = CRefPtr_new(CNVRHIBindGroup);
+	bindGroup->m_bindingLayout.Assign(bindingLayoutImpl);
+	bindGroup->m_dbgName = bindGroupDesc.name;
+	bindGroup->MakeResourceRefs(bindGroupDesc);
 
-	return nullptr;
-
-	//const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(layoutDesc);
-	//return CreateBindGroupImpl(pipelineLayoutImpl->m_rhiBindingLayout, bindGroupDesc);
+	return IGPUBindGroupPtr(bindGroup);
 }
 
 IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPURenderPipeline* renderPipeline, const BindGroupDesc& bindGroupDesc) const
 {
 	if (!renderPipeline)
 	{
-		ASSERT_FAIL("computePipeline is null");
+		ASSERT_FAIL("renderPipeline is null");
 		return nullptr;
 	}
 

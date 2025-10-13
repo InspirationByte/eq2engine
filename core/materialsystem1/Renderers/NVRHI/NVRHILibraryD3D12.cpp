@@ -35,6 +35,7 @@
 DECLARE_CVAR(d3d12_adapter, "", "Adapter to use", CV_UNREGISTERED);
 DECLARE_CVAR(d3d12_validation, "0", nullptr, CV_UNREGISTERED);
 DECLARE_CVAR_F(nvrhi_validation);
+DECLARE_CVAR_F(nvrhi_breakOnError);
 
 #define HR_RETURN(hr, fmt, ...) if(FAILED(hr)) { MsgError("ERROR: D3D12 failure - " fmt "\n", __VA_ARGS__); return false; }
 #define HR_ASSERT(hr, fmt, ...) if(FAILED(hr)) { ASSERT_FAIL("ERROR: D3D12 failure - " fmt "\n", __VA_ARGS__); return false; }
@@ -88,6 +89,7 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	{
 		d3d12_validation.SetBool(true);
 		nvrhi_validation.SetBool(true);
+		nvrhi_breakOnError.SetBool(true);
 	}
 
 	EqWString adapterName;
