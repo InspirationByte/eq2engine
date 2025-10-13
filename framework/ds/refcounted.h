@@ -7,6 +7,9 @@
 
 #pragma once
 
+template< typename TYPE>
+class CRefPtr;
+
 struct RefCountedDeletePolicy {
 	enum { SHOULD_DELETE = 1 };
 };
@@ -15,10 +18,22 @@ struct RefCountedKeepPolicy {
 	enum { SHOULD_DELETE = 0 };
 };
 
-template< typename TYPE>
-class CRefPtr;
+struct RefCountedSafe
+{
+	inline static void RefCountedGrab(volatile int32& numRefs) { Atomic::Increment(numRefs); }
+	inline static bool RefCountedDrop(volatile int32& numRefs) { return Atomic::Decrement(numRefs) == 0; }
+};
 
-template< typename TYPE, typename POLICY = RefCountedDeletePolicy>
+struct RefCountedUnsafe
+{
+	inline static void RefCountedGrab(volatile int32& numRefs) { ++numRefs; }
+	inline static bool RefCountedDrop(volatile int32& numRefs) { return --numRefs == 0; }
+};
+
+using RefCountDefaultPolicy = RefCountedDeletePolicy;
+using RefCountDefaultCount = RefCountedSafe;
+
+template< typename TYPE, typename POLICY = RefCountDefaultPolicy, typename RCTYPE = RefCountDefaultCount>
 class RefCountedObject
 {
 public:
@@ -32,33 +47,23 @@ public:
 	bool	Ref_Drop();
 
 	int		Ref_Count() const { return m_numRefs; }
-
 protected:
-
-	// deletes object when no references
-	// example of usage: 
-	// void Ref_DeleteObject()
-	// {
-	//		assignedRemover->Free(this);
-	//		RefCountedObject::Ref_DeleteObject();
-	// }
-
-	virtual void Ref_DeleteObject() { if constexpr (POLICY::SHOULD_DELETE) { delete this; } }	// can be overridden
+	virtual void Ref_DeleteObject() { if constexpr (POLICY::SHOULD_DELETE) { delete this; } } // can be overridden
 
 private:
-	mutable int	m_numRefs{ 0 };
+	mutable volatile int	m_numRefs{ 0 };
 };
 
-template< class TYPE, class POLICY >
-inline void	RefCountedObject<TYPE, POLICY>::Ref_Grab()
+template< typename TYPE, typename POLICY, typename RCTYPE >
+inline void	RefCountedObject<TYPE, POLICY, RCTYPE>::Ref_Grab()
 {
-	Atomic::Increment(m_numRefs);
+	RCTYPE::RefCountedGrab(m_numRefs);
 }
 
-template< class TYPE, class POLICY >
-inline bool	RefCountedObject<TYPE, POLICY>::Ref_Drop()
+template< typename TYPE, typename POLICY, typename RCTYPE >
+inline bool	RefCountedObject<TYPE, POLICY, RCTYPE>::Ref_Drop()
 {
-	if (Atomic::Decrement(m_numRefs) == 0)
+	if (RCTYPE::RefCountedDrop(m_numRefs))
 	{
 		Ref_DeleteObject();
 		return true;
