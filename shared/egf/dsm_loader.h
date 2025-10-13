@@ -48,7 +48,8 @@ struct DSBone
 	Vector3D		angles{ 0 };
 };
 
-struct DSModel : public RefCountedObject<DSModel>
+struct DSModel
+	: public RefCountedObject<DSModel, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 	~DSModel();
 	EqString		name;

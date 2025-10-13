@@ -10,7 +10,8 @@
 
 struct VertexLayoutDesc;
 
-class IVertexFormat : public RefCountedObject<IVertexFormat>
+class IVertexFormat
+	: public RefCountedObject<IVertexFormat, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 public:
 	virtual	~IVertexFormat() = default;

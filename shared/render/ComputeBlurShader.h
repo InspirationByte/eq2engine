@@ -2,7 +2,8 @@
 #include "materialsystem1/renderers/IShaderAPI.h"
 
 // Blur shader on compute pipeline
-class ComputeBlurShader : public RefCountedObject<ComputeBlurShader>
+class ComputeBlurShader
+	: public RefCountedObject<ComputeBlurShader, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 public:
 	enum EBlurFlags

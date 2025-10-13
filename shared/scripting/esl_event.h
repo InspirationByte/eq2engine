@@ -13,7 +13,8 @@ class LuaEvent : public WeakRefObject<LuaEvent>
 public:
 	static void	Bind(esl::ScriptState& state);
 
-	struct Handle : public RefCountedObject<Handle>
+	struct Handle 
+		: public RefCountedObject<Handle, RefCountDefaultPolicy, RefCountedUnsafe>
 	{
 		~Handle();
 		Handle() = default;

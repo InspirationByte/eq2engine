@@ -10,7 +10,8 @@ enum EComputeSortValueType
 
 // Merge sort running on GPU
 // NOTE: keys buffer's first element is key count
-class ComputeSortShader : public RefCountedObject<ComputeSortShader>
+class ComputeSortShader
+	: public RefCountedObject<ComputeSortShader, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 public:
 	ComputeSortShader();
