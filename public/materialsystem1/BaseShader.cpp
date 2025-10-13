@@ -420,14 +420,13 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 			inputParams.meshInstProvider->FillBindGroupLayoutDesc(bindingLayoutDesc.bindGroups.append());
 
 		int shaderLayoutBindGroup = 0;
-
 		int piplineLayoutIdx = 0;
 		for (const BindGroupLayoutDesc& layout : bindingLayoutDesc.bindGroups)
-		{
+ 		{
 			if (layout.entries.numElem() > 0)
 				shaderLayoutBindGroup |= (1 << piplineLayoutIdx);
 			++piplineLayoutIdx;
-		}
+ 		}
 
 		if (shaderLayoutBindGroup)
 			newPipelineInfo.layout = renderAPI->CreateBindingLayout(bindingLayoutDesc);
@@ -570,11 +569,11 @@ void CBaseShader::FillBindGroupLayout_Constant_Samplers(BindGroupLayoutDesc& bin
 void CBaseShader::FillBindGroup_Constant_Samplers(BindGroupDesc& bindGroupDesc) const
 {
 	Builder<BindGroupDesc>(bindGroupDesc)
-		.Sampler(0, SamplerStateParams(m_texFilter, m_texAddressMode))
-		.Sampler(1, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_MIRROR))
-		.Sampler(2, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
-		.Sampler(3, SamplerStateParams(TEXFILTER_NEAREST, TEXADDRESS_CLAMP))
-		.Sampler(4, SamplerStateParams());
+		.Sampler(StringIdConst24("MaterialSampler"), SamplerStateParams(m_texFilter, m_texAddressMode))
+		.Sampler(StringIdConst24("LinearMirrorWrapSampler"), SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_MIRROR))
+		.Sampler(StringIdConst24("LinearClampSampler"), SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
+		.Sampler(StringIdConst24("NearestSampler"), SamplerStateParams(TEXFILTER_NEAREST, TEXADDRESS_CLAMP))
+		.Sampler(StringIdConst24("NoSampler"), SamplerStateParams());
 }
 
 IGPUBufferPtr CBaseShader::CreateAtlasBuffer(IShaderAPI* renderAPI) const
