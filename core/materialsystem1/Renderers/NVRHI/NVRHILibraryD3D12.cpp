@@ -32,8 +32,6 @@
 //__declspec(dllexport) const char* D3D12SDKPath = u8".\\D3D12\\";
 //}
 
-// +seti d3d12_validation 1 +seti nvrhi_validation 1
-
 DECLARE_CVAR(d3d12_adapter, "", "Adapter to use", CV_UNREGISTERED);
 DECLARE_CVAR(d3d12_validation, "0", nullptr, CV_UNREGISTERED);
 DECLARE_CVAR_F(nvrhi_validation);
@@ -85,6 +83,13 @@ IShaderAPI* CNVRHIRenderLibD3D12::GetRenderer() const
 
 bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 {
+	const bool isDeviceValidationEnabled = (g_cmdLine->Find("-rhivalidation") != -1);
+	if (isDeviceValidationEnabled)
+	{
+		d3d12_validation.SetBool(true);
+		nvrhi_validation.SetBool(true);
+	}
+
 	EqWString adapterName;
 	AnsiUnicodeConverter(adapterName, d3d12_adapter.GetString());
 
