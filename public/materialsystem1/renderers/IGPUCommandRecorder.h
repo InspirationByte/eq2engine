@@ -52,7 +52,7 @@ struct GPUDrawIndexedIndirectCmd
 class IGPUCommandBuffer : public RefCountedObject<IGPUCommandBuffer> {};
 using IGPUCommandBufferPtr = CRefPtr<IGPUCommandBuffer>;
 
-class IGPURenderCommandsRecorder : public RefCountedObject<IGPURenderCommandsRecorder, RefCountDefaultPolicy, RefCountedUnsafe>
+class IGPURenderCommandsRecorder : public RefCountedObject<IGPURenderCommandsRecorder>
 {
 public:
 	enum EType
@@ -141,7 +141,7 @@ using IGPURenderPassRecorderPtr = CRefPtr<IGPURenderPassRecorder>;
 
 //---------------------------------
 // Compute pass recorder
-class IGPUComputePassRecorder : public RefCountedObject<IGPUComputePassRecorder, RefCountDefaultPolicy, RefCountedUnsafe>
+class IGPUComputePassRecorder : public RefCountedObject<IGPUComputePassRecorder>
 {
 public:
 	virtual void					DbgPopGroup() const = 0;
@@ -168,7 +168,7 @@ using IGPUComputePassRecorderPtr = CRefPtr<IGPUComputePassRecorder>;
 
 //---------------------------------
 // Command recorded. Used for render passes and compute passes
-class IGPUCommandRecorder : public RefCountedObject<IGPUCommandRecorder, RefCountDefaultPolicy, RefCountedUnsafe>
+class IGPUCommandRecorder : public RefCountedObject<IGPUCommandRecorder>
 {
 public:
 	virtual ~IGPUCommandRecorder() {}
