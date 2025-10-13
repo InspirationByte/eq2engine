@@ -54,7 +54,7 @@ public:
 
 	void					SetPipeline(IGPURenderPipeline* pipeline)  { m_curPipeline.Assign(pipeline); }
 	IGPURenderPipelinePtr	GetPipeline() const { return m_curPipeline; }
-	void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets = nullptr) {}
+	void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup) {}
 
 	void					SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset = 0, int64 size = -1)  {}
 	void					SetIndexBuffer(IGPUBuffer* indexBuffer, EIndexFormat indexFormat, int64 offset = 0, int64 size = -1) {}
@@ -92,7 +92,7 @@ public:
 	void					SetPipeline(IGPUComputePipeline* pipeline) { m_curPipeline.Assign(pipeline); }
 	IGPUComputePipelinePtr	GetPipeline() const { return m_curPipeline; }
 
-	void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets = nullptr) {}
+	void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup) {}
 
 	void					DispatchWorkgroups(int32 workgroupCountX, int32 workgroupCountY = 1, int32 workgroupCountZ = 1) {}
 	void					DispatchWorkgroupsIndirect(IGPUBuffer* indirectBuffer, int64 indirectOffset){}

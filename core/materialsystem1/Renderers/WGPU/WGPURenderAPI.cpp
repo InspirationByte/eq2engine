@@ -403,7 +403,7 @@ IGPUBindingLayoutPtr CWGPURenderAPI::CreateBindingLayout(const BindingLayoutDesc
 			switch (entry.type)
 			{
 				case BINDENTRY_BUFFER:
-					bglEntry.buffer.hasDynamicOffset = entry.buffer.hasDynamicOffset;
+					bglEntry.buffer.hasDynamicOffset = false;
 					bglEntry.buffer.type = g_wgpuBufferBindingType[entry.buffer.bindType];
 					break;
 				case BINDENTRY_SAMPLER:

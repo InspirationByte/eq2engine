@@ -42,11 +42,11 @@ void CWGPURenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)
 	wgpuRenderPassEncoderSetPipeline(m_rhiRenderPassEncoder, pipelineImpl->m_rhiRenderPipeline);
 }
 
-void CWGPURenderPassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets) // TODO: dynamic offsets
+void CWGPURenderPassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup)
 {
 	CWGPUBindGroup* bindGroupImpl = static_cast<CWGPUBindGroup*>(bindGroup);
 	if(bindGroupImpl)
-		wgpuRenderPassEncoderSetBindGroup(m_rhiRenderPassEncoder, groupIndex, bindGroupImpl->m_rhiBindGroup, dynamicOffsets.numElem(), dynamicOffsets.ptr());
+		wgpuRenderPassEncoderSetBindGroup(m_rhiRenderPassEncoder, groupIndex, bindGroupImpl->m_rhiBindGroup, 0, nullptr);
 	else
 		wgpuRenderPassEncoderSetBindGroup(m_rhiRenderPassEncoder, groupIndex, nullptr, 0, nullptr);
 }

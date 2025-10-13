@@ -52,7 +52,7 @@ struct GPUDrawIndexedIndirectCmd
 class IGPUCommandBuffer : public RefCountedObject<IGPUCommandBuffer> {};
 using IGPUCommandBufferPtr = CRefPtr<IGPUCommandBuffer>;
 
-class IGPURenderCommandsRecorder : public RefCountedObject<IGPURenderCommandsRecorder>
+class IGPURenderCommandsRecorder : public RefCountedObject<IGPURenderCommandsRecorder, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 public:
 	enum EType
@@ -89,7 +89,7 @@ public:
 
 	virtual void					SetPipeline(IGPURenderPipeline* pipeline) = 0;
 	virtual IGPURenderPipelinePtr	GetPipeline() const = 0;
-	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets = nullptr) = 0;
+	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup) = 0;
 
 	virtual void					SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset = 0, int64 size = -1) = 0;
 	virtual void					SetIndexBuffer(IGPUBuffer* indexBuffer, EIndexFormat indexFormat, int64 offset = 0, int64 size = -1) = 0;
@@ -141,7 +141,7 @@ using IGPURenderPassRecorderPtr = CRefPtr<IGPURenderPassRecorder>;
 
 //---------------------------------
 // Compute pass recorder
-class IGPUComputePassRecorder : public RefCountedObject<IGPUComputePassRecorder>
+class IGPUComputePassRecorder : public RefCountedObject<IGPUComputePassRecorder, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 public:
 	virtual void					DbgPopGroup() const = 0;
@@ -151,7 +151,7 @@ public:
 	virtual void					SetPipeline(IGPUComputePipeline* pipeline) = 0;
 	virtual IGPUComputePipelinePtr	GetPipeline() const = 0;
 
-	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets = nullptr) = 0;
+	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup) = 0;
 
 	virtual void					DispatchWorkgroups(int32 workgroupCountX, int32 workgroupCountY = 1, int32 workgroupCountZ = 1) = 0;
 	virtual void					DispatchWorkgroupsIndirect(IGPUBuffer* indirectBuffer, int64 indirectOffset) = 0;
@@ -168,7 +168,7 @@ using IGPUComputePassRecorderPtr = CRefPtr<IGPUComputePassRecorder>;
 
 //---------------------------------
 // Command recorded. Used for render passes and compute passes
-class IGPUCommandRecorder : public RefCountedObject<IGPUCommandRecorder>
+class IGPUCommandRecorder : public RefCountedObject<IGPUCommandRecorder, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 public:
 	virtual ~IGPUCommandRecorder() {}

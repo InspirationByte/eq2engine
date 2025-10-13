@@ -39,11 +39,11 @@ void CWGPUComputePassRecorder::SetPipeline(IGPUComputePipeline* pipeline)
 	wgpuComputePassEncoderSetPipeline(m_rhiComputePassEncoder, pipelineImpl->m_rhiComputePipeline);
 }
 
-void CWGPUComputePassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets)
+void CWGPUComputePassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup)
 {
 	CWGPUBindGroup* bindGroupImpl = static_cast<CWGPUBindGroup*>(bindGroup);
 	if (bindGroupImpl)
-		wgpuComputePassEncoderSetBindGroup(m_rhiComputePassEncoder, groupIndex, bindGroupImpl->m_rhiBindGroup, dynamicOffsets.numElem(), dynamicOffsets.ptr());
+		wgpuComputePassEncoderSetBindGroup(m_rhiComputePassEncoder, groupIndex, bindGroupImpl->m_rhiBindGroup, 0, nullptr);
 	else
 		wgpuComputePassEncoderSetBindGroup(m_rhiComputePassEncoder, groupIndex, nullptr, 0, nullptr);
 }
