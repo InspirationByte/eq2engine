@@ -49,7 +49,7 @@ void CNVRHIComputePassRecorder::SetPipeline(IGPUComputePipeline* pipeline)
 	m_computeStateDirty = true;
 }
 
-void CNVRHIComputePassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets)
+void CNVRHIComputePassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup)
 {
 	m_bindings[groupIndex].Assign(bindGroup);
 	m_computeStateDirty = true;

@@ -25,7 +25,7 @@ public:
 	void					SetPipeline(IGPURenderPipeline* pipeline);
 	IGPURenderPipelinePtr	GetPipeline() const { return m_pipeline; }
 
-	void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets);
+	void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup);
 	void					SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset = 0, int64 size = -1);
 	void					SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat indexFormat, int64 offset = 0, int64 size = -1);
 

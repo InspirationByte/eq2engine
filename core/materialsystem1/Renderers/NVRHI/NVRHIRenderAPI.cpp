@@ -552,11 +552,23 @@ static void FillNVRHIBindGroupEntries(nvrhi::IDevice* rhiDevice, const BindGroup
 
 IGPUBindingLayoutPtr CNVRHIRenderAPI::CreateBindingLayout(const BindingLayoutDesc& layoutDesc) const
 {
-	CRefPtr<CNVRHIBindingLayout> bindingLayout = CRefPtr_new(CNVRHIBindingLayout);
-	bindingLayout->m_dbgName = layoutDesc.name;
-	bindingLayout->m_layoutDesc = layoutDesc;
+	CRefPtr<CNVRHIBindingLayout> pipelineLayout = CRefPtr_new(CNVRHIBindingLayout);
+	pipelineLayout->m_dbgName = layoutDesc.name;
 
-	return IGPUBindingLayoutPtr(bindingLayout);
+	// make name to index map
+	int bindGroupIdx = 0;
+	for (const BindGroupLayoutDesc& bindGroupDesc : layoutDesc.bindGroups)
+	{
+		CNVRHIBindingLayout::BindGroupLayoutMap& bindGroupNameMap = pipelineLayout->m_layoutMap.append();
+		for (const BindGroupLayoutDesc::Entry& entry : bindGroupDesc.entries)
+		{
+			bindGroupNameMap.insert(entry.nameId, entry.binding);
+			pipelineLayout->m_maxBindingIndex[bindGroupIdx] = max(pipelineLayout->m_maxBindingIndex[bindGroupIdx], entry.binding);
+		}
+		++bindGroupIdx;
+	}
+
+	return IGPUBindingLayoutPtr(pipelineLayout);
 }
 
 IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHIBindingLayoutsCRef rhiBindingLayouts) const

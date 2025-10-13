@@ -101,7 +101,7 @@ void CNVRHIRenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)
 	m_graphicsStateDirty = true;
 }
 
-void CNVRHIRenderPassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets) // TODO: dynamic offsets
+void CNVRHIRenderPassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup)
 {
 	m_bindings[groupIndex].Assign(bindGroup);
 	m_graphicsStateDirty = true;

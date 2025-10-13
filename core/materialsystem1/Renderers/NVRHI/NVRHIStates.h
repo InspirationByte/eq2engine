@@ -11,9 +11,14 @@ using NVRHIBindingLayoutsCRef = ArrayCRef<nvrhi::BindingLayoutHandle>;
 class CNVRHIBindingLayout : public IGPUBindingLayout
 {
 public:
-	BindingLayoutDesc				m_layoutDesc;
-	EqString						m_dbgName;
+
+	using BindGroupLayoutMap = Map<int, int>;
+	FixedArray<BindGroupLayoutMap, MAX_BINDGROUPS>	m_layoutMap;
+	int					m_maxBindingIndex[MAX_BINDGROUPS]{ 0 };
+	EqString			m_dbgName;
 };
+
+using CNVRHIBindingLayoutPtr = CRefPtr<CNVRHIBindingLayout>;
 
 class CNVRHIRenderPipeline : public IGPURenderPipeline
 {
@@ -40,6 +45,8 @@ public:
 class CNVRHIBindGroup : public IGPUBindGroup
 {
 public:
+	CNVRHIBindingLayoutPtr		m_bindingLayout;	// if set, it's a shared bind group
+
 	nvrhi::BindingSetHandle		m_rhiBindingSet;
 	EqString					m_dbgName;
 };

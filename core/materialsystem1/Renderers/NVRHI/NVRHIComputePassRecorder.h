@@ -20,7 +20,7 @@ public:
 	void					SetPipeline(IGPUComputePipeline* pipeline);
 	IGPUComputePipelinePtr	GetPipeline() const { return m_pipeline; }
 
-	void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets = nullptr);
+	void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup);
 
 	void					DispatchWorkgroups(int32 workgroupCountX, int32 workgroupCountY, int32 workgroupCountZ);
 	void					DispatchWorkgroupsIndirect(IGPUBuffer* indirectBuffer, int64 indirectOffset);
