@@ -506,7 +506,7 @@ static void FindWGPUBindGroupEntry(WGPUDevice rhiDevice, const BindGroupDesc::En
 	}
 }
 
-static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& bindGroupDesc, const CWGPUBindingLayout::BindGroupLayoutMap& bindGroupMap, int maxBindingIndex, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList)
+static void FillWGPUBindGroupEntriesByLayoutMap(WGPUDevice rhiDevice, const BindGroupDesc& bindGroupDesc, const CWGPUBindingLayout::BindGroupLayoutMap& bindGroupMap, int maxBindingIndex, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList)
 {
 	for (const BindGroupDesc::Entry& bindGroupEntry : bindGroupDesc.entries)
 	{
@@ -608,7 +608,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateSharedBindGroup(const IGPUBindingLayout* 
 	};
 
 	const int groupIdx = bindGroupDesc.groupIdx;
-	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, bindingLayoutImpl->m_layoutMap[groupIdx], bindingLayoutImpl->m_maxBindingIndex[groupIdx], rhiBindGroupEntryList);
+	FillWGPUBindGroupEntriesByLayoutMap(m_rhiDevice, bindGroupDesc, bindingLayoutImpl->m_layoutMap[groupIdx], bindingLayoutImpl->m_maxBindingIndex[groupIdx], rhiBindGroupEntryList);
 	
 	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
 	rhiBindGroupDesc.layout = rhiLayout[bindGroupDesc.groupIdx];

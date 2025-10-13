@@ -229,8 +229,8 @@ private:
 	IMaterialPtr				m_overdrawMaterial;
 
 	ITexturePtr					m_currentEnvmapTexture;
-	ITexturePtr					m_whiteTexture[TEXDIMENSION_COUNT];
-	ITexturePtr					m_errorTexture[TEXDIMENSION_COUNT];
+	ITexturePtr					m_whiteTexture[TEXDIMENSION_3D + 1];
+	ITexturePtr					m_errorTexture[TEXDIMENSION_3D + 1];
 	ITexturePtr					m_defaultDepthTexture;
 
 	Array<DEVICE_LOST_RESTORE_CB>	m_lostDeviceCb{ PP_SL };

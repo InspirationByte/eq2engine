@@ -14,8 +14,8 @@ class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 
 enum ETextureFormat : int;
-enum EPrimTopology : int;
-enum ECullMode : int;
+enum EPrimTopology : uint8;
+enum ECullMode : uint8;
 
 class IGPURenderPassRecorder;
 struct MeshInstanceFormatRef;

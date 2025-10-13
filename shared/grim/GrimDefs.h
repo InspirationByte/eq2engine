@@ -12,8 +12,8 @@ using IMaterialPtr = CRefPtr<IMaterial>;
 class IGPUBuffer;
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
 
-enum EPrimTopology : int;
-enum EIndexFormat : int;
+enum EPrimTopology : uint8;
+enum EIndexFormat : uint8;
 
 using GRIMArchetype = int;
 using GRIMInstanceRef = int;
