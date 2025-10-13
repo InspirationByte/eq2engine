@@ -19,7 +19,7 @@ class IGPUBindingLayout;
 class IGPUBindGroup;
 using IGPUBindGroupPtr = CRefPtr<IGPUBindGroup>;
 
-enum EPrimTopology : int;
+enum EPrimTopology : uint8;
 
 struct Vertex2D
 {

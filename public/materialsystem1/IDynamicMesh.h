@@ -11,7 +11,7 @@ struct RenderDrawCmd;
 struct VertexLayoutDesc;
 class IGPUCommandBuffer;
 using IGPUCommandBufferPtr = CRefPtr<IGPUCommandBuffer>;
-enum EPrimTopology : int;
+enum EPrimTopology : uint8;
 
 //
 // The dynamic mesh interface

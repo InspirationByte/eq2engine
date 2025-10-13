@@ -19,7 +19,7 @@ using IGPUComputePipelinePtr = CRefPtr<IGPUComputePipeline>;
 
 class IGPUBindGroup;
 struct RenderPassDesc;
-enum EIndexFormat : int;
+enum EIndexFormat : uint8;
 
 struct TextureCopyInfo
 {

@@ -41,7 +41,7 @@ struct RenderWindowInfo
 //---------------------------------------
 
 // comparison functions
-enum ECompareFunc : int
+enum ECompareFunc : uint8
 {
 	COMPFUNC_NONE = 0,
 
@@ -58,7 +58,7 @@ enum ECompareFunc : int
 //-----------------------------------------------------------------------------
 // Sampler state and texture flags
 
-enum ETexFilterMode : int
+enum ETexFilterMode : uint8
 {
 	TEXFILTER_NEAREST = 0,
 	TEXFILTER_LINEAR,
@@ -68,7 +68,7 @@ enum ETexFilterMode : int
 	TEXFILTER_TRILINEAR_ANISO,
 };
 
-enum ETexAddressMode : int
+enum ETexAddressMode : uint8
 {
 	TEXADDRESS_WRAP = 0,
 	TEXADDRESS_CLAMP,
@@ -91,6 +91,8 @@ struct SamplerStateParams
 	{
 	}
 
+	int				maxAnisotropy{ 16 };
+	float			lod{ 0.0f }; // TODO: remove and replace with minLodClamp/maxLodClamp
 	ETexFilterMode	minFilter{ TEXFILTER_NEAREST };
 	ETexFilterMode	magFilter{ TEXFILTER_NEAREST };
 	ETexFilterMode	mipmapFilter{ TEXFILTER_NEAREST }; // NOTE: TEXFILTER_NEAREST or TEXFILTER_LINEAR are accepted
@@ -101,15 +103,12 @@ struct SamplerStateParams
 	ETexAddressMode	addressV{ TEXADDRESS_WRAP };
 	ETexAddressMode	addressW{ TEXADDRESS_WRAP };
 
-	int				maxAnisotropy{ 16 };
-
-	float			lod{ 0.0f }; // TODO: remove and replace with minLodClamp/maxLodClamp
 };
 
 //---------------------------------------
 // Blending factors
 
-enum EColorMask
+enum EColorMask : uint8
 {
 	COLORMASK_RED	= 0x1,
 	COLORMASK_GREEN = 0x2,
@@ -119,7 +118,7 @@ enum EColorMask
 	COLORMASK_ALL	= (COLORMASK_RED | COLORMASK_GREEN | COLORMASK_BLUE | COLORMASK_ALPHA)
 };
 
-enum EBlendFactor : int
+enum EBlendFactor : uint16
 {
 	BLENDFACTOR_ZERO					= 0,
 	BLENDFACTOR_ONE,					//	1
@@ -132,12 +131,10 @@ enum EBlendFactor : int
 	BLENDFACTOR_DST_ALPHA,				//	8
 	BLENDFACTOR_ONE_MINUS_DST_ALPHA,	//	9
 	BLENDFACTOR_SRC_ALPHA_SATURATE,		//	10
-
-	BLENDFACTOR_COUNT
 };
 
 // Function of blending
-enum EBlendFunc : int
+enum EBlendFunc : uint8
 {
 	// Function of blending
 	BLENDFUNC_ADD				= 0,
@@ -145,8 +142,6 @@ enum EBlendFunc : int
 	BLENDFUNC_REVERSE_SUBTRACT,	// 2
 	BLENDFUNC_MIN,				// 3
 	BLENDFUNC_MAX,				// 4
-
-	BLENDFUNC_COUNT
 };
 
 struct BlendStateParams
@@ -182,7 +177,7 @@ static const BlendStateParams BlendStateModulate = {
 //-------------------------------------------
 // Depth-Stencil builder
 
-enum EStencilFunc : int
+enum EStencilFunc : uint8
 {
 	STENCILFUNC_KEEP		= 0,
 	STENCILFUNC_SET_ZERO,	// 1
@@ -192,8 +187,6 @@ enum EStencilFunc : int
 	STENCILFUNC_DECR_WRAP,	// 5
 	STENCILFUNC_INCR_CLAMP,	// 6
 	STENCILFUNC_DECR_CLAMP,	// 7
-
-	STENCILFUNC_COUNT,
 };
 
 struct StencilFaceStateParams
@@ -248,7 +241,7 @@ struct PipelineConst
 };
 
 // Attribute format
-enum EVertAttribFormat : int
+enum EVertAttribFormat : uint8
 {
 	ATTRIBUTEFORMAT_NONE = 0,
 	ATTRIBUTEFORMAT_UINT8,
@@ -264,7 +257,7 @@ static int s_attributeSize[] =
 	sizeof(float)
 };
 
-enum EVertexStepMode : int
+enum EVertexStepMode : uint8
 {
 	VERTEX_STEPMODE_VERTEX = 0,
 	VERTEX_STEPMODE_INSTANCE,
@@ -276,15 +269,15 @@ struct VertexLayoutDesc
 	{
 		int					nameId{ 0 };	// StringId24
 		int					offset{ 0 };	// in bytes
-		EVertAttribFormat	format{ ATTRIBUTEFORMAT_FLOAT };
 		int					count{ 0 };
+		EVertAttribFormat	format{ ATTRIBUTEFORMAT_FLOAT };
 	};
 
 	using VertexAttribList = Array<AttribDesc>;
 	VertexAttribList		attributes{ PP_SL };
 	int						stride{ 0 };
-	EVertexStepMode			stepMode{ VERTEX_STEPMODE_VERTEX };
 	int						userId{ 0 };
+	EVertexStepMode			stepMode{ VERTEX_STEPMODE_VERTEX };
 	
 };
 
@@ -296,7 +289,7 @@ FLUENT_BEGIN_TYPE(VertexLayoutDesc)
 	ThisType& Attribute(int nameId, int offset, EVertAttribFormat format, int count)
 	{
 		ASSERT_MSG(count > 0 && count <= 4, "Vertex attribute count incorrect (%d, while must be <= 4)", count);
-		ref.attributes.append({ nameId, offset, format, count });
+		ref.attributes.append({ nameId, offset, count, format });
 		return *this; 
 	}
 FLUENT_END_TYPE
@@ -333,7 +326,7 @@ struct MeshInstanceFormat
 //-------------------------------------------
 
 // Cull modes
-enum ECullMode : int
+enum ECullMode : uint8
 {
 	CULL_NONE	= 0,
 	CULL_BACK,
@@ -341,7 +334,7 @@ enum ECullMode : int
 };
 
 // for mesh builder and type of drawing the world model
-enum EPrimTopology : int
+enum EPrimTopology : uint8
 {
 	PRIM_POINTS = 0,
 	PRIM_LINES,
@@ -350,13 +343,13 @@ enum EPrimTopology : int
 	PRIM_TRIANGLE_STRIP
 };
 
-enum EIndexFormat : int
+enum EIndexFormat : uint8
 {
 	INDEXFMT_UINT16 = 0,
 	INDEXFMT_UINT32,
 };
 
-enum EStripIndexFormat : int
+enum EStripIndexFormat : uint8
 {
 	STRIPINDEX_NONE = 0,
 	STRIPINDEX_UINT16,
@@ -490,7 +483,7 @@ struct BindBuffer
 
 //-------------------------------------------
 
-enum ESamplerBindType : int
+enum ESamplerBindType : uint8
 {
 	SAMPLERBIND_NONE = 0,
 	SAMPLERBIND_FILTERING,
@@ -505,7 +498,7 @@ struct BindSampler
 
 //-------------------------------------------
 
-enum ETextureSampleType
+enum ETextureSampleType : uint8
 {
 	TEXSAMPLE_FLOAT = 0,
 	TEXSAMPLE_UNFILTERABLEFLOAT,
@@ -514,7 +507,7 @@ enum ETextureSampleType
 	TEXSAMPLE_UINT,
 };
 
-enum ETextureDimension
+enum ETextureDimension : uint8
 {
 	TEXDIMENSION_1D = 0,
 	TEXDIMENSION_2D,
@@ -522,8 +515,6 @@ enum ETextureDimension
 	TEXDIMENSION_CUBE,
 	TEXDIMENSION_CUBEARRAY,
 	TEXDIMENSION_3D,
-
-	TEXDIMENSION_COUNT,
 };
 
 struct BindTexture
@@ -535,7 +526,7 @@ struct BindTexture
 
 //-------------------------------------------
 
-enum EStorageTextureAccess
+enum EStorageTextureAccess : uint8
 {
 	STORAGETEX_WRITEONLY = 0,
 	STORAGETEX_READONLY,
@@ -544,21 +535,21 @@ enum EStorageTextureAccess
 
 struct BindStorageTexture
 {
-	EStorageTextureAccess	access{ STORAGETEX_WRITEONLY };
 	ETextureFormat			format{ FORMAT_NONE };
+	EStorageTextureAccess	access{ STORAGETEX_WRITEONLY };
 	ETextureDimension		dimension{ TEXDIMENSION_1D };
 };
 
 //-------------------------------------------
 
-enum EShaderKind : int
+enum EShaderKind : uint8
 {
 	SHADERKIND_VERTEX	= (1 << 0),
 	SHADERKIND_FRAGMENT	= (1 << 1),
 	SHADERKIND_COMPUTE	= (1 << 2),
 };
 
-enum EBindEntryType : int
+enum EBindEntryType : uint8
 {
 	BINDENTRY_BUFFER = 0,
 	BINDENTRY_SAMPLER,
@@ -578,9 +569,9 @@ struct BindGroupLayoutDesc
 			BindStorageTexture	storageTexture;
 		};
 		int				nameId;				// StringId24
-		EBindEntryType	type{ BINDENTRY_BUFFER };
 		int				binding{ 0 };
 		int				visibility{ 0 };	// EShaderKind
+		EBindEntryType	type{ BINDENTRY_BUFFER };
 	};
 
 	using EntryList = Array<Entry>;
@@ -592,7 +583,6 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	FLUENT_SET_VALUE(name, Name)
 	ThisType& Buffer(int nameId, int binding, int shaderKind, EBufferBindType bindType, bool hasDynamicOffset = false)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding);
 		Entry& entry = AddEntry(BINDENTRY_BUFFER, nameId, binding, shaderKind);
 
 		entry.buffer = {};
@@ -602,7 +592,6 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	}
 	ThisType& Sampler(int nameId, int binding, int shaderKind, ESamplerBindType bindType)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
 		Entry& entry = AddEntry(BINDENTRY_SAMPLER, nameId, binding, shaderKind);
 
 		entry.sampler = {};
@@ -611,7 +600,6 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	}
 	ThisType& Texture(int nameId, int binding, int shaderKind, ETextureSampleType sampleType, ETextureDimension dimension, bool multisample = false)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
 		Entry& entry = AddEntry(BINDENTRY_TEXTURE, nameId, binding, shaderKind);
 
 		entry.texture = {};
@@ -622,7 +610,6 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	}
 	ThisType& StorageTexture(int nameId, int binding, int shaderKind, ETextureFormat format, EStorageTextureAccess access, ETextureDimension dimension)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
 		Entry& entry = AddEntry(BINDENTRY_STORAGETEXTURE, nameId, binding, shaderKind);
 
 		entry.storageTexture = {};
@@ -634,10 +621,12 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 
 	Entry& AddEntry(EBindEntryType type, int nameId, int binding, int shaderKind)
 	{
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding);
+
 		Entry& entry = ref.entries.append();
 		entry.nameId = nameId;
-		entry.visibility = shaderKind;
 		entry.binding = binding;
+		entry.visibility = shaderKind;
 		entry.type = type;
 		return entry;
 	}
@@ -686,10 +675,7 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 	FLUENT_SET_VALUE(groupIdx, GroupIndex)
 	ThisType& Buffer(int binding, const GPUBufferView& buffer)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding);
-		Entry& entry = ref.entries.append();
-		entry.binding = std::move(binding);
-		entry.type = BINDENTRY_BUFFER;
+		Entry& entry = AddEntry(BINDENTRY_BUFFER, binding);
 		entry.buffer = buffer;
 		return *this; 
 	}
@@ -699,28 +685,19 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 	}
 	ThisType& Sampler(int binding, const SamplerStateParams& samplerParams)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
-		Entry& entry = ref.entries.append();
-		entry.binding = binding;
-		entry.type = BINDENTRY_SAMPLER;
+		Entry& entry = AddEntry(BINDENTRY_SAMPLER, binding);
 		entry.sampler = samplerParams;
 		return *this;
 	}
 	ThisType& Texture(int binding, const TextureView& texView)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
-			Entry& entry = ref.entries.append();
-		entry.binding = binding;
-		entry.type = BINDENTRY_TEXTURE;
+		Entry& entry = AddEntry(BINDENTRY_TEXTURE, binding);
 		entry.texture = texView;
 		return *this;
 	}
 	ThisType& StorageTexture(int binding, const TextureView& texView)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
-		Entry& entry = ref.entries.append();
-		entry.binding = binding;
-		entry.type = BINDENTRY_STORAGETEXTURE;
+		Entry& entry = AddEntry(BINDENTRY_STORAGETEXTURE, binding);
 		entry.texture = texView;
 		return *this;
 	}
@@ -731,6 +708,15 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 	ThisType& StorageTexture(int binding, ITexture* texture, int arraySlice)
 	{
 		return StorageTexture(binding, TextureView(texture, arraySlice));
+	}
+
+	Entry& AddEntry(EBindEntryType type, int binding)
+	{
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding);
+		Entry& entry = ref.entries.append();
+		entry.binding = binding;
+		entry.type = type;
+		return entry;
 	}
 FLUENT_END_TYPE
 
@@ -778,7 +764,7 @@ struct TextureInfo // TODO: use
 //------------------------------------------------------------
 // Buffer builder
 
-enum EBufferUsage
+enum EBufferUsage : int
 {
 	BUFFERUSAGE_UNIFORM		= (1 << 0),
 	BUFFERUSAGE_VERTEX		= (1 << 1),
@@ -897,13 +883,13 @@ FLUENT_END_TYPE
 //-------------------------------
 // Render pass builders
 
-enum ELoadFunc
+enum ELoadFunc : uint8
 {
 	LOADFUNC_LOAD = 0,
 	LOADFUNC_CLEAR,
 };
 
-enum EStoreFunc
+enum EStoreFunc : uint8
 {
 	STOREFUNC_STORE = 0,
 	STOREFUNC_DISCARD,
@@ -915,12 +901,15 @@ struct RenderPassDesc
 	{
 		TextureView	target;
 		TextureView	resolveTarget;
+		MColor		clearColor{ color_black };
 		ELoadFunc	loadOp{ LOADFUNC_LOAD };
 		EStoreFunc	storeOp{ STOREFUNC_STORE };	// DEPRECATED
-		MColor		clearColor{ color_black };
 	};
 	using ColorTargetList = FixedArray<ColorTargetDesc, MAX_RENDERTARGETS>;
 	ColorTargetList	colorTargets;
+
+	EqString		name;
+	int				nameHash{ 0 };
 
 	TextureView		depthStencil;
 	float			depthClearValue{ 0.0f };
@@ -928,13 +917,10 @@ struct RenderPassDesc
 	EStoreFunc		depthStoreOp{ STOREFUNC_STORE };	// DEPRECATED
 	bool			depthReadOnly{ false };
 
-	int				stencilClearValue{ 0 };
+	uint			stencilClearValue{ 0 };
 	ELoadFunc		stencilLoadOp{ LOADFUNC_LOAD };
 	EStoreFunc		stencilStoreOp{ STOREFUNC_STORE };
 	bool			stencilReadOnly{ false };
-
-	EqString		name;
-	int				nameHash{ 0 };
 };
 
 FLUENT_BEGIN_TYPE(RenderPassDesc)
@@ -983,8 +969,9 @@ struct ComputePipelineDesc
 {
 	EqString				shaderName;
 	int						shaderLayoutId{ 0 };
-	ArrayCRef<EqString>		shaderQuery{ nullptr };
 	EqString				shaderEntryPoint{ "main" };
+
+	ArrayCRef<EqString>		shaderQuery{ nullptr };
 	Array<PipelineConst>	constants{ PP_SL };
 };
 
