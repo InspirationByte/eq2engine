@@ -469,7 +469,7 @@ static void FindWGPUBindGroupEntry(WGPUDevice rhiDevice, const BindGroupDesc::En
 	{
 	case BINDENTRY_BUFFER:
 	{
-		CWGPUBuffer* buffer = static_cast<CWGPUBuffer*>(bindGroupEntry.buffer.buffer.Ptr());
+		CWGPUBuffer* buffer = static_cast<CWGPUBuffer*>(bindGroupEntry.buffer.ptr);
 		if (buffer)
 			rhiBindGroupEntryDesc.buffer = buffer->GetWGPUBuffer();
 		else
@@ -492,7 +492,7 @@ static void FindWGPUBindGroupEntry(WGPUDevice rhiDevice, const BindGroupDesc::En
 	}
 	case BINDENTRY_STORAGETEXTURE:
 	case BINDENTRY_TEXTURE:
-		CWGPUTexture* texture = static_cast<CWGPUTexture*>(bindGroupEntry.texture.texture.Ptr());
+		CWGPUTexture* texture = static_cast<CWGPUTexture*>(bindGroupEntry.texture.ptr);
 
 		// NOTE: animated textures aren't that supported, so it would need array lookup through the shader
 		if (texture)

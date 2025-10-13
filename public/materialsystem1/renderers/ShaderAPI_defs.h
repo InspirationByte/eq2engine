@@ -651,14 +651,42 @@ FLUENT_END_TYPE
 
 struct BindGroupDesc
 {
+	struct EntryTexture
+	{
+		EntryTexture() = default;
+		EntryTexture(const TextureView& view)
+		{
+			ptr = view.texture.Ptr();
+			arraySlice = view.arraySlice;
+		}
+		ITexture*	ptr;
+		int			arraySlice;
+	};
+
+	struct EntryBuffer
+	{
+		EntryBuffer() = default;
+		EntryBuffer(const GPUBufferView& view)
+		{
+			ptr = view.buffer.Ptr();
+			offset = view.offset;
+			size = view.size;
+		}
+		IGPUBuffer* ptr;
+		int64		offset;
+		int64		size;
+	};
+
 	struct Entry
 	{
-		Entry() {}
-		SamplerStateParams	sampler;
-		GPUBufferView		buffer; // uniform buffer
-		TextureView			texture;
-		EBindEntryType		type{ static_cast<EBindEntryType>(-1) };
+		union {
+			int					_dummy{ 0 };
+			SamplerStateParams	sampler;
+			EntryTexture		texture;
+			EntryBuffer			buffer;
+		};
 		int					binding{ 0 };
+		EBindEntryType		type{ static_cast<EBindEntryType>(-1) };
 	};
 
 	using EntryList = Array<Entry>;
@@ -673,7 +701,7 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 	ThisType& Buffer(int binding, const GPUBufferView& buffer)
 	{
 		Entry& entry = AddEntry(BINDENTRY_BUFFER, binding);
-		entry.buffer = buffer;
+		entry.buffer = EntryBuffer(buffer);
 		return *this; 
 	}
 	ThisType& Buffer(int binding, IGPUBufferPtr buffer, int64 offset = 0, int64 size = -1)
@@ -689,13 +717,13 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 	ThisType& Texture(int binding, const TextureView& texView)
 	{
 		Entry& entry = AddEntry(BINDENTRY_TEXTURE, binding);
-		entry.texture = texView;
+		entry.texture = EntryTexture(texView);
 		return *this;
 	}
 	ThisType& StorageTexture(int binding, const TextureView& texView)
 	{
 		Entry& entry = AddEntry(BINDENTRY_STORAGETEXTURE, binding);
-		entry.texture = texView;
+		entry.texture = EntryTexture(texView);
 		return *this;
 	}
 	ThisType& Texture(int binding, ITexture* texture, int arraySlice)

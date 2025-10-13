@@ -62,11 +62,13 @@ ComputeBlurShader::ComputeBlurShader(int iterations, int filterSize, int blurFla
 	m_switchBuffer0 = g_renderAPI->CreateBuffer(BufferInfo(&flipData0, 1), BUFFERUSAGE_UNIFORM, "SwitchBuffer0");
 	m_switchBuffer1 = g_renderAPI->CreateBuffer(BufferInfo(&flipData1, 1), BUFFERUSAGE_UNIFORM, "SwitchBuffer1");
 
+	IGPUBufferPtr paramsBuffer = g_renderAPI->CreateBuffer(BufferInfo(&blurParams, 1), BUFFERUSAGE_UNIFORM, "ParamsBuffer");
+
 	m_bindGroupConst = g_renderAPI->CreateBindGroup(m_pipeline, Builder<BindGroupDesc>()
 		.GroupIndex(0)
 		.Name("BlurConst")
 		.Sampler(StringIdConst24("Sampler"), SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
-		.Buffer(StringIdConst24("params"), g_renderAPI->CreateBuffer(BufferInfo(&blurParams, 1), BUFFERUSAGE_UNIFORM, "ParamsBuffer"))
+		.Buffer(StringIdConst24("params"), paramsBuffer)
 		.End());
 }
 
