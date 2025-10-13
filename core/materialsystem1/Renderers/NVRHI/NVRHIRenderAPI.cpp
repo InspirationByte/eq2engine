@@ -345,59 +345,59 @@ IGPUBufferPtr CNVRHIRenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int bu
 	return IGPUBufferPtr(buffer);
 }
 
-nvrhi::BindingLayoutHandle CNVRHIRenderAPI::CreateBindingLayout(const BindGroupLayoutDesc& bindGroupDesc, int bindGroupIndex) const
-{
-	auto rhiBindingLayoutDesc = nvrhi::BindingLayoutDesc();
-		//.setRegisterSpace(bindGroupIndex)
-		//.setRegisterSpaceIsDescriptorSet(true);
-
-	int constantCount = 0;
-	int uavCount = 0;
-	int srvCount = 0;
-
-	int rhiShaderTypeVisbility = 0;
-	for (const BindGroupLayoutDesc::Entry& entry : bindGroupDesc.entries)
-	{
-		if (entry.visibility & SHADERKIND_VERTEX)	rhiShaderTypeVisbility |= static_cast<int>(nvrhi::ShaderType::Vertex);
-		if (entry.visibility & SHADERKIND_FRAGMENT) rhiShaderTypeVisbility |= static_cast<int>(nvrhi::ShaderType::Pixel);
-		if (entry.visibility & SHADERKIND_COMPUTE)	rhiShaderTypeVisbility |= static_cast<int>(nvrhi::ShaderType::Compute);
-
-		switch (entry.type)
-		{
-		case BINDENTRY_BUFFER:
-			switch (entry.buffer.bindType)
-			{
-			case BUFFERBIND_UNIFORM:
-				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::ConstantBuffer(entry.binding));
-				break;
-			case BUFFERBIND_STORAGE_READONLY:
-				// I'm not sure if it should be TypedBuffer, StructuredBuffer or RawBuffer
-				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_SRV(srvCount++));
-				break;
-			case BUFFERBIND_STORAGE:
-				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_UAV(uavCount++));
-				break;
-			}
-			break;
-		case BINDENTRY_SAMPLER:
-			rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Sampler(entry.binding));
-			break;
-		case BINDENTRY_TEXTURE:
-			rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_SRV(srvCount++));
-			break;
-		case BINDENTRY_STORAGETEXTURE:
-			// all storage images are supposed to be UAV
-			if(entry.storageTexture.access == STORAGETEX_READONLY)
-				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_SRV(srvCount++));
-			else
-				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_UAV(uavCount++));
-			break;
-		}
-	}
-	rhiBindingLayoutDesc.setVisibility(static_cast<nvrhi::ShaderType>(rhiShaderTypeVisbility));
-
-	return m_rhiDevice->createBindingLayout(rhiBindingLayoutDesc);
-}
+//nvrhi::BindingLayoutHandle CNVRHIRenderAPI::CreateBindingLayout(const BindGroupLayoutDesc& bindGroupDesc, int bindGroupIndex) const
+//{
+//	auto rhiBindingLayoutDesc = nvrhi::BindingLayoutDesc();
+//		//.setRegisterSpace(bindGroupIndex)
+//		//.setRegisterSpaceIsDescriptorSet(true);
+//
+//	int constantCount = 0;
+//	int uavCount = 0;
+//	int srvCount = 0;
+//
+//	int rhiShaderTypeVisbility = 0;
+//	for (const BindGroupLayoutDesc::Entry& entry : bindGroupDesc.entries)
+//	{
+//		if (entry.visibility & SHADERKIND_VERTEX)	rhiShaderTypeVisbility |= static_cast<int>(nvrhi::ShaderType::Vertex);
+//		if (entry.visibility & SHADERKIND_FRAGMENT) rhiShaderTypeVisbility |= static_cast<int>(nvrhi::ShaderType::Pixel);
+//		if (entry.visibility & SHADERKIND_COMPUTE)	rhiShaderTypeVisbility |= static_cast<int>(nvrhi::ShaderType::Compute);
+//
+//		switch (entry.type)
+//		{
+//		case BINDENTRY_BUFFER:
+//			switch (entry.buffer.bindType)
+//			{
+//			case BUFFERBIND_UNIFORM:
+//				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::ConstantBuffer(entry.binding));
+//				break;
+//			case BUFFERBIND_STORAGE_READONLY:
+//				// I'm not sure if it should be TypedBuffer, StructuredBuffer or RawBuffer
+//				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_SRV(srvCount++));
+//				break;
+//			case BUFFERBIND_STORAGE:
+//				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_UAV(uavCount++));
+//				break;
+//			}
+//			break;
+//		case BINDENTRY_SAMPLER:
+//			rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Sampler(entry.binding));
+//			break;
+//		case BINDENTRY_TEXTURE:
+//			rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_SRV(srvCount++));
+//			break;
+//		case BINDENTRY_STORAGETEXTURE:
+//			// all storage images are supposed to be UAV
+//			if(entry.storageTexture.access == STORAGETEX_READONLY)
+//				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_SRV(srvCount++));
+//			else
+//				rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_UAV(uavCount++));
+//			break;
+//		}
+//	}
+//	rhiBindingLayoutDesc.setVisibility(static_cast<nvrhi::ShaderType>(rhiShaderTypeVisbility));
+//
+//	return m_rhiDevice->createBindingLayout(rhiBindingLayoutDesc);
+//}
 
 using NVRHISamplerHandleList = FixedArray<nvrhi::SamplerHandle, 128>;
 
