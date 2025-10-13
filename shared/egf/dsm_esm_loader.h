@@ -27,7 +27,8 @@ struct DSShapeKey
 	int					time{ 0 };
 };
 
-struct DSShapeData : RefCountedObject<DSShapeData>
+struct DSShapeData
+	: RefCountedObject<DSShapeData, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 	~DSShapeData();
 

@@ -8,7 +8,8 @@
 #pragma once
 #include "textureformats.h"
 
-class CImage : public RefCountedObject<CImage>
+class CImage
+	: public RefCountedObject<CImage, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 public:
 	// Image loading flags

@@ -10,12 +10,10 @@ public:
 	~CWGPUBindingLayout();
 
 	using BindGroupLayoutMap = Map<int, int>;
-
-	// TODO: name
 	FixedArray<BindGroupLayoutMap, MAX_BINDGROUPS>	m_layoutMap;
 	FixedArray<WGPUBindGroupLayout, MAX_BINDGROUPS>	m_rhiBindGroupLayout;
-	WGPUPipelineLayout								m_rhiPipelineLayout{ nullptr };
-	int												m_maxBindingIndex[MAX_BINDGROUPS]{ 0 };
+	int						m_maxBindingIndex[MAX_BINDGROUPS]{ 0 };
+	WGPUPipelineLayout		m_rhiPipelineLayout{ nullptr };
 };
 
 class CWGPURenderPipeline : public IGPURenderPipeline
@@ -48,7 +46,6 @@ class CWGPUBindGroup : public IGPUBindGroup
 public:
 	~CWGPUBindGroup();
 
-	// TODO: name
 	WGPUBindGroup		m_rhiBindGroup{ nullptr };
 };
 

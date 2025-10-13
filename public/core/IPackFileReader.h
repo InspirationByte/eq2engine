@@ -6,7 +6,8 @@ using IFileStreamPtr = CRefPtr<IFileStream>;
 using IFileStream = IFileStream; // pretty same
 using IFileStreamPtr = IFileStreamPtr; // pretty same
 
-class IPackFileReader : public RefCountedObject<IPackFileReader>
+class IPackFileReader
+	: public RefCountedObject<IPackFileReader, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 public:
 	virtual ~IPackFileReader() = default;

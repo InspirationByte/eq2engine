@@ -35,23 +35,23 @@ struct ShaderAPIParams
 
 //---------------------------------
 // Pipeline layout. Used for creating bind groups and pipelines
-class IGPUBindingLayout : public RefCountedObject<IGPUBindingLayout> {};
+class IGPUBindingLayout : public RefCountedObject<IGPUBindingLayout, RefCountDefaultPolicy, RefCountedUnsafe> {};
 using IGPUBindingLayoutPtr = CRefPtr<IGPUBindingLayout>;
 
 //---------------------------------
 // Render pipeline. Used for rendering things
-class IGPURenderPipeline : public RefCountedObject<IGPURenderPipeline> {};
+class IGPURenderPipeline : public RefCountedObject<IGPURenderPipeline, RefCountDefaultPolicy, RefCountedUnsafe> {};
 using IGPURenderPipelinePtr = CRefPtr<IGPURenderPipeline>;
 
 //---------------------------------
 // Compute pipeline
-class IGPUComputePipeline : public RefCountedObject<IGPUComputePipeline> {};
+class IGPUComputePipeline : public RefCountedObject<IGPUComputePipeline, RefCountDefaultPolicy, RefCountedUnsafe> {};
 using IGPUComputePipelinePtr = CRefPtr<IGPUComputePipeline>;
 
 //---------------------------------
 // Bind group. References used resources needed to render (textures, uniform buffers etc)
 // not used for Vertex and Index buffers.
-class IGPUBindGroup : public RefCountedObject<IGPUBindGroup> {};
+class IGPUBindGroup : public RefCountedObject<IGPUBindGroup, RefCountDefaultPolicy, RefCountedUnsafe> {};
 using IGPUBindGroupPtr = CRefPtr<IGPUBindGroup>;
 
 //---------------------------------

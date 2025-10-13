@@ -35,7 +35,8 @@ enum EDecalDataFlags
 	DECAL_FLAG_STUDIODECAL = (1 << 0)
 };
 
-struct DecalData : public RefCountedObject<DecalData>
+struct DecalData
+	: public RefCountedObject<DecalData, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 	~DecalData()
 	{

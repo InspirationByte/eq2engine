@@ -10,7 +10,9 @@ using ITexturePtr = CRefPtr<ITexture>;
 struct MoviePlayerData;
 using MovieCompletedEvent = Event<void()>;
 
-class CMoviePlayer : Threading::CEqThread, public RefCountedObject<CMoviePlayer>
+class CMoviePlayer
+	: Threading::CEqThread
+	, public RefCountedObject<CMoviePlayer, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 public:
 	CMoviePlayer() = default;

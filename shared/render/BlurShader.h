@@ -7,7 +7,8 @@ using IGPURenderPipelinePtr = CRefPtr<IGPURenderPipeline>;
 
 // Blur shader using render pipeline
 // Supports more formats like R16, R32 but might be slower
-class BlurShader : public RefCountedObject<BlurShader>
+class BlurShader
+	: public RefCountedObject<BlurShader, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 public:
 	enum EBlurFlags

@@ -106,7 +106,11 @@ enum EMaterialLoadingState : int
 	MATERIAL_LOAD_INQUEUE,			// is loading now
 };
 
-struct MatStorage : public RefCountedObject<MatStorage> {};
+struct MatStorage
+	: public RefCountedObject<MatStorage, RefCountDefaultPolicy, RefCountedUnsafe>
+{
+};
+
 using MatStoragePtr = CRefPtr<MatStorage>;
 
 //---------------------------------------------------------------------------------

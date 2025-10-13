@@ -245,7 +245,8 @@ struct GRIMBaseRenderer::GPUInstanceInfo
 	int		packedArchetypeId;
 };
 
-struct GRIMBaseRenderer::ArchetypeInfo : RefCountedObject<ArchetypeInfo>
+struct GRIMBaseRenderer::ArchetypeInfo
+	: RefCountedObject<ArchetypeInfo, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 	using VertexBufferArray = FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM>;
 	VertexBufferArray		vertexBuffers;

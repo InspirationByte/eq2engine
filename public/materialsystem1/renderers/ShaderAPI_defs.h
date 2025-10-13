@@ -477,8 +477,6 @@ enum EBufferBindType : int
 struct BindBuffer
 {
 	EBufferBindType		bindType{ BUFFERBIND_UNIFORM };
-	bool				hasDynamicOffset{ false };
-	// TODO: there are other fields
 };
 
 //-------------------------------------------
@@ -581,13 +579,12 @@ struct BindGroupLayoutDesc
 
 FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	FLUENT_SET_VALUE(name, Name)
-	ThisType& Buffer(int nameId, int binding, int shaderKind, EBufferBindType bindType, bool hasDynamicOffset = false)
+	ThisType& Buffer(int nameId, int binding, int shaderKind, EBufferBindType bindType)
 	{
 		Entry& entry = AddEntry(BINDENTRY_BUFFER, nameId, binding, shaderKind);
 
 		entry.buffer = {};
 		entry.buffer.bindType = bindType;
-		entry.buffer.hasDynamicOffset = hasDynamicOffset;
 		return *this; 
 	}
 	ThisType& Sampler(int nameId, int binding, int shaderKind, ESamplerBindType bindType)

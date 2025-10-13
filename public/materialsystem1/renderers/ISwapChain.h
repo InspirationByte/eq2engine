@@ -12,7 +12,8 @@ struct RenderWindowInfo;
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 
-class ISwapChain : public RefCountedObject<ISwapChain>
+class ISwapChain
+	: public RefCountedObject<ISwapChain, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 public:
 	virtual ~ISwapChain() = default;

@@ -16,7 +16,8 @@ enum EPrimTopology : uint8;
 //
 // The dynamic mesh interface
 //
-class IDynamicMesh : public RefCountedObject<IDynamicMesh, RefCountedKeepPolicy> // used to grab/release by meshbuffer
+class IDynamicMesh 
+	: public RefCountedObject<IDynamicMesh, RefCountedKeepPolicy, RefCountedUnsafe> // used to grab/release by meshbuffer
 {
 public:
 	virtual ~IDynamicMesh() = default;
