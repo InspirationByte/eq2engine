@@ -67,11 +67,12 @@ void BlurShader::SetDestinationTexture(ITexture* dest)
 
 		blurParams.filterDim = m_filterSize;
 
+		IGPUBufferPtr paramsBuffer = g_renderAPI->CreateBuffer(BufferInfo(&blurParams, 1), BUFFERUSAGE_UNIFORM, "ParamsBuffer");
 		m_bindGroupConst = g_renderAPI->CreateBindGroup(m_pipeline, Builder<BindGroupDesc>()
 			.GroupIndex(0)
 			.Name("BlurConst")
 			.Sampler(0, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
-			.Buffer(1, g_renderAPI->CreateBuffer(BufferInfo(&blurParams, 1), BUFFERUSAGE_UNIFORM, "ParamsBuffer"))
+			.Buffer(1, paramsBuffer)
 			.End());
 	}
 
