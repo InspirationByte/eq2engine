@@ -32,6 +32,8 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 		return;
 	m_graphicsStateDirty = false;
 
+	nvrhi::IDevice* nvrhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
+
 	auto rhiViewportState = nvrhi::ViewportState()
 		.addViewport(m_rhiViewport)
 		.addScissorRect(m_rhiScissor);
@@ -39,10 +41,12 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 	CNVRHIRenderPipeline* pipelineImpl = static_cast<CNVRHIRenderPipeline*>(m_pipeline.Ptr());
 	ASSERT(pipelineImpl);
 
+	const nvrhi::GraphicsPipelineDesc& rhiPipelineDesc = pipelineImpl->m_rhiPipelineDesc;
+
 	// time to create graphics pipeline instance
 	// TODO: don't do it, use framebuffer desc in CreatePipeline
 	// TODO: Vulkan dynamic rendering ext support in NVRHI
-	nvrhi::GraphicsPipelineHandle rhiPipeline = CNVRHIRenderAPI::Instance.GetNVRHIDevice()->createGraphicsPipeline(pipelineImpl->m_rhiPipelineDesc, m_rhiFramebuffer);
+	nvrhi::GraphicsPipelineHandle rhiPipeline = nvrhiDevice->createGraphicsPipeline(rhiPipelineDesc, m_rhiFramebuffer);
 
 	auto rhiGraphicsState = nvrhi::GraphicsState()
 		.setPipeline(rhiPipeline)
@@ -58,7 +62,7 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 		auto rhiIndexBuffer = nvrhi::IndexBufferBinding()
 			.setBuffer(indexBufferImpl->GetNVRHIBufferHandle())
 			.setOffset(m_indexBuffer.offset)
-			.setFormat(s_nvrhiVertexBufferFormats[m_indexFormat]);
+			.setFormat(g_nvrhiIndexFormat[m_indexFormat]);
 		rhiGraphicsState.setIndexBuffer(rhiIndexBuffer);
 	}
 
@@ -78,7 +82,12 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 			rhiGraphicsState.addVertexBuffer(rhiVertexBuffer);
 		}
 		++slotId;
-	}
+	}	
+	
+	const int shaderModuleIdxs[] = {
+		pipelineImpl->m_vertexShaderModuleIdx,
+		pipelineImpl->m_fragmentShaderModuleIdx
+	};
 
 	for (IGPUBindGroup* bindGroup : m_bindings)
 	{
@@ -88,8 +97,23 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 
 		if (bindGroupImpl->m_bindingLayout)
 		{
+			const BindGroupDesc& bindGroupDesc = bindGroupImpl->m_bindGroupDesc;
+
+			static thread_local NVRHISamplerHandleList rhiSamplers;
+			rhiSamplers.clear();
+
 			// we need to create binding set for this shader using provided layout
-			ASSERT_FAIL("Unimplemented: shared bind groups");
+			auto rhiBindingSetDesc = nvrhi::BindingSetDesc();
+			bindGroupImpl->m_bindingLayout->FillBindingSetDescByLayoutMap(bindGroupDesc, *pipelineImpl->m_shaderInfo, shaderModuleIdxs, rhiSamplers, rhiBindingSetDesc);
+
+			nvrhi::BindingSetHandle rhiBindSet = nvrhiDevice->createBindingSet(rhiBindingSetDesc, rhiPipelineDesc.bindingLayouts[bindGroupDesc.groupIdx]);
+			if (!rhiBindSet)
+			{
+				ASSERT_FAIL("Failed to create bind group %s\n", bindGroupDesc.name.ToCString());
+				continue;
+			}
+
+			rhiGraphicsState.addBindingSet(rhiBindSet);
 		}
 		else
 		{

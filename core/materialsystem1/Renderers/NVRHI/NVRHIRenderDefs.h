@@ -136,34 +136,11 @@ static nvrhi::Format GetNVRHITextureFormat(ETextureFormat formatWithFlags)
 	return format;
 }
 
-static nvrhi::Format s_nvrhiVertexBufferFormats[] = {
+// EIndexFormat
+static nvrhi::Format g_nvrhiIndexFormat[] = {
 	nvrhi::Format::R16_UINT,
-	nvrhi::Format::R32_UINT
+	nvrhi::Format::R32_UINT,
 };
-
-// EBufferBindType
-//static WGPUBufferBindingType g_wgpuBufferBindingType[] = {
-//	WGPUBufferBindingType_Uniform,
-//	WGPUBufferBindingType_Storage,
-//	WGPUBufferBindingType_ReadOnlyStorage,
-//};
-
-// ESamplerBindType
-//static WGPUSamplerBindingType g_wgpuSamplerBindingType[] = {
-//	WGPUSamplerBindingType_Undefined,
-//	WGPUSamplerBindingType_Filtering,
-//	WGPUSamplerBindingType_NonFiltering,
-//	WGPUSamplerBindingType_Comparison,
-//};
-
-// ETextureSampleType
-//static WGPUTextureSampleType g_wgpuTexSampleType[] = {
-//	WGPUTextureSampleType_Float,
-//	WGPUTextureSampleType_UnfilterableFloat,
-//	WGPUTextureSampleType_Depth,
-//	WGPUTextureSampleType_Sint,
-//	WGPUTextureSampleType_Uint,
-//};
 
 // ETextureDimension
 static nvrhi::TextureDimension g_nvrhiTexViewDimensions[] = {
@@ -173,24 +150,6 @@ static nvrhi::TextureDimension g_nvrhiTexViewDimensions[] = {
 	nvrhi::TextureDimension::TextureCube,
 	nvrhi::TextureDimension::TextureCubeArray,
 	nvrhi::TextureDimension::Texture3D,
-};
-
-// EStorageTextureAccess
-//static nvrhi::CpuAccessMode g_nvrhiStorageTexAccess[] = {
-//	nvrhi::CpuAccessMode::Write,
-//	nvrhi::CpuAccessMode::Read,
-//	nvrhi::CpuAccessMode::Read | nvrhi::CpuAccessMode::Write,
-//};
-
-// EVertAttribType
-static const char* g_nvrhiVertexSemantics[] = {
-	"UNKNOWN",
-	"POSITION" ,
-	"TEXCOORD",
-	"NORMAL",
-	"TANGENT",
-	"BINORMAL",
-	"COLOR"
 };
 
 // EVertAttribFormat
@@ -207,12 +166,6 @@ static nvrhi::Format g_nvrhiVertexFormats[][4] = {
 	{
 		nvrhi::Format::R32_FLOAT, nvrhi::Format::RG32_FLOAT, nvrhi::Format::RGB32_FLOAT, nvrhi::Format::RGBA32_FLOAT
 	},
-};
-
-// EVertexStepMode
-static bool g_nvrhiIsInstanced[] = {
-	false,
-	true,
 };
 
 // ECompareFunc
@@ -272,19 +225,13 @@ static nvrhi::RasterCullMode g_nvrhiCullMode[] = {
 };
 
 // EPrimTopology
+
 static nvrhi::PrimitiveType g_nvrhiPrimitiveType[] = {
 	nvrhi::PrimitiveType::PointList,
 	nvrhi::PrimitiveType::LineList,
-	nvrhi::PrimitiveType::LineList, // TODO: add nvrhi::PrimitiveType::LineStrip,
+	nvrhi::PrimitiveType::LineStrip,
 	nvrhi::PrimitiveType::TriangleList,
 	nvrhi::PrimitiveType::TriangleStrip
-};
-
-// EStripIndexFormat
-static nvrhi::Format g_nvrhiStripIndexFormat[] = {
-	nvrhi::Format::UNKNOWN,
-	nvrhi::Format::R16_UINT,
-	nvrhi::Format::R32_UINT,
 };
 
 // ETexAddressMode
@@ -294,11 +241,3 @@ static nvrhi::SamplerAddressMode g_nvrhiAddressMode[] = {
 	nvrhi::SamplerAddressMode::MirroredRepeat
 };
 
-
-// EIndexFormat
-static nvrhi::Format g_nvrhiIndexFormat[] = {
-	nvrhi::Format::R16_UINT,
-	nvrhi::Format::R32_UINT,
-};
-
-void FillNVRHISamplerDescriptor(const SamplerStateParams& samplerParams, nvrhi::SamplerDesc& rhiSamplerDesc);

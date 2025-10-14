@@ -1,7 +1,11 @@
 #pragma once
 #include "renderers/IShaderAPI.h"
+#include "ShaderInfo.h"
 
+class CNVRHIComputePipeline;
 struct ShaderInfo;
+
+using NVRHISamplerHandleList = FixedArray<nvrhi::SamplerHandle, 128>;
 
 using NVRHIBindingLayoutList = FixedArray<nvrhi::BindingLayoutHandle, MAX_BINDGROUPS>;
 using NVRHIBindingLayoutsCRef = ArrayCRef<nvrhi::BindingLayoutHandle>;
@@ -11,11 +15,14 @@ using NVRHIBindingLayoutsCRef = ArrayCRef<nvrhi::BindingLayoutHandle>;
 class CNVRHIBindingLayout : public IGPUBindingLayout
 {
 public:
-
 	using BindGroupLayoutMap = Map<int, int>;
-	FixedArray<BindGroupLayoutMap, MAX_BINDGROUPS>	m_layoutMap;
-	int					m_maxBindingIndex[MAX_BINDGROUPS]{ 0 };
-	EqString			m_dbgName;
+	using LayoutMapList = FixedArray<BindGroupLayoutMap, MAX_BINDGROUPS>;
+
+	void			FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc) const;
+	
+	LayoutMapList	m_layoutMap;
+	int				m_maxBindingIndex[MAX_BINDGROUPS]{ 0 };
+	EqString		m_dbgName;
 };
 
 using CNVRHIBindingLayoutPtr = CRefPtr<CNVRHIBindingLayout>;
@@ -61,3 +68,8 @@ public:
 	nvrhi::CommandListHandle	m_rhiCommandList;
 	EqString					m_dbgName;
 };
+
+
+void nvrhiFillSamplerDesc(const SamplerStateParams& samplerParams, nvrhi::SamplerDesc& rhiSamplerDesc);
+void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const ShaderInfo::Binding& binding, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc);
+void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc);

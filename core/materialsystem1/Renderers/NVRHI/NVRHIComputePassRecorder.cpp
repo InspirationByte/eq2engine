@@ -3,6 +3,7 @@
 #include "NVRHIComputePassRecorder.h"
 #include "NVRHIStates.h"
 #include "NVRHIBuffer.h"
+#include "NVRHIRenderAPI.h"
 
 void CNVRHIComputePassRecorder::DbgPopGroup() const
 {
@@ -26,9 +27,11 @@ void CNVRHIComputePassRecorder::CommitComputeState(nvrhi::IBuffer* indirectBuffe
 		return;
 	m_computeStateDirty = false;
 
+	nvrhi::IDevice* nvrhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
+
 	CNVRHIComputePipeline* pipelineImpl = static_cast<CNVRHIComputePipeline*>(m_pipeline.Ptr());
 	ASSERT(pipelineImpl);
-
+	
 	auto rhiComputeState = nvrhi::ComputeState()
 		.setPipeline(pipelineImpl->m_rhiComputePipeline)
 		.setIndirectParams(indirectBuffer);
@@ -36,8 +39,33 @@ void CNVRHIComputePassRecorder::CommitComputeState(nvrhi::IBuffer* indirectBuffe
 	for (IGPUBindGroup* bindGroup : m_bindings)
 	{
 		CNVRHIBindGroup* bindGroupImpl = static_cast<CNVRHIBindGroup*>(bindGroup);
-		if (bindGroupImpl)
+		if (!bindGroupImpl)
+			continue;
+
+		if (bindGroupImpl->m_bindingLayout)
+		{
+			const BindGroupDesc& bindGroupDesc = bindGroupImpl->m_bindGroupDesc;
+
+			static thread_local NVRHISamplerHandleList rhiSamplers;
+			rhiSamplers.clear();
+
+			// we need to create binding set for this shader using provided layout
+			auto rhiBindingSetDesc = nvrhi::BindingSetDesc();
+			bindGroupImpl->m_bindingLayout->FillBindingSetDescByLayoutMap(bindGroupDesc, *pipelineImpl->m_shaderInfo, ArrayCRef(&pipelineImpl->m_computeShaderModuleIdx, 1), rhiSamplers, rhiBindingSetDesc);
+
+			nvrhi::BindingSetHandle rhiBindSet = nvrhiDevice->createBindingSet(rhiBindingSetDesc, pipelineImpl->m_rhiBindingLayout[bindGroupDesc.groupIdx]);
+			if (!rhiBindSet)
+			{
+				ASSERT_FAIL("Failed to create bind group %s\n", bindGroupDesc.name.ToCString());
+				continue;
+			}
+
+			rhiComputeState.addBindingSet(rhiBindSet);
+		}
+		else
+		{
 			rhiComputeState.addBindingSet(bindGroupImpl->m_rhiBindingSet);
+		}
 	}
 
 	m_rhiCommandList->setComputeState(rhiComputeState);
