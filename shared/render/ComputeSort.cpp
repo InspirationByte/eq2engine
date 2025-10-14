@@ -74,7 +74,7 @@ void ComputeSortShader::InitKeys(IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr
 	computePassRecorder->SetPipeline(m_initPipeline);
 	IGPUBindGroupPtr inputBindGroup = g_renderAPI->CreateBindGroup(m_initPipeline, Builder<BindGroupDesc>()
 		.GroupIndex(0)
-		.Buffer(0, keys)
+		.Buffer(StringIdConst24("keyData"), keys)
 		.End()
 	);
 	computePassRecorder->SetBindGroup(0, inputBindGroup);
