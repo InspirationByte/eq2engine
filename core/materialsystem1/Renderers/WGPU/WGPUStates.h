@@ -56,3 +56,9 @@ public:
 
 	WGPUCommandBuffer	m_rhiCommandBuffer{ nullptr };
 };
+
+void FillWGPUBlendComponent(const BlendStateParams& blendParams, WGPUBlendComponent& rhiBlendComponent);
+void FillWGPURenderPassDescriptor(const RenderPassDesc& renderPassDesc, WGPURenderPassDescriptor& rhiRenderPassDesc, FixedArray<WGPURenderPassColorAttachment, MAX_RENDERTARGETS>& rhiColorAttachmentList, WGPURenderPassDepthStencilAttachment& rhiDepthStencilAttachment);
+
+void FillWGPUBindGroupEntriesByLayoutMap(const BindGroupDesc& bindGroupDesc, const CWGPUBindingLayout::BindGroupLayoutMap& groupLayoutMap, int maxBindingIndex, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList);
+void FillWGPUBindGroupEntries(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList);
