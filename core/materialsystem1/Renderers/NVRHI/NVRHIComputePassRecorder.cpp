@@ -36,6 +36,8 @@ void CNVRHIComputePassRecorder::CommitComputeState(nvrhi::IBuffer* indirectBuffe
 		.setPipeline(pipelineImpl->m_rhiComputePipeline)
 		.setIndirectParams(indirectBuffer);
 
+	static thread_local Array<nvrhi::BindingSetHandle> createdBindingSets(PP_SL);
+
 	for (IGPUBindGroup* bindGroup : m_bindings)
 	{
 		CNVRHIBindGroup* bindGroupImpl = static_cast<CNVRHIBindGroup*>(bindGroup);
@@ -60,6 +62,7 @@ void CNVRHIComputePassRecorder::CommitComputeState(nvrhi::IBuffer* indirectBuffe
 				continue;
 			}
 
+			createdBindingSets.append(rhiBindSet);
 			rhiComputeState.addBindingSet(rhiBindSet);
 		}
 		else
@@ -69,6 +72,7 @@ void CNVRHIComputePassRecorder::CommitComputeState(nvrhi::IBuffer* indirectBuffe
 	}
 
 	m_rhiCommandList->setComputeState(rhiComputeState);
+	createdBindingSets.clear();
 }
 
 void CNVRHIComputePassRecorder::SetPipeline(IGPUComputePipeline* pipeline)

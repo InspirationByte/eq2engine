@@ -89,6 +89,8 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 		pipelineImpl->m_fragmentShaderModuleIdx
 	};
 
+	static thread_local Array<nvrhi::BindingSetHandle> createdBindingSets(PP_SL);
+
 	for (IGPUBindGroup* bindGroup : m_bindings)
 	{
 		CNVRHIBindGroup* bindGroupImpl = static_cast<CNVRHIBindGroup*>(bindGroup);
@@ -113,6 +115,7 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 				continue;
 			}
 
+			createdBindingSets.append(rhiBindSet);
 			rhiGraphicsState.addBindingSet(rhiBindSet);
 		}
 		else
@@ -122,6 +125,7 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 	}
 
 	m_rhiCommandList->setGraphicsState(rhiGraphicsState);
+	createdBindingSets.clear();
 }
 
 void CNVRHIRenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)

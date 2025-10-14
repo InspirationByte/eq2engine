@@ -172,22 +172,9 @@ void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInf
 
 void CNVRHIBindingLayout::FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc) const
 {
-	const BindGroupLayoutMap& groupLayoutMap = m_layoutMap[bindGroupDesc.groupIdx];
+	//const BindGroupLayoutMap& groupLayoutMap = m_layoutMap[bindGroupDesc.groupIdx];
 
-	ASSERT_FAIL("Unimplemented");
-	//for (const BindGroupDesc::Entry& bindGroupEntry : bindGroupDesc.entries)
-	//{
-	//	WGPUBindGroupEntry& rhiBindGroupEntryDesc = rhiBindGroupEntryList.append();
-	//	FindWGPUBindGroupEntry(rhiDevice, bindGroupEntry, "", rhiBindGroupEntryDesc);
-	//
-	//	if (bindGroupEntry.binding > maxBindingIndex)
-	//	{
-	//		auto it = bindGroupMap.find(bindGroupEntry.binding);
-	//		if (it)
-	//			rhiBindGroupEntryDesc.binding = *it;
-	//	}
-	//}
-
+	nvrhiFillBindingSetDesc(bindGroupDesc, shaderInfo, shaderModuleIdxs, rhiSamplers, rhiBindingSetDesc);
 }
 
 CNVRHIBindGroup::~CNVRHIBindGroup()
@@ -209,6 +196,8 @@ CNVRHIBindGroup::~CNVRHIBindGroup()
 
 void CNVRHIBindGroup::MakeResourceRefs(const BindGroupDesc& sourceDesc)
 {
+	m_bindGroupDesc.name = sourceDesc.name;
+	m_bindGroupDesc.groupIdx = sourceDesc.groupIdx;
 	m_bindGroupDesc.entries.reserve(sourceDesc.entries.numElem());
 	for (const BindGroupDesc::Entry& entry : sourceDesc.entries)
 	{
