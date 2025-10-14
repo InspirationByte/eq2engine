@@ -21,6 +21,8 @@
 #include "ShaderInfo.h"
 #include "ShaderIncluder.h"
 
+static Threading::CEqMutex s_slangMutex;
+
 struct ShaderPackageCompileData;
 
 /*
@@ -699,9 +701,6 @@ static void ProcessIncludesRecursively(const char* fileName, const char* source,
 	}
 }
 
-
-static Threading::CEqMutex s_slangMutex;
-
 bool CShaderCooker::CompileShaderSlang(
 	ShaderPackageCompileData& compileData, 
 	int entryPointIdx, int vertLayoutIdx, EqStringRef queryStr,
@@ -946,7 +945,8 @@ bool CShaderCooker::CompileShaderSlang(
 				binding.type = BINDENTRY_TEXTURE;
 			}
 
-			if (binding.type == BINDENTRY_TEXTURE && binding.rwFlags != RWFLAG_UNIFORM)
+			// that means readonly storage textures can be treated as SRVs
+			if (binding.type == BINDENTRY_TEXTURE && (binding.rwFlags & RWFLAG_WRITE))
 				binding.type = BINDENTRY_STORAGETEXTURE;
 		};
 
@@ -1128,9 +1128,9 @@ bool CShaderCooker::CompileShaderSlang(
 				// why?
 				static const SlangParameterCategory rangeToCategory[] = {
 					SLANG_PARAMETER_CATEGORY_SHADER_RESOURCE,
-					SLANG_PARAMETER_CATEGORY_SHADER_RESOURCE,
+					SLANG_PARAMETER_CATEGORY_UNORDERED_ACCESS,
 					SLANG_PARAMETER_CATEGORY_CONSTANT_BUFFER,
-					SLANG_PARAMETER_CATEGORY_SHADER_RESOURCE
+					SLANG_PARAMETER_CATEGORY_SAMPLER_STATE
 				};
 				const int bindingSpace = 0;	// currently hardcoded - Slang is buggy as hell!
 				slangMetadata->isParameterLocationUsed(rangeToCategory[binding.rangeType], bindingSpace, binding.registerIdx, isUsed);

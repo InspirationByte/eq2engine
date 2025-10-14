@@ -462,122 +462,6 @@ IGPUBindingLayoutPtr CWGPURenderAPI::CreateBindingLayout(const BindingLayoutDesc
 	return IGPUBindingLayoutPtr(pipelineLayout);
 }
 
-static void FindWGPUBindGroupEntry(WGPUDevice rhiDevice, const BindGroupDesc::Entry& bindGroupEntry, const char* dbgName, WGPUBindGroupEntry& rhiBindGroupEntryDesc)
-{
-	rhiBindGroupEntryDesc.binding = bindGroupEntry.binding;
-	switch (bindGroupEntry.type)
-	{
-	case BINDENTRY_BUFFER:
-	{
-		CWGPUBuffer* buffer = static_cast<CWGPUBuffer*>(bindGroupEntry.buffer.ptr);
-		if (buffer)
-			rhiBindGroupEntryDesc.buffer = buffer->GetWGPUBuffer();
-		else
-			ASSERT_FAIL("NULL buffer for binding %d %s", bindGroupEntry.binding, dbgName);
-
-		rhiBindGroupEntryDesc.size = bindGroupEntry.buffer.size < 0 ? WGPU_WHOLE_SIZE : bindGroupEntry.buffer.size;
-		rhiBindGroupEntryDesc.offset = bindGroupEntry.buffer.offset;
-		break;
-	}
-	case BINDENTRY_SAMPLER:
-	{
-		WGPUSamplerDescriptor rhiSamplerDesc = {};
-		FillWGPUSamplerDescriptor(bindGroupEntry.sampler, rhiSamplerDesc);
-
-		ASSERT(bindGroupEntry.sampler.maxAnisotropy > 0);
-
-		rhiBindGroupEntryDesc.sampler = wgpuDeviceCreateSampler(rhiDevice, &rhiSamplerDesc);
-		wgpuSamplerAddRef(rhiBindGroupEntryDesc.sampler);
-		break;
-	}
-	case BINDENTRY_STORAGETEXTURE:
-	case BINDENTRY_TEXTURE:
-		CWGPUTexture* texture = static_cast<CWGPUTexture*>(bindGroupEntry.texture.ptr);
-
-		// NOTE: animated textures aren't that supported, so it would need array lookup through the shader
-		if (texture)
-		{
-			ASSERT_MSG(texture->GetWGPUTextureViewCount(), "Texture '%s' has no views", texture->GetName());
-			rhiBindGroupEntryDesc.textureView = texture->GetWGPUTextureView(bindGroupEntry.texture.arraySlice);
-		}
-		else
-			ASSERT_FAIL("NULL texture for binding %d %s", bindGroupEntry.binding, dbgName);
-		break;
-	}
-}
-
-static void FillWGPUBindGroupEntriesByLayoutMap(WGPUDevice rhiDevice, const BindGroupDesc& bindGroupDesc, const CWGPUBindingLayout::BindGroupLayoutMap& bindGroupMap, int maxBindingIndex, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList)
-{
-	for (const BindGroupDesc::Entry& bindGroupEntry : bindGroupDesc.entries)
-	{
-		WGPUBindGroupEntry& rhiBindGroupEntryDesc = rhiBindGroupEntryList.append();
-		FindWGPUBindGroupEntry(rhiDevice, bindGroupEntry, "", rhiBindGroupEntryDesc);
-
-		if (bindGroupEntry.binding > maxBindingIndex)
-		{
-			auto it = bindGroupMap.find(bindGroupEntry.binding);
-			if (it)
-				rhiBindGroupEntryDesc.binding = *it;
-		}
-	}
-}
-
-static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList)
-{
-	int bindingsToResolve = 0;
-
-	static thread_local BitArray::STORAGE_TYPE usedBindEntryBits[32];
-	memset(usedBindEntryBits, 0, sizeof(usedBindEntryBits));
-
-	BitArray usedBindingEntries(usedBindEntryBits, sizeof(usedBindEntryBits) * 8);
-	
-	for (const int moduleIdx : shaderModuleIdxs)
-	{
-		if (moduleIdx < 0)
-			continue;
-
-		const ShaderInfo::Module& shaderModule = shaderInfo.modules[moduleIdx];
-		ArrayCRef<int> bindingIds = shaderInfo.GetBindingIds(shaderModule);
-		for (int i = 0; i < bindingIds.numElem(); ++i)
-		{
-			if (usedBindingEntries[bindingIds[i]])
-				continue;
-
-			if (!shaderModule.usedBindings[i])
-				continue;
-
-			const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIds[i]];
-			if (binding.descriptorSetIdx != bindGroupDesc.groupIdx)
-				continue;
-
-			++bindingsToResolve;
-
-			const int entryIdx = arrayFindIndexF(bindGroupDesc.entries, [&](const BindGroupDesc::Entry& bindGroupEntry) {
-				// check if name id is used
-				if (bindGroupEntry.binding > bindingIds.numElem())
-					return bindGroupEntry.binding == binding.nameId;
-
-				return bindGroupDesc.groupIdx == binding.descriptorSetIdx && bindGroupEntry.binding == binding.index;
-			});
-
-			if (entryIdx == -1)
-				continue;
-
-			usedBindingEntries.setTrue(bindingIds[i]);
-
-			const BindGroupDesc::Entry& bindGroupEntry = bindGroupDesc.entries[entryIdx];
-			WGPUBindGroupEntry& rhiBindGroupEntryDesc = rhiBindGroupEntryList.append();
-			FindWGPUBindGroupEntry(rhiDevice, bindGroupEntry, "", rhiBindGroupEntryDesc);
-
-			// store correct index
-			rhiBindGroupEntryDesc.binding = binding.index;
-		}
-	}
-
-	ASSERT_MSG(bindGroupDesc.entries.numElem() >= bindingsToResolve, "Bad binding entry count: %d, expected %d", rhiBindGroupEntryList.numElem(), bindingsToResolve);
-	ASSERT_MSG(rhiBindGroupEntryList.numElem() == bindingsToResolve, "Incorrect binding ids, resolved: %d, expected %d", rhiBindGroupEntryList.numElem(), bindingsToResolve);
-}
-
 IGPUBindGroupPtr CWGPURenderAPI::CreateSharedBindGroup(const IGPUBindingLayout* bindingLayout, const BindGroupDesc& bindGroupDesc) const
 {
 	if (!bindingLayout)
@@ -608,7 +492,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateSharedBindGroup(const IGPUBindingLayout* 
 	};
 
 	const int groupIdx = bindGroupDesc.groupIdx;
-	FillWGPUBindGroupEntriesByLayoutMap(m_rhiDevice, bindGroupDesc, bindingLayoutImpl->m_layoutMap[groupIdx], bindingLayoutImpl->m_maxBindingIndex[groupIdx], rhiBindGroupEntryList);
+	FillWGPUBindGroupEntriesByLayoutMap(bindGroupDesc, bindingLayoutImpl->m_layoutMap[groupIdx], bindingLayoutImpl->m_maxBindingIndex[groupIdx], rhiBindGroupEntryList);
 	
 	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
 	rhiBindGroupDesc.layout = rhiLayout[bindGroupDesc.groupIdx];
@@ -655,7 +539,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPURenderPipeline* rende
 		pipelineImpl->m_vertexShaderModuleIdx,
 		pipelineImpl->m_fragmentShaderModuleIdx
 	};
-	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, *pipelineImpl->m_shaderInfo, moduleIds, rhiBindGroupEntryList);
+	FillWGPUBindGroupEntries(bindGroupDesc, *pipelineImpl->m_shaderInfo, moduleIds, rhiBindGroupEntryList);
 
 	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
 	rhiBindGroupDesc.layout = wgpuRenderPipelineGetBindGroupLayout(pipelineImpl->m_rhiRenderPipeline, bindGroupDesc.groupIdx);
@@ -697,7 +581,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUComputePipeline* comp
 	};
 
 	const CWGPUComputePipeline* pipelineImpl = static_cast<const CWGPUComputePipeline*>(computePipeline);
-	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, *pipelineImpl->m_shaderInfo, ArrayCRef(&pipelineImpl->m_computeShaderModuleIdx, 1), rhiBindGroupEntryList);
+	FillWGPUBindGroupEntries(bindGroupDesc, *pipelineImpl->m_shaderInfo, ArrayCRef(&pipelineImpl->m_computeShaderModuleIdx, 1), rhiBindGroupEntryList);
 
 	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
 	rhiBindGroupDesc.layout = wgpuComputePipelineGetBindGroupLayout(pipelineImpl->m_rhiComputePipeline, bindGroupDesc.groupIdx);

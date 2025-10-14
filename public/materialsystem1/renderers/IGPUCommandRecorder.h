@@ -52,17 +52,11 @@ struct GPUDrawIndexedIndirectCmd
 class IGPUCommandBuffer : public RefCountedObject<IGPUCommandBuffer> {};
 using IGPUCommandBufferPtr = CRefPtr<IGPUCommandBuffer>;
 
-class IGPURenderCommandsRecorder : public RefCountedObject<IGPURenderCommandsRecorder>
+//---------------------------------
+// Render pass recorder
+class IGPURenderPassRecorder : public RefCountedObject<IGPURenderPassRecorder>
 {
 public:
-	enum EType
-	{
-		PASS_RECORDER,
-		BUNDLE_RECORDER,
-	};
-
-	virtual EType					GetType() const = 0;
-
 	virtual IVector2D					GetRenderTargetDimensions() const = 0;
 	virtual ArrayCRef<ETextureFormat>	GetRenderTargetFormats() const = 0;
 	virtual ETextureFormat			GetDepthTargetFormat() const = 0;
@@ -71,17 +65,6 @@ public:
 	virtual bool					IsStencilReadOnly() const = 0;
 
 	virtual int						GetTargetMultiSamples() const = 0;
-
-	/* TODO: multi - threaded recorder
-		like:
-			GPUCommandBlock* block = cmdRec->BeginCommandBlock()
-				block.SetPipeline
-				block.SetBindGroup(n...)
-				block.SetVertexBuffer(...)
-				block.SetIndexBuffer(...)
-				block.Draw(...)
-			EndBlock(block)
-	*/
 
 	virtual void					DbgPopGroup() const = 0;
 	virtual void					DbgPushGroup(const char* groupLabel) const = 0;
@@ -111,25 +94,6 @@ public:
 
 	virtual void*					GetUserData() const = 0;
 
-};
-
-inline void IGPURenderCommandsRecorder::SetVertexBufferView(int slot, const GPUBufferView& vertexBuffer)
-{
-	SetVertexBuffer(slot, vertexBuffer.buffer, vertexBuffer.offset, vertexBuffer.size);
-}
-
-inline void IGPURenderCommandsRecorder::SetIndexBufferView(const GPUBufferView& indexBuffer, EIndexFormat indexFormat)
-{
-	SetIndexBuffer(indexBuffer.buffer, indexFormat, indexBuffer.offset, indexBuffer.size);
-}
-
-//---------------------------------
-// Render pass recorder
-class IGPURenderPassRecorder : public IGPURenderCommandsRecorder
-{
-public:
-	EType							GetType() const { return PASS_RECORDER; }
-
 	// completes pass recording. After this recorder can be disposed
 	virtual void					Complete() = 0;
 
@@ -138,6 +102,15 @@ public:
 };
 using IGPURenderPassRecorderPtr = CRefPtr<IGPURenderPassRecorder>;
 
+inline void IGPURenderPassRecorder::SetVertexBufferView(int slot, const GPUBufferView& vertexBuffer)
+{
+	SetVertexBuffer(slot, vertexBuffer.buffer, vertexBuffer.offset, vertexBuffer.size);
+}
+
+inline void IGPURenderPassRecorder::SetIndexBufferView(const GPUBufferView& indexBuffer, EIndexFormat indexFormat)
+{
+	SetIndexBuffer(indexBuffer.buffer, indexFormat, indexBuffer.offset, indexBuffer.size);
+}
 
 //---------------------------------
 // Compute pass recorder

@@ -7,10 +7,13 @@
 
 #include "core/core_common.h"
 #include "core/IDkCore.h"
+#include "core/ConVar.h"
 #include "core/ICommandLine.h"
 #include "core/IFileSystem.h"
 #include "core/IEqCPUServices.h"
 #include "core/platform/eqjobmanager.h"
+
+DECLARE_CVAR(__cheats, "1", "Enable cheats", CV_PROTECTED | CV_INVISIBLE);
 
 void Usage()
 {
@@ -32,6 +35,8 @@ int main(int argc, char* argv[])
 		return -1;
 
 	MsgInfo("ShaderCooker - Eq2 offline shader compiler\n\n\n");
+
+	g_cmdLine->ExecuteCommandLine();
 
 	ArrayCRef<EqString> args = g_cmdLine->GetParameters();
 	if (args.numElem() <= 1)
