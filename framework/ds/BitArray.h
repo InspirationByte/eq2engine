@@ -99,6 +99,8 @@ public:
 
 	static void		setTrue(STORAGE_TYPE* bitArray, int bitCount, int index);
 	static void		setFalse(STORAGE_TYPE* bitArray, int bitCount, int index);
+
+	static int		compare(STORAGE_TYPE* bitArrayA, STORAGE_TYPE* bitArrayB, int bitCount);
 };
 
 inline void	BitArrayImpl::reset(STORAGE_TYPE* bitArray, int bitCount, bool value)
@@ -241,6 +243,33 @@ inline void BitArrayImpl::setFalse(STORAGE_TYPE* bitArray, int bitCount, int ind
 	ASSERT_MSG(index >= 0 && index < bitCount, "invalid bit %d (count = %d)", index, bitCount);
 	const int bitIndex = index & bitArrayRemainder();
 	bitArray[index >> bitArrayShift()] &= ~(1 << bitIndex);
+}
+
+inline int BitArrayImpl::compare(STORAGE_TYPE* bitArrayA, STORAGE_TYPE* bitArrayB, int bitCount)
+{
+	if (!bitCount)
+		return 0;
+
+	int count = 0;
+	const int typeSize = bitArray2Dword(bitCount);
+
+	constexpr int storageMask = sizeof(STORAGE_TYPE) * 8 - 1;
+	const int remainder = bitCount & storageMask;
+	if (remainder)
+	{
+		for (int i = 0; i < typeSize - 1; i++)
+			count += numBitsSet(static_cast<uint>(bitArrayA[i] ^ bitArrayB[i]));
+
+		const STORAGE_TYPE lastChunkMask = (static_cast<STORAGE_TYPE>(1) << remainder) - 1;
+		count += numBitsSet(static_cast<uint>((bitArrayA[typeSize - 1] ^ bitArrayB[typeSize - 1]) & lastChunkMask));
+	}
+	else
+	{
+		for (int i = 0; i < typeSize; i++)
+			count += numBitsSet(static_cast<uint>(bitArrayA[i] ^ bitArrayB[i]));
+	}
+
+	return count;
 }
 
 //--------------------------------------------------------
