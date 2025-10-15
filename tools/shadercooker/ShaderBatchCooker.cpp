@@ -1493,7 +1493,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 				continue;
 			}
 
-			auto ProcessShaderVariant = [this](ShaderPackageCompileData* compileData, int vertLayoutIdx, int variantIdx) {
+			auto ProcessShaderVariant = [](CShaderCooker* _this, ShaderPackageCompileData* compileData, int vertLayoutIdx, int variantIdx) {
 				if (compileData->compileErrors)
 					return;
 
@@ -1559,18 +1559,18 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 					result.kindFlag = shaderInfo.entryPoints[entryPointIdx].kind;
 
 					FixedArray<CompileTargetData, SHADERMODULE_TYPES> compileTargets;
-					for(EShaderModuleType blobType : m_targetProps.blobTypes)
+					for(EShaderModuleType blobType : _this->m_targetProps.blobTypes)
 						compileTargets.append({ blobType });
 
 					// Slang can compile into SPIRV, DXIL, WGSL
-					if (!CompileShaderSlang(*compileData, entryPointIdx, vertLayoutIdx, queryStr, compileTargets, result.bindings, result.vertexAttribs))
+					if (!_this->CompileShaderSlang(*compileData, entryPointIdx, vertLayoutIdx, queryStr, compileTargets, result.bindings, result.vertexAttribs))
 					{
 						result.isError = true;
 						break;
 					}
 
 					for (CompileTargetData& tgtData : compileTargets)
-						AddOrReferenceCompilationResult(shaderInfo, result, tgtData, entryPointIdx, vertLayoutIdx, queryStr);
+						_this->AddOrReferenceCompilationResult(shaderInfo, result, tgtData, entryPointIdx, vertLayoutIdx, queryStr);
 				}
 
 				//if(!stopCompilation)
@@ -1580,8 +1580,8 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 			MsgWarning("   Compiling for vertex %s\n", vertexLayout.name.ToCString());
 			for (int i = 0; i < totalVariantCount; ++i)
 			{
-				FunctionJob* compileVariantJob = PPNew FunctionJob(vertexLayout.name, [&, compileData, vertLayoutIdx, i](void*, int) {
-					ProcessShaderVariant(compileData.Ptr(), vertLayoutIdx, i);
+				FunctionJob* compileVariantJob = PPNew FunctionJob(vertexLayout.name, [&, this, compileData, vertLayoutIdx, i](void*, int) {
+					ProcessShaderVariant(this, compileData.Ptr(), vertLayoutIdx, i);
 				});
 
 				compileVariantJob->DeleteOnFinish();
