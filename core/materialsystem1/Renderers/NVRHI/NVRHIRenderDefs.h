@@ -229,7 +229,7 @@ static nvrhi::RasterCullMode g_nvrhiCullMode[] = {
 static nvrhi::PrimitiveType g_nvrhiPrimitiveType[] = {
 	nvrhi::PrimitiveType::PointList,
 	nvrhi::PrimitiveType::LineList,
-	nvrhi::PrimitiveType::LineStrip,
+	nvrhi::PrimitiveType::LineList, // TEMP, original: nvrhi::PrimitiveType::LineStrip,
 	nvrhi::PrimitiveType::TriangleList,
 	nvrhi::PrimitiveType::TriangleStrip
 };

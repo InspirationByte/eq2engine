@@ -104,8 +104,7 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 			static thread_local NVRHISamplerHandleList rhiSamplers;
 			rhiSamplers.clear();
 
-			// we need to create binding set for this shader using provided layout
-			auto rhiBindingSetDesc = nvrhi::BindingSetDesc();
+			nvrhi::BindingSetDesc rhiBindingSetDesc;
 			bindGroupImpl->m_bindingLayout->FillBindingSetDescByLayoutMap(bindGroupDesc, *pipelineImpl->m_shaderInfo, shaderModuleIdxs, rhiSamplers, rhiBindingSetDesc);
 
 			nvrhi::BindingSetHandle rhiBindSet = nvrhiDevice->createBindingSet(rhiBindingSetDesc, rhiPipelineDesc.bindingLayouts[bindGroupDesc.groupIdx]);

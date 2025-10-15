@@ -122,10 +122,10 @@ void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const Shad
 void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc)
 {
 	int bindingsToResolve = 0;
+	int resolvedBindings = 0;
 
 	static thread_local BitArray::STORAGE_TYPE usedBindEntryBits[32];
 	memset(usedBindEntryBits, 0, sizeof(usedBindEntryBits));
-
 	BitArray usedBindingEntries(usedBindEntryBits, sizeof(usedBindEntryBits) * 8);
 
 	for (const int moduleIdx : shaderModuleIdxs)
@@ -155,19 +155,19 @@ void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInf
 					return bindGroupEntry.binding == binding.nameId;
 
 				return bindGroupDesc.groupIdx == binding.descriptorSetIdx && bindGroupEntry.binding == binding.index;
-				});
+			});
 
 			if (entryIdx == -1)
 				continue;
 
 			usedBindingEntries.setTrue(bindingIds[i]);
-
 			nvrhiFillBindingDesc(bindGroupDesc.entries[entryIdx], binding, rhiSamplers, rhiBindingSetDesc);
+			++resolvedBindings;
 		}
 	}
 
 	ASSERT_MSG(bindGroupDesc.entries.numElem() >= bindingsToResolve, "Bad binding entry count: %d, expected %d", bindGroupDesc.entries.numElem(), bindingsToResolve);
-	ASSERT_MSG(rhiBindingSetDesc.bindings.size() == bindingsToResolve, "Incorrect binding ids, resolved: %d, expected %d", rhiBindingSetDesc.bindings.size(), bindingsToResolve);
+	ASSERT_MSG(resolvedBindings == bindingsToResolve, "Incorrect binding ids, resolved: %d, expected %d", resolvedBindings, bindingsToResolve);
 }
 
 void CNVRHIBindingLayout::FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc) const

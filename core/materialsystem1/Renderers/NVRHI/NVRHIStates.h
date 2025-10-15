@@ -9,7 +9,7 @@ struct ShaderInfo;
 
 using NVRHISamplerHandleList = FixedArray<nvrhi::SamplerHandle, 128>;
 
-using NVRHIBindingLayoutList = FixedArray<nvrhi::BindingLayoutHandle, MAX_BINDGROUPS>;
+using NVRHIBindingLayoutList = FixedArray<nvrhi::BindingLayoutHandle, nvrhi::c_MaxBindingLayouts>;
 using NVRHIBindingLayoutsCRef = ArrayCRef<nvrhi::BindingLayoutHandle>;
 
 // this shit is really for purposes of delaying bindgroup validation
@@ -18,12 +18,12 @@ class CNVRHIBindingLayout : public IGPUBindingLayout
 {
 public:
 	using BindGroupLayoutMap = Map<int, int>;
-	using LayoutMapList = FixedArray<BindGroupLayoutMap, MAX_BINDGROUPS>;
+	using LayoutMapList = FixedArray<BindGroupLayoutMap, nvrhi::c_MaxBindingLayouts>;
 
 	void			FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc) const;
 	
 	LayoutMapList	m_layoutMap;
-	int				m_maxBindingIndex[MAX_BINDGROUPS]{ 0 };
+	int				m_maxBindingIndex[nvrhi::c_MaxBindingLayouts]{ 0 };
 	EqString		m_dbgName;
 };
 
@@ -58,7 +58,7 @@ public:
 
 	void						MakeResourceRefs(const BindGroupDesc& sourceDesc);
 
-	CNVRHIBindingLayoutPtr		m_bindingLayout;	// if set, it's a shared bind group
+	CNVRHIBindingLayoutPtr		m_bindingLayout;		// if set, it's a shared bind group
 	BindGroupDesc				m_bindGroupDesc;
 	nvrhi::BindingSetHandle		m_rhiBindingSet;
 	EqString					m_dbgName;
