@@ -5,12 +5,13 @@
 #include "NVRHIBuffer.h"
 #include "NVRHIRenderAPI.h"
 
-void nvrhiFillSamplerDesc(const SamplerStateParams& samplerParams, nvrhi::SamplerDesc& rhiSamplerDesc)
+static void nvrhiFillSamplerDesc(const SamplerStateParams& samplerParams, nvrhi::SamplerDesc& rhiSamplerDesc)
 {
 	ASSERT(samplerParams.maxAnisotropy > 0);
 
 	rhiSamplerDesc
 		.setReductionType(samplerParams.compareFunc == COMPFUNC_NONE ? nvrhi::SamplerReductionType::Standard : nvrhi::SamplerReductionType::Comparison)
+		.setComparisonFunc(g_nvrhiCompareFunc[samplerParams.compareFunc])
 		.setAddressU(g_nvrhiAddressMode[samplerParams.addressU])
 		.setAddressV(g_nvrhiAddressMode[samplerParams.addressV])
 		.setAddressW(g_nvrhiAddressMode[samplerParams.addressW])
@@ -137,10 +138,10 @@ void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInf
 		ArrayCRef<int> bindingIds = shaderInfo.GetBindingIds(shaderModule);
 		for (int i = 0; i < bindingIds.numElem(); ++i)
 		{
-			if (usedBindingEntries[bindingIds[i]])
+			if (!shaderModule.usedBindings[i])
 				continue;
 
-			if (!shaderModule.usedBindings[i])
+			if (usedBindingEntries[bindingIds[i]])
 				continue;
 
 			const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIds[i]];
@@ -172,9 +173,58 @@ void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInf
 
 void CNVRHIBindingLayout::FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc) const
 {
-	//const BindGroupLayoutMap& groupLayoutMap = m_layoutMap[bindGroupDesc.groupIdx];
+#if 1
+	const BindGroupLayoutOrder& layoutOrder = m_layoutOrder[bindGroupDesc.groupIdx];
+	for (const int nameId : layoutOrder)
+	{
+		const int idx = arrayFindIndexF(bindGroupDesc.entries, [&](const BindGroupDesc::Entry& entry) {
+			return entry.binding == nameId;
+		});
+		if (idx == -1) 
+		{
+			MsgError("Bindroup missing binding");
+			continue;
+		}
 
+		int bindingIdx = -1;
+
+		// find binding in shader module
+		for (const int moduleIdx : shaderModuleIdxs)
+		{
+			if (moduleIdx < 0)
+				continue;
+
+			const ShaderInfo::Module& shaderModule = shaderInfo.modules[moduleIdx];
+			ArrayCRef<int> bindingIds = shaderInfo.GetBindingIds(shaderModule);
+
+			for (int i = 0; i < bindingIds.numElem(); ++i)
+			{
+				if (!shaderModule.usedBindings[i])
+					continue;
+
+				const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIds[i]];
+				if (binding.descriptorSetIdx != bindGroupDesc.groupIdx)
+					continue;
+
+				if (binding.nameId == nameId)
+				{
+					bindingIdx = bindingIds[i]; 
+					break;
+				}
+			}
+
+			if (bindingIdx != -1)
+				break;
+		}
+
+		if (bindingIdx == -1)
+			continue;	// binding not found for this shader - skip
+
+		nvrhiFillBindingDesc(bindGroupDesc.entries[idx], shaderInfo.bindings[bindingIdx], rhiSamplers, rhiBindingSetDesc);
+	}
+#else
 	nvrhiFillBindingSetDesc(bindGroupDesc, shaderInfo, shaderModuleIdxs, rhiSamplers, rhiBindingSetDesc);
+#endif
 }
 
 CNVRHIBindGroup::~CNVRHIBindGroup()

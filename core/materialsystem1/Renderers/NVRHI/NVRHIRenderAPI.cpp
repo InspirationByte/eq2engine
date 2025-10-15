@@ -354,10 +354,10 @@ IGPUBindingLayoutPtr CNVRHIRenderAPI::CreateBindingLayout(const BindingLayoutDes
 	int bindGroupIdx = 0;
 	for (const BindGroupLayoutDesc& bindGroupDesc : layoutDesc.bindGroups)
 	{
-		CNVRHIBindingLayout::BindGroupLayoutMap& bindGroupNameMap = pipelineLayout->m_layoutMap.append();
+		CNVRHIBindingLayout::BindGroupLayoutOrder& layoutOrder = pipelineLayout->m_layoutOrder.append();
 		for (const BindGroupLayoutDesc::Entry& entry : bindGroupDesc.entries)
 		{
-			bindGroupNameMap.insert(entry.binding, entry.nameId);
+			layoutOrder.append(entry.nameId);
 			pipelineLayout->m_maxBindingIndex[bindGroupIdx] = max(pipelineLayout->m_maxBindingIndex[bindGroupIdx], entry.binding);
 		}
 		++bindGroupIdx;
@@ -597,7 +597,7 @@ static void nvrhiAddBindingToLayout(nvrhi::BindingLayoutDesc& layoutDesc, const 
 	}
 }
 
-IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUBindingLayout* pipelineLayout) const
+IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUBindingLayout* bindingLayout) const
 {
 	PROF_EVENT("CreateRenderPipeline");
 
@@ -848,10 +848,14 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	}
 
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString());
+	const CNVRHIBindingLayout* bindingLayoutImpl = static_cast<const CNVRHIBindingLayout*>(bindingLayout);
 
 	{
 		static thread_local Set<uint> usedShaderBindingIdxs{ PP_SL };
 		usedShaderBindingIdxs.clear();
+
+		static thread_local Map<int, int> bindingNamesToIdx{ PP_SL };
+		bindingNamesToIdx.clear();
 
 		// used ranges and registers
 		static thread_local Set<uint> usedRegisters{ PP_SL };
@@ -869,13 +873,14 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 			{
 				if (moduleIdx < 0)
 					continue;
-				const ShaderInfo::Module& shaderModule = shaderInfo.modules[moduleIdx];
 
+				const ShaderInfo::Module& shaderModule = shaderInfo.modules[moduleIdx];
 				ArrayCRef<int> bindingIds = shaderInfo.GetBindingIds(shaderModule);
 				for (int i = 0; i < bindingIds.numElem(); ++i)
 				{
 					if (!shaderModule.usedBindings[i])
 						continue;
+
 					const int bindingIdx = bindingIds[i];
 					if (usedShaderBindingIdxs.find(bindingIdx))
 						continue;
@@ -895,6 +900,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 
 					usedRegisters.insert(binding.rangeType | (binding.registerIdx << 8));
 					usedShaderBindingIdxs.insert(bindingIdx);
+					bindingNamesToIdx.insert(binding.nameId, bindingIdx);
 				}
 			}
 		}
@@ -904,10 +910,29 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 			FixedArray<nvrhi::BindingLayoutDesc, nvrhi::c_MaxBindingLayouts> rhiBindingLayoutDescList;
 			rhiBindingLayoutDescList.setNum(maxBindGroupIdx + 1);
 
-			for (auto bindingIt = usedShaderBindingIdxs.begin(); bindingIt; ++bindingIt)
+			if (bindingLayoutImpl)
 			{
-				const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIt.key()];
-				nvrhiAddBindingToLayout(rhiBindingLayoutDescList[binding.descriptorSetIdx], binding);
+				// validate provided binding layout and order bindings in it's way
+				for (ArrayCRef<int> layoutOrderList : bindingLayoutImpl->m_layoutOrder)
+				{
+					for (const int nameId : layoutOrderList)
+					{
+						auto it = bindingNamesToIdx.find(nameId);
+						if (!it)
+							continue;
+
+						const ShaderInfo::Binding& binding = shaderInfo.bindings[*it];
+						nvrhiAddBindingToLayout(rhiBindingLayoutDescList[binding.descriptorSetIdx], binding);			
+					}
+				}
+			}
+			else
+			{
+				for (auto bindingIt = usedShaderBindingIdxs.begin(); bindingIt; ++bindingIt)
+				{
+					const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIt.key()];
+					nvrhiAddBindingToLayout(rhiBindingLayoutDescList[binding.descriptorSetIdx], binding);
+				}
 			}
 
 			for (nvrhi::BindingLayoutDesc& rhiDesc : rhiBindingLayoutDescList)

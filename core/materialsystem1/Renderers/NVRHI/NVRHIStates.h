@@ -17,12 +17,12 @@ using NVRHIBindingLayoutsCRef = ArrayCRef<nvrhi::BindingLayoutHandle>;
 class CNVRHIBindingLayout : public IGPUBindingLayout
 {
 public:
-	using BindGroupLayoutMap = Map<int, int>;
-	using LayoutMapList = FixedArray<BindGroupLayoutMap, nvrhi::c_MaxBindingLayouts>;
+	using BindGroupLayoutOrder = Array<int>;
+	using LayoutMapList = FixedArray<BindGroupLayoutOrder, nvrhi::c_MaxBindingLayouts>;
 
 	void			FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc) const;
 	
-	LayoutMapList	m_layoutMap;
+	LayoutMapList	m_layoutOrder;
 	int				m_maxBindingIndex[nvrhi::c_MaxBindingLayouts]{ 0 };
 	EqString		m_dbgName;
 };
@@ -71,7 +71,5 @@ public:
 	EqString					m_dbgName;
 };
 
-
-void nvrhiFillSamplerDesc(const SamplerStateParams& samplerParams, nvrhi::SamplerDesc& rhiSamplerDesc);
 void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const ShaderInfo::Binding& binding, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc);
 void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc);
