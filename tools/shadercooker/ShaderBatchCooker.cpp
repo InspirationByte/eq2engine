@@ -60,6 +60,7 @@ private:
 	struct CompileTargetData
 	{
 		EShaderModuleType	type;
+		BitArray			usedBindings{ PP_SL };
 		CMemoryStream		resultData{ PP_SL };
 		int					targetIdx{ -1 };
 	};
@@ -909,7 +910,7 @@ bool CShaderCooker::CompileShaderSlang(
 			}
 		};
 
-		int bindingTypeCounter[8][SLANG_BINDING_TYPE_PUSH_CONSTANT + 1]{ 0 };
+		int bindingRegisterCounter[8][BINDING_RANGE_SAMPLER + 1]{ 0 };
 
 		auto parseResourceBinding = [&](slang::VariableLayoutReflection* param, slang::TypeLayoutReflection* type, const char* paramName, EBindingRangeType bindingRangeType) {
 			ShaderInfo::Binding& binding = bindings.append();
@@ -932,7 +933,7 @@ bool CShaderCooker::CompileShaderSlang(
 				bindingRangeType = BINDING_RANGE_UAV;
 
 			const int bindingSpace = 0;	// currently hardcoded - Slang is buggy as hell!
-			const int registerIndex = bindingTypeCounter[bindingSpace][static_cast<int>(bindingRangeType)]++;
+			const int registerIndex = bindingRegisterCounter[bindingSpace][static_cast<int>(bindingRangeType)]++;
 			binding.rangeType = bindingRangeType;
 			binding.registerIdx = registerIndex;
 
@@ -994,7 +995,7 @@ bool CShaderCooker::CompileShaderSlang(
 				binding.index = param->getBindingIndex();
 
 				const int bindingSpace = 0;	// currently hardcoded - Slang is buggy as hell!
-				const int registerIndex = bindingTypeCounter[bindingSpace][static_cast<int>(bindingRangeType)]++;
+				const int registerIndex = bindingRegisterCounter[bindingSpace][static_cast<int>(bindingRangeType)]++;
 				binding.rangeType = bindingRangeType;
 				binding.registerIdx = registerIndex;
 				break;
@@ -1010,7 +1011,7 @@ bool CShaderCooker::CompileShaderSlang(
 				binding.index = param->getBindingIndex();
 
 				const int bindingSpace = 0;	// currently hardcoded - Slang is buggy as hell!
-				const int registerIndex = bindingTypeCounter[bindingSpace][static_cast<int>(bindingRangeType)]++;
+				const int registerIndex = bindingRegisterCounter[bindingSpace][static_cast<int>(bindingRangeType)]++;
 				binding.rangeType = bindingRangeType;
 				binding.registerIdx = registerIndex;
 				break;
@@ -1100,6 +1101,9 @@ bool CShaderCooker::CompileShaderSlang(
 	else if (entryPoint.kind == SHADERKIND_COMPUTE)
 		DevMsg(DEVMSG_GAME, "Compute\n");
 
+	BitArray allUsedBindingsValidation(PP_SL, bindings.numElem());
+
+	// determine used bindings
 	for (CompileTargetData& tgtData : targetData)
 	{
 		ComPtr<slang::IComponentType> slangEntryPoint;
@@ -1108,8 +1112,7 @@ bool CShaderCooker::CompileShaderSlang(
 		ComPtr<slang::IMetadata> slangMetadata;
 		slangEntryPoint->getEntryPointMetadata(0, tgtData.targetIdx, slangMetadata.writeRef());
 
-		BitArray usedBindings(PP_SL);
-		usedBindings.resize(bindings.numElem());
+		tgtData.usedBindings.resize(bindings.numElem());
 
 		DevMsg(DEVMSG_GAME, "\tTarget %s\n", s_shaderModuleTypeName[tgtData.type]);
 
@@ -1117,6 +1120,20 @@ bool CShaderCooker::CompileShaderSlang(
 		// used in RHI later to set or not set stuff
 		for(int i = 0; i < bindings.numElem(); ++i)
 		{
+			static const SlangParameterCategory rangeToCategory[] = {
+				SLANG_PARAMETER_CATEGORY_SHADER_RESOURCE,
+				SLANG_PARAMETER_CATEGORY_UNORDERED_ACCESS,
+				SLANG_PARAMETER_CATEGORY_CONSTANT_BUFFER,
+				SLANG_PARAMETER_CATEGORY_SAMPLER_STATE
+			};
+
+			static char bindingRangeRegisterTypes[] = {
+				't',
+				'u',
+				'b',
+				's',
+			};
+
 			const ShaderInfo::Binding& binding = bindings[i];
 			bool isUsed = false;
 			if (tgtData.type == SHADERMODULE_SPIRV || tgtData.type == SHADERMODULE_WGSL)
@@ -1126,18 +1143,23 @@ bool CShaderCooker::CompileShaderSlang(
 			else
 			{
 				// why?
-				static const SlangParameterCategory rangeToCategory[] = {
-					SLANG_PARAMETER_CATEGORY_SHADER_RESOURCE,
-					SLANG_PARAMETER_CATEGORY_UNORDERED_ACCESS,
-					SLANG_PARAMETER_CATEGORY_CONSTANT_BUFFER,
-					SLANG_PARAMETER_CATEGORY_SAMPLER_STATE
-				};
+
 				const int bindingSpace = 0;	// currently hardcoded - Slang is buggy as hell!
 				slangMetadata->isParameterLocationUsed(rangeToCategory[binding.rangeType], bindingSpace, binding.registerIdx, isUsed);
 			}
-			usedBindings.set(i, isUsed);
-			DevMsg(DEVMSG_GAME, "\t\t[vk_layout(%d,%d)] %s %s %s : register(%d, space%d) USED: %d\n", binding.index, binding.descriptorSetIdx, GetRWFlagsString(binding.rwFlags).ToCString(), s_bindingTypeNames[binding.type], binding.name.ToCString(), binding.registerIdx, binding.descriptorSetIdx, isUsed);
+			tgtData.usedBindings.set(i, isUsed);
+
+			allUsedBindingsValidation.set(i, isUsed);
+
+			DevMsg(DEVMSG_GAME, "\t\t[vk_layout(%d,%d)] %s %s %s : register(%c%d, space%d) USED: %d\n", binding.index, binding.descriptorSetIdx, GetRWFlagsString(binding.rwFlags).ToCString(), s_bindingTypeNames[binding.type], binding.name.ToCString(), bindingRangeRegisterTypes[binding.rangeType], binding.registerIdx, binding.descriptorSetIdx, isUsed);
 		}
+	}
+
+	// copy data
+	for (CompileTargetData& tgtData : targetData)
+	{
+		// validate binding usages
+		ASSERT_MSG(BitArrayImpl::compare(allUsedBindingsValidation.ptr(), tgtData.usedBindings.ptr(), allUsedBindingsValidation.numBits()) == 0, "Bindings usage differs on shader target %s, tell a programmer", s_shaderModuleTypeName[tgtData.type]);
 
 		ComPtr<ISlangBlob> slangTargetBlob;
 		slangCompileRequest->getEntryPointCodeBlob(0, tgtData.targetIdx, slangTargetBlob.writeRef());
@@ -1153,7 +1175,7 @@ bool CShaderCooker::CompileShaderSlang(
 		tgtData.resultData.AppendStream(&blobData);
 
 		// store binding usage bits
-		tgtData.resultData.WriteArray(usedBindings.ptr(), bitArray2Dword(usedBindings.numBits()));
+		tgtData.resultData.WriteArray(tgtData.usedBindings.ptr(), bitArray2Dword(tgtData.usedBindings.numBits()));
 	}
 
 	return true;
@@ -1471,90 +1493,95 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo, SyncJob& syncJob)
 				continue;
 			}
 
+			auto ProcessShaderVariant = [this](ShaderPackageCompileData* compileData, int vertLayoutIdx, int variantIdx) {
+				if (compileData->compileErrors)
+					return;
+
+				ShaderInfo& shaderInfo = compileData->shaderInfo;
+				const ShaderInfo::VertLayout& vertexLayout = shaderInfo.vertexLayouts[vertLayoutIdx];
+
+				EqString queryStr;
+				for (int switchDef = 0; switchDef < compileData->switchDefines.numElem(); ++switchDef)
+				{
+					if (variantIdx & (1 << switchDef))
+					{
+						if (arrayFindIndex(vertexLayout.excludeDefines, compileData->switchDefines[switchDef]) != -1)
+						{
+							MsgWarning("Skipping %s %s\n", vertexLayout.name.ToCString(), compileData->switchDefines[switchDef].ToCString());
+							return;
+						}
+
+						if (queryStr.Length())
+							queryStr.Append("|");
+						queryStr.Append(compileData->switchDefines[switchDef]);
+					}
+				}
+
+				auto foundDefineLen = [](const char* str)
+				{
+					const char* p = str;
+					while (!(*p == 0 || *p == '|'))
+						++p;
+					return p - str;
+				};
+
+				for (const ShaderInfo::SkipCombo& skip : shaderInfo.skipCombos)
+				{
+					if (skip.defines.isEmpty())
+						continue;
+
+					int foundCount = 0;
+					for (const EqString& define : skip.defines)
+					{
+						const int foundIdx = queryStr.Find(define, true);
+						if (foundIdx != -1 && foundDefineLen(queryStr.ToCString() + foundIdx) == define.Length())
+						{
+							++foundCount;
+						}
+					}
+					if (foundCount == skip.defines.numElem())
+						return;
+				}
+
+				for (int entryPointIdx = 0; entryPointIdx < shaderInfo.entryPoints.numElem(); ++entryPointIdx)
+				{
+					if (compileData->compileErrors)
+						break;
+
+					// store result
+					s_resultsMutex.Lock();
+					ShaderInfo::Result& result = shaderInfo.results.append();
+					s_resultsMutex.Unlock();
+
+					result.queryStr = queryStr;
+					result.vertLayoutIdx = vertLayoutIdx;
+					result.entryPointIdx = entryPointIdx;
+					result.kindFlag = shaderInfo.entryPoints[entryPointIdx].kind;
+
+					FixedArray<CompileTargetData, SHADERMODULE_TYPES> compileTargets;
+					for(EShaderModuleType blobType : m_targetProps.blobTypes)
+						compileTargets.append({ blobType });
+
+					// Slang can compile into SPIRV, DXIL, WGSL
+					if (!CompileShaderSlang(*compileData, entryPointIdx, vertLayoutIdx, queryStr, compileTargets, result.bindings, result.vertexAttribs))
+					{
+						result.isError = true;
+						break;
+					}
+
+					for (CompileTargetData& tgtData : compileTargets)
+						AddOrReferenceCompilationResult(shaderInfo, result, tgtData, entryPointIdx, vertLayoutIdx, queryStr);
+				}
+
+				//if(!stopCompilation)
+				//	Msg("   - compiled variant '%s' (%d)\n", queryStr.ToCString(), nSwitch);
+			};
+
 			MsgWarning("   Compiling for vertex %s\n", vertexLayout.name.ToCString());
 			for (int i = 0; i < totalVariantCount; ++i)
 			{
-				FunctionJob* compileVariantJob = PPNew FunctionJob(vertexLayout.name, [this, compileData, vertexLayout, i, vertLayoutIdx](void*, int) {
-					if (compileData->compileErrors)
-						return;
-
-					ShaderInfo& shaderInfo = compileData->shaderInfo;
-
-					EqString queryStr;
-					for (int switchDef = 0; switchDef < compileData->switchDefines.numElem(); ++switchDef)
-					{
-						if (i & (1 << switchDef))
-						{
-							if (arrayFindIndex(vertexLayout.excludeDefines, compileData->switchDefines[switchDef]) != -1)
-							{
-								MsgWarning("Skipping %s %s\n", vertexLayout.name.ToCString(), compileData->switchDefines[switchDef].ToCString());
-								return;
-							}
-
-							if (queryStr.Length())
-								queryStr.Append("|");
-							queryStr.Append(compileData->switchDefines[switchDef]);
-						}
-					}
-
-					auto foundDefineLen = [](const char* str)
-					{
-						const char* p = str;
-						while (!(*p == 0 || *p == '|'))
-							++p;
-						return p - str;
-					};
-
-					for (const ShaderInfo::SkipCombo& skip : shaderInfo.skipCombos)
-					{
-						if (skip.defines.isEmpty())
-							continue;
-
-						int foundCount = 0;
-						for (const EqString& define : skip.defines)
-						{
-							const int foundIdx = queryStr.Find(define, true);
-							if (foundIdx != -1 && foundDefineLen(queryStr.ToCString() + foundIdx) == define.Length())
-							{
-								++foundCount;
-							}
-						}
-						if (foundCount == skip.defines.numElem())
-							return;
-					}
-
-					for (int entryPointIdx = 0; entryPointIdx < shaderInfo.entryPoints.numElem(); ++entryPointIdx)
-					{
-						if (compileData->compileErrors)
-							break;
-
-						// store result
-						s_resultsMutex.Lock();
-						ShaderInfo::Result& result = shaderInfo.results.append();
-						s_resultsMutex.Unlock();
-
-						result.queryStr = queryStr;
-						result.vertLayoutIdx = vertLayoutIdx;
-						result.entryPointIdx = entryPointIdx;
-						result.kindFlag = shaderInfo.entryPoints[entryPointIdx].kind;
-
-						FixedArray<CompileTargetData, SHADERMODULE_TYPES> compileTargets;
-						for(EShaderModuleType blobType : m_targetProps.blobTypes)
-							compileTargets.append({ blobType });
-
-						// Slang can compile into SPIRV, DXIL, WGSL
-						if (!CompileShaderSlang(compileData.Ref(), entryPointIdx, vertLayoutIdx, queryStr, compileTargets, result.bindings, result.vertexAttribs))
-						{
-							result.isError = true;
-							break;
-						}
-
-						for (CompileTargetData& tgtData : compileTargets)
-							AddOrReferenceCompilationResult(shaderInfo, result, tgtData, entryPointIdx, vertLayoutIdx, queryStr);
-					}
-
-					//if(!stopCompilation)
-					//	Msg("   - compiled variant '%s' (%d)\n", queryStr.ToCString(), nSwitch);
+				FunctionJob* compileVariantJob = PPNew FunctionJob(vertexLayout.name, [&, compileData, vertLayoutIdx, i](void*, int) {
+					ProcessShaderVariant(compileData.Ptr(), vertLayoutIdx, i);
 				});
 
 				compileVariantJob->DeleteOnFinish();

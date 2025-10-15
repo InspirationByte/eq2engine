@@ -110,6 +110,10 @@ void ShaderInfo::ParseModuleBindings(const KVSection& bindingsSec, uint shaderMo
 		EqStringRef typeName;
 		bindingSec.GetValues(typeName, rwFlagsStr, binding.descriptorSetIdx, binding.index, rangeTypeIdx, binding.registerIdx);
 
+#ifdef DEBUG_SHADER_BINDINGS
+		binding.name = bindingSec.GetName();
+#endif
+
 		binding.type = GetBindingTypeByName(typeName);
 		binding.nameId = StringId24(bindingSec.GetName());
 		binding.rangeType = static_cast<EBindingRangeType>(rangeTypeIdx);
@@ -171,8 +175,10 @@ void ShaderInfo::ParseVertexAttribs(const KVSection& vertexSec, uint shaderModul
 		VertexAttrib attrib;
 
 		attribSec.GetValues(attrib.location, attrib.semantic);
+#ifdef DEBUG_SHADER_BINDINGS
 		attrib.name = attribSec.GetName();
-		attrib.nameId = StringId24(attrib.name);
+#endif
+		attrib.nameId = StringId24(attribSec.GetName());
 
 		uint attribId = attrib.nameId | (attrib.location << 24);
 		attribId *= 31;
