@@ -32,7 +32,7 @@ public:
 
 	// Init + Shurdown
 	void						Shutdown();
-	bool						IsDeviceValidationActive() const { return m_isValidationActive; }
+	bool						IsDeviceValidationActive() const;
 
 //-------------------------------------------------------------
 // Renderer information
@@ -110,5 +110,4 @@ protected:
 	ENVRHIBackendType			m_rhiBackendType;
 
 	bool						m_deviceLost{ false };
-	bool						m_isValidationActive{ false };
 };

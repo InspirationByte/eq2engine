@@ -62,8 +62,8 @@ void CNVRHICommandRecorder::CopyBufferToBuffer(IGPUBuffer* source, int64 sourceO
 	ASSERT_MSG(sourceImpl->GetUsageFlags() & BUFFERUSAGE_COPY_SRC, "SRC buffer must have BUFFERUSAGE_COPY_SRC usage bit");
 	ASSERT_MSG(destinationImpl->GetUsageFlags() & BUFFERUSAGE_COPY_DST, "DST buffer must have BUFFERUSAGE_COPY_DST usage bit");
 
-	ASSERT_MSG(sourceOffset >= 0 && sourceOffset + copyDataSize <= sourceImpl->GetSize(), "Offset and/or Size outside source buffer range");
-	ASSERT_MSG(destinationOffset >= 0 && destinationOffset + copyDataSize <= destinationImpl->GetSize(), "Offset and/or Size outside destination buffer range");
+	ASSERT_MSG(sourceOffset >= 0 && sourceOffset + copyDataSize <= sourceImpl->GetSize(), "Offset and/or Size outside source buffer range (size %d in %d - %d)", sourceImpl->GetSize(), sourceOffset, copyDataSize);
+	ASSERT_MSG(destinationOffset >= 0 && destinationOffset + copyDataSize <= destinationImpl->GetSize(), "Offset and/or Size outside destination buffer range (size %d in %d - %d)", destinationImpl->GetSize(), destinationOffset, copyDataSize);
 
 	//MsgInfo("NVRHI: copy buffer %s to %s (ofs %lld of %lld bytes) (%s cmd)\n", sourceImpl->GetDbgName(), destinationImpl->GetDbgName(), destinationOffset, copyDataSize, m_dbgName.ToCString());
 	m_rhiCommandList->copyBuffer(destinationImpl->GetNVRHIBufferHandle(), destinationOffset, sourceImpl->GetNVRHIBufferHandle(), sourceOffset, copyDataSize);
