@@ -2,6 +2,8 @@
 #include "renderers/IShaderAPI.h"
 #include "ShaderInfo.h"
 
+static_assert(MAX_BINDGROUPS <= nvrhi::c_MaxBindingLayouts, "Max binding layouts is not correct");
+
 class CNVRHIComputePipeline;
 struct ShaderInfo;
 

@@ -733,7 +733,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 			}
 			++bufferIndex;
 		}
-
+#ifdef DEBUG_SHADER_BINDINGS
 		if (usedVertexAttribs.numTrue() < vertexAttribIds.numElem())
 		{
 			for (int i = 0; i < vertexAttribIds.numElem(); ++i)
@@ -745,6 +745,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 				ASSERT_FAIL("Vertex attrib %s not used while creating pipeline %s:%s", shaderAttrib.name.ToCString(), shaderInfo.shaderName.ToCString(), shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString());
 			}
 		}
+#endif
 
 		if(!pipelineDesc.vertex.vertexLayout.isEmpty())
 		{
@@ -856,7 +857,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	}
 
 	{
-		// create shader pipeline layout
+		// create shader binding layouts
 		int maxBindGroupIdx = -1;
 		for (const int bindingIdx : shaderInfo.GetBindingIds(*vertexShaderModule))
 		{
@@ -866,6 +867,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 
 		if (fragmentShaderModule)
 		{
+			// TODO: split binding layouts as vertex and fragment slots may overlap
 			for (const int bindingIdx : shaderInfo.GetBindingIds(*fragmentShaderModule))
 			{
 				const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIdx];
@@ -877,17 +879,16 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 		{
 			FixedArray<nvrhi::BindingLayoutDesc, MAX_BINDGROUPS> rhiBindingLayoutDescList;
 			rhiBindingLayoutDescList.setNum(maxBindGroupIdx + 1);
-			{
-				int bindGroupIdx = 0;
-				for (nvrhi::BindingLayoutDesc& rhiDesc : rhiBindingLayoutDescList)
-				{
-					rhiDesc.setVisibility(nvrhi::ShaderType::Vertex | (fragmentShaderModule ? nvrhi::ShaderType::Pixel : nvrhi::ShaderType::None));
-						//.setRegisterSpace(bindGroupIdx);
-					++bindGroupIdx;
-				}
-			}
+			for (nvrhi::BindingLayoutDesc& rhiDesc : rhiBindingLayoutDescList)
+				rhiDesc.setVisibility(nvrhi::ShaderType::Vertex | (fragmentShaderModule ? nvrhi::ShaderType::Pixel : nvrhi::ShaderType::None));
 
-			Set<uint> usedBindingSlots{ PP_SL };
+			static thread_local Set<uint> usedBindingSlots{ PP_SL };
+			usedBindingSlots.clear();
+
+#ifdef DEBUG_SHADER_BINDINGS
+			static thread_local Set<uint> usedRegisters{ PP_SL };
+			usedRegisters.clear();
+#endif
 
 			for (const int bindingIdx : shaderInfo.GetBindingIds(*vertexShaderModule))
 			{
@@ -895,6 +896,10 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 				nvrhiAddBindingLayout(rhiBindingLayoutDescList, binding);
 
 				usedBindingSlots.insert(binding.descriptorSetIdx | (binding.index << 8));
+
+#ifdef DEBUG_SHADER_BINDINGS
+				usedRegisters.insert(binding.rangeType | (binding.registerIdx << 8));
+#endif
 			}
 
 			// add bindings from fragment shader and mark visibility appropriately
@@ -906,6 +911,24 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 					if (usedBindingSlots.find(binding.descriptorSetIdx | (binding.index << 8)))
 						continue;
 
+#ifdef DEBUG_SHADER_BINDINGS
+					if (usedRegisters.find(binding.rangeType | (binding.registerIdx << 8)))
+					{
+						int foundIdx = -1;
+						for (const int vtxBindingIdx : shaderInfo.GetBindingIds(*vertexShaderModule))
+						{
+							const ShaderInfo::Binding& vtxBinding = shaderInfo.bindings[vtxBindingIdx];
+							if (binding.rangeType == vtxBinding.rangeType && binding.registerIdx == vtxBinding.registerIdx)
+							{
+								foundIdx = vtxBindingIdx;
+								break;
+							}
+						}
+
+						ASSERT_FAIL("binding '%s' uses already taken range and register from vertex stage by '%s'", binding.name.ToCString(), shaderInfo.bindings[foundIdx].name.ToCString());
+						continue;
+					}
+#endif
 					nvrhiAddBindingLayout(rhiBindingLayoutDescList, binding);
 				}
 			}
@@ -1024,7 +1047,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		.setComputeShader(reinterpret_cast<nvrhi::IShader*>(computeShaderModule->rhiModule));
 
 	{
-		// create shader pipeline layout
+		// create shader binding layouts
 		int maxBindGroupIdx = -1;
 		for (const int bindingIdx : shaderInfo.GetBindingIds(*computeShaderModule))
 		{
@@ -1036,15 +1059,8 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		{
 			FixedArray<nvrhi::BindingLayoutDesc, MAX_BINDGROUPS> rhiBindingLayoutDescList;
 			rhiBindingLayoutDescList.setNum(maxBindGroupIdx + 1);
-			{
-				int bindGroupIdx = 0;
-				for (nvrhi::BindingLayoutDesc& rhiDesc : rhiBindingLayoutDescList)
-				{
-					rhiDesc.setVisibility(nvrhi::ShaderType::Compute);
-						//.setRegisterSpace(bindGroupIdx);
-					++bindGroupIdx;
-				}
-			}
+			for (nvrhi::BindingLayoutDesc& rhiDesc : rhiBindingLayoutDescList)
+				rhiDesc.setVisibility(nvrhi::ShaderType::Compute);
 
 			for (const int bindingIdx : shaderInfo.GetBindingIds(*computeShaderModule))
 			{
