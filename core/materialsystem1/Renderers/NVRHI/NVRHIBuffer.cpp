@@ -59,8 +59,6 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 		rhiBufferDesc.keepInitialState = true;
 	}
 
-	m_needsTrackingState = rhiBufferDesc.keepInitialState == false;
-
 	if (bufferUsageFlags & BUFFERUSAGE_VERTEX)
 		rhiBufferDesc.setIsVertexBuffer(true);
 
@@ -79,19 +77,22 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 
 	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)
 	{
-		//if (bufferUsageFlags & BUFFERUSAGE_COPY_DST)
-		//	rhiBufferDesc.setInitialState(nvrhi::ResourceStates::CopyDest | nvrhi::ResourceStates::UnorderedAccess);
-		//else
-		//	rhiBufferDesc.setInitialState(nvrhi::ResourceStates::UnorderedAccess);
+		if (!(bufferUsageFlags & BUFFERUSAGE_COPY_DST))
+		{
+			if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)
+				rhiBufferDesc.setInitialState(nvrhi::ResourceStates::IndirectArgument);
+			else
+				rhiBufferDesc.setInitialState(nvrhi::ResourceStates::UnorderedAccess);
 
-		//if (bufferUsageFlags & BUFFERUSAGE_COPY_SRC)
-		//	rhiBufferDesc.setCanHaveUAVs(true);
+			rhiBufferDesc.keepInitialState = true;
+		}
 
 		rhiBufferDesc.setCanHaveUAVs(true);
 		rhiBufferDesc.setCanHaveRawViews(true);
 		rhiBufferDesc.setCanHaveTypedViews(true);
 	}
 
+	m_needsTrackingState = rhiBufferDesc.keepInitialState == false;
 	rhiBufferDesc.debugName = label;
 
 	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
