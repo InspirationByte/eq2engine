@@ -65,7 +65,9 @@ struct ShaderInfo
 
 	struct VertexAttrib
 	{
+#ifdef DEBUG_SHADER_BINDINGS
 		EqString	name;
+#endif
 		EqString	semantic;
 		int			nameId{ 0 };
 		int			location{ -1 };
@@ -73,6 +75,9 @@ struct ShaderInfo
 
 	struct Binding
 	{
+#ifdef DEBUG_SHADER_BINDINGS
+		EqString			name;
+#endif
 		int					nameId{ 0 };
 		EBindEntryType		type{ BINDENTRY_BUFFER };
 		int					rwFlags{ RWFLAG_UNIFORM };

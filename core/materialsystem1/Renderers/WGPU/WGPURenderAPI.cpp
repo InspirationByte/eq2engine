@@ -909,7 +909,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 			if(rhiVertexBufferLayout.attributeCount > 0)
 				rhiVertexBufferLayout.attributes = &rhiVertexAttribList[firstVertexAttrib];
 		}
-
+#ifdef DEBUG_SHADER_BINDINGS
 		if (usedVertexAttribs.numTrue() < vertexAttribIds.numElem())
 		{
 			for (int i = 0; i < vertexAttribIds.numElem(); ++i)
@@ -921,6 +921,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 				ASSERT_FAIL("Vertex attrib %s not used while creating pipeline %s:%s", shaderAttrib.name.ToCString(), shaderInfo.shaderName.ToCString(), shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString());
 			}
 		}
+#endif
 
 		WGPUVertexState& rhiVertexState = rhiRenderPipelineDesc.vertex;
 		rhiVertexState.module = rhiVertexShaderModule;
