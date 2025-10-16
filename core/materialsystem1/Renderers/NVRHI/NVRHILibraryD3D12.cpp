@@ -202,7 +202,7 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	{
 		// fill ShaderAPI capabilities
 		ShaderAPICapabilities& caps = CNVRHIRenderAPI::Instance.m_caps;
-		caps.minUniformBufferOffsetAlignment = 256;
+		caps.minUniformBufferOffsetAlignment = nvrhi::c_ConstantBufferOffsetSizeAlignment;
 		caps.minStorageBufferOffsetAlignment = 256;
 		caps.maxDynamicUniformBuffersPerPipelineLayout = 1000;
 		caps.maxDynamicStorageBuffersPerPipelineLayout = 1000;

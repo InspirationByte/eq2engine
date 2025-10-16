@@ -847,7 +847,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 
 	// TODO: use framebuffer info and VK_KHR_dynamic_rendering on Vulkan
 	CRefPtr<CNVRHIRenderPipeline> renderPipeline;
-#if 0
+#if 1
 	{
 		PROF_EVENT(EqString::Format("CreateRenderPipeline for %s", pipelineName.ToCString()));
 		nvrhi::GraphicsPipelineHandle rhiRenderPipeline = m_rhiDevice->createGraphicsPipeline(rhiGraphicsPipelineDesc, rhiFramebufferInfo);
@@ -859,19 +859,17 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 
 		renderPipeline = CRefPtr_new(CNVRHIRenderPipeline);
 		renderPipeline->m_rhiRenderPipeline = rhiRenderPipeline;
-		renderPipeline->m_dbgName = std::move(pipelineName);
-
-		return IGPURenderPipelinePtr(renderPipeline);
 	}
 #else
 	renderPipeline = CRefPtr_new(CNVRHIRenderPipeline);
+#endif
+
 	renderPipeline->m_shaderInfo = &shaderInfo;
 	renderPipeline->m_rhiFramebufferinfo = rhiFramebufferInfo;
 	renderPipeline->m_rhiPipelineDesc = rhiGraphicsPipelineDesc;
 	renderPipeline->m_dbgName = std::move(pipelineName);
 	renderPipeline->m_vertexShaderModuleIdx = vertexShaderModuleIdx;
 	renderPipeline->m_fragmentShaderModuleIdx = fragmentShaderModuleIdx;
-#endif
 
 	return IGPURenderPipelinePtr(renderPipeline);
 }

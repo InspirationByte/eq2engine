@@ -32,8 +32,8 @@ using CNVRHIBindingLayoutPtr = CRefPtr<CNVRHIBindingLayout>;
 class CNVRHIRenderPipeline : public IGPURenderPipeline
 {
 public:
-	nvrhi::FramebufferInfo			m_rhiFramebufferinfo;
 	nvrhi::GraphicsPipelineDesc		m_rhiPipelineDesc;
+	nvrhi::FramebufferInfo			m_rhiFramebufferinfo;
 	nvrhi::GraphicsPipelineHandle	m_rhiRenderPipeline;
 	EqString						m_dbgName;
 	const ShaderInfo*				m_shaderInfo{ nullptr };

@@ -32,26 +32,24 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 		return;
 	m_graphicsStateDirty = false;
 
-	nvrhi::IDevice* nvrhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
-
-	auto rhiViewportState = nvrhi::ViewportState()
-		.addViewport(m_rhiViewport)
-		.addScissorRect(m_rhiScissor);
-
 	CNVRHIRenderPipeline* pipelineImpl = static_cast<CNVRHIRenderPipeline*>(m_pipeline.Ptr());
 	ASSERT(pipelineImpl);
 
-	const nvrhi::GraphicsPipelineDesc& rhiPipelineDesc = pipelineImpl->m_rhiPipelineDesc;
-
-	// time to create graphics pipeline instance
-	// TODO: don't do it, use framebuffer desc in CreatePipeline
-	// TODO: Vulkan dynamic rendering ext support in NVRHI
-	nvrhi::GraphicsPipelineHandle rhiPipeline = nvrhiDevice->createGraphicsPipeline(rhiPipelineDesc, m_rhiFramebuffer);
+	nvrhi::GraphicsPipelineHandle rhiPipeline = pipelineImpl->m_rhiRenderPipeline;
+	
+	nvrhi::IDevice* nvrhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
+#if 0
+	if(!rhiPipeline)
+		rhiPipeline = nvrhiDevice->createGraphicsPipeline(pipelineImpl->m_rhiPipelineDesc, m_rhiFramebuffer);
+#endif
 
 	auto rhiGraphicsState = nvrhi::GraphicsState()
 		.setPipeline(rhiPipeline)
 		.setFramebuffer(m_rhiFramebuffer)
-		.setViewport(rhiViewportState)
+		.setViewport(nvrhi::ViewportState()
+			.addViewport(m_rhiViewport)
+			.addScissorRect(m_rhiScissor)
+		)
 		.setIndirectParams(indirectBuffer);
 
 	CNVRHIBuffer* indexBufferImpl = static_cast<CNVRHIBuffer*>(m_indexBuffer.buffer.Ptr());
@@ -107,6 +105,7 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 			nvrhi::BindingSetDesc rhiBindingSetDesc;
 			bindGroupImpl->m_bindingLayout->FillBindingSetDescByLayoutMap(bindGroupDesc, *pipelineImpl->m_shaderInfo, shaderModuleIdxs, rhiSamplers, rhiBindingSetDesc);
 
+			const nvrhi::GraphicsPipelineDesc& rhiPipelineDesc = pipelineImpl->m_rhiPipelineDesc;
 			nvrhi::BindingSetHandle rhiBindSet = nvrhiDevice->createBindingSet(rhiBindingSetDesc, rhiPipelineDesc.bindingLayouts[bindGroupDesc.groupIdx]);
 			if (!rhiBindSet)
 			{
