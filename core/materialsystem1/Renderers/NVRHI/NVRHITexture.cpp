@@ -83,6 +83,7 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 		m_flags |= TEXFLAG_CUBEMAP;
 
 	auto rhiTextureDesc = nvrhi::TextureDesc()
+		.setDebugName(m_name.ToCString())
 		.setMipLevels(mipCount)
 		.setIsUAV((flags & TEXFLAG_STORAGE) != 0)
 		.setFormat(GetNVRHITextureFormat(imgFmt))
@@ -123,8 +124,6 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 	}
 
 	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
-
-	rhiTextureDesc.debugName = m_name.ToCString();
 	nvrhi::TextureHandle rhiTexture = rhiDevice->createTexture(rhiTextureDesc);
 	if (!rhiTexture)
 	{
@@ -132,6 +131,7 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 		return false;
 	}
 	m_rhiTexture = rhiTexture;
+	m_rhiDimension = rhiTextureDesc.dimension;
 
 	// create default texture view
 	{

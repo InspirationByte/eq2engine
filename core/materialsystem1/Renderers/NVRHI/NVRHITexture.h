@@ -26,12 +26,14 @@ public:
 	nvrhi::TextureHandle				GetNVRHITextureHandle() const { return m_rhiTexture; }
 	int									GetNVRHITextureViewCount() const { return m_rhiViews.numElem(); }
 	const nvrhi::TextureSubresourceSet&	GetNVRHITextureView(int idx) const { return m_rhiViews[idx]; }
+	nvrhi::TextureDimension				GetNVRHIDimension() const { return m_rhiDimension; }
 
 protected:
 	void			Ref_DeleteObject();
 
 	Array<nvrhi::TextureSubresourceSet>	m_rhiViews{ PP_SL };
 	nvrhi::TextureHandle	m_rhiTexture{ nullptr };
+	nvrhi::TextureDimension	m_rhiDimension{ nvrhi::TextureDimension::Unknown };
 	EImageType				m_imgType{ IMAGE_TYPE_INVALID };
 	int						m_texSize{ 0 };
 };

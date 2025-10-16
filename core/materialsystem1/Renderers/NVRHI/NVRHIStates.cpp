@@ -95,18 +95,24 @@ void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const Shad
 		{
 			ASSERT_MSG(texture->GetNVRHITextureViewCount(), "Texture '%s' has no views", texture->GetName());
 
+			const nvrhi::TextureSubresourceSet rhiSubResource = texture->GetNVRHITextureView(bindGroupEntry.texture.arraySlice);
+			nvrhi::TextureDimension rhiDimension = bindGroupEntry.texture.arraySlice > 0 ? texture->GetNVRHIDimension() : nvrhi::TextureDimension::Unknown;
+
+			if(rhiDimension == nvrhi::TextureDimension::TextureCube || rhiDimension == nvrhi::TextureDimension::TextureCubeArray)
+				rhiDimension = nvrhi::TextureDimension::Texture2DArray;
+
 			switch (binding.rangeType)
 			{
 			case BINDING_RANGE_SRV:
 				rhiBindingSetDesc.addItem(
 					nvrhi::BindingSetItem()
-					.Texture_SRV(binding.registerIdx, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, texture->GetNVRHITextureView(bindGroupEntry.texture.arraySlice))
+					.Texture_SRV(binding.registerIdx, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, rhiSubResource, rhiDimension)
 				);
 				break;
 			case BINDING_RANGE_UAV:
 				rhiBindingSetDesc.addItem(
 					nvrhi::BindingSetItem()
-					.Texture_UAV(binding.registerIdx, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, texture->GetNVRHITextureView(bindGroupEntry.texture.arraySlice))
+					.Texture_UAV(binding.registerIdx, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, rhiSubResource, rhiDimension)
 				);
 				break;
 			}

@@ -243,10 +243,11 @@ static void NVRHIBeginRenderPass(const RenderPassDesc& renderPassDesc, nvrhi::Co
 		const CNVRHITexture* targetTexture = static_cast<CNVRHITexture*>(colorTarget.target.texture.Ptr());
 		const CNVRHITexture* resolveTargetTexture = static_cast<CNVRHITexture*>(colorTarget.resolveTarget.texture.Ptr());
 
-		rhiFramebufferDesc.addColorAttachment(targetTexture->GetNVRHITextureHandle(), targetTexture->GetNVRHITextureView(colorTarget.target.arraySlice));
+		const nvrhi::TextureSubresourceSet rhiSubResource = targetTexture->GetNVRHITextureView(colorTarget.target.arraySlice);
+		rhiFramebufferDesc.addColorAttachment(targetTexture->GetNVRHITextureHandle(), rhiSubResource);
 		if (colorTarget.loadOp == LOADFUNC_CLEAR)
 		{
-			rhiCmdList->clearTextureFloat(targetTexture->GetNVRHITextureHandle(), targetTexture->GetNVRHITextureView(colorTarget.target.arraySlice),
+			rhiCmdList->clearTextureFloat(targetTexture->GetNVRHITextureHandle(), rhiSubResource,
 				nvrhi::Color{ colorTarget.clearColor.r, colorTarget.clearColor.g, colorTarget.clearColor.b, colorTarget.clearColor.a });
 		}
 

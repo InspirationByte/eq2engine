@@ -246,16 +246,19 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 
 	const bool isArray = newSize.arraySize > 1;
 	const bool isCubeMap = (flags & TEXFLAG_CUBEMAP);
+	const bool isStorage = (flags & TEXFLAG_STORAGE) != 0;
 
 	texture->SetDimensions(newSize.width, newSize.height, newSize.arraySize);
 	texture->SetMipCount(mipmapCount);
 	texture->SetSampleCount(sampleCount);
 	texture->Release();
 
+
 	auto rhiTextureDesc = nvrhi::TextureDesc()
 		.setMipLevels(mipmapCount)
 		.setSampleCount(sampleCount)
-		.setIsUAV((flags & TEXFLAG_STORAGE) != 0)
+		.setIsUAV(isStorage)
+		.setIsTypeless(isStorage)
 		.setFormat(GetNVRHITextureFormat(texture->GetFormat()));
 
 	const bool isDepth = IsDepthFormat(texture->GetFormat());
@@ -301,6 +304,7 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 	}
 
 	texture->m_rhiTexture = rhiTexture;
+	texture->m_rhiDimension = rhiTextureDesc.dimension;
 
 	// add default view
 	// create default texture view
