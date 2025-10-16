@@ -19,7 +19,7 @@ public:
 	virtual MapFuture	Lock(int lockOfs, int sizeToLock, int flags) = 0;
 	virtual void		Unlock() = 0;
 
-	virtual int			GetSize() const = 0;
+	virtual int64		GetSize() const = 0;
 	virtual int			GetUsageFlags() const = 0;
 };
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
