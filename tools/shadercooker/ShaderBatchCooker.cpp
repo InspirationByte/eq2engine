@@ -1159,7 +1159,8 @@ bool CShaderCooker::CompileShaderSlang(
 	for (CompileTargetData& tgtData : targetData)
 	{
 		// validate binding usages
-		ASSERT_MSG(BitArrayImpl::compare(allUsedBindingsValidation.ptr(), tgtData.usedBindings.ptr(), allUsedBindingsValidation.numBits()) == 0, "Bindings usage differs on shader target %s, tell a programmer", s_shaderModuleTypeName[tgtData.type]);
+		ASSERT_MSG(BitArrayImpl::compare(allUsedBindingsValidation.ptr(), tgtData.usedBindings.ptr(), allUsedBindingsValidation.numBits()) == 0, 
+			"Bindings usage differs on shader %s vertex %s target %s, tell a programmer", shaderInfo.name.ToCString(), vertexLayout.name.ToCString(), s_shaderModuleTypeName[tgtData.type]);
 
 		ComPtr<ISlangBlob> slangTargetBlob;
 		slangCompileRequest->getEntryPointCodeBlob(0, tgtData.targetIdx, slangTargetBlob.writeRef());
