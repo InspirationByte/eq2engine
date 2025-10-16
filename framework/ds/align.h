@@ -7,10 +7,12 @@
 
 #pragma once
 
-#define ALIGN4( a ) a	= (ubyte *)((int)((ubyte *)a + 3) & ~ 3)
-#define ALIGN16( a ) a	= (ubyte *)((int)((ubyte *)a + 15) & ~ 15)
-#define ALIGN32( a ) a	= (ubyte *)((int)((ubyte *)a + 31) & ~ 31)
-#define ALIGN64( a ) a	= (ubyte *)((int)((ubyte *)a + 63) & ~ 63)
+#define ALIGN( x, a )		(((x) + ((a)-1) ) & ~((a)-1))
+
+#define ALIGN4( a ) a		((a) + 3) & ~ 3)
+#define ALIGN16( a ) a		((a) + 15) & ~ 15)
+#define ALIGN32( a ) a		((a) + 31) & ~ 31)
+#define ALIGN64( a ) a		((a) + 63) & ~ 63)
 
 #ifdef _MSC_VER
 
