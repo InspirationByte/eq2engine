@@ -23,7 +23,7 @@ public:
 	MapFuture	Lock(int lockOfs, int sizeToLock, int flags);
 	void		Unlock();
 
-	nvrhi::BufferHandle		GetNVRHIBufferHandle() const { return m_rhiBuffer; }
+	nvrhi::IBuffer*			GetNVRHIBufferHandle() const { return m_rhiBuffer; }
 	nvrhi::ResourceStates	GetNVRHIResourceStates() const;
 
 	bool					IsNeedsTrackingState() const { return m_needsTrackingState; }
