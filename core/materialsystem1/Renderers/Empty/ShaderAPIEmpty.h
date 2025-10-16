@@ -29,11 +29,11 @@ public:
 	void		Update(const void* data, int64 size, int64 offset) {}
 	MapFuture	Lock(int lockOfs, int sizeToLock, int flags) { return MapFuture::Failure(-1, "Unsupported"); }
 	void		Unlock() {}
-	int			GetSize() const { return m_size; }
+	int64		GetSize() const { return m_size; }
 
 	int			GetUsageFlags() const { return m_usageFlags; }
 
-	int			m_size{ 0 };
+	int64		m_size{ 0 };
 	int			m_usageFlags{ 0 };
 };
 

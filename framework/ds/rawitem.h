@@ -25,10 +25,10 @@ MAKE_RAWITEM_ALIGN(16)
 MAKE_RAWITEM_ALIGN(32)
 MAKE_RAWITEM_ALIGN(64)
 
-template<typename T, int ALIGN >
+template<typename T, int ALIGNMENT >
 struct RawItem
 {
-	using DummyT = typename RawAlignHelper<ALIGN>::Type;
+	using DummyT = typename RawAlignHelper<ALIGNMENT>::Type;
 	union {
 		ubyte	data[sizeof(T)];
 		DummyT	_dummy;

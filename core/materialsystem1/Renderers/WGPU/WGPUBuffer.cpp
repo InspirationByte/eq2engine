@@ -32,10 +32,10 @@ CWGPUBuffer::CWGPUBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, con
 	if (bufferUsageFlags & BUFFERUSAGE_COPY_DST) wgpuUsageFlags |= WGPUBufferUsage_CopyDst;
 
 	const int sizeInBytes = bufferInfo.elementSize * bufferInfo.elementCapacity;
-	const int writeDataSize = (bufferInfo.dataSize + 3) & ~3;
+	const int writeDataSize = ALIGN(bufferInfo.dataSize, 4);
 	const bool hasData = bufferInfo.data && bufferInfo.dataSize;
 
-	m_bufSize = (sizeInBytes + 3) & ~3;
+	m_bufSize = ALIGN(sizeInBytes, 4);
 	m_usageFlags = bufferUsageFlags;
 
 	WGPUBufferDescriptor rhiBufferDesc = {};

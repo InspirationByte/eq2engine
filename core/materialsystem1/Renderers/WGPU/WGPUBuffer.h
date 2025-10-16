@@ -17,7 +17,7 @@ public:
 	~CWGPUBuffer();
 	CWGPUBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* label = nullptr);
 
-	int			GetSize() const { return m_bufSize; }
+	int64		GetSize() const { return m_bufSize; }
 
 	void		Update(const void* data, int64 size, int64 offset);
 	MapFuture	Lock(int lockOfs, int sizeToLock, int flags);
@@ -28,7 +28,7 @@ public:
 
 private:
 	WGPUBuffer	m_rhiBuffer{ nullptr };
-	int			m_bufSize{ 0 };
+	int64		m_bufSize{ 0 };
 	int			m_usageFlags{ 0 };
 	bool		m_isLocked{ false };
 };
