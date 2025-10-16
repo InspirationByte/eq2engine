@@ -11,7 +11,7 @@
 
 void CNVRHICommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset) const
 {
-	const int64 writeDataSize = (size + 3) & ~3;
+	const int64 writeDataSize = ALIGN(size, 4);
 	if (writeDataSize <= 0)
 		return;
 
@@ -46,7 +46,7 @@ void CNVRHICommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, in
 
 void CNVRHICommandRecorder::CopyBufferToBuffer(IGPUBuffer* source, int64 sourceOffset, IGPUBuffer* destination, int64 destinationOffset, int64 size) const
 {
-	const int64 copyDataSize = (size + 3) & ~3;
+	const int64 copyDataSize = ALIGN(size, 4);
 	if (copyDataSize <= 0)
 		return;
 

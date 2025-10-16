@@ -35,14 +35,11 @@ void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const Shad
 		CNVRHIBuffer* buffer = static_cast<CNVRHIBuffer*>(bindGroupEntry.buffer.ptr);
 		if (buffer)
 		{
-			int64 minAligment = binding.rangeType == BINDING_RANGE_CBV ?
+			const int64 minAligment = binding.rangeType == BINDING_RANGE_CBV ?
 				CNVRHIRenderAPI::Instance.GetCaps().minUniformBufferOffsetAlignment :
 				CNVRHIRenderAPI::Instance.GetCaps().minStorageBufferOffsetAlignment;
 
-			//ASSERT_MSG((bindGroupEntry.buffer.offset & CNVRHIRenderAPI::Instance.GetCaps().minUniformBufferOffsetAlignment) == 0, "Invalid buffer offset alignment");
-
-			int64 minAligmentMask = minAligment - 1;
-			const int alignedSize = min(bindGroupEntry.buffer.size + minAligmentMask & ~minAligmentMask, buffer->GetSize() - bindGroupEntry.buffer.offset);
+			const int64 alignedSize = min(ALIGN(bindGroupEntry.buffer.size, minAligment), buffer->GetSize() - bindGroupEntry.buffer.offset);
 			nvrhi::BufferRange bufferRange = bindGroupEntry.buffer.size < 0 ? nvrhi::EntireBuffer : nvrhi::BufferRange(bindGroupEntry.buffer.offset, alignedSize);
 
 			switch (binding.rangeType)

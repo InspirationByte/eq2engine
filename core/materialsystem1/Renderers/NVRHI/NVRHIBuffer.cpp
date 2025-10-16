@@ -19,19 +19,11 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 {
 	m_dbgName = label;
 
-	const bool isConstantOrUAV = (bufferUsageFlags & (BUFFERUSAGE_UNIFORM | BUFFERUSAGE_STORAGE));
-	int64 minAligment = 4;
-	if (bufferUsageFlags & BUFFERUSAGE_UNIFORM)
-		minAligment = max(minAligment, CNVRHIRenderAPI::Instance.GetCaps().minStorageBufferOffsetAlignment);
-	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)
-		minAligment = max(minAligment, CNVRHIRenderAPI::Instance.GetCaps().minStorageBufferOffsetAlignment);
-	const int64 minAlignmentMask = minAligment - 1;
-
 	const int64 sizeInBytes = bufferInfo.elementSize * bufferInfo.elementCapacity;
-	const int64 writeDataSize = (bufferInfo.dataSize + 3) & ~3;
+	const int64 writeDataSize = ALIGN(bufferInfo.dataSize, 4);
 	const bool hasData = bufferInfo.data && bufferInfo.dataSize;
 
-	m_bufSize = (sizeInBytes + minAlignmentMask) & ~minAlignmentMask;
+	m_bufSize = ALIGN(sizeInBytes, 4);
 	m_usageFlags = bufferUsageFlags;
 
 	nvrhi::CpuAccessMode cpuAccessMode = nvrhi::CpuAccessMode::None;
