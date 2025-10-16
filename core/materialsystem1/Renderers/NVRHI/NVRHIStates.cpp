@@ -175,10 +175,10 @@ void CNVRHIBindingLayout::FillBindingSetDescByLayoutMap(const BindGroupDesc& bin
 {
 #if 1
 	const BindGroupLayoutOrder& layoutOrder = m_layoutOrder[bindGroupDesc.groupIdx];
-	for (const int nameId : layoutOrder)
+	for (const CNVRHIBindingLayout::EntryId entryId : layoutOrder)
 	{
 		const int idx = arrayFindIndexF(bindGroupDesc.entries, [&](const BindGroupDesc::Entry& entry) {
-			return entry.binding == nameId;
+			return entry.binding == entryId.nameId;
 		});
 		if (idx == -1) 
 		{
@@ -195,8 +195,10 @@ void CNVRHIBindingLayout::FillBindingSetDescByLayoutMap(const BindGroupDesc& bin
 				continue;
 
 			const ShaderInfo::Module& shaderModule = shaderInfo.modules[moduleIdx];
-			ArrayCRef<int> bindingIds = shaderInfo.GetBindingIds(shaderModule);
+			if ((entryId.visibility & shaderModule.kind) == 0)
+				continue;
 
+			ArrayCRef<int> bindingIds = shaderInfo.GetBindingIds(shaderModule);
 			for (int i = 0; i < bindingIds.numElem(); ++i)
 			{
 				if (!shaderModule.usedBindings[i])
@@ -206,7 +208,7 @@ void CNVRHIBindingLayout::FillBindingSetDescByLayoutMap(const BindGroupDesc& bin
 				if (binding.descriptorSetIdx != bindGroupDesc.groupIdx)
 					continue;
 
-				if (binding.nameId == nameId)
+				if (binding.nameId == entryId.nameId)
 				{
 					bindingIdx = bindingIds[i]; 
 					break;
@@ -320,11 +322,11 @@ void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const IGPUBindingLa
 		if (bindingLayoutImpl)
 		{
 			// validate provided binding layout and order bindings in it's way
-			for (ArrayCRef<int> layoutOrderList : bindingLayoutImpl->m_layoutOrder)
+			for (ArrayCRef<CNVRHIBindingLayout::EntryId> layoutOrder : bindingLayoutImpl->m_layoutOrder)
 			{
-				for (const int nameId : layoutOrderList)
+				for (const CNVRHIBindingLayout::EntryId entryId : layoutOrder)
 				{
-					auto it = bindingNamesToIdx.find(nameId);
+					auto it = bindingNamesToIdx.find(entryId.nameId);
 					if (!it)
 						continue;
 

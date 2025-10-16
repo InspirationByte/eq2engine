@@ -17,7 +17,12 @@ using NVRHIBindingLayoutsCRef = ArrayCRef<nvrhi::BindingLayoutHandle>;
 class CNVRHIBindingLayout : public IGPUBindingLayout
 {
 public:
-	using BindGroupLayoutOrder = Array<int>;
+	struct EntryId
+	{
+		int nameId;
+		int visibility;
+	};
+	using BindGroupLayoutOrder = Array<EntryId>;
 	using LayoutMapList = FixedArray<BindGroupLayoutOrder, nvrhi::c_MaxBindingLayouts>;
 
 	void			FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc) const;

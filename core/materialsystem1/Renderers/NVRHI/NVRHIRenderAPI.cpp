@@ -363,7 +363,7 @@ IGPUBindingLayoutPtr CNVRHIRenderAPI::CreateBindingLayout(const BindingLayoutDes
 		CNVRHIBindingLayout::BindGroupLayoutOrder& layoutOrder = pipelineLayout->m_layoutOrder.append();
 		for (const BindGroupLayoutDesc::Entry& entry : bindGroupDesc.entries)
 		{
-			layoutOrder.append(entry.nameId);
+			layoutOrder.append(CNVRHIBindingLayout::EntryId{ entry.nameId, entry.visibility });
 			pipelineLayout->m_maxBindingIndex[bindGroupIdx] = max(pipelineLayout->m_maxBindingIndex[bindGroupIdx], entry.binding);
 		}
 		++bindGroupIdx;
