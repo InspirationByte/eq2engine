@@ -50,7 +50,6 @@ protected:
 	void			EndAsyncOperation() {}
 	bool			IsMainThread(uintptr_t threadId) const;
 
-	uintptr_t				m_mainThreadId{ 0 };
 	WGPUInstance			m_instance{ nullptr };
 
 	WGPUBackendType			m_rhiBackendType{ WGPUBackendType_Null };

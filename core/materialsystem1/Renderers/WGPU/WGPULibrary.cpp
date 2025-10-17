@@ -106,8 +106,6 @@ CWGPURenderLib::~CWGPURenderLib()
 
 bool CWGPURenderLib::InitCaps()
 {
-	m_mainThreadId = Threading::GetCurrentThreadID();
-
 	// optionally use WGPUInstanceDescriptor::nextInChain for WGPUDawnTogglesDescriptor
 	// with various toggles enabled or disabled: https://dawn.googlesource.com/dawn/+/refs/heads/main/src/dawn/native/Toggles.cpp
 
