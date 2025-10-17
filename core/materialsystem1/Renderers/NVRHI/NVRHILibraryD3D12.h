@@ -8,14 +8,12 @@
 #pragma once
 #include <nvrhi/d3d12.h>
 #include "../IRenderLibrary.h"
-#include "../RenderWorker.h"
 #include "NVRHILibraryDXGIBase.h"
 
 using nvrhi::RefCountPtr;
 
 class CNVRHIRenderLibD3D12
 	: public CNVRHIRenderLibDXGIBase
-	, public RenderWorkerHandler		// might be not needed
 {
 public:
 	bool			InitCaps();
@@ -34,13 +32,7 @@ protected:
 
 	bool			CreateSwapchainTargets(CNVRHISwapChainDXGI* swapChain) const;
 
-	const char*		GetAsyncThreadName() const { return "EqRenderThread"; }
-	void			BeginAsyncOperation(uintptr_t threadId) {}
-	void			EndAsyncOperation() {}
-	bool			IsMainThread(uintptr_t threadId) const;
-
 	HMODULE							m_d3d12Lib{ nullptr };
-	uintptr_t						m_mainThreadId{ 0 };
 	RefCountPtr<ID3D12Device>		m_rhiDevice12;
 	RefCountPtr<ID3D12CommandQueue>	m_rhiGraphicsQueue;
 	RefCountPtr<ID3D12CommandQueue>	m_rhiComputeQueue;

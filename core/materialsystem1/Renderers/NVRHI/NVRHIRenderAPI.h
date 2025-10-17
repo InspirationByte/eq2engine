@@ -98,12 +98,16 @@ public:
 // Private access
 
 	nvrhi::DeviceHandle			GetNVRHIDevice() const { return m_rhiDevice; }
+	nvrhi::SamplerHandle		GetRHISampler(const SamplerStateParams& samplerStateParams);
 
 protected:
 	//nvrhi::BindingLayoutHandle	CreateBindingLayout(const BindGroupLayoutDesc& bindGroupDesc, int bindGroupIndex) const;
 	IGPUBindGroupPtr			CreateBindGroupImpl(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHIBindingLayoutsCRef rhiBindingLayouts) const;
 
 	const ShaderInfo::Module&	GetOrLoadShaderModule(const ShaderInfo& shaderInfo, int shaderModuleIdx, const char* dbgName = nullptr) const;
+
+
+	Map<int, nvrhi::SamplerHandle>	m_rhiSamplers{ PP_SL };
 
 	Map<int, ShaderInfo>		m_shaderCache{ PP_SL };
 	nvrhi::DeviceHandle			m_rhiDevice{ nullptr };

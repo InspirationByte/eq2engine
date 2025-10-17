@@ -191,11 +191,10 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 	writeCmd->commitBarriers();
 	writeCmd->close();
 
-	{
-		extern CEqMutex g_sapi_commandListMutex;
-		CScopedMutex m(g_sapi_commandListMutex);
+	g_renderWorker.Execute("UploadTexture", [rhiDevice, writeCmd]() {
 		rhiDevice->executeCommandList(writeCmd);
-	}
+		return 0;
+	});
 
 	return true;
 }
@@ -298,11 +297,12 @@ bool CNVRHITexture::Lock(LockInOutData& data)
 		copyCmd->open();
 		copyCmd->copyTexture(rhiStagingTexture, rhiDstSlice, m_rhiTexture, rhiSrcSlice);
 		copyCmd->close();
-		{
-			extern CEqMutex g_sapi_commandListMutex;
-			CScopedMutex m(g_sapi_commandListMutex);
-			rhiDevice->executeCommandList(copyCmd);
-		}
+
+		g_renderWorker.WaitForExecute("CopyToStagingTexture", [rhiDevice, copyCmd]() {
+			const uint64_t lastSubmitInstance = rhiDevice->executeCommandList(copyCmd);
+			rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
+			return 0;
+		});
 
 		size_t rowPitch = 0;
 		void* mapData = rhiDevice->mapStagingTexture(rhiStagingTexture, rhiDstSlice, nvrhi::CpuAccessMode::Read, &rowPitch);
@@ -344,11 +344,11 @@ void CNVRHITexture::Unlock(IGPUCommandRecorder* writeCmdRecorder)
 			writeCmd->writeTexture(m_rhiTexture, data.lockOrigin.arraySlice, data.lockOrigin.mipLevel, data.lockData, data.lockPitch);
 			writeCmd->close();
 
-			{
-				extern CEqMutex g_sapi_commandListMutex;
-				CScopedMutex m(g_sapi_commandListMutex);
-				rhiDevice->executeCommandList(writeCmd);
-			}
+			g_renderWorker.WaitForExecute("UnlockTexture", [rhiDevice, writeCmd]() {
+				const uint64_t lastSubmitInstance = rhiDevice->executeCommandList(writeCmd);
+				rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
+				return 0;
+			});
 		}
 	}
 

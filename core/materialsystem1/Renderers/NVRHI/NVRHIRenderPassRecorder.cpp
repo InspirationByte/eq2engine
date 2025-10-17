@@ -7,6 +7,7 @@
 #include "NVRHIRenderDefs.h"
 #include "NVRHITexture.h"
 #include "NVRHIRenderAPI.h"
+#include "../RenderWorker.h"
 
 //-------------------------------------------
 
@@ -87,7 +88,7 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 		pipelineImpl->m_fragmentShaderModuleIdx
 	};
 
-	static thread_local Array<nvrhi::BindingSetHandle> createdBindingSets(PP_SL);
+	const nvrhi::GraphicsPipelineDesc& rhiPipelineDesc = pipelineImpl->m_rhiPipelineDesc;
 
 	for (IGPUBindGroup* bindGroup : m_bindings)
 	{
@@ -97,33 +98,33 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 
 		if (bindGroupImpl->m_bindingLayout)
 		{
-			const BindGroupDesc& bindGroupDesc = bindGroupImpl->m_bindGroupDesc;
-
-			static thread_local NVRHISamplerHandleList rhiSamplers;
-			rhiSamplers.clear();
-
-			nvrhi::BindingSetDesc rhiBindingSetDesc;
-			bindGroupImpl->m_bindingLayout->FillBindingSetDescByLayoutMap(bindGroupDesc, *pipelineImpl->m_shaderInfo, shaderModuleIdxs, rhiSamplers, rhiBindingSetDesc);
-
-			const nvrhi::GraphicsPipelineDesc& rhiPipelineDesc = pipelineImpl->m_rhiPipelineDesc;
-			nvrhi::BindingSetHandle rhiBindSet = nvrhiDevice->createBindingSet(rhiBindingSetDesc, rhiPipelineDesc.bindingLayouts[bindGroupDesc.groupIdx]);
-			if (!rhiBindSet)
+			auto bindingSetIt = bindGroupImpl->m_rhiBindingSets.find(pipelineImpl->m_pipelineId);
+			if (!bindingSetIt)
 			{
-				ASSERT_FAIL("Failed to create bind group %s\n", bindGroupDesc.name.ToCString());
-				continue;
+				const BindGroupDesc& bindGroupDesc = bindGroupImpl->m_bindGroupDesc;
+
+				// we need to create binding set for this shader using provided layout
+				auto rhiBindingSetDesc = nvrhi::BindingSetDesc();
+				bindGroupImpl->m_bindingLayout->FillBindingSetDescByLayoutMap(bindGroupDesc, *pipelineImpl->m_shaderInfo, shaderModuleIdxs, rhiBindingSetDesc);
+
+				nvrhi::BindingSetHandle rhiBindSet = nvrhiDevice->createBindingSet(rhiBindingSetDesc, rhiPipelineDesc.bindingLayouts[bindGroupDesc.groupIdx]);
+				if (!rhiBindSet)
+				{
+					ASSERT_FAIL("Failed to create binding set for shared bind group %s\n", bindGroupDesc.name.ToCString());
+					continue;
+				}
+				bindingSetIt = bindGroupImpl->m_rhiBindingSets.insert(pipelineImpl->m_pipelineId, rhiBindSet);
 			}
 
-			createdBindingSets.append(rhiBindSet);
-			rhiGraphicsState.addBindingSet(rhiBindSet);
+			rhiGraphicsState.addBindingSet(*bindingSetIt);
 		}
 		else
 		{
-			rhiGraphicsState.addBindingSet(bindGroupImpl->m_rhiBindingSet);
+			rhiGraphicsState.addBindingSet(bindGroupImpl->m_rhiBindingSets.front());
 		}
 	}
 
 	m_rhiCommandList->setGraphicsState(rhiGraphicsState);
-	createdBindingSets.clear();
 }
 
 void CNVRHIRenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)

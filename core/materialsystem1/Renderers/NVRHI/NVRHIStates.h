@@ -7,8 +7,6 @@ static_assert(MAX_BINDGROUPS <= nvrhi::c_MaxBindingLayouts, "Max binding layouts
 class CNVRHIComputePipeline;
 struct ShaderInfo;
 
-using NVRHISamplerHandleList = FixedArray<nvrhi::SamplerHandle, 128>;
-
 using NVRHIBindingLayoutList = FixedArray<nvrhi::BindingLayoutHandle, nvrhi::c_MaxBindingLayouts>;
 using NVRHIBindingLayoutsCRef = ArrayCRef<nvrhi::BindingLayoutHandle>;
 
@@ -25,7 +23,7 @@ public:
 	using BindGroupLayoutOrder = Array<EntryId>;
 	using LayoutMapList = FixedArray<BindGroupLayoutOrder, nvrhi::c_MaxBindingLayouts>;
 
-	void			FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc) const;
+	void			FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, nvrhi::BindingSetDesc& rhiBindingSetDesc) const;
 	
 	LayoutMapList	m_layoutOrder;
 	int				m_maxBindingIndex[nvrhi::c_MaxBindingLayouts]{ 0 };
@@ -44,6 +42,7 @@ public:
 	const ShaderInfo*				m_shaderInfo{ nullptr };
 	int								m_vertexShaderModuleIdx{ -1 };
 	int								m_fragmentShaderModuleIdx{ -1 };
+	uint							m_pipelineId{ 0 };
 };
 
 class CNVRHIComputePipeline : public IGPUComputePipeline
@@ -54,6 +53,7 @@ public:
 	EqString						m_dbgName;
 	const ShaderInfo*				m_shaderInfo{ nullptr };
 	int								m_computeShaderModuleIdx{ -1 };
+	uint							m_pipelineId{ 0 };
 };
 
 class CNVRHIBindGroup : public IGPUBindGroup
@@ -62,10 +62,12 @@ public:
 	~CNVRHIBindGroup();
 
 	void						MakeResourceRefs(const BindGroupDesc& sourceDesc);
-
 	CNVRHIBindingLayoutPtr		m_bindingLayout;		// if set, it's a shared bind group
 	BindGroupDesc				m_bindGroupDesc;
-	nvrhi::BindingSetHandle		m_rhiBindingSet;
+
+	// binding sets
+	Map<uint, nvrhi::BindingSetHandle> m_rhiBindingSets{ PP_SL };
+
 	EqString					m_dbgName;
 };
 
@@ -76,6 +78,7 @@ public:
 	EqString					m_dbgName;
 };
 
-void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const ShaderInfo::Binding& binding, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc);
-void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc);
+void nvrhiFillSamplerDesc(const SamplerStateParams& samplerParams, nvrhi::SamplerDesc& rhiSamplerDesc);
+void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const ShaderInfo::Binding& binding, nvrhi::BindingSetDesc& rhiBindingSetDesc);
+void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, nvrhi::BindingSetDesc& rhiBindingSetDesc);
 void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const IGPUBindingLayout* bindingLayout, ArrayCRef<int> shaderModuleIdxs, nvrhi::ShaderType rhiShaderType, NVRHIBindingLayoutList& rhiBindingLayouts);

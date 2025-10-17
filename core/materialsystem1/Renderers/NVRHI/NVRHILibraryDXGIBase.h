@@ -10,6 +10,7 @@
 #include <dxgi1_6.h>
 #include "NVRHISwapChainDXGI.h"
 #include "../IRenderLibrary.h"
+#include "../RenderWorker.h"
 
 class CNVRHISwapChainDXGI;
 struct IDXGIAdapter;
@@ -17,6 +18,7 @@ using nvrhi::RefCountPtr;
 
 class CNVRHIRenderLibDXGIBase
 	: public IRenderLibrary
+	, public RenderWorkerHandler
 {
 	friend class CNVRHISwapChainDXGI;
 public:
@@ -48,6 +50,11 @@ protected:
 
 	// Find an adapter whose name contains the given string.
 	static RefCountPtr<IDXGIAdapter> FindAdapter(const wchar_t* targetName);
+	
+	const char*						GetAsyncThreadName() const { return "EqRenderThread"; }
+	void							BeginAsyncOperation(uintptr_t threadId) {}
+	void							EndAsyncOperation() {}
+	bool							IsMainThread(uintptr_t threadId) const;
 
 	DXGI_SWAP_CHAIN_FULLSCREEN_DESC	m_dxgiFullScreenDesc{};
 	RefCountPtr<IDXGIFactory2>		m_dxgiFactory;

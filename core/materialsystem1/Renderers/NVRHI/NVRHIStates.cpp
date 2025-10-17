@@ -5,7 +5,7 @@
 #include "NVRHIBuffer.h"
 #include "NVRHIRenderAPI.h"
 
-static void nvrhiFillSamplerDesc(const SamplerStateParams& samplerParams, nvrhi::SamplerDesc& rhiSamplerDesc)
+void nvrhiFillSamplerDesc(const SamplerStateParams& samplerParams, nvrhi::SamplerDesc& rhiSamplerDesc)
 {
 	ASSERT(samplerParams.maxAnisotropy > 0);
 
@@ -21,7 +21,7 @@ static void nvrhiFillSamplerDesc(const SamplerStateParams& samplerParams, nvrhi:
 		.setMaxAnisotropy(rhiSamplerDesc.minFilter == TEXFILTER_NEAREST ? 1 : samplerParams.maxAnisotropy);
 }
 
-void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const ShaderInfo::Binding& binding, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc)
+void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const ShaderInfo::Binding& binding, nvrhi::BindingSetDesc& rhiBindingSetDesc)
 {
 	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
 
@@ -77,13 +77,11 @@ void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const Shad
 		auto rhiSamplerDesc = nvrhi::SamplerDesc();
 		nvrhiFillSamplerDesc(bindGroupEntry.sampler, rhiSamplerDesc);
 
-		nvrhi::SamplerHandle rhiSampler = rhiDevice->createSampler(rhiSamplerDesc);
-
+		nvrhi::SamplerHandle rhiSampler = CNVRHIRenderAPI::Instance.GetRHISampler(bindGroupEntry.sampler);
 		rhiBindingSetDesc.addItem(
 			nvrhi::BindingSetItem()
 			.Sampler(binding.registerIdx, rhiSampler)
 		);
-		rhiSamplers.append(rhiSampler);
 		break;
 	}
 	case BINDENTRY_STORAGETEXTURE:
@@ -123,7 +121,7 @@ void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const Shad
 	}
 }
 
-void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc)
+void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, nvrhi::BindingSetDesc& rhiBindingSetDesc)
 {
 	int bindingsToResolve = 0;
 
@@ -170,14 +168,14 @@ void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInf
 	for (auto bindingIt = usedShaderBindingIdxs.begin(); bindingIt; ++bindingIt)
 	{
 		const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIt.key()];
-		nvrhiFillBindingDesc(bindGroupDesc.entries[bindingIt.value()], binding, rhiSamplers, rhiBindingSetDesc);
+		nvrhiFillBindingDesc(bindGroupDesc.entries[bindingIt.value()], binding, rhiBindingSetDesc);
 	}
 
 	ASSERT_MSG(bindGroupDesc.entries.numElem() >= bindingsToResolve, "Bad binding entry count: %d, expected %d", bindGroupDesc.entries.numElem(), bindingsToResolve);
 	ASSERT_MSG(usedShaderBindingIdxs.size() == bindingsToResolve, "Incorrect binding ids, resolved: %d, expected %d", usedShaderBindingIdxs.size(), bindingsToResolve);
 }
 
-void CNVRHIBindingLayout::FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHISamplerHandleList& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc) const
+void CNVRHIBindingLayout::FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, nvrhi::BindingSetDesc& rhiBindingSetDesc) const
 {
 #if 1
 	const BindGroupLayoutOrder& layoutOrder = m_layoutOrder[bindGroupDesc.groupIdx];
@@ -228,7 +226,7 @@ void CNVRHIBindingLayout::FillBindingSetDescByLayoutMap(const BindGroupDesc& bin
 		if (bindingIdx == -1)
 			continue;	// binding not found for this shader - skip
 
-		nvrhiFillBindingDesc(bindGroupDesc.entries[idx], shaderInfo.bindings[bindingIdx], rhiSamplers, rhiBindingSetDesc);
+		nvrhiFillBindingDesc(bindGroupDesc.entries[idx], shaderInfo.bindings[bindingIdx], rhiBindingSetDesc);
 	}
 #else
 	nvrhiFillBindingSetDesc(bindGroupDesc, shaderInfo, shaderModuleIdxs, rhiSamplers, rhiBindingSetDesc);

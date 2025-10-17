@@ -72,8 +72,6 @@ bool CNVRHIRenderLibD3D12::InitCaps()
 	g_consoleCommands->RegisterCommand(&d3d12_adapter);
 	g_consoleCommands->RegisterCommand(&d3d12_validation);
 
-	m_mainThreadId = Threading::GetCurrentThreadID();
-
 	return true;
 }
 
@@ -368,11 +366,4 @@ void CNVRHIRenderLibD3D12::ExitAPI()
 
 	FreeModule(m_d3d12Lib);
 	m_d3d12Lib = nullptr;
-
-	g_renderWorker.Shutdown();
-}
-
-bool CNVRHIRenderLibD3D12::IsMainThread(uintptr_t threadId) const
-{
-	return g_renderWorker.GetThreadID() == threadId; // always run in separate thread
 }

@@ -173,11 +173,10 @@ void CNVRHIBuffer::Update(const void* data, int64 size, int64 offset)
 
 	writeCmd->close();
 
-	{
-		extern CEqMutex g_sapi_commandListMutex;
-		CScopedMutex m(g_sapi_commandListMutex);
+	g_renderWorker.WaitForExecute("UpdateBuffer", [rhiDevice, writeCmd]() {
 		rhiDevice->executeCommandList(writeCmd);
-	}
+		return 0;
+	});
 }
 
 Future<BufferMapData> CNVRHIBuffer::Lock(int lockOfs, int sizeToLock, int flags)

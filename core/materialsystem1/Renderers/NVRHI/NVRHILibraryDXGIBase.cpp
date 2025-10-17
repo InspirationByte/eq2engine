@@ -90,8 +90,17 @@ IShaderAPI* CNVRHIRenderLibDXGIBase::GetRenderer() const
 	return &CNVRHIRenderAPI::Instance;
 }
 
+bool CNVRHIRenderLibDXGIBase::IsMainThread(uintptr_t threadId) const
+{
+	return g_renderWorker.GetThreadID() == threadId;
+}
+
 bool CNVRHIRenderLibDXGIBase::InitAPI(const ShaderAPIParams& params)
 {
+	constexpr int jobQueueSize = 1024;
+
+	g_renderWorker.Init(this, nullptr, jobQueueSize);
+
 	m_nvrhiFrameWaitQuery = m_nvrhiDevice->createEventQuery();
 	m_nvrhiDevice->setEventQuery(m_nvrhiFrameWaitQuery, nvrhi::CommandQueue::Graphics);
 
@@ -100,6 +109,8 @@ bool CNVRHIRenderLibDXGIBase::InitAPI(const ShaderAPIParams& params)
 
 void CNVRHIRenderLibDXGIBase::ExitAPI()
 {
+	g_renderWorker.Shutdown();
+
 	if (m_defaultSwapChain)
 		m_defaultSwapChain->m_dxgiSwapChain->SetFullscreenState(false, nullptr);
 
@@ -122,16 +133,16 @@ void CNVRHIRenderLibDXGIBase::BeginFrame(ISwapChain* swapChain)
 	m_currentSwapChain.Assign(swapChain ? static_cast<CNVRHISwapChainDXGI*>(swapChain) : m_defaultSwapChain);
 
 	// must obtain valid texture view upon Present
-	//g_renderWorker.WaitForExecute(__func__, [this]() {
+	g_renderWorker.WaitForExecute(__func__, [this]() {
 		m_currentSwapChain->UpdateResize();
 		m_currentSwapChain->UpdateBackbufferView();
-	//	return 0;
-	//});
+		return 0;
+	});
 }
 
 void CNVRHIRenderLibDXGIBase::EndFrame()
 {
-	//g_renderWorker.Execute(__func__, [this]() {
+	g_renderWorker.Execute(__func__, [this]() {
 		m_currentSwapChain->SwapBuffers();
 
 		const int bufferCount = m_currentSwapChain->m_rhiSwapChainTextures.numElem();
@@ -152,8 +163,8 @@ void CNVRHIRenderLibDXGIBase::EndFrame()
 		}
 
 		m_nvrhiDevice->runGarbageCollection();
-	//	return 0;
-	//});
+		return 0;
+	});
 }
 
 ITexturePtr	CNVRHIRenderLibDXGIBase::GetCurrentBackbuffer() const

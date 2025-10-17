@@ -35,8 +35,6 @@ CNVRHIRenderAPI CNVRHIRenderAPI::Instance;
 ShaderAPI_Base& ShaderAPI_Base::Instance = CNVRHIRenderAPI::Instance;
 IShaderAPI* g_renderAPI = &CNVRHIRenderAPI::Instance;
 
-CEqMutex g_sapi_commandListMutex;
-
 //------------------------------------------
 
 void CNVRHIRenderAPI::Shutdown()
@@ -384,13 +382,15 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(const BindGroupDesc& bindG
 		return nullptr;
 	}
 
-	static thread_local NVRHISamplerHandleList rhiSamplers;
-	rhiSamplers.clear();
-
 	nvrhi::BindingSetDesc rhiBindingSetDesc;
-	nvrhiFillBindingSetDesc(bindGroupDesc, shaderInfo, shaderModuleIdxs, rhiSamplers, rhiBindingSetDesc);
+	nvrhiFillBindingSetDesc(bindGroupDesc, shaderInfo, shaderModuleIdxs, rhiBindingSetDesc);
 
-	nvrhi::BindingSetHandle rhiBindSet = m_rhiDevice->createBindingSet(rhiBindingSetDesc, rhiBindingLayouts[bindGroupDesc.groupIdx]);
+	nvrhi::BindingSetHandle rhiBindSet;
+	g_renderWorker.WaitForExecute("CreateBindingSet", [&]() {
+		rhiBindSet = m_rhiDevice->createBindingSet(rhiBindingSetDesc, rhiBindingLayouts[bindGroupDesc.groupIdx]);
+		return 0;
+	});
+
 	if (!rhiBindSet)
 	{
 		ASSERT_FAIL("Failed to create bind group %s\n", bindGroupDesc.name.ToCString());
@@ -399,7 +399,7 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(const BindGroupDesc& bindG
 
 	CRefPtr<CNVRHIBindGroup> bindGroup = CRefPtr_new(CNVRHIBindGroup);
 	bindGroup->m_dbgName = bindGroupDesc.name;
-	bindGroup->m_rhiBindingSet = std::move(rhiBindSet);
+	bindGroup->m_rhiBindingSets.insert(0, std::move(rhiBindSet));
 
 	return IGPUBindGroupPtr(bindGroup);
 }
@@ -571,6 +571,30 @@ void CNVRHIRenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqStri
 				GetOrLoadShaderModule(shaderInfo, *itShaderModuleId);
 		}
 	}
+}
+
+nvrhi::SamplerHandle CNVRHIRenderAPI::GetRHISampler(const SamplerStateParams& samplerStateParams)
+{
+	const uint samplerId = samplerStateParams.minFilter
+		| (samplerStateParams.magFilter << 3)		// 3
+		| (samplerStateParams.mipmapFilter << 6)	// 3
+		| (samplerStateParams.compareFunc << 9)		// 3
+		| (samplerStateParams.addressU << 11)		// 2
+		| (samplerStateParams.addressV << 13)		// 2
+		| (samplerStateParams.addressW << 15)		// 2
+		| (samplerStateParams.maxAnisotropy << 24);
+
+	auto it = m_rhiSamplers.find(samplerId);
+	if (it)
+		return *it;
+
+	auto rhiSamplerDesc = nvrhi::SamplerDesc();
+	nvrhiFillSamplerDesc(samplerStateParams, rhiSamplerDesc);
+
+	nvrhi::SamplerHandle rhiSampler = m_rhiDevice->createSampler(rhiSamplerDesc);
+	m_rhiSamplers.insert(samplerId, rhiSampler);
+
+	return rhiSampler;
 }
 
 IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUBindingLayout* bindingLayout) const
@@ -854,7 +878,11 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 #if 1
 	{
 		PROF_EVENT(EqString::Format("CreateRenderPipeline for %s", pipelineName.ToCString()));
-		nvrhi::GraphicsPipelineHandle rhiRenderPipeline = m_rhiDevice->createGraphicsPipeline(rhiGraphicsPipelineDesc, rhiFramebufferInfo);
+		nvrhi::GraphicsPipelineHandle rhiRenderPipeline;
+		g_renderWorker.WaitForExecute(__func__, [&]() {
+			rhiRenderPipeline = m_rhiDevice->createGraphicsPipeline(rhiGraphicsPipelineDesc, rhiFramebufferInfo);
+			return 0;
+		});
 		if (!rhiRenderPipeline)
 		{
 			ASSERT_FAIL("Render pipeline creation failed");
@@ -874,6 +902,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	renderPipeline->m_dbgName = std::move(pipelineName);
 	renderPipeline->m_vertexShaderModuleIdx = vertexShaderModuleIdx;
 	renderPipeline->m_fragmentShaderModuleIdx = fragmentShaderModuleIdx;
+	renderPipeline->m_pipelineId = ShaderInfo::PackShaderModuleId(queryStrHash, vertexLayoutIdx, 0, StringId24(pipelineDesc.vertex.shaderEntryPoint));
 
 	return IGPURenderPipelinePtr(renderPipeline);
 }
@@ -960,6 +989,8 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		computePipeline->m_rhiComputePipeline = rhiComputePipeline;
 		computePipeline->m_dbgName = std::move(pipelineName);
 		computePipeline->m_computeShaderModuleIdx = computeShaderModuleIdx;
+		computePipeline->m_pipelineId = ShaderInfo::PackShaderModuleId(queryStrHash, layoutIdx, 0, StringId24(pipelineDesc.shaderEntryPoint));
+
 		for(int i = 0; i < rhiComputePipelineDesc.bindingLayouts.size(); ++i)
 			computePipeline->m_rhiBindingLayout.append(rhiComputePipelineDesc.bindingLayouts[i]);
 
@@ -1013,23 +1044,23 @@ void CNVRHIRenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBu
 {
 	PROF_EVENT_F();
 
-	Array<nvrhi::ICommandList*> rhiSubmitBuffers(PP_SL);
-	rhiSubmitBuffers.reserve(cmdBuffers.numElem());
-	for (IGPUCommandBuffer* cmdBuffer : cmdBuffers)
-	{
-		if (!cmdBuffer)
-			continue;
+	g_renderWorker.WaitForExecute(__func__, [this, cmdBuffers]() {
+		Array<nvrhi::ICommandList*> rhiSubmitBuffers(PP_SL);
+		rhiSubmitBuffers.reserve(cmdBuffers.numElem());
+		for (IGPUCommandBuffer* cmdBuffer : cmdBuffers)
+		{
+			if (!cmdBuffer)
+				continue;
 
-		const CNVRHICommandBuffer* bufferImpl = static_cast<const CNVRHICommandBuffer*>(cmdBuffer);
-		ASSERT(bufferImpl->m_rhiCommandList);
-		rhiSubmitBuffers.append(bufferImpl->m_rhiCommandList);
-	}
+			const CNVRHICommandBuffer* bufferImpl = static_cast<const CNVRHICommandBuffer*>(cmdBuffer);
+			ASSERT(bufferImpl->m_rhiCommandList);
+			rhiSubmitBuffers.append(bufferImpl->m_rhiCommandList);
+		}
 
-	{
-		CScopedMutex m(g_sapi_commandListMutex);
 		uint64_t lastSubmitInstance = m_rhiDevice->executeCommandLists(rhiSubmitBuffers.ptr(), rhiSubmitBuffers.numElem());
 		m_rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
-	}
+		return 0;
+	});
 }
 
 
@@ -1044,27 +1075,31 @@ Future<bool> CNVRHIRenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUComman
 
 		const CNVRHICommandBuffer* bufferImpl = static_cast<const CNVRHICommandBuffer*>(cmdBuffer);
 		ASSERT(bufferImpl->m_rhiCommandList);
+
+		bufferImpl->m_rhiCommandList->AddRef();
 		rhiSubmitBuffers.append(bufferImpl->m_rhiCommandList);
 	}
 
 	if (!rhiSubmitBuffers.numElem())
 		return Future<bool>::Succeed(true);
 
-	{
-		CScopedMutex m(g_sapi_commandListMutex);
+	Promise<bool> promise;
+	g_renderWorker.Execute(__func__, [this, rhiSubmitBuffers = std::move(rhiSubmitBuffers), promise]() {
 		const uint64_t lastSubmitInstance = m_rhiDevice->executeCommandLists(rhiSubmitBuffers.ptr(), rhiSubmitBuffers.numElem());
 		m_rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
-	}
 
-	Promise<bool> promise;
+		for (nvrhi::ICommandList* rhiCmdList : rhiSubmitBuffers)
+			rhiCmdList->Release();
 
-	// TODO: proper wait
-	promise.SetResult(true);
+		promise.SetResult(true);
+		return 0;
+	});
 
 	return promise.CreateFuture();
 }
 
 void CNVRHIRenderAPI::Flush()
 {
-	m_rhiDevice->runGarbageCollection();
+	g_renderWorker.SignalWork(); 
+	Platform_Sleep(0);
 }
