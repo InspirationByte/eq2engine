@@ -48,6 +48,9 @@ struct GRIMRenderState
 
 	// these buffers are intermediate ones
 	// and cached there for performance.
+	uint					instBindGroupUpdateToken{ 0 };
+	IGPUBindGroupPtr		instBindGroup;
+
 	IGPUBufferPtr			sortedInstanceIdsBuffer;
 	IGPUBufferPtr			filteredInstancesBuffer;
 	IGPUBufferPtr			filteredInstancesCountBuffer;	// D3D11 HACK
@@ -227,6 +230,7 @@ struct GRIMBaseRenderer::IntermediateState
 	IGPUCommandRecorderPtr	cmdRecorder;
 	GPUBufferView			filteredInstanceInfosBuffer;
 	GPUBufferView			filteredInstanceCountBuffer;
+
 
 	// Software only
 	Array<GPUInstanceInfo>	instanceInfos{ PP_SL };

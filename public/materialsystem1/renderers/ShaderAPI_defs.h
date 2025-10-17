@@ -78,7 +78,7 @@ enum ETexAddressMode : uint8
 struct SamplerStateParams
 {
 	SamplerStateParams() = default;
-	SamplerStateParams(ETexFilterMode filterType, ETexAddressMode address, ECompareFunc compareFunc = COMPFUNC_NONE, float lod = 0.0f, int maxAnisotropy = 16)
+	SamplerStateParams(ETexFilterMode filterType, ETexAddressMode address, ECompareFunc compareFunc = COMPFUNC_NONE, int maxAnisotropy = 16)
 		: minFilter(filterType)
 		, magFilter((filterType == TEXFILTER_NEAREST) ? TEXFILTER_NEAREST : TEXFILTER_LINEAR)
 		, mipmapFilter((filterType == TEXFILTER_NEAREST) ? TEXFILTER_NEAREST : TEXFILTER_LINEAR)
@@ -87,12 +87,10 @@ struct SamplerStateParams
 		, addressW(address)
 		, compareFunc(compareFunc)
 		, maxAnisotropy((filterType >= TEXFILTER_BILINEAR_ANISO) ? 16 : 1)
-		, lod(lod)
 	{
 	}
 
-	int				maxAnisotropy{ 16 };
-	float			lod{ 0.0f }; // TODO: remove and replace with minLodClamp/maxLodClamp
+	// TODO: minLodClamp/maxLodClamp
 	ETexFilterMode	minFilter{ TEXFILTER_NEAREST };
 	ETexFilterMode	magFilter{ TEXFILTER_NEAREST };
 	ETexFilterMode	mipmapFilter{ TEXFILTER_NEAREST }; // NOTE: TEXFILTER_NEAREST or TEXFILTER_LINEAR are accepted
@@ -102,7 +100,7 @@ struct SamplerStateParams
 	ETexAddressMode	addressU{ TEXADDRESS_WRAP };
 	ETexAddressMode	addressV{ TEXADDRESS_WRAP };
 	ETexAddressMode	addressW{ TEXADDRESS_WRAP };
-
+	uint8			maxAnisotropy{ 16 };
 };
 
 //---------------------------------------
