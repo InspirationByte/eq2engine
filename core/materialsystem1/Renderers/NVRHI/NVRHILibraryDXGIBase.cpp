@@ -138,6 +138,11 @@ void CNVRHIRenderLibDXGIBase::BeginFrame(ISwapChain* swapChain)
 		m_currentSwapChain->UpdateBackbufferView();
 		return 0;
 	});
+
+	g_renderWorker.Execute(__func__, [this]() {
+		m_nvrhiDevice->runGarbageCollection();
+		return 0;
+	});
 }
 
 void CNVRHIRenderLibDXGIBase::EndFrame()
@@ -161,8 +166,6 @@ void CNVRHIRenderLibDXGIBase::EndFrame()
 			// sync on current frame's command queue completion for double buffering
 			m_nvrhiDevice->waitEventQuery(m_nvrhiFrameWaitQuery);
 		}
-
-		m_nvrhiDevice->runGarbageCollection();
 		return 0;
 	});
 }
