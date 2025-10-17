@@ -124,73 +124,73 @@ enum ETextureFormatFlags
 	TEXFORMAT_FLAG_SRGB		= (1 << 11),	// SRGB variant
 };
 
-inline static ETextureFormat MakeTexFormat(ETextureFormat format, int flags = 0)
+inline constexpr ETextureFormat MakeTexFormat(ETextureFormat format, int flags = 0)
 {
 	return static_cast<ETextureFormat>(static_cast<int>(format) | flags);
 }
 
-inline static ETextureFormat GetTexFormat(ETextureFormat formatWithFlags)
+inline constexpr ETextureFormat GetTexFormat(ETextureFormat formatWithFlags)
 {
 	return static_cast<ETextureFormat>((static_cast<int>(formatWithFlags) & TEXFORMAT_MASK));
 }
 
-inline static int HasTexFormatFlags(ETextureFormat formatWithFlags, int flags)
+inline constexpr int HasTexFormatFlags(ETextureFormat formatWithFlags, int flags)
 {
 	return static_cast<int>(formatWithFlags) & flags;
 }
 
-inline bool IsPlainFormat(const ETextureFormat format)
+inline constexpr bool IsPlainFormat(const ETextureFormat format)
 {
 	const ETextureFormat fmt = GetTexFormat(format);
 	return (fmt <= FORMAT_RGBA32UI);
 }
 
-inline bool IsPackedFormat(const ETextureFormat format)
+inline constexpr bool IsPackedFormat(const ETextureFormat format)
 {
 	const ETextureFormat fmt = GetTexFormat(format);
 	return (fmt >= FORMAT_RGBE8 && fmt <= FORMAT_RGB10A2);
 }
 
-inline bool IsDepthFormat(const ETextureFormat format)
+inline constexpr bool IsDepthFormat(const ETextureFormat format)
 {
 	const ETextureFormat fmt = GetTexFormat(format);
 	return (fmt >= FORMAT_D16 && fmt <= FORMAT_D32F);
 }
 
-inline bool IsStencilFormat(const ETextureFormat format)
+inline constexpr bool IsStencilFormat(const ETextureFormat format)
 {
 	const ETextureFormat fmt = GetTexFormat(format);
 	return (fmt == FORMAT_D24S8);
 }
 
-inline bool IsSignedFormat(const ETextureFormat format)
+inline constexpr bool IsSignedFormat(const ETextureFormat format)
 {
 	const ETextureFormat fmt = GetTexFormat(format);
 	return ((fmt >= FORMAT_R8S) && (fmt <= FORMAT_RGBA16S)) || ((fmt >= FORMAT_R16I) && (fmt <= FORMAT_RGBA32I));
 }
 
-inline bool IsCompressedFormat(const ETextureFormat format)
+inline constexpr bool IsCompressedFormat(const ETextureFormat format)
 {
 	const ETextureFormat fmt = GetTexFormat(format);
 	return (fmt >= FORMAT_DXT1) && (fmt <= FORMAT_PVRTC_A_4BPP);
 }
 
-inline bool IsFloatFormat(const ETextureFormat format)
+inline constexpr bool IsFloatFormat(const ETextureFormat format)
 {
 	const ETextureFormat fmt = GetTexFormat(format);
 	return (fmt >= FORMAT_R16F && fmt <= FORMAT_RG11B10F) || (fmt == FORMAT_D32F);
 }
 
-inline bool IsIntegerFormat(const ETextureFormat format)
+inline constexpr bool IsIntegerFormat(const ETextureFormat format)
 {
 	const ETextureFormat fmt = GetTexFormat(format);
 	return (fmt >= FORMAT_R16I && fmt <= FORMAT_RGBA32UI);
 }
 
-inline int GetChannelCount(const ETextureFormat format)
+inline constexpr int GetChannelCount(const ETextureFormat format)
 {
 	const ETextureFormat fmt = GetTexFormat(format);
-	static const int chCount[] = {
+	constexpr int chCount[] = {
 		0,
 		1, 2, 3, 4,					//  8-bit unsigned
 		1, 2, 3, 4,					// 16-bit unsigned
@@ -212,10 +212,10 @@ inline int GetChannelCount(const ETextureFormat format)
 }
 
 // Accepts only plain formats
-inline int GetBytesPerChannel(const ETextureFormat format)
+constexpr int GetBytesPerChannel(const ETextureFormat format)
 {
 	const ETextureFormat fmt = GetTexFormat(format);
-	static const int bytesPC[] = {
+	constexpr int bytesPC[] = {
 		1, //  8-bit unsigned
 		2, // 16-bit unsigned
 		1, //  8-bit signed
@@ -232,10 +232,10 @@ inline int GetBytesPerChannel(const ETextureFormat format)
 }
 
 // Does not accept compressed formats
-inline int GetBytesPerPixel(const ETextureFormat format)
+constexpr int GetBytesPerPixel(const ETextureFormat format)
 {
 	const ETextureFormat fmt = GetTexFormat(format);
-	static const int bytesPP[] = {
+	constexpr int bytesPP[] = {
 		0,
 		1, 2, 3, 4,       //  8-bit unsigned
 		2, 4, 6, 8,       // 16-bit unsigned
@@ -254,7 +254,7 @@ inline int GetBytesPerPixel(const ETextureFormat format)
 }
 
 // Accepts only compressed formats
-inline int GetBytesPerBlock(const ETextureFormat format)
+constexpr int GetBytesPerBlock(const ETextureFormat format)
 {
 	const ETextureFormat fmt = GetTexFormat(format);
 	return (fmt == FORMAT_DXT1 ||
