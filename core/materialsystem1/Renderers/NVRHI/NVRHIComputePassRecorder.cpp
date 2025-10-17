@@ -6,6 +6,14 @@
 #include "NVRHIRenderAPI.h"
 #include "../RenderWorker.h"
 
+CNVRHIComputePassRecorder::CNVRHIComputePassRecorder(nvrhi::ICommandList* cmdList, int cmdListIdx, void* userData, const char* label)
+	: m_rhiCommandList(cmdList)
+	, m_userData(userData)
+	, m_cmdListIdx(cmdListIdx)
+	, m_dbgName(label)
+{
+}
+
 void CNVRHIComputePassRecorder::DbgPopGroup() const
 {
 	m_rhiCommandList->endMarker();
@@ -113,6 +121,7 @@ void CNVRHIComputePassRecorder::Complete()
 		return;
 	}
 	m_rhiCommandList = nullptr;
+	m_cmdListIdx = -1;
 }
 
 IGPUCommandBufferPtr CNVRHIComputePassRecorder::End()
@@ -128,7 +137,10 @@ IGPUCommandBufferPtr CNVRHIComputePassRecorder::End()
 	CRefPtr<CNVRHICommandBuffer> commandBuffer = CRefPtr_new(CNVRHICommandBuffer);
 	commandBuffer->m_rhiCommandList = m_rhiCommandList;
 	commandBuffer->m_dbgName = std::move(m_dbgName);
+	commandBuffer->m_cmdListIdx = m_cmdListIdx;
+
 	m_rhiCommandList = nullptr;
+	m_cmdListIdx = -1;
 
 	return IGPUCommandBufferPtr(commandBuffer);
 }

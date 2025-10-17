@@ -74,8 +74,11 @@ public:
 class CNVRHICommandBuffer : public IGPUCommandBuffer
 {
 public:
+	~CNVRHICommandBuffer() = default;
+
 	nvrhi::CommandListHandle	m_rhiCommandList;
 	EqString					m_dbgName;
+	int							m_cmdListIdx{ -1 };
 };
 
 void nvrhiFillSamplerDesc(const SamplerStateParams& samplerParams, nvrhi::SamplerDesc& rhiSamplerDesc);

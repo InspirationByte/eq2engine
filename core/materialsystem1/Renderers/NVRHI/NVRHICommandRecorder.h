@@ -4,6 +4,8 @@
 class CNVRHICommandRecorder : public IGPUCommandRecorder
 {
 public:
+	~CNVRHICommandRecorder() = default;
+
 	void*						GetUserData() const { return m_userData; }
 
 	void						DbgPopGroup() const;
@@ -27,4 +29,5 @@ public:
 	EqString					m_dbgName;
 	nvrhi::CommandListHandle	m_rhiCommandList{ nullptr };
 	void*						m_userData{ nullptr };
+	int							m_cmdListIdx{ -1 };
 };

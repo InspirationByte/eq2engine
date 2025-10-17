@@ -4,12 +4,8 @@
 class CNVRHIComputePassRecorder : public IGPUComputePassRecorder
 {
 public:
-	CNVRHIComputePassRecorder(nvrhi::ICommandList* cmdList, void* userData, const char* label)
-		: m_rhiCommandList(cmdList)
-		, m_userData(userData)
-		, m_dbgName(label)
-	{
-	}
+	CNVRHIComputePassRecorder(nvrhi::ICommandList* cmdList, int cmdListIdx, void* userData, const char* label);
+	~CNVRHIComputePassRecorder() = default;
 
 	void					DbgPopGroup() const;
 	void					DbgPushGroup(const char* groupLabel) const;
@@ -40,6 +36,7 @@ public:
 	nvrhi::CommandListHandle	m_rhiCommandList{ nullptr };
 	EqString					m_dbgName;
 	void*						m_userData{ nullptr };
+	int							m_cmdListIdx{ -1 };
 
 	bool						m_computeStateDirty{ true };
 };

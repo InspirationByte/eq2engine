@@ -11,6 +11,13 @@
 
 //-------------------------------------------
 
+CNVRHIRenderPassRecorder::CNVRHIRenderPassRecorder(nvrhi::ICommandList* cmdList, int cmdListIdx, void* userData)
+	: m_rhiCommandList(cmdList)
+	, m_userData(userData)
+	, m_cmdListIdx(cmdListIdx)
+{
+}
+
 void CNVRHIRenderPassRecorder::DbgPopGroup() const
 {
 	m_rhiCommandList->endMarker();
@@ -340,7 +347,9 @@ void CNVRHIRenderPassRecorder::Complete()
 		ASSERT_FAIL("Render pass recorder was already ended");
 		return;
 	}
+
 	m_rhiCommandList = nullptr;
+	m_cmdListIdx = -1;
 }
 
 IGPUCommandBufferPtr CNVRHIRenderPassRecorder::End()
@@ -356,7 +365,10 @@ IGPUCommandBufferPtr CNVRHIRenderPassRecorder::End()
 	CRefPtr<CNVRHICommandBuffer> commandBuffer = CRefPtr_new(CNVRHICommandBuffer);
 	commandBuffer->m_rhiCommandList = m_rhiCommandList;
 	commandBuffer->m_dbgName = std::move(m_dbgName);
+	commandBuffer->m_cmdListIdx = m_cmdListIdx;
+
 	m_rhiCommandList = nullptr;
+	m_cmdListIdx = -1;
 
 	return IGPUCommandBufferPtr(commandBuffer);
 }

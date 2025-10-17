@@ -102,6 +102,8 @@ public:
 	nvrhi::SamplerHandle		GetRHISampler(const SamplerStateParams& samplerStateParams);
 	void						ReleaseRHITransientTextureHeap(int heapIdx);
 
+	nvrhi::CommandListHandle	AcquireRHICommandList(int& cmdListIdx) const;
+
 protected:
 
 	//nvrhi::BindingLayoutHandle	CreateBindingLayout(const BindGroupLayoutDesc& bindGroupDesc, int bindGroupIndex) const;
@@ -111,6 +113,9 @@ protected:
 
 	Array<nvrhi::HeapHandle>	m_rhiTransientTextureHeaps{ PP_SL };
 	Array<int>					m_rhiFreeTransientTextureHeaps{ PP_SL };
+
+	mutable Array<nvrhi::CommandListHandle>	m_rhiCommandLists{ PP_SL };
+	mutable Array<int>						m_rhiFreeCommandLists{ PP_SL };
 
 	Map<int, nvrhi::SamplerHandle>	m_rhiSamplers{ PP_SL };
 

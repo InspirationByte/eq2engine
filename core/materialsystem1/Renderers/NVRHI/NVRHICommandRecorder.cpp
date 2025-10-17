@@ -8,6 +8,7 @@
 #include "NVRHIComputePassRecorder.h"
 #include "NVRHIRenderDefs.h"
 #include "NVRHITexture.h"
+#include "NVRHIRenderAPI.h"
 
 void CNVRHICommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset) const
 {
@@ -170,7 +171,9 @@ IGPUCommandBufferPtr CNVRHICommandRecorder::End()
 	CRefPtr<CNVRHICommandBuffer> commandBuffer = CRefPtr_new(CNVRHICommandBuffer);
 	commandBuffer->m_rhiCommandList = m_rhiCommandList;
 	commandBuffer->m_dbgName = std::move(m_dbgName);
+	commandBuffer->m_cmdListIdx = m_cmdListIdx;
 	m_rhiCommandList = nullptr;
+	m_cmdListIdx = -1;
 
 	return IGPUCommandBufferPtr(commandBuffer);
 }
@@ -179,7 +182,7 @@ IGPUCommandBufferPtr CNVRHICommandRecorder::End()
 
 IGPURenderPassRecorderPtr CNVRHICommandRecorder::BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData) const
 {
-	CRefPtr<CNVRHIRenderPassRecorder> renderPass = CRefPtr_new(CNVRHIRenderPassRecorder, m_rhiCommandList, userData);
+	CRefPtr<CNVRHIRenderPassRecorder> renderPass = CRefPtr_new(CNVRHIRenderPassRecorder, m_rhiCommandList, m_cmdListIdx, userData);
 	renderPass->InternalBeginRenderPass(renderPassDesc);
 
 	return IGPURenderPassRecorderPtr(renderPass);
@@ -189,7 +192,7 @@ IGPURenderPassRecorderPtr CNVRHICommandRecorder::BeginRenderPass(const RenderPas
 
 IGPUComputePassRecorderPtr CNVRHICommandRecorder::BeginComputePass(const char* name, void* userData) const
 {
-	CRefPtr<CNVRHIComputePassRecorder> renderPass = CRefPtr_new(CNVRHIComputePassRecorder, m_rhiCommandList, userData, name);
+	CRefPtr<CNVRHIComputePassRecorder> renderPass = CRefPtr_new(CNVRHIComputePassRecorder, m_rhiCommandList, m_cmdListIdx, userData, name);
 
 	return IGPUComputePassRecorderPtr(renderPass);
 }

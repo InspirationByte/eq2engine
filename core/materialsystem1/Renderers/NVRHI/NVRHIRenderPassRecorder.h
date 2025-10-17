@@ -4,11 +4,8 @@
 class CNVRHIRenderPassRecorder : public IGPURenderPassRecorder
 {
 public:
-	CNVRHIRenderPassRecorder(nvrhi::ICommandList* cmdList, void* userData)
-		: m_rhiCommandList(cmdList)
-		, m_userData(userData)
-	{
-	}
+	CNVRHIRenderPassRecorder(nvrhi::ICommandList* cmdList, int cmdListIdx, void* userData);
+	~CNVRHIRenderPassRecorder() = default;
 
 	IVector2D				GetRenderTargetDimensions() const { return m_renderTargetDims; }
 	ArrayCRef<ETextureFormat>	GetRenderTargetFormats() const { return ArrayCRef(m_renderTargetsFormat); }
@@ -78,6 +75,7 @@ public:
 
 	EqString					m_dbgName;
 	void*						m_userData{ nullptr };
+	int							m_cmdListIdx{ -1 };
 
 	bool						m_graphicsStateDirty{ true };
 };
