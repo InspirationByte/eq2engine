@@ -23,6 +23,14 @@
 #include "../RenderWorker.h"
 #include "NVRHIComputePassRecorder.h"
 
+static constexpr int s_minTransientTextureHeaps = 4;
+static constexpr int s_maxTransientTextureHeapSize = GetBytesPerPixel(FORMAT_RGBA16F) * 4096 * 1024;
+
+static auto s_rhiTransientTextureHeapDesc = nvrhi::HeapDesc()
+	.setDebugName("TransientTextureHeap")
+	.setCapacity(s_maxTransientTextureHeapSize)
+	.setType(nvrhi::HeapType::DeviceLocal);
+
 constexpr EqStringRef s_shaderKindVertexName = "Vertex";
 constexpr EqStringRef s_shaderKindFragmentName = "Fragment";
 constexpr EqStringRef s_shaderKindComputeName = "Compute";
@@ -37,10 +45,27 @@ IShaderAPI* g_renderAPI = &CNVRHIRenderAPI::Instance;
 
 //------------------------------------------
 
+
+
+void CNVRHIRenderAPI::Init(const ShaderAPIParams& params)
+{
+	ShaderAPI_Base::Init(params);
+
+	m_rhiTransientTextureHeaps.reserve(s_minTransientTextureHeaps);
+	m_rhiFreeTransientTextureHeaps.reserve(s_minTransientTextureHeaps);
+	for (int i = 0; i < s_minTransientTextureHeaps; ++i)
+	{
+		m_rhiTransientTextureHeaps.append(m_rhiDevice->createHeap(s_rhiTransientTextureHeapDesc));
+		m_rhiFreeTransientTextureHeaps.append(i);
+	}
+}
+
 void CNVRHIRenderAPI::Shutdown()
 {
 	ShaderAPI_Base::Shutdown();
 	m_shaderCache.clear(true);
+	m_rhiTransientTextureHeaps.clear(true);
+	m_rhiFreeTransientTextureHeaps.clear(true);
 	m_rhiDevice = nullptr;
 }
 
@@ -219,6 +244,11 @@ ITexturePtr	CNVRHIRenderAPI::CreateRenderTarget(const TextureDesc& targetDesc)
 	return ITexturePtr(texture);
 }
 
+void CNVRHIRenderAPI::ReleaseRHITransientTextureHeap(int heapIdx)
+{
+	m_rhiFreeTransientTextureHeaps.append(heapIdx);
+}
+
 void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExtent& newSize, int mipmapCount, int sampleCount)
 {
 	CNVRHITexture* texture = static_cast<CNVRHITexture*>(renderTarget);
@@ -250,7 +280,6 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 	texture->SetMipCount(mipmapCount);
 	texture->SetSampleCount(sampleCount);
 	texture->Release();
-
 
 	auto rhiTextureDesc = nvrhi::TextureDesc()
 		.setMipLevels(mipmapCount)
@@ -294,6 +323,23 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 		return;
 	}
 
+	int heapIdx = -1;
+	if (flags & TEXFLAG_TRANSIENT)
+	{
+		if (m_rhiFreeTransientTextureHeaps.isEmpty())
+		{
+			// allocate extra heap at device
+			heapIdx = m_rhiTransientTextureHeaps.append(m_rhiDevice->createHeap(s_rhiTransientTextureHeapDesc));
+
+			DevMsg(DEVMSG_RENDER, "RHI allocating extra transient texture heap\n");
+		}
+		else
+		{
+			heapIdx = m_rhiFreeTransientTextureHeaps.popBack();
+			rhiTextureDesc.setIsVirtual(true);
+		}
+	}
+
 	nvrhi::TextureHandle rhiTexture = m_rhiDevice->createTexture(rhiTextureDesc);
 	if (!rhiTexture)
 	{
@@ -303,6 +349,12 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 
 	texture->m_rhiTexture = rhiTexture;
 	texture->m_rhiDimension = rhiTextureDesc.dimension;
+
+	if(heapIdx != -1)
+	{
+		texture->m_transientHeapIdx = heapIdx;
+		m_rhiDevice->bindTextureMemory(rhiTexture, m_rhiTransientTextureHeaps[heapIdx], 0);
+	}
 
 	// add default view
 	// create default texture view
@@ -385,12 +437,7 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(const BindGroupDesc& bindG
 	nvrhi::BindingSetDesc rhiBindingSetDesc;
 	nvrhiFillBindingSetDesc(bindGroupDesc, shaderInfo, shaderModuleIdxs, rhiBindingSetDesc);
 
-	nvrhi::BindingSetHandle rhiBindSet;
-	g_renderWorker.WaitForExecute("CreateBindingSet", [&]() {
-		rhiBindSet = m_rhiDevice->createBindingSet(rhiBindingSetDesc, rhiBindingLayouts[bindGroupDesc.groupIdx]);
-		return 0;
-	});
-
+	nvrhi::BindingSetHandle rhiBindSet = m_rhiDevice->createBindingSet(rhiBindingSetDesc, rhiBindingLayouts[bindGroupDesc.groupIdx]);
 	if (!rhiBindSet)
 	{
 		ASSERT_FAIL("Failed to create bind group %s\n", bindGroupDesc.name.ToCString());
@@ -1000,8 +1047,10 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 
 IGPUCommandRecorderPtr CNVRHIRenderAPI::CreateCommandRecorder(const char* name, void* userData) const
 {
-	nvrhi::CommandListParameters rhiCmdListParams = {};
-	rhiCmdListParams.enableImmediateExecution = false;
+	auto rhiCmdListParams = nvrhi::CommandListParameters()
+		.setEnableImmediateExecution(false)
+		.setUploadChunkSize(512 * 1024)
+		.setScratchChunkSize(64 * 1024);
 
 	nvrhi::CommandListHandle rhiCommandList = m_rhiDevice->createCommandList(rhiCmdListParams);
 	rhiCommandList->open();
@@ -1016,8 +1065,8 @@ IGPUCommandRecorderPtr CNVRHIRenderAPI::CreateCommandRecorder(const char* name, 
 
 IGPURenderPassRecorderPtr CNVRHIRenderAPI::BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData) const
 {
-	nvrhi::CommandListParameters rhiCmdListParams = {};
-	rhiCmdListParams.enableImmediateExecution = false;
+	auto rhiCmdListParams = nvrhi::CommandListParameters()
+		.setEnableImmediateExecution(false);
 
 	nvrhi::CommandListHandle rhiCommandList = m_rhiDevice->createCommandList(rhiCmdListParams);
 	rhiCommandList->open();
@@ -1030,8 +1079,8 @@ IGPURenderPassRecorderPtr CNVRHIRenderAPI::BeginRenderPass(const RenderPassDesc&
 
 IGPUComputePassRecorderPtr CNVRHIRenderAPI::BeginComputePass(const char* name, void* userData) const
 {
-	nvrhi::CommandListParameters rhiCmdListParams = {};
-	rhiCmdListParams.enableImmediateExecution = false;
+	auto rhiCmdListParams = nvrhi::CommandListParameters()
+		.setEnableImmediateExecution(false);
 
 	nvrhi::CommandListHandle rhiCommandList = m_rhiDevice->createCommandList(rhiCmdListParams);
 	rhiCommandList->open();
@@ -1086,10 +1135,11 @@ Future<bool> CNVRHIRenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUComman
 	Promise<bool> promise;
 	g_renderWorker.Execute(__func__, [this, rhiSubmitBuffers = std::move(rhiSubmitBuffers), promise]() {
 		const uint64_t lastSubmitInstance = m_rhiDevice->executeCommandLists(rhiSubmitBuffers.ptr(), rhiSubmitBuffers.numElem());
-		m_rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
 
 		for (nvrhi::ICommandList* rhiCmdList : rhiSubmitBuffers)
 			rhiCmdList->Release();
+
+		m_rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
 
 		promise.SetResult(true);
 		return 0;

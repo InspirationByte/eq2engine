@@ -31,6 +31,7 @@ public:
 	static CNVRHIRenderAPI Instance;
 
 	// Init + Shurdown
+	void						Init(const ShaderAPIParams& params);
 	void						Shutdown();
 	bool						IsDeviceValidationActive() const;
 
@@ -99,13 +100,17 @@ public:
 
 	nvrhi::DeviceHandle			GetNVRHIDevice() const { return m_rhiDevice; }
 	nvrhi::SamplerHandle		GetRHISampler(const SamplerStateParams& samplerStateParams);
+	void						ReleaseRHITransientTextureHeap(int heapIdx);
 
 protected:
+
 	//nvrhi::BindingLayoutHandle	CreateBindingLayout(const BindGroupLayoutDesc& bindGroupDesc, int bindGroupIndex) const;
 	IGPUBindGroupPtr			CreateBindGroupImpl(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, NVRHIBindingLayoutsCRef rhiBindingLayouts) const;
 
 	const ShaderInfo::Module&	GetOrLoadShaderModule(const ShaderInfo& shaderInfo, int shaderModuleIdx, const char* dbgName = nullptr) const;
 
+	Array<nvrhi::HeapHandle>	m_rhiTransientTextureHeaps{ PP_SL };
+	Array<int>					m_rhiFreeTransientTextureHeaps{ PP_SL };
 
 	Map<int, nvrhi::SamplerHandle>	m_rhiSamplers{ PP_SL };
 

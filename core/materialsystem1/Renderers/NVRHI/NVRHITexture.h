@@ -36,4 +36,5 @@ protected:
 	nvrhi::TextureDimension	m_rhiDimension{ nvrhi::TextureDimension::Unknown };
 	EImageType				m_imgType{ IMAGE_TYPE_INVALID };
 	int						m_texSize{ 0 };
+	int						m_transientHeapIdx{ -1 };
 };
