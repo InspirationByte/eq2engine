@@ -62,7 +62,7 @@ bool CWGPUTexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& s
 
 	//m_rhiViews.reserve(arraySize);
 
-	m_texSize = image->GetMipMappedSize(mipStart);
+	m_texSize = image->GetMipMappedSize(mipStart) * arraySize;
 	m_arraySize = arraySize;
 	m_mipCount = mipCount;
 	m_width = texWidth;
