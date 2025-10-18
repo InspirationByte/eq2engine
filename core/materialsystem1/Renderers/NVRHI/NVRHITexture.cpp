@@ -24,8 +24,7 @@ CNVRHITexture::~CNVRHITexture()
 
 void CNVRHITexture::Release()
 {
-	if ((m_flags & TEXFLAG_TRANSIENT) && m_transientHeapIdx != -1)
-		CNVRHIRenderAPI::Instance.ReleaseRHITransientTextureHeap(m_transientHeapIdx);
+	CNVRHIRenderAPI::Instance.ReleaseRHITransientTextureHeap(m_transientHeapIdx);
 
 	m_rhiViews.clear();
 	m_rhiTexture = nullptr;

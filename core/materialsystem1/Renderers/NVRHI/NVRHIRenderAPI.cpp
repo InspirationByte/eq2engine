@@ -309,6 +309,9 @@ int CNVRHIRenderAPI::AcquireRHITransientTextureHeap()
 
 void CNVRHIRenderAPI::ReleaseRHITransientTextureHeap(int heapIdx)
 {
+	if (heapIdx == -1)
+		return;
+
 	CScopedMutex m(s_transientHeapsMutex);
 	m_rhiFreeTransientTextureHeaps.append(heapIdx);
 }
@@ -329,13 +332,15 @@ int CNVRHIRenderAPI::AcquireRHITransientBufferHeap()
 	else
 	{
 		heapIdx = m_rhiFreeTransientBufferHeaps.popBack();
-
 	}
 	return heapIdx;
 }
 
 void CNVRHIRenderAPI::ReleaseRHITransientBufferHeap(int heapIdx)
 {
+	if (heapIdx == -1)
+		return;
+
 	CScopedMutex m(s_transientHeapsMutex);
 	m_rhiFreeTransientBufferHeaps.append(heapIdx);
 }
