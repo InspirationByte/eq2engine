@@ -304,6 +304,7 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 	}
 
 	texture->m_rhiTexture = rhiTexture;
+	texture->m_texSize = imgCalcMipMappedSize(texture->GetFormat(), newSize.width, newSize.height, 1, 0, mipmapCount) * newSize.arraySize;
 
 	// add default view
 	{

@@ -488,7 +488,6 @@ ubyte* CImage::GetPixels(const int mipMapLevel, const int arraySlice) const
 	return m_pPixels + GetMipMappedSize(0, m_nMipMaps) * arraySlice + GetMipMappedSize(0, mipMapLevel);
 }
 
-
 int CImage::GetMipMapCountFromDimesions() const
 {
 	int m = max(m_nWidth, m_nHeight);
@@ -506,38 +505,7 @@ int CImage::GetMipMapCountFromDimesions() const
 
 int CImage::GetMipMappedSize(const int firstMipMapLevel, int nMipMapLevels, ETextureFormat srcFormat) const
 {
-	int w = GetWidth(firstMipMapLevel);
-	int h = GetHeight(firstMipMapLevel);
-	int d = GetDepth(firstMipMapLevel);
-
-	if (srcFormat == FORMAT_NONE)
-		srcFormat = m_nFormat;
-
-	int size = 0;
-	while (nMipMapLevels)
-	{
-		if (IsCompressedFormat(srcFormat))
-			size += ((w + 3) >> 2) * ((h + 3) >> 2) * d;
-		else
-			size += w * h * d;
-
-		w >>= 1;
-		h >>= 1;
-		d >>= 1;
-		if (w + h + d == 0) break;
-		if (w == 0) w = 1;
-		if (h == 0) h = 1;
-		if (d == 0) d = 1;
-
-		nMipMapLevels--;
-	}
-
-	if (IsCompressedFormat(srcFormat))
-		size *= GetBytesPerBlock(srcFormat);
-	else
-		size *= GetBytesPerPixel(srcFormat);
-
-	return (m_nDepth == IMAGE_DEPTH_CUBEMAP) ? (6 * size) : size;
+	return imgCalcMipMappedSize(srcFormat == FORMAT_NONE ? m_nFormat : srcFormat, m_nWidth, m_nHeight, m_nDepth, firstMipMapLevel, nMipMapLevels);
 }
 
 int CImage::GetSliceSize(const int mipMapLevel, ETextureFormat srcFormat) const
@@ -564,7 +532,6 @@ int CImage::GetPixelCount(const int firstMipMapLevel, int nMipMapLevels) const
 	int d = GetDepth(firstMipMapLevel);
 
 	int size = 0;
-
 	while (nMipMapLevels)
 	{
 		size += w * h * d;
