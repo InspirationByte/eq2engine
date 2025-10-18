@@ -9,6 +9,8 @@
 #include "materialsystem1/renderers/IShaderAPI.h"
 #include "GrimSynchronizedPool.h"
 
+static constexpr int GPU_POOL_BUFFER_USAGE_FLAGS = BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST;
+
 GRIMLock GRIMLock::EmptyLock = {};
 
 GRIMResource::GRIMResource(Type type)
@@ -76,6 +78,7 @@ void GRIMBaseSyncrhronizedPool::RunUpdatePipeline(IGPUCommandRecorder* cmdRecord
 }
 
 // prepares data buffer
+// automatically grows destDataBuffer
 void GRIMBaseSyncrhronizedPool::PrepareDataBuffer(IGPUCommandRecorder* cmdRecorder, ArrayCRef<int> elementIds, const ubyte* sourceData, int sourceStride, int elemSize, IGPUBufferPtr& destDataBuffer)
 {
 	ArrayCRef<int> elementIdArray = ArrayCRef(elementIds.ptr()+1, elementIds.numElem()-1);
@@ -95,11 +98,16 @@ void GRIMBaseSyncrhronizedPool::PrepareDataBuffer(IGPUCommandRecorder* cmdRecord
 		updateData += elemSize;
 	}
 
-	destDataBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, updateBufferSize), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstUpdData");
+	const BufferInfo reqDataBufferInfo(1, updateBufferSize);
+
+	if (!destDataBuffer || destDataBuffer->GetSize() < reqDataBufferInfo.GetBufferSize())
+		destDataBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, updateBufferSize), GPU_POOL_BUFFER_USAGE_FLAGS, "InstUpdData");
+
 	cmdRecorder->WriteBuffer(destDataBuffer, updateDataStart, updateBufferSize, 0);
 }
 
 // prepare data and indices
+// automatically grows destIdxsBuffer & destDataBuffer
 void GRIMBaseSyncrhronizedPool::PrepareBuffers(IGPUCommandRecorder* cmdRecorder, const Set<int>& updated, Array<int>& elementIds, const ubyte* sourceData, int sourceStride, int elemSize, IGPUBufferPtr& destIdxsBuffer, IGPUBufferPtr& destDataBuffer)
 {
 	ASSERT(elemSize <= sourceStride);
@@ -130,8 +138,14 @@ void GRIMBaseSyncrhronizedPool::PrepareBuffers(IGPUCommandRecorder* cmdRecorder,
 		updateData += elemSize;
 	}
 
-	destIdxsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(elementIds[0]), elementIds.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstUpdIdxs");
-	destDataBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, updateBufferSize), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstUpdData");
+	const BufferInfo reqIdxsBufferInfo(sizeof(elementIds[0]), elementIds.numElem());
+	const BufferInfo reqDataBufferInfo(1, updateBufferSize);
+
+	if(!destIdxsBuffer || destIdxsBuffer->GetSize() < reqIdxsBufferInfo.GetBufferSize())
+		destIdxsBuffer = g_renderAPI->CreateBuffer(reqIdxsBufferInfo, GPU_POOL_BUFFER_USAGE_FLAGS, "InstUpdIdxs");
+
+	if (!destDataBuffer || destDataBuffer->GetSize() < reqDataBufferInfo.GetBufferSize())
+		destDataBuffer = g_renderAPI->CreateBuffer(reqDataBufferInfo, GPU_POOL_BUFFER_USAGE_FLAGS, "InstUpdData");
 
 	cmdRecorder->WriteBuffer(destIdxsBuffer, elementIds.ptr(), sizeof(elementIds[0]) * elementIds.numElem(), 0);
 	cmdRecorder->WriteBuffer(destDataBuffer, updateDataStart, updateBufferSize, 0);
@@ -195,7 +209,7 @@ void GRIMBaseSyncrhronizedPool::SetPipeline(IGPUComputePipelinePtr updatePipelin
 	m_updatePipeline = updatePipeline;
 }
 
-bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const void* dataPtr, int stride, GRIMLock& lock)
+bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const void* dataPtr, int stride, GRIMLock& lock, IGPUBufferPtr& updDataBuffer, IGPUBufferPtr& updIdxsBuffer)
 {
 	if (!m_updatePipeline)
 	{
@@ -221,7 +235,7 @@ bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const
 		{
 			IGPUBufferPtr oldBuffer(m_gpuData.Get<IGPUBuffer>());
 
-			const int bufferFlags = m_extraResourceFlags | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST | BUFFERUSAGE_COPY_SRC;
+			const int bufferFlags = m_extraResourceFlags | BUFFERUSAGE_COPY_SRC | GPU_POOL_BUFFER_USAGE_FLAGS;
 			IGPUBufferPtr newBuffer = g_renderAPI->CreateBuffer(BufferInfo(stride, allocInstElems), bufferFlags, m_name);
 			m_gpuData.Set(newBuffer.Ptr());
 
@@ -248,7 +262,7 @@ bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const
 		{
 			ITexturePtr oldTexture(m_gpuData.Get<ITexture>());
 
-			const int textureFlags = m_extraResourceFlags | TEXFLAG_STORAGE | TEXFLAG_COPY_DST | TEXFLAG_COPY_DST;
+			const int textureFlags = m_extraResourceFlags | TEXFLAG_STORAGE | TEXFLAG_COPY_DST | TEXFLAG_COPY_SRC;
 			ITexturePtr newTexture = g_renderAPI->CreateRenderTarget(TextureDesc(EqString::Format("%s_%d", m_name, allocInstElems), textureFlags, m_texFormat, m_texSize.x, m_texSize.y, allocInstElems));
 			m_gpuData.Set(newTexture.Ptr());
 
@@ -265,10 +279,8 @@ bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const
 	lock.LockRead();
 	if (m_updated.size())
 	{
-		IGPUBufferPtr idxsBuffer;
-		IGPUBufferPtr dataBuffer;
-		PrepareBuffers(cmdRecorder, m_updated, m_syncElementIds, reinterpret_cast<const ubyte*>(dataPtr), stride, stride, idxsBuffer, dataBuffer);
-		RunUpdatePipeline(cmdRecorder, m_updatePipeline, idxsBuffer, m_updated.size(), dataBuffer, m_gpuData);
+		PrepareBuffers(cmdRecorder, m_updated, m_syncElementIds, reinterpret_cast<const ubyte*>(dataPtr), stride, stride, updIdxsBuffer, updDataBuffer);
+		RunUpdatePipeline(cmdRecorder, m_updatePipeline, updIdxsBuffer, m_updated.size(), updDataBuffer, m_gpuData);
 	}
 	lock.UnlockRead();
 

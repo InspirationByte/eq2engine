@@ -124,6 +124,9 @@ void GRIMBaseRenderer::Shutdown()
 	m_drawLodInfos.SetPipeline(nullptr);
 	m_drawLodsList.SetPipeline(nullptr);
 
+	m_updDataBuffer = nullptr;
+	m_updIdxsBuffer = nullptr;
+
 	m_sortShader = nullptr;
 	m_instCalcBoundsPipeline = nullptr;
 	m_filterInstancesPipeline = nullptr;
@@ -658,14 +661,14 @@ void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 	bool buffersUpdated = false;
 	{
 		CScopedMutex m(s_grimRendererMutex);
-		if (m_drawLodsList.Sync(cmdRecorder, GRIMLock::EmptyLock))
+		if (m_drawLodsList.Sync(cmdRecorder, GRIMLock::EmptyLock, m_updDataBuffer, m_updIdxsBuffer))
 			buffersUpdated = true;
 	}
 
-	if (m_drawLodInfos.Sync(cmdRecorder, GRIMLock::EmptyLock))
+	if (m_drawLodInfos.Sync(cmdRecorder, GRIMLock::EmptyLock, m_updDataBuffer, m_updIdxsBuffer))
 		buffersUpdated = true;
 
-	if (m_drawBatchs.Sync(cmdRecorder, GRIMLock::EmptyLock))
+	if (m_drawBatchs.Sync(cmdRecorder, GRIMLock::EmptyLock, m_updDataBuffer, m_updIdxsBuffer))
 		buffersUpdated = true;
 	
 	if (!buffersUpdated)

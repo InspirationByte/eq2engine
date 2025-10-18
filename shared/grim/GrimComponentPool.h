@@ -20,7 +20,7 @@ public:
 	virtual int			GetItemSize() const = 0;
 	virtual int			GetPoolSize() const = 0;
 
-	virtual bool		Sync(IGPUCommandRecorder* cmdRecorder) = 0;
+	virtual bool		Sync(IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr& updDataBuffer, IGPUBufferPtr& updIdxsBuffer) = 0;
 
 	virtual void		Init() = 0;
 	virtual void		Term() = 0;
@@ -78,7 +78,7 @@ public:
 	int				GetItemSize() const override { return sizeof(T); }
 	int				GetPoolSize() const override { return DataPool::GetGPUData().GetSize() / sizeof(T); }
 
-	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return DataPool::Sync(cmdRecorder, m_lock); }
+	bool			Sync(IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr& updDataBuffer, IGPUBufferPtr& updIdxsBuffer) override { return DataPool::Sync(cmdRecorder, m_lock, updDataBuffer, updIdxsBuffer); }
 
 	void			Init() override { DataPool::InitBuffer(0, T::INITIAL_POOL_SIZE, T::POOL_SIZE_EXTEND); T::InitPipeline(*this);}
 	void			Term() override { DataPool::SetPipeline(nullptr); }
@@ -121,7 +121,7 @@ public:
 	int				GetItemSize() const override { return sizeof(T); }
 	int				GetPoolSize() const override { return DataPool::GetGPUData().GetSize(); }
 
-	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return DataPool::Sync(cmdRecorder, m_lock); }
+	bool			Sync(IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr& updDataBuffer, IGPUBufferPtr& updIdxsBuffer) override { return DataPool::Sync(cmdRecorder, m_lock, updDataBuffer, updIdxsBuffer); }
 
 	void			Init() override { DataPool::InitTexture(T::POOL_TEXTURE_FORMAT, T::POOL_TEXTURE_SIZE, 0, T::INITIAL_POOL_SIZE, T::POOL_SIZE_EXTEND); T::InitPipeline(*this); }
 	void			Term() override { DataPool::SetPipeline(nullptr); }
@@ -163,7 +163,7 @@ public:
 	int				GetItemSize() const override { return sizeof(T); }
 	int				GetPoolSize() const override { return DataPool::numSlots(); }
 
-	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return true; }
+	bool			Sync(IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr& updDataBuffer, IGPUBufferPtr& updIdxsBuffer) override { return true; }
 
 	void			Init() override {}
 	void			Term() override {}

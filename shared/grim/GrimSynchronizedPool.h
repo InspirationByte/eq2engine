@@ -117,7 +117,7 @@ public:
 	virtual void			Remove(const int idx) = 0;
 	void					SetUpdated(int idx);
 
-	virtual bool			Sync(IGPUCommandRecorder* cmdRecorder, GRIMLock& lock) = 0;
+	virtual bool			Sync(IGPUCommandRecorder* cmdRecorder, GRIMLock& lock, IGPUBufferPtr& updDataBuffer, IGPUBufferPtr& updIdxsBuffer) = 0;
 	const GRIMResource&		GetGPUData() const { return m_gpuData; }
 	GRIMResource::Type		GetType() const { return m_gpuData.GetType(); }
 
@@ -129,7 +129,7 @@ public:
 	static IVector2D		CalcWorkSize(int length);
 
 protected:
-	bool					SyncImpl(IGPUCommandRecorder* cmdRecorder, const void* dataPtr, int stride, GRIMLock& lock);
+	bool					SyncImpl(IGPUCommandRecorder* cmdRecorder, const void* dataPtr, int stride, GRIMLock& lock, IGPUBufferPtr& updDataBuffer, IGPUBufferPtr& updIdxsBuffer);
 
 	Set<int>				m_updated{ PP_SL };
 	Array<int>				m_syncElementIds{ PP_SL };
@@ -176,7 +176,7 @@ public:
 
 	// syncrhonizes data with GPU buffer
 	// returns true if buffer has been changed
-	bool			Sync(IGPUCommandRecorder* cmdRecorder, GRIMLock& lock) override;
+	bool			Sync(IGPUCommandRecorder* cmdRecorder, GRIMLock& lock, IGPUBufferPtr& updDataBuffer, IGPUBufferPtr& updIdxsBuffer) override;
 };
 
 
@@ -214,7 +214,7 @@ void GRIMSyncrhronizedPool<T>::Update(int idx, const T& item)
 }
 
 template<typename T>
-bool GRIMSyncrhronizedPool<T>::Sync(IGPUCommandRecorder* cmdRecorder, GRIMLock& lock)
+bool GRIMSyncrhronizedPool<T>::Sync(IGPUCommandRecorder* cmdRecorder, GRIMLock& lock, IGPUBufferPtr& updDataBuffer, IGPUBufferPtr& updIdxsBuffer)
 {
-	return SyncImpl(cmdRecorder, GetData(), sizeof(T), lock);
+	return SyncImpl(cmdRecorder, GetData(), sizeof(T), lock, updDataBuffer, updIdxsBuffer);
 }
