@@ -153,6 +153,9 @@ protected:
 
 	IGPUBufferPtr			m_singleInstIndexBuffer;
 
+	IGPUBufferPtr			m_updateDataBuffer;
+	IGPUBufferPtr			m_updateIdxsBuffer;
+
 	IGPUComputePipelinePtr	m_updateRootPipeline;
 	IGPUComputePipelinePtr	m_updateIntPipeline;
 

@@ -175,6 +175,9 @@ protected:
 
 	ComputeSortShaderPtr		m_sortShader;
 
+	IGPUBufferPtr				m_updDataBuffer;
+	IGPUBufferPtr				m_updIdxsBuffer;
+
 	IGPUComputePipelinePtr		m_instCalcBoundsPipeline;
 	IGPUComputePipelinePtr		m_instPrepareDrawIndirectPipeline;
 	IGPUComputePipelinePtr		m_filterInstancesPipeline;

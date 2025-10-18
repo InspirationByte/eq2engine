@@ -16,7 +16,7 @@ static constexpr int GPU_INSTANCE_INITIAL_POOL_SIZE		= 3072;
 static constexpr int GPU_INSTANCE_POOL_SIZE_EXTEND		= 1024;
 static constexpr int GPU_INSTANCE_MAX_TEMP_INSTANCES	= 128;
 
-static constexpr int GPU_INSTANCE_BUFFER_USAGE_FLAGS = BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST | BUFFERUSAGE_COPY_SRC;
+static constexpr int GPU_INSTANCE_BUFFER_USAGE_FLAGS = BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST;
 
 static int instGranulatedCapacity(int capacity)
 {
@@ -87,6 +87,9 @@ void GRIMBaseInstanceAllocator::Shutdown()
 
 	m_updateRootPipeline = nullptr;
 	m_updateIntPipeline = nullptr;
+
+	m_updateDataBuffer = nullptr;
+	m_updateIdxsBuffer = nullptr;
 
 	m_rootBuffer = nullptr;
 	m_archetypesBuffer = nullptr;
@@ -319,7 +322,7 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			// update roots, bloody roots
 			{
 				IGPUBufferPtr sourceBuffer = m_rootBuffer;
-				m_rootBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(InstRoot), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstRoot");
+				m_rootBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(InstRoot), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS | BUFFERUSAGE_COPY_SRC, "InstRoot");
 
 				if (oldBufferElems > 0)
 					cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_rootBuffer, 0, oldBufferElems * sizeof(InstRoot));
@@ -328,7 +331,7 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			// update archetypes
 			{
 				IGPUBufferPtr sourceBuffer = m_archetypesBuffer;
-				m_archetypesBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GRIMArchetype), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "GRIMArchetype");
+				m_archetypesBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GRIMArchetype), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS | BUFFERUSAGE_COPY_SRC, "GRIMArchetype");
 
 				if (oldBufferElems > 0)
 					cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_archetypesBuffer, 0, oldBufferElems * sizeof(GRIMArchetype));
@@ -337,7 +340,7 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			// update groupMask
 			{
 				IGPUBufferPtr sourceBuffer = m_groupMaskBuffer;
-				m_groupMaskBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GRIMArchetype), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstGroupMask");
+				m_groupMaskBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GRIMArchetype), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS | BUFFERUSAGE_COPY_SRC, "InstGroupMask");
 
 				if (oldBufferElems > 0)
 					cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_groupMaskBuffer, 0, oldBufferElems * sizeof(GRIMArchetype));
@@ -400,21 +403,25 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			const ubyte* archetypesSrcAddr = srcAddr + offsetOf(Instance, archetype);
 			const ubyte* groupMaskSrcAddr = srcAddr + offsetOf(Instance, groupMask);
 
-			auto UpdateInstanceItems = [cmdRecorder](IGPUComputePipeline* pipeline, IGPUBuffer* targetBuffer, Array<int>& itemIds, const ubyte* items, int itemSize) {
+			auto UpdateInstanceItems = [this, cmdRecorder](IGPUComputePipeline* pipeline, IGPUBuffer* targetBuffer, Array<int>& itemIds, const ubyte* items, int itemSize) {
 				if (itemIds.isEmpty())
 					return;
 
 				const int idxsCount = itemIds.numElem();
 				itemIds.insert(idxsCount, 0);
-				IGPUBufferPtr idxsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(itemIds[0]), itemIds.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstUpdIdxs");
-				cmdRecorder->WriteBuffer(idxsBuffer, itemIds.ptr(), sizeof(itemIds[0]) * itemIds.numElem(), 0);
+
+				const BufferInfo reqIdxsBufferInfo(sizeof(itemIds[0]), itemIds.numElem());
+
+				if (!m_updateIdxsBuffer || m_updateIdxsBuffer->GetSize() < reqIdxsBufferInfo.GetBufferSize())
+					m_updateIdxsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(itemIds[0]), itemIds.numElem()), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstUpdIdxs");
+				
+				cmdRecorder->WriteBuffer(m_updateIdxsBuffer, itemIds.ptr(), sizeof(itemIds[0]) * itemIds.numElem(), 0);
 
 				GRIMResource targetBufferResource(GRIMResource::BUFFER);
 				targetBufferResource.Set(targetBuffer);
 
-				IGPUBufferPtr dataBuffer;
-				GRIMBaseSyncrhronizedPool::PrepareDataBuffer(cmdRecorder, itemIds, items, sizeof(Instance), itemSize, dataBuffer);
-				GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, pipeline, idxsBuffer, idxsCount, dataBuffer, targetBufferResource);
+				GRIMBaseSyncrhronizedPool::PrepareDataBuffer(cmdRecorder, itemIds, items, sizeof(Instance), itemSize, m_updateDataBuffer);
+				GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, pipeline, m_updateIdxsBuffer, idxsCount, m_updateDataBuffer, targetBufferResource);
 
 				itemIds.clear();
 			};
@@ -437,7 +444,7 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 		if (!pool)
 			continue;
 		
-		if(pool->Sync(cmdRecorder))
+		if(pool->Sync(cmdRecorder, m_updateDataBuffer, m_updateIdxsBuffer))
 			buffersUpdatedThisFrame = true;
 	}
 
