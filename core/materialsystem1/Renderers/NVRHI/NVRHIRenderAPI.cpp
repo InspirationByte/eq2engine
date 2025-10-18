@@ -23,14 +23,23 @@
 #include "../RenderWorker.h"
 #include "NVRHIComputePassRecorder.h"
 
-static constexpr int s_minTransientTextureHeaps = 4;
-static constexpr int s_maxTransientTextureHeapSize = GetBytesPerPixel(FORMAT_RGBA16F) * 4096 * 1024;
-
 static void nvrhiFillTransientTextureHeapDesc(nvrhi::HeapDesc& heapDesc)
 {
+	// 32 MB per texture
+	static constexpr int s_maxTransientTextureHeapSize = imgCalcMipMappedSize(FORMAT_RGBA16F, 4096, 1024, 1, 0, 1);
 	heapDesc
 		.setDebugName("TransientTextureHeap")
 		.setCapacity(s_maxTransientTextureHeapSize)
+		.setType(nvrhi::HeapType::DeviceLocal);
+}
+
+static void nvrhiFillTransientBufferHeapDesc(nvrhi::HeapDesc& heapDesc)
+{
+	// 8 MB
+	static constexpr int s_maxTransientBufferHeapSize = 8 * 1024 * 1024;
+	heapDesc
+		.setDebugName("TransientBufferHeap")
+		.setCapacity(s_maxTransientBufferHeapSize)
 		.setType(nvrhi::HeapType::DeviceLocal);
 }
 
@@ -42,7 +51,7 @@ constexpr EqStringRef s_DefaultVertexLayoutName = "Default";
 DECLARE_CVAR(nvrhi_preloadShaders, "0", "Preload all shaders during startup. This affects engine startup time but allows name display.", CV_ARCHIVE);
 DECLARE_CVAR_F(nvrhi_validation);
 
-static Threading::CEqMutex s_transientTexHeapsMutex;
+static Threading::CEqMutex s_transientHeapsMutex;
 static Threading::CEqMutex s_cmdListMutex;
 
 CNVRHIRenderAPI CNVRHIRenderAPI::Instance;
@@ -55,15 +64,34 @@ void CNVRHIRenderAPI::Init(const ShaderAPIParams& params)
 {
 	ShaderAPI_Base::Init(params);
 
-	nvrhi::HeapDesc heapDesc;
-	nvrhiFillTransientTextureHeapDesc(heapDesc);
-
-	m_rhiTransientTextureHeaps.reserve(s_minTransientTextureHeaps);
-	m_rhiFreeTransientTextureHeaps.reserve(s_minTransientTextureHeaps);
-	for (int i = 0; i < s_minTransientTextureHeaps; ++i)
 	{
-		m_rhiTransientTextureHeaps.append(m_rhiDevice->createHeap(heapDesc));
-		m_rhiFreeTransientTextureHeaps.append(i);
+		constexpr int s_minTransientTextureHeaps = 4;
+
+		nvrhi::HeapDesc heapDesc;
+		nvrhiFillTransientTextureHeapDesc(heapDesc);
+
+		m_rhiTransientTextureHeaps.reserve(s_minTransientTextureHeaps);
+		m_rhiFreeTransientTextureHeaps.reserve(s_minTransientTextureHeaps);
+		for (int i = 0; i < s_minTransientTextureHeaps; ++i)
+		{
+			m_rhiTransientTextureHeaps.append(m_rhiDevice->createHeap(heapDesc));
+			m_rhiFreeTransientTextureHeaps.append(i);
+		}
+	}
+
+	{
+		constexpr int s_minTransientBufferHeaps = 4;
+
+		nvrhi::HeapDesc heapDesc;
+		nvrhiFillTransientBufferHeapDesc(heapDesc);
+
+		m_rhiTransientBufferHeaps.reserve(s_minTransientBufferHeaps);
+		m_rhiFreeTransientBufferHeaps.reserve(s_minTransientBufferHeaps);
+		for (int i = 0; i < s_minTransientBufferHeaps; ++i)
+		{
+			m_rhiTransientBufferHeaps.append(m_rhiDevice->createHeap(heapDesc));
+			m_rhiFreeTransientBufferHeaps.append(i);
+		}
 	}
 }
 
@@ -76,6 +104,8 @@ void CNVRHIRenderAPI::Shutdown()
 	m_shaderCache.clear(true);
 	m_rhiTransientTextureHeaps.clear(true);
 	m_rhiFreeTransientTextureHeaps.clear(true);
+	m_rhiTransientBufferHeaps.clear(true);
+	m_rhiFreeTransientBufferHeaps.clear(true);
 	m_rhiCommandLists.clear(true);
 	m_rhiFreeCommandLists.clear(true);
 	m_rhiDevice = nullptr;
@@ -256,10 +286,58 @@ ITexturePtr	CNVRHIRenderAPI::CreateRenderTarget(const TextureDesc& targetDesc)
 	return ITexturePtr(texture);
 }
 
+int CNVRHIRenderAPI::AcquireRHITransientTextureHeap()
+{
+	int heapIdx = -1;
+	CScopedMutex m(s_transientHeapsMutex);
+	if (m_rhiFreeTransientTextureHeaps.isEmpty())
+	{
+		// allocate extra heap at device
+		nvrhi::HeapDesc heapDesc;
+		nvrhiFillTransientTextureHeapDesc(heapDesc);
+		heapIdx = m_rhiTransientTextureHeaps.append(m_rhiDevice->createHeap(heapDesc));
+
+		DevMsg(DEVMSG_RENDER, "RHI allocating extra transient texture heap\n");
+	}
+	else
+	{
+		heapIdx = m_rhiFreeTransientTextureHeaps.popBack();
+		
+	}
+	return heapIdx;
+}
+
 void CNVRHIRenderAPI::ReleaseRHITransientTextureHeap(int heapIdx)
 {
-	CScopedMutex m(s_transientTexHeapsMutex);
+	CScopedMutex m(s_transientHeapsMutex);
 	m_rhiFreeTransientTextureHeaps.append(heapIdx);
+}
+
+int CNVRHIRenderAPI::AcquireRHITransientBufferHeap()
+{
+	int heapIdx = -1;
+	CScopedMutex m(s_transientHeapsMutex);
+	if (m_rhiFreeTransientBufferHeaps.isEmpty())
+	{
+		// allocate extra heap at device
+		nvrhi::HeapDesc heapDesc;
+		nvrhiFillTransientBufferHeapDesc(heapDesc);
+		heapIdx = m_rhiTransientBufferHeaps.append(m_rhiDevice->createHeap(heapDesc));
+
+		DevMsg(DEVMSG_RENDER, "RHI allocating extra transient buffer heap\n");
+	}
+	else
+	{
+		heapIdx = m_rhiFreeTransientBufferHeaps.popBack();
+
+	}
+	return heapIdx;
+}
+
+void CNVRHIRenderAPI::ReleaseRHITransientBufferHeap(int heapIdx)
+{
+	CScopedMutex m(s_transientHeapsMutex);
+	m_rhiFreeTransientBufferHeaps.append(heapIdx);
 }
 
 nvrhi::CommandListHandle CNVRHIRenderAPI::AcquireRHICommandList(int& cmdListIdx) const
@@ -330,7 +408,8 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 		.setWidth((uint)newSize.width)
 		.setHeight((uint)newSize.height)
 		.setArraySize((uint)newSize.arraySize)
-		.setIsRenderTarget(true);
+		.setIsRenderTarget(true)
+		.setIsVirtual(flags & TEXFLAG_TRANSIENT);
 
 	if (!isDepth)
 	{
@@ -357,26 +436,6 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 		return;
 	}
 
-	int heapIdx = -1;
-	if (flags & TEXFLAG_TRANSIENT)
-	{
-		CScopedMutex m(s_transientTexHeapsMutex);
-		if (m_rhiFreeTransientTextureHeaps.isEmpty())
-		{
-			// allocate extra heap at device
-			nvrhi::HeapDesc heapDesc;
-			nvrhiFillTransientTextureHeapDesc(heapDesc);
-			heapIdx = m_rhiTransientTextureHeaps.append(m_rhiDevice->createHeap(heapDesc));
-
-			DevMsg(DEVMSG_RENDER, "RHI allocating extra transient texture heap\n");
-		}
-		else
-		{
-			heapIdx = m_rhiFreeTransientTextureHeaps.popBack();
-			rhiTextureDesc.setIsVirtual(true);
-		}
-	}
-
 	nvrhi::TextureHandle rhiTexture = m_rhiDevice->createTexture(rhiTextureDesc);
 	if (!rhiTexture)
 	{
@@ -387,8 +446,9 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 	texture->m_rhiTexture = rhiTexture;
 	texture->m_rhiDimension = rhiTextureDesc.dimension;
 
-	if(heapIdx != -1)
+	if (flags & TEXFLAG_TRANSIENT)
 	{
+		const int heapIdx = AcquireRHITransientTextureHeap();
 		texture->m_transientHeapIdx = heapIdx;
 		m_rhiDevice->bindTextureMemory(rhiTexture, m_rhiTransientTextureHeaps[heapIdx], 0);
 	}

@@ -12,6 +12,8 @@
 
 CNVRHIBuffer::~CNVRHIBuffer()
 {
+	CNVRHIRenderAPI::Instance.ReleaseRHITransientBufferHeap(m_transientHeapIdx);
+	m_transientHeapIdx = -1;
 	m_rhiBuffer = nullptr;
 }
 
@@ -42,7 +44,8 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 	auto rhiBufferDesc = nvrhi::BufferDesc()
 		.setCpuAccess(cpuAccessMode)
 		.setByteSize(m_bufSize)
-		.setDebugName(label);
+		.setDebugName(label)
+		.setIsVirtual(bufferUsageFlags & BUFFERUSAGE_TRANSIENT);
 
 	rhiBufferDesc.setInitialState(hasData ? nvrhi::ResourceStates::CopyDest : nvrhi::ResourceStates::Common);
 	if(bufferUsageFlags & BUFFERUSAGE_COPY_DST)
@@ -92,10 +95,16 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 	m_rhiBuffer = rhiDevice->createBuffer(rhiBufferDesc);
 	ASSERT_MSG(m_rhiBuffer, "Failed to create buffer %s", label);
 
-	//MsgInfo("NVRHI: created buffer %s - %lld bytes\n", GetDbgName(), sizeInBytes);
-
 	if (!m_rhiBuffer)
 		return;
+
+	//MsgInfo("NVRHI: created buffer %s - %lld bytes\n", GetDbgName(), sizeInBytes);
+	if(bufferUsageFlags & BUFFERUSAGE_TRANSIENT)
+	{
+		const int heapIdx = CNVRHIRenderAPI::Instance.AcquireRHITransientBufferHeap();
+		m_transientHeapIdx = heapIdx;
+		rhiDevice->bindBufferMemory(m_rhiBuffer, CNVRHIRenderAPI::Instance.GetRHIBufferHeap(heapIdx), 0);
+	}
 
 	if (hasData)
 	{

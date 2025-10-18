@@ -100,7 +100,15 @@ public:
 
 	nvrhi::DeviceHandle			GetNVRHIDevice() const { return m_rhiDevice; }
 	nvrhi::SamplerHandle		GetRHISampler(const SamplerStateParams& samplerStateParams);
+
+	int							AcquireRHITransientTextureHeap();
 	void						ReleaseRHITransientTextureHeap(int heapIdx);
+
+	int							AcquireRHITransientBufferHeap();
+	void						ReleaseRHITransientBufferHeap(int heapIdx);
+
+	nvrhi::HeapHandle			GetRHITextureHeap(int heapIdx) const { return m_rhiTransientTextureHeaps[heapIdx]; }
+	nvrhi::HeapHandle			GetRHIBufferHeap(int heapIdx) const { return m_rhiTransientBufferHeaps[heapIdx]; }
 
 	nvrhi::CommandListHandle	AcquireRHICommandList(int& cmdListIdx) const;
 
@@ -113,6 +121,9 @@ protected:
 
 	Array<nvrhi::HeapHandle>	m_rhiTransientTextureHeaps{ PP_SL };
 	Array<int>					m_rhiFreeTransientTextureHeaps{ PP_SL };
+
+	Array<nvrhi::HeapHandle>	m_rhiTransientBufferHeaps{ PP_SL };
+	Array<int>					m_rhiFreeTransientBufferHeaps{ PP_SL };
 
 	mutable Array<nvrhi::CommandListHandle>	m_rhiCommandLists{ PP_SL };
 	mutable Array<int>						m_rhiFreeCommandLists{ PP_SL };

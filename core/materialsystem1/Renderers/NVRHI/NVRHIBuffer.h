@@ -15,7 +15,7 @@ class CNVRHIBuffer : public IGPUBuffer
 {
 public:
 	~CNVRHIBuffer();
-	CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* label = nullptr);
+	CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* label);
 
 	int64		GetSize() const { return m_bufSize; }
 
@@ -38,6 +38,7 @@ private:
 	nvrhi::BufferHandle	m_rhiBuffer{ nullptr };
 	int64		m_bufSize{ 0 };
 	int			m_usageFlags{ 0 };
+	int			m_transientHeapIdx{ -1 };
 	bool		m_isLocked{ false };
 	bool		m_needsTrackingState{ true };
 };
