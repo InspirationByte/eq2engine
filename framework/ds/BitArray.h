@@ -31,7 +31,7 @@ static constexpr int numBitsSet(uint x)
 #pragma warning(push)
 #pragma warning(disable:4146)
 
-inline uint leadingZeroCnt(uint x)
+static constexpr uint leadingZeroCnt(uint x)
 {
 	x |= (x >> 1);
 	x |= (x >> 2);
@@ -41,7 +41,7 @@ inline uint leadingZeroCnt(uint x)
 	return 32 - numBitsSet(x);
 }
 
-static uint trailingZeroCnt(uint x)
+static constexpr uint trailingZeroCnt(uint x)
 {
 	return numBitsSet((x & -x) - 1u);
 }
