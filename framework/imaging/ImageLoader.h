@@ -38,8 +38,10 @@ public:
 	ubyte*			GetPixels() const { return m_pPixels; }
 	ubyte*			GetPixels(const int mipMapLevel) const;
 	ubyte*			GetPixels(const int mipMapLevel, const int arraySlice) const;
+
 	int				GetMipMapCount() const { return m_nMipMaps; }
 	int				GetMipMapCountFromDimesions() const;
+
 	int				GetMipMappedSize(const int firstMipMapLevel = 0, int nMipMapLevels = ALL_MIPMAPS, ETextureFormat srcFormat = FORMAT_NONE) const;
 	int				GetSliceSize(const int mipMapLevel = 0, ETextureFormat srcFormat = FORMAT_NONE) const;
 	int				GetPixelCount(const int firstMipMapLevel = 0, int nMipMapLevels = ALL_MIPMAPS) const;
@@ -47,9 +49,11 @@ public:
 	int				GetWidth() const { return m_nWidth; }
 	int				GetHeight() const { return m_nHeight; }
 	int				GetDepth() const { return m_nDepth; }
+
 	int				GetWidth(const int mipMapLevel) const;
 	int				GetHeight(const int mipMapLevel) const;
 	int				GetDepth(const int mipMapLevel) const;
+
 	int				GetArraySize() const { return m_nArraySize; }
 
 	EImageType		GetImageType() const;
@@ -108,5 +112,44 @@ protected:
 	int				m_nExtraDataSize;
 	ubyte* m_pExtraData;
 };
+
+constexpr int imgGetMipDimension(int size, const int mipMapLevel)
+{
+	int a = size >> mipMapLevel;
+	return (a == 0) ? 1 : a;
+}
+
+constexpr int imgCalcMipMappedSize(ETextureFormat format, int width, int height, int depth, int firstMipMapLevel /*= 0*/, int nMipMapLevels /*= ALL_MIPMAPS*/)
+{
+	int w = imgGetMipDimension(width, firstMipMapLevel);
+	int h = imgGetMipDimension(height, firstMipMapLevel);
+	int d = imgGetMipDimension(depth, firstMipMapLevel);
+
+	int size = 0;
+	while (nMipMapLevels)
+	{
+		if (IsCompressedFormat(format))
+			size += ((w + 3) >> 2) * ((h + 3) >> 2) * d;
+		else
+			size += w * h * d;
+
+		w >>= 1;
+		h >>= 1;
+		d >>= 1;
+		if (w + h + d == 0) break;
+		if (w == 0) w = 1;
+		if (h == 0) h = 1;
+		if (d == 0) d = 1;
+
+		nMipMapLevels--;
+	}
+
+	if (IsCompressedFormat(format))
+		size *= GetBytesPerBlock(format);
+	else
+		size *= GetBytesPerPixel(format);
+
+	return (depth == CImage::IMAGE_DEPTH_CUBEMAP) ? (6 * size) : size;
+}
 
 using CImagePtr = CRefPtr<CImage>;
