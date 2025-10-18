@@ -799,6 +799,9 @@ enum EBufferUsage : int
 	BUFFERUSAGE_WRITE		= (1 << 6),	// allows buffer to be mapped for write
 	BUFFERUSAGE_COPY_SRC	= (1 << 7),	// buffer can be used as Copy source
 	BUFFERUSAGE_COPY_DST	= (1 << 8),	// buffer can be used as Copy destination (also allows Update/WriteBuffer)
+	
+	BUFFERUSAGE_TRANSIENT	= (1 << 9),	// buffer is using pre-allocated GPU heap. It's fast but it's also may be limited in size
+	BUFFERUSAGE_UPLOAD		= (1 << 10),// buffer is using pre-allocated heap similar to transient but optimized for uploading data to GPU
 };
 
 struct BufferInfo
