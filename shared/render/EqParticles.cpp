@@ -114,9 +114,9 @@ void CParticleBatch::UpdateVBO(IGPUCommandRecorder* bufferUpdateCmds, IGPUBuffer
 		return;
 
 	if (!vertBuffer)
-		vertBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SVBO_MAX_SIZE(m_maxQuads, PFXVertex)), BUFFERUSAGE_VERTEX | BUFFERUSAGE_COPY_DST, "PFXVertexBuffer");
+		vertBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, CalcSpriteVertexBufferSize<PFXVertex>(m_maxQuads)), BUFFERUSAGE_VERTEX | BUFFERUSAGE_COPY_DST, "PFXVertexBuffer");
 	if (!indexBuffer)
-		indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SIBO_MAX_SIZE(m_maxQuads)), BUFFERUSAGE_INDEX | BUFFERUSAGE_COPY_DST, "PFXIndexBuffer");
+		indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, CalcSpriteIndexBufferSize(m_maxQuads)), BUFFERUSAGE_INDEX | BUFFERUSAGE_COPY_DST, "PFXIndexBuffer");
 
 	if (bufferUpdateCmds)
 	{

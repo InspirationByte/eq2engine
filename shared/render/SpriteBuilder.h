@@ -7,8 +7,9 @@
 
 #pragma once
 
-#define SVBO_MAX_SIZE(s, T)	((size_t)s*sizeof(T)*4)
-#define SIBO_MAX_SIZE(s)	((size_t)s*(sizeof(uint16)*6))
+template<typename VERT>
+constexpr int CalcSpriteVertexBufferSize(int partCount) { return (partCount * sizeof(VERT) * 4); }
+constexpr int CalcSpriteIndexBufferSize(int partCount) { return (partCount * sizeof(uint16) * 6); }
 
 template <class VTX_TYPE>
 class CSpriteBuilder
@@ -88,11 +89,11 @@ void CSpriteBuilder<VTX_TYPE>::Init( int maxQuads )
 {
 	m_maxQuads = maxQuads;
 
-	DevMsg(DEVMSG_CORE, "[SPRITEVBO] Allocating %d quads (%d bytes VB and %d bytes IB)\n", m_maxQuads, SVBO_MAX_SIZE(m_maxQuads, VTX_TYPE), SIBO_MAX_SIZE(m_maxQuads));
+	DevMsg(DEVMSG_CORE, "[SPRITEVBO] Allocating %d quads (%d bytes VB and %d bytes IB)\n", m_maxQuads, CalcSpriteVertexBufferSize<VTX_TYPE>(m_maxQuads), CalcSpriteIndexBufferSize(m_maxQuads));
 
 	// init buffers
-	m_pVerts	= (VTX_TYPE*)PPAlloc(SVBO_MAX_SIZE(m_maxQuads, VTX_TYPE));
-	m_pIndices	= (uint16*)PPAlloc(SIBO_MAX_SIZE(m_maxQuads));
+	m_pVerts	= (VTX_TYPE*)PPAlloc(CalcSpriteVertexBufferSize<VTX_TYPE>(m_maxQuads));
+	m_pIndices	= (uint16*)PPAlloc(CalcSpriteIndexBufferSize(m_maxQuads));
 
 	if(!m_pVerts)
 		ASSERT(!"FAILED TO ALLOCATE VERTICES!\n");
