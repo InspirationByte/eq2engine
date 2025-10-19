@@ -1286,6 +1286,5 @@ Future<bool> CNVRHIRenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUComman
 
 void CNVRHIRenderAPI::Flush()
 {
-	g_renderWorker.SignalWork(); 
-	Platform_Sleep(0);
+	g_renderWorker.SignalWork();
 }
