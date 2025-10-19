@@ -9,6 +9,7 @@
 #include "imaging/textureformats.h"
 
 static constexpr const int MAX_BINDGROUPS = 4;
+static constexpr const int MAX_BINDGROUP_BINDINGS = 64;	// be in this limit or use bindless
 static constexpr const int MAX_RENDERTARGETS = 8;
 static constexpr const int MAX_VERTEXSTREAM = 8;
 static constexpr const int MAX_TEXTUREUNIT = 16;
