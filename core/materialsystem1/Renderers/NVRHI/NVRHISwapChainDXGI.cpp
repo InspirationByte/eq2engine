@@ -35,6 +35,7 @@ CNVRHISwapChainDXGI::CNVRHISwapChainDXGI(const RenderWindowInfo& windowInfo, ITe
 	m_dxgiSwapChainDesc.BufferUsage = DXGI_USAGE_SHADER_INPUT | DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	m_dxgiSwapChainDesc.BufferCount = SWAP_CHAIN_BUFFERS;
 	m_dxgiSwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	m_dxgiSwapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
 	if (CNVRHIRenderLibDXGIBase::Instance->m_dxgiTearingSupported)
 		m_dxgiSwapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
@@ -100,7 +101,8 @@ bool CNVRHISwapChainDXGI::UpdateResize()
 
 	m_textureRef->SetDimensions(m_dxgiSwapChainDesc.Width, m_dxgiSwapChainDesc.Height);
 
-	const HRESULT hr = m_dxgiSwapChain->ResizeBuffers(m_dxgiSwapChainDesc.BufferCount,
+	const HRESULT hr = m_dxgiSwapChain->ResizeBuffers(
+		m_dxgiSwapChainDesc.BufferCount,
 		m_dxgiSwapChainDesc.Width,
 		m_dxgiSwapChainDesc.Height,
 		m_dxgiSwapChainDesc.Format,

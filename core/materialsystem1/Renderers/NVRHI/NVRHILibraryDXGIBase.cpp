@@ -209,6 +209,10 @@ void CNVRHIRenderLibDXGIBase::SetBackbufferSize(const int w, const int h)
 // changes fullscreen mode
 bool CNVRHIRenderLibDXGIBase::SetWindowed(bool enabled)
 {
+	if (m_defaultSwapChain)
+		m_defaultSwapChain->m_dxgiSwapChain->SetFullscreenState(enabled == false, nullptr);
+	m_dxgiFullScreenDesc.Windowed = enabled;
+
 	// FIXME: currently switching to exclusive fullscreen will guarantee device lost
 	// need to handle it somehow...
 	m_windowed = enabled;
