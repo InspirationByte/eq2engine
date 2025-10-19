@@ -149,8 +149,10 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 	nvrhi::CommandListParameters rhiCmdListParams = {};
 	rhiCmdListParams.enableImmediateExecution = false;
 
-	nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList(rhiCmdListParams);
+	int cmdListIdx = -1;
+	nvrhi::CommandListHandle writeCmd = CNVRHIRenderAPI::Instance.AcquireRHICommandList(cmdListIdx);
 	writeCmd->open();
+	writeCmd->setEnableAutomaticBarriers(false);
 	writeCmd->beginTrackingTextureState(rhiTexture, nvrhi::AllSubresources, nvrhi::ResourceStates::Common);
 	for (int arrIdx = 0; arrIdx < arraySize; ++arrIdx)
 	{
@@ -191,11 +193,12 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 	if (!(m_flags & TEXFLAG_COPY_DST))
 		writeCmd->setPermanentTextureState(rhiTexture, nvrhi::ResourceStates::ShaderResource);
 
-	writeCmd->commitBarriers();
+	writeCmd->setEnableAutomaticBarriers(true);
 	writeCmd->close();
 
-	g_renderWorker.Execute("UploadTexture", [rhiDevice, writeCmd]() {
+	g_renderWorker.Execute("UploadTexture", [rhiDevice, writeCmd, cmdListIdx]() {
 		rhiDevice->executeCommandList(writeCmd);
+		CNVRHIRenderAPI::Instance.ReleaseCommandList(cmdListIdx);
 		return 0;
 	});
 
@@ -293,17 +296,20 @@ bool CNVRHITexture::Lock(LockInOutData& data)
 		rhiSrcSlice.width = data.lockSize.width;
 		rhiSrcSlice.height = data.lockSize.height;
 
-		nvrhi::CommandListParameters rhiCmdListParams = {};
-		rhiCmdListParams.enableImmediateExecution = false;
+		int cmdListIdx = -1;
+		nvrhi::CommandListHandle copyCmd = CNVRHIRenderAPI::Instance.AcquireRHICommandList(cmdListIdx);
 
-		nvrhi::CommandListHandle copyCmd = rhiDevice->createCommandList(rhiCmdListParams);
 		copyCmd->open();
+		copyCmd->setEnableAutomaticBarriers(false);
 		copyCmd->copyTexture(rhiStagingTexture, rhiDstSlice, m_rhiTexture, rhiSrcSlice);
+		copyCmd->setEnableAutomaticBarriers(true);
 		copyCmd->close();
 
-		g_renderWorker.WaitForExecute("CopyToStagingTexture", [rhiDevice, copyCmd]() {
+		g_renderWorker.WaitForExecute("CopyToStagingTexture", [rhiDevice, copyCmd, cmdListIdx]() {
 			const uint64_t lastSubmitInstance = rhiDevice->executeCommandList(copyCmd);
 			rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
+
+			CNVRHIRenderAPI::Instance.ReleaseCommandList(cmdListIdx);
 			return 0;
 		});
 

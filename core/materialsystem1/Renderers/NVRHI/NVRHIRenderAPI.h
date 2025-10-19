@@ -111,6 +111,7 @@ public:
 	nvrhi::HeapHandle			GetRHIBufferHeap(int heapIdx) const { return m_rhiTransientBufferHeaps[heapIdx]; }
 
 	nvrhi::CommandListHandle	AcquireRHICommandList(int& cmdListIdx) const;
+	void						ReleaseCommandList(int cmdListIdx);
 
 protected:
 

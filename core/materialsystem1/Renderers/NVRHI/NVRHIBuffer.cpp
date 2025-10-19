@@ -163,7 +163,8 @@ void CNVRHIBuffer::Update(const void* data, int64 size, int64 offset)
 	nvrhi::CommandListParameters rhiCmdListParams = {};
 	rhiCmdListParams.enableImmediateExecution = false;
 
-	nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList(rhiCmdListParams);
+	int cmdListIdx = -1;
+	nvrhi::CommandListHandle writeCmd = CNVRHIRenderAPI::Instance.AcquireRHICommandList(cmdListIdx);
 	writeCmd->open();
 
 	if (m_needsTrackingState)
@@ -182,8 +183,9 @@ void CNVRHIBuffer::Update(const void* data, int64 size, int64 offset)
 
 	writeCmd->close();
 
-	g_renderWorker.WaitForExecute("UpdateBuffer", [rhiDevice, writeCmd]() {
+	g_renderWorker.WaitForExecute("UpdateBuffer", [rhiDevice, writeCmd, cmdListIdx]() {
 		rhiDevice->executeCommandList(writeCmd);
+		CNVRHIRenderAPI::Instance.ReleaseCommandList(cmdListIdx);
 		return 0;
 	});
 }

@@ -34,7 +34,6 @@ void CNVRHICommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, in
 		m_rhiCommandList->beginTrackingBufferState(bufferImpl->GetNVRHIBufferHandle(), rhiTrackingState);
 		m_rhiCommandList->writeBuffer(bufferImpl->GetNVRHIBufferHandle(), data, writeDataSize, offset);
 		m_rhiCommandList->setPermanentBufferState(bufferImpl->GetNVRHIBufferHandle(), rhiResStates);
-		//m_rhiCommandList->commitBarriers();
 
 		bufferImpl->OnUpdated();
 	}
@@ -164,7 +163,6 @@ IGPUCommandBufferPtr CNVRHICommandRecorder::End()
 		ASSERT_FAIL("Command recorder was already ended");
 		return nullptr;
 	}
-	m_rhiCommandList->commitBarriers();
 	m_rhiCommandList->close();
 
 	// simply transfer command list

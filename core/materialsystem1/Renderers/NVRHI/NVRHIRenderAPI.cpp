@@ -366,6 +366,15 @@ nvrhi::CommandListHandle CNVRHIRenderAPI::AcquireRHICommandList(int& cmdListIdx)
 	return m_rhiCommandLists[cmdListIdx];
 }
 
+void CNVRHIRenderAPI::ReleaseCommandList(int cmdListIdx)
+{
+	if (cmdListIdx == -1)
+		return;
+	CScopedMutex m(s_cmdListMutex);
+	m_rhiFreeCommandLists.append(cmdListIdx);
+}
+
+
 void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExtent& newSize, int mipmapCount, int sampleCount)
 {
 	CNVRHITexture* texture = static_cast<CNVRHITexture*>(renderTarget);
