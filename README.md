@@ -17,7 +17,7 @@ A continuation of game engine/framework, fully refactored and re-structured.
 - Component system for adding properties to game and non-game classes
   
 #### Rendering
-- Material system renderer with RHI backends powered by WebGPU
+- Material system renderer with RHI backends powered by **NVRHI** & **WebGPU**
 - Data-driven rendering of instances done on GPU (**GRIM**), designed for continous data streaming
 - Custom full-featured 3D model format (**EGF**) with physics meshes and animation support
 - Animation system with multiple layers, pose blending and controller features
