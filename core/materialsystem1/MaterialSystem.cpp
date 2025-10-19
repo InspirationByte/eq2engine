@@ -1308,11 +1308,7 @@ bool CMaterialSystem::SetWindowed(bool enable)
 			return false;
 	}
 
-	bool result = true;
-
-	if (m_renderLibrary)
-		result = m_renderLibrary->SetWindowed(enable);
-
+	const bool result = m_renderLibrary->SetWindowed(enable);
 	for (int i = 0; i < m_restoreDeviceCb.numElem(); i++)
 	{
 		if (!m_restoreDeviceCb[i]())
