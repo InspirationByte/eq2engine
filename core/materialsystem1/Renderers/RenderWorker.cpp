@@ -46,18 +46,19 @@ int CRenderWorker::WaitForExecute(const char* name, REND_FUNC_TYPE f)
 	List<Work>::Iterator workIt;
 	{
 		CScopedMutex m(s_renderWorkerMutex);
-		workIt = m_asyncJobList.append(Work{ std::move(f), -5000 });
+		workIt = m_asyncJobList.append(Work{ std::move(f), WORK_WAIT_FOR_COMPLETE });
 	}
 
 	ASSERT(!workIt.atEnd());
 	
-	while ((*workIt).result == -5000) {
+	do
+	{
 		SignalWork();
 		Platform_Sleep(0);
-	}
+	} while ((*workIt).result == WORK_WAIT_FOR_COMPLETE);
 
 	const int result = (*workIt).result;
-	ASSERT(result != -5000);
+	ASSERT(result != WORK_WAIT_FOR_COMPLETE);
 
 	return result;
 }
@@ -80,7 +81,7 @@ int CRenderWorker::Run()
 		while (m_asyncJobList.getCount())
 		{
 			workIt = m_asyncJobList.first();
-			if ((*workIt).result >= -1000)
+			if ((*workIt).result > WORK_WAIT_FOR_COMPLETE)
 			{
 				m_asyncJobList.remove(workIt);
 				workIt = {};
@@ -101,14 +102,14 @@ int CRenderWorker::Run()
 	if (m_loopFunc)
 		m_loopFunc();
 
-	if ((*workIt).result == -10000)
+	if ((*workIt).result == WORK_PENDING)
 	{
 		CScopedMutex m(s_renderWorkerMutex);
 		m_asyncJobList.remove(workIt);
 	}
 	else
 	{
-		(*workIt).result = result;
+		Atomic::Exchange((*workIt).result, result);
 	}
 
 	// more work available

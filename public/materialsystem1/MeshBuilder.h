@@ -694,6 +694,15 @@ inline void CMeshBuilder::TexturedQuad3(const Vector3D& v1, const Vector3D& v2, 
 	}
 }
 
+// EVertAttribFormat
+static const int s_attributeSize[] =
+{
+	0,
+	sizeof(ubyte),
+	sizeof(half),
+	sizeof(float)
+};
+
 inline void CMeshBuilder::CopyVertData(VertData& vert, bool isNormal)
 {
 	if(!vert.count)

@@ -246,14 +246,6 @@ struct RenderDrawCmd
 		return *this;
 	}
 
-	RenderDrawCmd& SetInstanceFormat(const MeshInstanceFormat& meshInst)
-	{
-		instanceInfo.instFormat.name = meshInst.name;
-		instanceInfo.instFormat.formatId = meshInst.nameHash;
-		instanceInfo.instFormat.layout = meshInst.layout;
-		return *this;
-	}
-
 	// DEPRECATED
 	RenderDrawCmd& SetInstanceFormat(const IVertexFormat* vertFormat)
 	{

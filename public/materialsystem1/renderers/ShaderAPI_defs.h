@@ -197,11 +197,11 @@ struct StencilFaceStateParams
 
 struct DepthStencilStateParams
 {
+	ETextureFormat	format{ FORMAT_NONE };
+
 	bool			depthTest{ false };
 	bool			depthWrite{ false };
 	ECompareFunc	depthFunc{ COMPFUNC_GEQUAL };
-
-	ETextureFormat	format{ FORMAT_NONE };
 
 	float			depthBias{ 0.0f }; // TODO: int
 	float			depthBiasSlopeScale{ 0.0f };
@@ -218,10 +218,10 @@ struct DepthStencilStateParams
 };
 
 FLUENT_BEGIN_TYPE(DepthStencilStateParams);
+	FLUENT_SET_VALUE(format, DepthFormat);
 	FLUENT_SET(depthTest, DepthTestOn, true);
 	FLUENT_SET(depthWrite, DepthWriteOn, true);
 	FLUENT_SET_VALUE(depthFunc, DepthFunction);
-	FLUENT_SET_VALUE(format, DepthFormat);
 	FLUENT_SET(stencilTest, StencilTestOn, true);
 	FLUENT_SET_VALUE(depthBias, DepthBias);
 	FLUENT_SET_VALUE(depthBiasSlopeScale, DepthBiasSlopeScale);
@@ -232,12 +232,6 @@ FLUENT_END_TYPE
 //------------------------------------------------------------
 // Pipeline builders
 
-struct PipelineConst
-{
-	EqString	name;
-	double		value{ 0.0f };
-};
-
 // Attribute format
 enum EVertAttribFormat : uint8
 {
@@ -245,14 +239,6 @@ enum EVertAttribFormat : uint8
 	ATTRIBUTEFORMAT_UINT8,
 	ATTRIBUTEFORMAT_HALF,
 	ATTRIBUTEFORMAT_FLOAT,
-};
-
-static int s_attributeSize[] =
-{
-	0,
-	sizeof(ubyte),
-	sizeof(half),
-	sizeof(float)
 };
 
 enum EVertexStepMode : uint8
@@ -271,22 +257,27 @@ struct VertexLayoutDesc
 		EVertAttribFormat	format{ ATTRIBUTEFORMAT_FLOAT };
 	};
 
-	using VertexAttribList = Array<AttribDesc>;
-	VertexAttribList		attributes{ PP_SL };
+	using VertexAttribList = FixedArray<AttribDesc, 24>;
+	VertexAttribList		attributes;
 	int						stride{ 0 };
 	int						userId{ 0 };
 	EVertexStepMode			stepMode{ VERTEX_STEPMODE_VERTEX };
-	
 };
 
 FLUENT_BEGIN_TYPE(VertexLayoutDesc)
 	FLUENT_SET_VALUE(userId, UserId)
 	FLUENT_SET_VALUE(stride, Stride)
 	FLUENT_SET_VALUE(stepMode, StepMode)
-	ThisType& Attribute(AttribDesc&& x) { ref.attributes.append(std::move(x)); return *this; }
+	ThisType& Attribute(AttribDesc&& x)
+	{
+		ASSERT(ref.attributes.isFull() == false);
+		ref.attributes.append(std::move(x));
+		return *this; 
+	}
 	ThisType& Attribute(int nameId, int offset, EVertAttribFormat format, int count)
 	{
 		ASSERT_MSG(count > 0 && count <= 4, "Vertex attribute count incorrect (%d, while must be <= 4)", count);
+		ASSERT(ref.attributes.isFull() == false);
 		ref.attributes.append({ nameId, offset, count, format });
 		return *this; 
 	}
@@ -294,32 +285,26 @@ FLUENT_END_TYPE
 
 struct VertexPipelineDesc
 {
-	using VertexLayoutDescList = Array<VertexLayoutDesc>;
-	VertexLayoutDescList	vertexLayout{ PP_SL };
-	Array<PipelineConst>	constants{ PP_SL };
+	using VertexLayoutDescList = FixedArray<VertexLayoutDesc, MAX_VERTEXSTREAM>;
+	VertexLayoutDescList	vertexLayout;
 	EqString				shaderEntryPoint{ "main" };
 };
 
 FLUENT_BEGIN_TYPE(VertexPipelineDesc)
 	FLUENT_SET_VALUE(shaderEntryPoint, ShaderEntry)
-	ThisType& VertexLayout(VertexLayoutDesc&& x) { ref.vertexLayout.append(std::move(x)); return *this; }
-	ThisType& VertexLayout(const VertexLayoutDesc& x) { ref.vertexLayout.append(x); return *this; }
-	ThisType& Constant(const char* name, double value)
+	ThisType& VertexLayout(VertexLayoutDesc&& x)
+	{ 
+		ASSERT(ref.vertexLayout.isFull() == false);
+		ref.vertexLayout.append(std::move(x));
+		return *this;
+	}
+	ThisType& VertexLayout(const VertexLayoutDesc& x)
 	{
-		PipelineConst& entry = constants.append();
-		entry.name = name;
-		entry.value = value;
+		ASSERT(ref.vertexLayout.isFull() == false);
+		ref.vertexLayout.append(x);
 		return *this;
 	}
 FLUENT_END_TYPE
-
-// structure to hold vertex layout
-struct MeshInstanceFormat
-{
-	EqString				name;
-	int						nameHash{ 0 };
-	Array<VertexLayoutDesc> layout{ PP_SL };
-};
 
 //-------------------------------------------
 
@@ -400,7 +385,6 @@ struct FragmentPipelineDesc
 	using ColorTargetList = FixedArray<ColorTargetDesc, MAX_RENDERTARGETS>;
 
 	ColorTargetList			targets;
-	Array<PipelineConst>	constants{ PP_SL };
 	EqString				shaderEntryPoint{ "main" };
 };
 
@@ -408,25 +392,20 @@ FLUENT_BEGIN_TYPE(FragmentPipelineDesc);
 	FLUENT_SET_VALUE(shaderEntryPoint, ShaderEntry)
 	ThisType& ColorTarget(ColorTargetDesc&& x)
 	{
+		ASSERT(ref.targets.isFull() == false);
 		ref.targets.append(std::move(x)); return *this;
 	}
 	ThisType& ColorTarget(const char* name, ETextureFormat format)
 	{
+		ASSERT(ref.targets.isFull() == false);
 		ref.targets.append({ name, format, false }); return *this;
 	}
 
 	// with blending on
 	ThisType& ColorTarget(const char* name, ETextureFormat format, const BlendStateParams& colorBlend, const BlendStateParams& alphaBlend) 
 	{
+		ASSERT(ref.targets.isFull() == false);
 		ref.targets.append({ name, format, true, COLORMASK_ALL, colorBlend, alphaBlend }); return *this;
-	}
-
-	ThisType& Constant(const char* name, double value)
-	{
-		PipelineConst& entry = constants.append();
-		entry.name = name;
-		entry.value = value;
-		return *this;
 	}
 FLUENT_END_TYPE
 
@@ -472,11 +451,6 @@ enum EBufferBindType : int
 	BUFFERBIND_STORAGE_READONLY,
 };
 
-struct BindBuffer
-{
-	EBufferBindType		bindType{ BUFFERBIND_UNIFORM };
-};
-
 //-------------------------------------------
 
 enum ESamplerBindType : uint8
@@ -485,11 +459,6 @@ enum ESamplerBindType : uint8
 	SAMPLERBIND_FILTERING,
 	SAMPLERBIND_NONFILTERING,
 	SAMPLERBIND_COMPARISON,
-};
-
-struct BindSampler
-{
-	ESamplerBindType	bindType{ SAMPLERBIND_FILTERING };
 };
 
 //-------------------------------------------
@@ -513,13 +482,6 @@ enum ETextureDimension : uint8
 	TEXDIMENSION_3D,
 };
 
-struct BindTexture
-{
-	ETextureSampleType	sampleType{ TEXSAMPLE_FLOAT };
-	ETextureDimension	dimension{ TEXDIMENSION_1D };
-	bool				multisampled{ false };
-};
-
 //-------------------------------------------
 
 enum EStorageTextureAccess : uint8
@@ -527,13 +489,6 @@ enum EStorageTextureAccess : uint8
 	STORAGETEX_WRITEONLY = 0,
 	STORAGETEX_READONLY,
 	STORAGETEX_READWRITE,
-};
-
-struct BindStorageTexture
-{
-	ETextureFormat			format{ FORMAT_NONE };
-	EStorageTextureAccess	access{ STORAGETEX_WRITEONLY };
-	ETextureDimension		dimension{ TEXDIMENSION_1D };
 };
 
 //-------------------------------------------
@@ -555,6 +510,30 @@ enum EBindEntryType : uint8
 
 struct BindGroupLayoutDesc
 {
+	struct BindBuffer
+	{
+		EBufferBindType		bindType{ BUFFERBIND_UNIFORM };
+	};
+
+	struct BindTexture
+	{
+		ETextureSampleType	sampleType{ TEXSAMPLE_FLOAT };
+		ETextureDimension	dimension{ TEXDIMENSION_1D };
+		bool				multisampled{ false };
+	};
+
+	struct BindStorageTexture
+	{
+		ETextureFormat			format{ FORMAT_NONE };
+		EStorageTextureAccess	access{ STORAGETEX_WRITEONLY };
+		ETextureDimension		dimension{ TEXDIMENSION_1D };
+	};
+
+	struct BindSampler
+	{
+		ESamplerBindType	bindType{ SAMPLERBIND_FILTERING };
+	};
+
 	struct Entry
 	{
 		Entry() {}
@@ -566,36 +545,36 @@ struct BindGroupLayoutDesc
 		};
 		int				nameId;				// StringId24
 		int				binding{ 0 };
-		int				visibility{ 0 };	// EShaderKind
+		uint8			visibility{ 0 };	// EShaderKind
 		EBindEntryType	type{ BINDENTRY_BUFFER };
 	};
 
-	using EntryList = Array<Entry>;
-	EntryList			entries{ PP_SL };
+	using EntryList = FixedArray<Entry, MAX_BINDGROUP_BINDINGS>;
+	EntryList			entries;
 	EqString			name;
 };
 
 FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	FLUENT_SET_VALUE(name, Name)
-	ThisType& Buffer(int nameId, int binding, int shaderKind, EBufferBindType bindType)
+	ThisType& Buffer(int nameId, int binding, int shaderVisibility, EBufferBindType bindType)
 	{
-		Entry& entry = AddEntry(BINDENTRY_BUFFER, nameId, binding, shaderKind);
+		Entry& entry = AddEntry(BINDENTRY_BUFFER, nameId, binding, shaderVisibility);
 
 		entry.buffer = {};
 		entry.buffer.bindType = bindType;
 		return *this; 
 	}
-	ThisType& Sampler(int nameId, int binding, int shaderKind, ESamplerBindType bindType)
+	ThisType& Sampler(int nameId, int binding, int shaderVisibility, ESamplerBindType bindType)
 	{
-		Entry& entry = AddEntry(BINDENTRY_SAMPLER, nameId, binding, shaderKind);
+		Entry& entry = AddEntry(BINDENTRY_SAMPLER, nameId, binding, shaderVisibility);
 
 		entry.sampler = {};
 		entry.sampler.bindType = bindType;
 		return *this;
 	}
-	ThisType& Texture(int nameId, int binding, int shaderKind, ETextureSampleType sampleType, ETextureDimension dimension, bool multisample = false)
+	ThisType& Texture(int nameId, int binding, int shaderVisibility, ETextureSampleType sampleType, ETextureDimension dimension, bool multisample = false)
 	{
-		Entry& entry = AddEntry(BINDENTRY_TEXTURE, nameId, binding, shaderKind);
+		Entry& entry = AddEntry(BINDENTRY_TEXTURE, nameId, binding, shaderVisibility);
 
 		entry.texture = {};
 		entry.texture.sampleType = sampleType;
@@ -603,9 +582,9 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 		entry.texture.multisampled = multisample;
 		return *this;
 	}
-	ThisType& StorageTexture(int nameId, int binding, int shaderKind, ETextureFormat format, EStorageTextureAccess access, ETextureDimension dimension)
+	ThisType& StorageTexture(int nameId, int binding, int shaderVisibility, ETextureFormat format, EStorageTextureAccess access, ETextureDimension dimension)
 	{
-		Entry& entry = AddEntry(BINDENTRY_STORAGETEXTURE, nameId, binding, shaderKind);
+		Entry& entry = AddEntry(BINDENTRY_STORAGETEXTURE, nameId, binding, shaderVisibility);
 
 		entry.storageTexture = {};
 		entry.storageTexture.format = format;
@@ -614,14 +593,15 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 		return *this;
 	}
 
-	Entry& AddEntry(EBindEntryType type, int nameId, int binding, int shaderKind)
+	Entry& AddEntry(EBindEntryType type, int nameId, int binding, int shaderVisibility)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding);
 
+		ASSERT(ref.entries.isFull() == false);
 		Entry& entry = ref.entries.append();
 		entry.nameId = nameId;
 		entry.binding = binding;
-		entry.visibility = shaderKind;
+		entry.visibility = shaderVisibility;
 		entry.type = type;
 		return entry;
 	}
@@ -687,8 +667,8 @@ struct BindGroupDesc
 		EBindEntryType		type{ static_cast<EBindEntryType>(-1) };
 	};
 
-	using EntryList = Array<Entry>;
-	EntryList			entries{ PP_SL };
+	using EntryList = FixedArray<Entry, MAX_BINDGROUP_BINDINGS>;
+	EntryList			entries;
 	EqString			name;
 	int					groupIdx{ -1 };
 };
@@ -736,35 +716,14 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 	Entry& AddEntry(EBindEntryType type, int binding)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding);
+
+		ASSERT(ref.entries.isFull() == false);
 		Entry& entry = ref.entries.append();
 		entry.binding = binding;
 		entry.type = type;
 		return entry;
 	}
 FLUENT_END_TYPE
-
-//-------------------------------------------
-
-struct KVSection;
-
-struct ShaderProgText
-{
-	char*			text{ nullptr };
-	char*			boilerplate{ nullptr };
-	uint32			checksum{ 0 };
-	Array<EqString>	includes{ PP_SL };
-};
-
-struct ShaderProgCompileInfo
-{
-	ShaderProgText	data;
-
-	// disables caching, always recompiled
-	bool			disableCache{ false };
-
-	// apiprefs now contains all needed attributes
-	KVSection*		apiPrefs{ nullptr };
-};
 
 //------------------------------------------------------------
 // Texture builder
@@ -998,7 +957,6 @@ struct ComputePipelineDesc
 	EqString				shaderEntryPoint{ "main" };
 
 	ArrayCRef<EqString>		shaderQuery{ nullptr };
-	Array<PipelineConst>	constants{ PP_SL };
 };
 
 FLUENT_BEGIN_TYPE(ComputePipelineDesc);
@@ -1006,11 +964,4 @@ FLUENT_BEGIN_TYPE(ComputePipelineDesc);
 	FLUENT_SET_VALUE(shaderName, ShaderName)
 	FLUENT_SET_VALUE(shaderQuery, ShaderQuery)
 	FLUENT_SET_VALUE(shaderLayoutId, ShaderLayoutId)
-	ThisType& Constant(const char* name, double value)
-	{
-		PipelineConst& entry = constants.append();
-		entry.name = name;
-		entry.value = value;
-		return *this;
-	}
 FLUENT_END_TYPE
