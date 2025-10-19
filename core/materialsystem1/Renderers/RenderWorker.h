@@ -35,10 +35,16 @@ protected:
 
 	int			Run() override;
 
+	enum EWorkStatus : int
+	{
+		WORK_PENDING			= -10000,
+		WORK_WAIT_FOR_COMPLETE	= -5000,
+	};
+
 	struct Work 
 	{
 		REND_FUNC_TYPE	func;
-		volatile int	result = -10000;
+		volatile int	result = WORK_PENDING;
 	};
 	List<Work>				m_asyncJobList{ PP_SL };
 	RenderWorkerHandler*	m_workHandler{ nullptr };
