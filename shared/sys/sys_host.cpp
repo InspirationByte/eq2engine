@@ -253,13 +253,16 @@ void CGameHost::SetFullscreenMode(bool screenSize)
 	{
 		int adjustedWide;
 		int adjustedTall;
-
-		SDL_SetWindowFullscreen(m_window, SDL_WINDOW_FULLSCREEN_DESKTOP);
 		SDL_GetWindowSize(m_window, &adjustedWide, &adjustedTall);
 
 		Msg("Set %dx%d mode (fullscreen)\n", adjustedWide, adjustedTall);
 
 		OnWindowResize(adjustedWide, adjustedTall);
+
+		if (!g_matSystem->IsInitialized() || g_matSystem->SetWindowed(false))
+		{
+			SDL_SetWindowFullscreen(m_window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+		}
 	}
 	else
 	{
