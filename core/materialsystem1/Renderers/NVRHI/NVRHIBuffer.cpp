@@ -28,7 +28,7 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 	m_bufSize = ALIGN(sizeInBytes, 4);
 	m_usageFlags = bufferUsageFlags;
 
-	nvrhi::CpuAccessMode cpuAccessMode = nvrhi::CpuAccessMode::None;
+	nvrhi::CpuAccessMode cpuAccessMode = (hasData && !(bufferUsageFlags & BUFFERUSAGE_STORAGE)) ? nvrhi::CpuAccessMode::Write : nvrhi::CpuAccessMode::None;
 	if (bufferUsageFlags & BUFFERUSAGE_READ)
 	{
 		//ASSERT_MSG(hasData, "Buffer can't have READ usage when data is specified");
