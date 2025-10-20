@@ -1043,7 +1043,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 		});
 		if (!rhiRenderPipeline)
 		{
-			ASSERT_FAIL("Render pipeline creation failed");
+			ASSERT_FAIL("Render pipeline %s creation failed", pipelineName.ToCString());
 			return nullptr;
 		}
 

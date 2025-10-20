@@ -85,3 +85,4 @@ void nvrhiFillSamplerDesc(const SamplerStateParams& samplerParams, nvrhi::Sample
 void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const ShaderInfo::Binding& binding, nvrhi::BindingSetDesc& rhiBindingSetDesc);
 void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, nvrhi::BindingSetDesc& rhiBindingSetDesc);
 void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const IGPUBindingLayout* bindingLayout, ArrayCRef<int> shaderModuleIdxs, nvrhi::ShaderType rhiShaderType, NVRHIBindingLayoutList& rhiBindingLayouts);
+void nvrhiFillBindingSets(const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, ArrayCRef<IGPUBindGroupPtr> bindings, const uint pipelineId, ArrayCRef<nvrhi::BindingLayoutHandle>, nvrhi::BindingSetVector& rhiBindingSets);

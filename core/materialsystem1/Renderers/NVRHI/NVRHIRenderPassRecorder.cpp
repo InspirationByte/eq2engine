@@ -51,6 +51,9 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 		rhiPipeline = nvrhiDevice->createGraphicsPipeline(pipelineImpl->m_rhiPipelineDesc, m_rhiFramebuffer);
 #endif
 
+	if(indirectBuffer)
+		m_rhiCommandList->setBufferState(indirectBuffer, nvrhi::ResourceStates::IndirectArgument);
+
 	auto rhiGraphicsState = nvrhi::GraphicsState()
 		.setPipeline(rhiPipeline)
 		.setFramebuffer(m_rhiFramebuffer)
@@ -97,39 +100,8 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 
 	const nvrhi::GraphicsPipelineDesc& rhiPipelineDesc = pipelineImpl->m_rhiPipelineDesc;
 
-	for (IGPUBindGroup* bindGroup : m_bindings)
-	{
-		CNVRHIBindGroup* bindGroupImpl = static_cast<CNVRHIBindGroup*>(bindGroup);
-		if (!bindGroupImpl)
-			continue;
-
-		if (bindGroupImpl->m_bindingLayout)
-		{
-			auto bindingSetIt = bindGroupImpl->m_rhiBindingSets.find(pipelineImpl->m_pipelineId);
-			if (!bindingSetIt)
-			{
-				const BindGroupDesc& bindGroupDesc = bindGroupImpl->m_bindGroupDesc;
-
-				// we need to create binding set for this shader using provided layout
-				auto rhiBindingSetDesc = nvrhi::BindingSetDesc();
-				bindGroupImpl->m_bindingLayout->FillBindingSetDescByLayoutMap(bindGroupDesc, *pipelineImpl->m_shaderInfo, shaderModuleIdxs, rhiBindingSetDesc);
-
-				nvrhi::BindingSetHandle rhiBindSet = nvrhiDevice->createBindingSet(rhiBindingSetDesc, rhiPipelineDesc.bindingLayouts[bindGroupDesc.groupIdx]);
-				if (!rhiBindSet)
-				{
-					ASSERT_FAIL("Failed to create binding set for shared bind group %s\n", bindGroupDesc.name.ToCString());
-					continue;
-				}
-				bindingSetIt = bindGroupImpl->m_rhiBindingSets.insert(pipelineImpl->m_pipelineId, rhiBindSet);
-			}
-
-			rhiGraphicsState.addBindingSet(*bindingSetIt);
-		}
-		else
-		{
-			rhiGraphicsState.addBindingSet(bindGroupImpl->m_rhiBindingSets.front());
-		}
-	}
+	auto bindingLayouts = ArrayCRef(rhiPipelineDesc.bindingLayouts.data(), rhiPipelineDesc.bindingLayouts.size());
+	nvrhiFillBindingSets(*pipelineImpl->m_shaderInfo, shaderModuleIdxs, m_bindings, pipelineImpl->m_pipelineId, bindingLayouts, rhiGraphicsState.bindings);
 
 	m_rhiCommandList->setGraphicsState(rhiGraphicsState);
 }

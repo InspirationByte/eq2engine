@@ -45,39 +45,11 @@ void CNVRHIComputePassRecorder::CommitComputeState(nvrhi::IBuffer* indirectBuffe
 		.setPipeline(pipelineImpl->m_rhiComputePipeline)
 		.setIndirectParams(indirectBuffer);
 
-	for (IGPUBindGroup* bindGroup : m_bindings)
-	{
-		CNVRHIBindGroup* bindGroupImpl = static_cast<CNVRHIBindGroup*>(bindGroup);
-		if (!bindGroupImpl)
-			continue;
+	if (indirectBuffer)
+		m_rhiCommandList->setBufferState(indirectBuffer, nvrhi::ResourceStates::IndirectArgument);
 
-		if (bindGroupImpl->m_bindingLayout)
-		{
-			auto bindingSetIt = bindGroupImpl->m_rhiBindingSets.find(pipelineImpl->m_pipelineId);
-			if (!bindingSetIt)
-			{
-				const BindGroupDesc& bindGroupDesc = bindGroupImpl->m_bindGroupDesc;
-
-				// we need to create binding set for this shader using provided layout
-				auto rhiBindingSetDesc = nvrhi::BindingSetDesc();
-				bindGroupImpl->m_bindingLayout->FillBindingSetDescByLayoutMap(bindGroupDesc, *pipelineImpl->m_shaderInfo, ArrayCRef(&pipelineImpl->m_computeShaderModuleIdx, 1), rhiBindingSetDesc);
-
-				nvrhi::BindingSetHandle rhiBindSet = nvrhiDevice->createBindingSet(rhiBindingSetDesc, pipelineImpl->m_rhiBindingLayout[bindGroupDesc.groupIdx]);
-				if (!rhiBindSet)
-				{
-					ASSERT_FAIL("Failed to create binding set for shared bind group %s\n", bindGroupDesc.name.ToCString());
-					continue;
-				}
-				bindingSetIt = bindGroupImpl->m_rhiBindingSets.insert(pipelineImpl->m_pipelineId, rhiBindSet);
-			}
-
-			rhiComputeState.addBindingSet(*bindingSetIt);
-		}
-		else
-		{
-			rhiComputeState.addBindingSet(bindGroupImpl->m_rhiBindingSets.front());
-		}
-	}
+	const int shaderModuleIdxs[] = { pipelineImpl->m_computeShaderModuleIdx };
+	nvrhiFillBindingSets(*pipelineImpl->m_shaderInfo, shaderModuleIdxs, m_bindings, pipelineImpl->m_pipelineId, pipelineImpl->m_rhiBindingLayout, rhiComputeState.bindings);
 
 	m_rhiCommandList->setComputeState(rhiComputeState);
 }

@@ -33,40 +33,34 @@ void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const Shad
 		// TODO: check buffer usage
 
 		CNVRHIBuffer* buffer = static_cast<CNVRHIBuffer*>(bindGroupEntry.buffer.ptr);
-		if (buffer)
+		ASSERT_MSG(buffer, "NULL buffer for binding %d", bindGroupEntry.binding);
+
+		nvrhi::IBuffer* rhiBuffer = buffer->GetNVRHIBufferHandle();
+		ASSERT_MSG(rhiBuffer, "NULL buffer for binding %d (internal failure)", bindGroupEntry.binding);
+
+		const int64 minAligment = binding.rangeType == BINDING_RANGE_CBV ?
+			CNVRHIRenderAPI::Instance.GetCaps().minUniformBufferOffsetAlignment :
+			CNVRHIRenderAPI::Instance.GetCaps().minStorageBufferOffsetAlignment;
+
+		const int64 alignedSize = min(ALIGN(bindGroupEntry.buffer.size, minAligment), buffer->GetSize() - bindGroupEntry.buffer.offset);
+		nvrhi::BufferRange bufferRange = bindGroupEntry.buffer.size < 0 ? nvrhi::EntireBuffer : nvrhi::BufferRange(bindGroupEntry.buffer.offset, alignedSize);
+
+		auto rhiBindingSetItemDesc = nvrhi::BindingSetItem();
+		switch (binding.rangeType)
 		{
-			const int64 minAligment = binding.rangeType == BINDING_RANGE_CBV ?
-				CNVRHIRenderAPI::Instance.GetCaps().minUniformBufferOffsetAlignment :
-				CNVRHIRenderAPI::Instance.GetCaps().minStorageBufferOffsetAlignment;
-
-			const int64 alignedSize = min(ALIGN(bindGroupEntry.buffer.size, minAligment), buffer->GetSize() - bindGroupEntry.buffer.offset);
-			nvrhi::BufferRange bufferRange = bindGroupEntry.buffer.size < 0 ? nvrhi::EntireBuffer : nvrhi::BufferRange(bindGroupEntry.buffer.offset, alignedSize);
-
-			switch (binding.rangeType)
-			{
-			case BINDING_RANGE_CBV:
-				rhiBindingSetDesc.addItem(
-					nvrhi::BindingSetItem()
-					.ConstantBuffer(binding.registerIdx, buffer->GetNVRHIBufferHandle(), bufferRange)
-				);
-				break;
-			case BINDING_RANGE_SRV:
-				rhiBindingSetDesc.addItem(
-					nvrhi::BindingSetItem()
-					.RawBuffer_SRV(binding.registerIdx, buffer->GetNVRHIBufferHandle(), bufferRange)
-				);
-				break;
-			case BINDING_RANGE_UAV:
-				rhiBindingSetDesc.addItem(
-					nvrhi::BindingSetItem()
-					.RawBuffer_UAV(binding.registerIdx, buffer->GetNVRHIBufferHandle(), bufferRange)
-				);
-				break;
-			}
+		case BINDING_RANGE_CBV:
+			rhiBindingSetItemDesc = nvrhi::BindingSetItem::ConstantBuffer(binding.registerIdx, rhiBuffer, bufferRange);
+			break;
+		case BINDING_RANGE_SRV:
+			rhiBindingSetItemDesc = nvrhi::BindingSetItem::RawBuffer_SRV(binding.registerIdx, rhiBuffer, bufferRange);
+			break;
+		case BINDING_RANGE_UAV:
+			rhiBindingSetItemDesc = nvrhi::BindingSetItem::RawBuffer_UAV(binding.registerIdx, rhiBuffer, bufferRange);
+			break;
+		default:
+			ASSERT_FAIL("Unsupported binding range %d", binding.rangeType);
 		}
-		else
-			ASSERT_FAIL("NULL buffer for binding %d", bindGroupEntry.binding);
-
+		rhiBindingSetDesc.addItem(rhiBindingSetItemDesc);
 		break;
 	}
 	case BINDENTRY_SAMPLER:
@@ -86,38 +80,38 @@ void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const Shad
 	}
 	case BINDENTRY_STORAGETEXTURE:
 	case BINDENTRY_TEXTURE:
+	{
 		ASSERT(binding.type == BINDENTRY_STORAGETEXTURE || binding.type == BINDENTRY_TEXTURE);
 		// TODO: check texture usage
 		CNVRHITexture* texture = static_cast<CNVRHITexture*>(bindGroupEntry.texture.ptr);
-		if (texture)
+		ASSERT_MSG(texture, "NULL texture for binding %d", bindGroupEntry.binding);
+		ASSERT_MSG(texture->GetNVRHITextureViewCount(), "Texture '%s' has no views", texture->GetName());
+
+		const nvrhi::TextureSubresourceSet rhiSubResource = texture->GetNVRHITextureView(bindGroupEntry.texture.arraySlice);
+		nvrhi::TextureDimension rhiDimension = bindGroupEntry.texture.arraySlice > 0 ? texture->GetNVRHIDimension() : nvrhi::TextureDimension::Unknown;
+
+		if (rhiDimension == nvrhi::TextureDimension::TextureCube || rhiDimension == nvrhi::TextureDimension::TextureCubeArray)
+			rhiDimension = nvrhi::TextureDimension::Texture2DArray;
+
+		switch (binding.rangeType)
 		{
-			ASSERT_MSG(texture->GetNVRHITextureViewCount(), "Texture '%s' has no views", texture->GetName());
-
-			const nvrhi::TextureSubresourceSet rhiSubResource = texture->GetNVRHITextureView(bindGroupEntry.texture.arraySlice);
-			nvrhi::TextureDimension rhiDimension = bindGroupEntry.texture.arraySlice > 0 ? texture->GetNVRHIDimension() : nvrhi::TextureDimension::Unknown;
-
-			if(rhiDimension == nvrhi::TextureDimension::TextureCube || rhiDimension == nvrhi::TextureDimension::TextureCubeArray)
-				rhiDimension = nvrhi::TextureDimension::Texture2DArray;
-
-			switch (binding.rangeType)
-			{
-			case BINDING_RANGE_SRV:
-				rhiBindingSetDesc.addItem(
-					nvrhi::BindingSetItem()
-					.Texture_SRV(binding.registerIdx, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, rhiSubResource, rhiDimension)
-				);
-				break;
-			case BINDING_RANGE_UAV:
-				rhiBindingSetDesc.addItem(
-					nvrhi::BindingSetItem()
-					.Texture_UAV(binding.registerIdx, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, rhiSubResource, rhiDimension)
-				);
-				break;
-			}
+		case BINDING_RANGE_SRV:
+			rhiBindingSetDesc.addItem(
+				nvrhi::BindingSetItem()
+				.Texture_SRV(binding.registerIdx, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, rhiSubResource, rhiDimension)
+			);
+			break;
+		case BINDING_RANGE_UAV:
+			rhiBindingSetDesc.addItem(
+				nvrhi::BindingSetItem()
+				.Texture_UAV(binding.registerIdx, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, rhiSubResource, rhiDimension)
+			);
+			break;
 		}
-		else
-			ASSERT_FAIL("NULL texture for binding %d", bindGroupEntry.binding);
 		break;
+	}
+	default:
+		ASSERT_FAIL("Unsupported binding type %d", bindGroupEntry.type);
 	}
 }
 
@@ -354,6 +348,44 @@ void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const IGPUBindingLa
 		{
 			rhiDesc.setVisibility(rhiShaderType);
 			rhiBindingLayouts.append(rhiDevice->createBindingLayout(rhiDesc));
+		}
+	}
+}
+
+void nvrhiFillBindingSets(const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, ArrayCRef<IGPUBindGroupPtr> bindings, const uint pipelineId, ArrayCRef<nvrhi::BindingLayoutHandle> rhiBindingLayouts, nvrhi::BindingSetVector& rhiBindingSets)
+{
+	nvrhi::IDevice* nvrhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
+	for (IGPUBindGroup* bindGroup : bindings)
+	{
+		CNVRHIBindGroup* bindGroupImpl = static_cast<CNVRHIBindGroup*>(bindGroup);
+		if (!bindGroupImpl)
+			continue;
+
+		if (bindGroupImpl->m_bindingLayout)
+		{
+			auto bindingSetIt = bindGroupImpl->m_rhiBindingSets.find(pipelineId);
+			if (!bindingSetIt)
+			{
+				const BindGroupDesc& bindGroupDesc = bindGroupImpl->m_bindGroupDesc;
+
+				// we need to create binding set for this shader using provided layout
+				auto rhiBindingSetDesc = nvrhi::BindingSetDesc();
+				bindGroupImpl->m_bindingLayout->FillBindingSetDescByLayoutMap(bindGroupDesc, shaderInfo, shaderModuleIdxs, rhiBindingSetDesc);
+
+				nvrhi::BindingSetHandle rhiBindSet = nvrhiDevice->createBindingSet(rhiBindingSetDesc, rhiBindingLayouts[bindGroupDesc.groupIdx]);
+				if (!rhiBindSet)
+				{
+					ASSERT_FAIL("Failed to create binding set for shared bind group %s\n", bindGroupDesc.name.ToCString());
+					continue;
+				}
+				bindingSetIt = bindGroupImpl->m_rhiBindingSets.insert(pipelineId, rhiBindSet);
+			}
+
+			rhiBindingSets.push_back(*bindingSetIt);
+		}
+		else
+		{
+			rhiBindingSets.push_back(bindGroupImpl->m_rhiBindingSets.front());
 		}
 	}
 }
