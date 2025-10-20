@@ -28,7 +28,7 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 	m_bufSize = ALIGN(sizeInBytes, 4);
 	m_usageFlags = bufferUsageFlags;
 
-	nvrhi::CpuAccessMode cpuAccessMode = (hasData && !(bufferUsageFlags & BUFFERUSAGE_STORAGE)) ? nvrhi::CpuAccessMode::Write : nvrhi::CpuAccessMode::None;
+	nvrhi::CpuAccessMode cpuAccessMode = nvrhi::CpuAccessMode::None;
 	if (bufferUsageFlags & BUFFERUSAGE_READ)
 	{
 		//ASSERT_MSG(hasData, "Buffer can't have READ usage when data is specified");
@@ -183,7 +183,7 @@ void CNVRHIBuffer::Update(const void* data, int64 size, int64 offset)
 
 	writeCmd->close();
 
-	g_renderWorker.WaitForExecute("UpdateBuffer", [rhiDevice, writeCmd, cmdListIdx]() {
+	g_renderWorker.Execute("UpdateBuffer", [rhiDevice, writeCmd, cmdListIdx]() {
 		rhiDevice->executeCommandList(writeCmd);
 		CNVRHIRenderAPI::Instance.ReleaseCommandList(cmdListIdx);
 		return 0;

@@ -1243,40 +1243,39 @@ Future<bool> CNVRHIRenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUComman
 	if (cmdBuffers.isEmpty())
 		return Future<bool>::Succeed(true);
 
-	static thread_local Array<int> pendingCmdListIdxs(PP_SL);
-	static thread_local Array<nvrhi::ICommandList*> rhiSubmitBuffers(PP_SL);
-	rhiSubmitBuffers.clear();
-	rhiSubmitBuffers.reserve(cmdBuffers.numElem());
+	static thread_local Array<int> executingCmdLists(PP_SL);
+	executingCmdLists.reserve(cmdBuffers.numElem());
+	executingCmdLists.clear();
 	for (IGPUCommandBuffer* cmdBuffer : cmdBuffers)
 	{
 		if (!cmdBuffer)
 			continue;
 
 		const CNVRHICommandBuffer* bufferImpl = static_cast<const CNVRHICommandBuffer*>(cmdBuffer);
-		ASSERT(bufferImpl->m_rhiCommandList);
-		rhiSubmitBuffers.append(bufferImpl->m_rhiCommandList);
-		pendingCmdListIdxs.append(bufferImpl->m_cmdListIdx);
+		executingCmdLists.append(bufferImpl->m_cmdListIdx);
 	}
-	if (rhiSubmitBuffers.isEmpty())
+
+	if(executingCmdLists.isEmpty())
 		return Future<bool>::Succeed(true);
 
-	uint64_t lastSubmitInstance = -1;
-	g_renderWorker.WaitForExecute(__func__, [&lastSubmitInstance, rhiCmdLists = ArrayCRef<nvrhi::ICommandList*>(rhiSubmitBuffers), this]() {
-		lastSubmitInstance = m_rhiDevice->executeCommandLists(rhiCmdLists.ptr(), rhiCmdLists.numElem());
-		return 0;
-	});
-
-	{
-		CScopedMutex m(s_cmdListMutex);
-		for (int cmdListIdx : pendingCmdListIdxs)
-			m_rhiFreeCommandLists.append(cmdListIdx);
-		pendingCmdListIdxs.clear();
-	}
-
 	Promise<bool> promise;
-	g_renderWorker.Execute(__func__, [this, lastSubmitInstance, promise]() {
+	g_renderWorker.Execute(__func__, [this, cmdListIdxs = executingCmdLists, promise]() {
+		static Array<nvrhi::ICommandList*> rhiCmdLists{ PP_SL };
+		rhiCmdLists.reserve(cmdListIdxs.numElem());
+		rhiCmdLists.clear(true);
+
+		for (int cmdListIdx : cmdListIdxs)
+			rhiCmdLists.append(m_rhiCommandLists[cmdListIdx]);
+
+		uint64_t lastSubmitInstance = m_rhiDevice->executeCommandLists(rhiCmdLists.ptr(), rhiCmdLists.numElem());
 		m_rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
 
+		// release command lists after execution
+		{
+			CScopedMutex m(s_cmdListMutex);
+			for (int cmdListIdx : cmdListIdxs)
+				m_rhiFreeCommandLists.append(cmdListIdx);
+		}
 		promise.SetResult(true);
 		return 0;
 	});

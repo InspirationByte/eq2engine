@@ -345,17 +345,15 @@ void CNVRHITexture::Unlock(IGPUCommandRecorder* writeCmdRecorder)
 		}
 		else
 		{
-			nvrhi::CommandListParameters rhiCmdListParams = {};
-			rhiCmdListParams.enableImmediateExecution = false;
-
-			nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList(rhiCmdListParams);
+			int cmdListIdx = -1;
+			nvrhi::CommandListHandle writeCmd = CNVRHIRenderAPI::Instance.AcquireRHICommandList(cmdListIdx);
 			writeCmd->open();
 			writeCmd->writeTexture(m_rhiTexture, data.lockOrigin.arraySlice, data.lockOrigin.mipLevel, data.lockData, data.lockPitch);
 			writeCmd->close();
 
-			g_renderWorker.WaitForExecute("UnlockTexture", [rhiDevice, writeCmd]() {
-				const uint64_t lastSubmitInstance = rhiDevice->executeCommandList(writeCmd);
-				rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
+			g_renderWorker.Execute("UnlockTexture", [rhiDevice, writeCmd, cmdListIdx]() {
+				rhiDevice->executeCommandList(writeCmd);
+				CNVRHIRenderAPI::Instance.ReleaseCommandList(cmdListIdx);
 				return 0;
 			});
 		}
