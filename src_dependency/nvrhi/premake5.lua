@@ -44,13 +44,17 @@ project "nvrhi"
 		defines { "NVRHI_WITH_VALIDATION" }
 	
 	filter "system:windows"
-		defines { 
-			"NVRHI_WITH_DX11",
-			--"NVRHI_WITH_DX12",
+		defines {
+			"NVRHI_D3D12_WITH_D3D12MA",
+		}
+		includedirs {
+			"./NVRHI/thirdparty/D3D12MA/include"
 		}
 		files {
 			"NVRHI/src/d3d11/**.cpp",
-			"NVRHI/src/d3d12/**.cpp"
+			"NVRHI/src/d3d12/**.cpp",
+			"NVRHI/thirdparty/D3D12MA/src/**.cpp",
+			"NVRHI/thirdparty/D3D12MA/include/**.h"
 		}
 		
 usage "nvrhi"

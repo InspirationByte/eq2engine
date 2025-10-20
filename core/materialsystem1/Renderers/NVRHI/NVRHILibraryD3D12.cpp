@@ -250,6 +250,7 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	nvrhi::d3d12::DeviceDesc deviceDesc;
 	deviceDesc.errorCB = &CNVRHIMessageCallback::Instance;
 	deviceDesc.pDevice = m_rhiDevice12;
+	deviceDesc.pAdapter = m_dxgiAdapter;
 	deviceDesc.pGraphicsCommandQueue = m_rhiGraphicsQueue;
 	deviceDesc.pComputeCommandQueue = m_rhiComputeQueue;
 	deviceDesc.pCopyCommandQueue = m_rhiCopyQueue;
