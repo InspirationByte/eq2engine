@@ -423,14 +423,9 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 		.setHeight((uint)newSize.height)
 		.setArraySize((uint)newSize.arraySize)
 		.setIsRenderTarget(true)
-		.setIsVirtual(flags & TEXFLAG_TRANSIENT);
-
-	if (!isDepth)
-	{
-		rhiTextureDesc
-			.setInitialState(nvrhi::ResourceStates::RenderTarget)
-			.setKeepInitialState(true);
-	}
+		.setIsVirtual(flags & TEXFLAG_TRANSIENT)
+		.setInitialState(isDepth ? nvrhi::ResourceStates::DepthRead : nvrhi::ResourceStates::RenderTarget)
+		.setKeepInitialState(true);
 
 	if (flags & TEXFLAG_CUBEMAP)
 	{

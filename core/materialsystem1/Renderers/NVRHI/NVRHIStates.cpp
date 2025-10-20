@@ -155,7 +155,6 @@ void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInf
 				continue;
 
 			usedShaderBindingIdxs.insert(bindingIds[i], entryIdx);
-			//nvrhiFillBindingDesc(bindGroupDesc.entries[entryIdx], binding, rhiSamplers, rhiBindingSetDesc);
 		}
 	}
 

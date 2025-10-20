@@ -263,7 +263,6 @@ void CNVRHIRenderPassRecorder::InternalBeginRenderPass(const RenderPassDesc& ren
 	NVRHIBeginRenderPass(renderPassDesc, m_rhiCommandList, rhiFramebufferDesc);
 
 	m_rhiFramebuffer = CNVRHIRenderAPI::Instance.GetNVRHIDevice()->createFramebuffer(rhiFramebufferDesc);
-	m_rhiCommandList->setResourceStatesForFramebuffer(m_rhiFramebuffer);
 
 	IVector2D renderTargetDims = 0;
 	for (int i = 0; i < renderPassDesc.colorTargets.numElem(); ++i)
