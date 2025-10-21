@@ -4,6 +4,7 @@
 #include "NVRHIStates.h"
 #include "NVRHIBuffer.h"
 #include "NVRHIRenderAPI.h"
+#include "../RenderWorker.h"
 
 void nvrhiFillSamplerDesc(const SamplerStateParams& samplerParams, nvrhi::SamplerDesc& rhiSamplerDesc)
 {
@@ -360,9 +361,12 @@ void nvrhiFillBindingSets(const ShaderInfo& shaderInfo, ArrayCRef<int> shaderMod
 		if (!bindGroupImpl)
 			continue;
 
+		auto bindingSetIt = bindGroupImpl->m_rhiBindingSets.begin();
+
 		if (bindGroupImpl->m_bindingLayout)
 		{
-			auto bindingSetIt = bindGroupImpl->m_rhiBindingSets.find(pipelineId);
+			bindingSetIt = bindGroupImpl->m_rhiBindingSets.find(pipelineId);
+
 			if (!bindingSetIt)
 			{
 				const BindGroupDesc& bindGroupDesc = bindGroupImpl->m_bindGroupDesc;
@@ -379,13 +383,9 @@ void nvrhiFillBindingSets(const ShaderInfo& shaderInfo, ArrayCRef<int> shaderMod
 				}
 				bindingSetIt = bindGroupImpl->m_rhiBindingSets.insert(pipelineId, rhiBindSet);
 			}
+		}
 
-			rhiBindingSets.push_back(*bindingSetIt);
-		}
-		else
-		{
-			rhiBindingSets.push_back(bindGroupImpl->m_rhiBindingSets.front());
-		}
+		rhiBindingSets.push_back(*bindingSetIt);
 	}
 }
 

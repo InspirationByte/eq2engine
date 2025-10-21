@@ -7,7 +7,7 @@ static_assert(MAX_BINDGROUPS <= nvrhi::c_MaxBindingLayouts, "Max binding layouts
 class CNVRHIComputePipeline;
 struct ShaderInfo;
 
-using NVRHIBindingLayoutList = FixedArray<nvrhi::BindingLayoutHandle, nvrhi::c_MaxBindingLayouts>;
+using NVRHIBindingLayoutList = FixedArray<nvrhi::BindingLayoutHandle, MAX_BINDGROUPS>;
 using NVRHIBindingLayoutsCRef = ArrayCRef<nvrhi::BindingLayoutHandle>;
 
 // this shit is really for purposes of delaying bindgroup validation
@@ -21,12 +21,12 @@ public:
 		int visibility;
 	};
 	using BindGroupLayoutOrder = Array<EntryId>;
-	using LayoutMapList = FixedArray<BindGroupLayoutOrder, nvrhi::c_MaxBindingLayouts>;
+	using LayoutMapList = FixedArray<BindGroupLayoutOrder, MAX_BINDGROUPS>;
 
 	void			FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, nvrhi::BindingSetDesc& rhiBindingSetDesc) const;
 	
 	LayoutMapList	m_layoutOrder;
-	int				m_maxBindingIndex[nvrhi::c_MaxBindingLayouts]{ 0 };
+	int				m_maxBindingIndex[MAX_BINDGROUPS]{ 0 };
 	EqString		m_dbgName;
 };
 
