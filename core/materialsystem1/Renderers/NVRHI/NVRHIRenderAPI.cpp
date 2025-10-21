@@ -923,7 +923,9 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 		auto& rhiRasterState = rhiGraphicsPipelineDesc.renderState.rasterState;
 		rhiRasterState.depthBias = pipelineDesc.depthStencil.depthBias;
 		rhiRasterState.slopeScaledDepthBias = pipelineDesc.depthStencil.depthBiasSlopeScale;
-		rhiRasterState.depthBiasClamp = 0; // TODO
+		rhiRasterState.depthBiasClamp = 0;				// TODO
+		rhiRasterState.depthClipEnable = true;			// FIXME: useful for something?
+		//rhiRasterState.antialiasedLineEnable = true;	// TODO: use this setting, cool feature
 
 		rhiDepthStencil.stencilRefValue = pipelineDesc.depthStencil.stencilRef;
 		rhiDepthStencil.stencilEnable = pipelineDesc.depthStencil.stencilTest;
