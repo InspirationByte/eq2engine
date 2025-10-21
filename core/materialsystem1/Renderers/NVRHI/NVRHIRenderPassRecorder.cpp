@@ -166,6 +166,9 @@ void CNVRHIRenderPassRecorder::Draw(int vertexCount, int firstVertex, int instan
 		.setInstanceCount(instanceCount)
 		.setStartInstanceLocation(firstInstance)
 	);
+
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.drawCount);
 }
 
 void CNVRHIRenderPassRecorder::DrawIndexed(int indexCount, int firstIndex, int instanceCount, int baseVertex, int firstInstance)
@@ -179,6 +182,9 @@ void CNVRHIRenderPassRecorder::DrawIndexed(int indexCount, int firstIndex, int i
 		.setInstanceCount(instanceCount)
 		.setStartInstanceLocation(firstInstance)
 	);
+
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.drawCount);
 }
 
 void CNVRHIRenderPassRecorder::DrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset)
@@ -193,6 +199,9 @@ void CNVRHIRenderPassRecorder::DrawIndexedIndirect(IGPUBuffer* indirectBuffer, i
 	CommitGraphicsState(indirectBufferImpl->GetNVRHIBufferHandle());
 
 	m_rhiCommandList->drawIndexedIndirect(indirectOffset);
+
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.indirectDrawCount);
 }
 
 void CNVRHIRenderPassRecorder::DrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset)
@@ -203,6 +212,9 @@ void CNVRHIRenderPassRecorder::DrawIndirect(IGPUBuffer* indirectBuffer, int indi
 	CommitGraphicsState(indirectBufferImpl->GetNVRHIBufferHandle());
 
 	m_rhiCommandList->drawIndirect(indirectOffset);
+
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.indirectDrawCount);
 }
 
 

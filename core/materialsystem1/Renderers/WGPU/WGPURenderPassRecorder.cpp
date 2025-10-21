@@ -4,6 +4,7 @@
 #include "WGPUStates.h"
 #include "WGPURenderPassRecorder.h"
 #include "WGPURenderDefs.h"
+#include "WGPURenderAPI.h"
 
 //-------------------------------------------
 
@@ -98,23 +99,35 @@ void CWGPURenderPassRecorder::SetScissorRectangle(const IAARectangle& rectangle)
 void CWGPURenderPassRecorder::Draw(int vertexCount, int firstVertex, int instanceCount, int firstInstance)
 {
 	wgpuRenderPassEncoderDraw(m_rhiRenderPassEncoder, vertexCount, instanceCount, firstVertex, firstInstance);
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.drawCount);
 }
 
 void CWGPURenderPassRecorder::DrawIndexed(int indexCount, int firstIndex, int instanceCount, int baseVertex, int firstInstance)
 {
 	wgpuRenderPassEncoderDrawIndexed(m_rhiRenderPassEncoder, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.drawCount);
 }
 
 void CWGPURenderPassRecorder::DrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset)
 {
 	CWGPUBuffer* indirectBufferImpl = static_cast<CWGPUBuffer*>(indirectBuffer);
 	wgpuRenderPassEncoderDrawIndexedIndirect(m_rhiRenderPassEncoder, indirectBufferImpl->GetWGPUBuffer(), indirectOffset);
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.indirectDrawCount);
 }
 
 void CWGPURenderPassRecorder::DrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset)
 {
 	CWGPUBuffer* indirectBufferImpl = static_cast<CWGPUBuffer*>(indirectBuffer);
 	wgpuRenderPassEncoderDrawIndirect(m_rhiRenderPassEncoder, indirectBufferImpl->GetWGPUBuffer(), indirectOffset);
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.indirectDrawCount);
 }
 
 void CWGPURenderPassRecorder::MultiDrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset)
@@ -122,6 +135,9 @@ void CWGPURenderPassRecorder::MultiDrawIndirect(IGPUBuffer* indirectBuffer, int 
 	CWGPUBuffer* indirectBufferImpl = static_cast<CWGPUBuffer*>(indirectBuffer);
 	CWGPUBuffer* drawCountBufferImpl = static_cast<CWGPUBuffer*>(drawCountBuffer);
 	wgpuRenderPassEncoderMultiDrawIndirect(m_rhiRenderPassEncoder, indirectBufferImpl->GetWGPUBuffer(), indirectOffset, maxDrawCount, drawCountBufferImpl->GetWGPUBuffer(), drawCountBufferOffset);
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.indirectDrawCount);
 }
 
 void CWGPURenderPassRecorder::MultiDrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset)
@@ -129,6 +145,9 @@ void CWGPURenderPassRecorder::MultiDrawIndexedIndirect(IGPUBuffer* indirectBuffe
 	CWGPUBuffer* indirectBufferImpl = static_cast<CWGPUBuffer*>(indirectBuffer);
 	CWGPUBuffer* drawCountBufferImpl = static_cast<CWGPUBuffer*>(drawCountBuffer);
 	wgpuRenderPassEncoderMultiDrawIndexedIndirect(m_rhiRenderPassEncoder, indirectBufferImpl->GetWGPUBuffer(), indirectOffset, maxDrawCount, drawCountBufferImpl->GetWGPUBuffer(), drawCountBufferOffset);
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.indirectDrawCount);
 }
 
 // TODO:

@@ -7,6 +7,7 @@
 #include "WGPUComputePassRecorder.h"
 #include "WGPURenderDefs.h"
 #include "WGPUTexture.h"
+#include "WGPURenderAPI.h"
 
 CWGPUCommandRecorder::~CWGPUCommandRecorder()
 {
@@ -52,6 +53,9 @@ void CWGPUCommandRecorder::CopyBufferToBuffer(IGPUBuffer* source, int64 sourceOf
 	ASSERT_MSG(destinationOffset >= 0 && destinationOffset + copyDataSize <= destinationImpl->GetSize(), "Offset and/or Size outside destination buffer range");
 
 	wgpuCommandEncoderCopyBufferToBuffer(m_rhiCommandEncoder, sourceImpl->GetWGPUBuffer(), sourceOffset, destinationImpl->GetWGPUBuffer(), destinationOffset, copyDataSize);
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.bufferUpdateCount);
 }
 
 void CWGPUCommandRecorder::ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 size) const
@@ -68,6 +72,9 @@ void CWGPUCommandRecorder::ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 s
 	ASSERT_MSG(offset >= 0 && offset + clearDataSize <= bufferImpl->GetSize(), "Offset and/or Size outside buffer range");
 
 	wgpuCommandEncoderClearBuffer(m_rhiCommandEncoder, bufferImpl->GetWGPUBuffer(), offset, clearDataSize);
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.bufferUpdateCount);
 }
 
 void CWGPUCommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, const TextureCopyInfo& destination, const TextureExtent& copySize) const
@@ -110,6 +117,9 @@ void CWGPUCommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, c
 	rhiCopySize.height = copySize.height;
 	
 	wgpuCommandEncoderCopyTextureToTexture(m_rhiCommandEncoder, &rhiImageSrc, &rhiImageDst, &rhiCopySize);
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.textureUpdateCount);
 }
 
 void CWGPUCommandRecorder::CopyTextureToBuffer(const TextureCopyInfo& source, const IGPUBuffer* destination, const TextureExtent& copySize) const
@@ -146,6 +156,9 @@ void CWGPUCommandRecorder::CopyTextureToBuffer(const TextureCopyInfo& source, co
 	rhiBufferDst.layout.rowsPerImage = rhiBufferDst.layout.bytesPerRow * copySize.height;
 
 	wgpuCommandEncoderCopyTextureToBuffer(m_rhiCommandEncoder, &rhiImageSrc, &rhiBufferDst, &rhiCopySize);
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.bufferUpdateCount);
 }
 
 void CWGPUCommandRecorder::DbgPopGroup() const

@@ -41,7 +41,10 @@ void CNVRHICommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, in
 	{
 		//MsgInfo("NVRHI: un-tracked write to buffer %s with %lld bytes (%s cmd)\n", bufferImpl->GetDbgName(), writeDataSize, m_dbgName.ToCString());
 		m_rhiCommandList->writeBuffer(bufferImpl->GetNVRHIBufferHandle(), data, writeDataSize, offset);
-	}	
+	}
+
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.bufferUpdateCount);
 }
 
 void CNVRHICommandRecorder::CopyBufferToBuffer(IGPUBuffer* source, int64 sourceOffset, IGPUBuffer* destination, int64 destinationOffset, int64 size) const
@@ -67,6 +70,9 @@ void CNVRHICommandRecorder::CopyBufferToBuffer(IGPUBuffer* source, int64 sourceO
 
 	//MsgInfo("NVRHI: copy buffer %s to %s (ofs %lld of %lld bytes) (%s cmd)\n", sourceImpl->GetDbgName(), destinationImpl->GetDbgName(), destinationOffset, copyDataSize, m_dbgName.ToCString());
 	m_rhiCommandList->copyBuffer(destinationImpl->GetNVRHIBufferHandle(), destinationOffset, sourceImpl->GetNVRHIBufferHandle(), sourceOffset, copyDataSize);
+
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.bufferUpdateCount);
 }
 
 void CNVRHICommandRecorder::ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 size) const
@@ -94,6 +100,9 @@ void CNVRHICommandRecorder::ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 
 	{
 		m_rhiCommandList->clearBufferUInt(bufferImpl->GetNVRHIBufferHandle(), 0);
 	}
+
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.bufferUpdateCount);
 }
 
 void CNVRHICommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, const TextureCopyInfo& destination, const TextureExtent& copySize) const
@@ -138,6 +147,9 @@ void CNVRHICommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, 
 		rhiImageDst.arraySlice = destination.origin.arraySlice + i;
 		m_rhiCommandList->copyTexture(dstTexture->GetNVRHITextureHandle(), rhiImageDst, srcTexture->GetNVRHITextureHandle(), rhiImageSrc);
 	}
+
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.textureUpdateCount);
 }
 
 void CNVRHICommandRecorder::DbgPopGroup() const

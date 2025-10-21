@@ -1214,9 +1214,6 @@ bool CMaterialSystem::EndFrame()
 	for (CDynamicMesh& dynMesh : m_dynamicMeshes)
 		dynMesh.OnEndFrame();
 
-	// issue the rendering of anything
-	m_shaderAPI->ResetCounters();
-
 	for (int i = 0; i < m_proxyUpdateCmdRecorders.numElem(); ++i)
 	{
 		IGPUCommandRecorderPtr cmdRecorder = *m_proxyUpdateCmdRecorders[i];

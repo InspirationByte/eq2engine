@@ -70,6 +70,9 @@ void CNVRHIComputePassRecorder::DispatchWorkgroups(int32 workgroupCountX, int32 
 {
 	CommitComputeState();
 	m_rhiCommandList->dispatch(workgroupCountX, workgroupCountY, workgroupCountZ);
+
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.dispatchCount);
 }
 
 void CNVRHIComputePassRecorder::DispatchWorkgroupsIndirect(IGPUBuffer* indirectBuffer, int64 indirectOffset)
@@ -83,6 +86,9 @@ void CNVRHIComputePassRecorder::DispatchWorkgroupsIndirect(IGPUBuffer* indirectB
 
 	CommitComputeState(indirectBufferImpl->GetNVRHIBufferHandle());
 	m_rhiCommandList->dispatchIndirect(indirectOffset);
+
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.indirectDispatchCount);
 }
 
 void CNVRHIComputePassRecorder::Complete()

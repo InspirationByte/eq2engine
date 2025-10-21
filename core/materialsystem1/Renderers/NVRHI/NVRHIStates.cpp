@@ -389,6 +389,30 @@ void nvrhiFillBindingSets(const ShaderInfo& shaderInfo, ArrayCRef<int> shaderMod
 	}
 }
 
+CNVRHIRenderPipeline::~CNVRHIRenderPipeline()
+{
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Decrement(stats.pipelines);
+}
+
+CNVRHIRenderPipeline::CNVRHIRenderPipeline()
+{
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.pipelines);
+}
+
+CNVRHIComputePipeline::~CNVRHIComputePipeline()
+{
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Decrement(stats.pipelines);
+}
+
+CNVRHIComputePipeline::CNVRHIComputePipeline()
+{
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.pipelines);
+}
+
 CNVRHIBindGroup::~CNVRHIBindGroup()
 {
 	for (const BindGroupDesc::Entry& entry : m_bindGroupDesc.entries)
@@ -404,6 +428,15 @@ CNVRHIBindGroup::~CNVRHIBindGroup()
 			break;
 		}
 	}
+
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Decrement(stats.bindGroups);
+}
+
+CNVRHIBindGroup::CNVRHIBindGroup()
+{
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.bindGroups);
 }
 
 void CNVRHIBindGroup::MakeResourceRefs(const BindGroupDesc& sourceDesc)

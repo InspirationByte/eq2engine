@@ -268,25 +268,3 @@ IVertexFormat* ShaderAPI_Base::FindVertexFormatById(int nameHash) const
 	}
 	return nullptr;
 }
-
-int	ShaderAPI_Base::GetDrawCallsCount() const
-{
-	return m_statDrawCount;
-}
-
-int	ShaderAPI_Base::GetDrawIndexedPrimitiveCallsCount() const
-{
-	return m_statDrawIndexedCount;
-}
-
-int	ShaderAPI_Base::GetTrianglesCount() const
-{
-	return m_statPrimitiveCount;
-}
-
-void ShaderAPI_Base::ResetCounters()
-{
-	m_statDrawIndexedCount = 0;
-	m_statDrawCount = 0;
-	m_statPrimitiveCount = 0;
-}

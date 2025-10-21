@@ -12,6 +12,9 @@
 
 CWGPUBuffer::~CWGPUBuffer()
 {
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Add(stats.bufferMem, -m_bufSize);
+
 	wgpuBufferRelease(m_rhiBuffer);
 	m_rhiBuffer = nullptr;
 }
@@ -50,6 +53,9 @@ CWGPUBuffer::CWGPUBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, con
 
 	if (!m_rhiBuffer)
 		return;
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Add(stats.bufferMem, m_bufSize);
 
 	if (rhiBufferDesc.mappedAtCreation)
 	{

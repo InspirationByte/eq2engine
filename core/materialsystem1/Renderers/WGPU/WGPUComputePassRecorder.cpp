@@ -2,6 +2,7 @@
 #include "WGPUComputePassRecorder.h"
 #include "WGPUStates.h"
 #include "WGPUBuffer.h"
+#include "WGPURenderAPI.h"
 
 CWGPUComputePassRecorder::~CWGPUComputePassRecorder()
 {
@@ -51,12 +52,18 @@ void CWGPUComputePassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindG
 void CWGPUComputePassRecorder::DispatchWorkgroups(int32 workgroupCountX, int32 workgroupCountY, int32 workgroupCountZ)
 {
 	wgpuComputePassEncoderDispatchWorkgroups(m_rhiComputePassEncoder, workgroupCountX, workgroupCountY, workgroupCountZ);
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.dispatchCount);
 }
 
 void CWGPUComputePassRecorder::DispatchWorkgroupsIndirect(IGPUBuffer* indirectBuffer, int64 indirectOffset)
 {
 	CWGPUBuffer* indirectBufferImpl = static_cast<CWGPUBuffer*>(indirectBuffer);
 	wgpuComputePassEncoderDispatchWorkgroupsIndirect(m_rhiComputePassEncoder, indirectBufferImpl->GetWGPUBuffer(), indirectOffset);
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.indirectDispatchCount);
 }
 
 void CWGPUComputePassRecorder::Complete()

@@ -35,6 +35,9 @@ using CNVRHIBindingLayoutPtr = CRefPtr<CNVRHIBindingLayout>;
 class CNVRHIRenderPipeline : public IGPURenderPipeline
 {
 public:
+	~CNVRHIRenderPipeline();
+	CNVRHIRenderPipeline();
+
 	nvrhi::GraphicsPipelineDesc		m_rhiPipelineDesc;
 	nvrhi::FramebufferInfo			m_rhiFramebufferinfo;
 	nvrhi::GraphicsPipelineHandle	m_rhiRenderPipeline;
@@ -48,6 +51,9 @@ public:
 class CNVRHIComputePipeline : public IGPUComputePipeline
 {
 public:
+	~CNVRHIComputePipeline();
+	CNVRHIComputePipeline();
+
 	NVRHIBindingLayoutList			m_rhiBindingLayout;
 	nvrhi::ComputePipelineHandle	m_rhiComputePipeline;
 	EqString						m_dbgName;
@@ -60,6 +66,7 @@ class CNVRHIBindGroup : public IGPUBindGroup
 {
 public:
 	~CNVRHIBindGroup();
+	CNVRHIBindGroup();
 
 	void						MakeResourceRefs(const BindGroupDesc& sourceDesc);
 	CNVRHIBindingLayoutPtr		m_bindingLayout;		// if set, it's a shared bind group

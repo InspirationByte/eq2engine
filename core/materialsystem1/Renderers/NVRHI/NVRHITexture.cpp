@@ -26,6 +26,10 @@ void CNVRHITexture::Release()
 {
 	CNVRHIRenderAPI::Instance.ReleaseRHITransientTextureHeap(m_transientHeapIdx);
 
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Add(stats.textureMem, -m_texSize);
+	m_texSize = 0;
+
 	m_rhiViews.clear();
 	m_rhiTexture = nullptr;
 	m_transientHeapIdx = -1;
@@ -68,7 +72,7 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 
 	//m_rhiViews.reserve(arraySize);
 
-	m_texSize = image->GetMipMappedSize(mipStart) * arraySize;
+	m_texSize = image->GetMipMappedSize(mipStart, mipCount) * arraySize;
 	m_arraySize = arraySize;
 	m_mipCount = mipCount;
 	m_width = texWidth;
@@ -136,6 +140,9 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 	}
 	m_rhiTexture = rhiTexture;
 	m_rhiDimension = rhiTextureDesc.dimension;
+
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Add(stats.textureMem, m_texSize);
 
 	// create default texture view
 	{

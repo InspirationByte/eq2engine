@@ -407,6 +407,14 @@ void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 
 void CWGPURenderLib::EndFrame()
 {
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	stats.drawCount = 0;
+	stats.dispatchCount = 0;
+	stats.indirectDrawCount = 0;
+	stats.indirectDispatchCount = 0;
+	stats.bufferUpdateCount = 0;
+	stats.textureUpdateCount = 0;
+
 	g_renderWorker.Execute(__func__, [this]() {
 		m_currentSwapChain->SwapBuffers();
 		m_endFrameWait.Raise();

@@ -304,7 +304,11 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 	}
 
 	texture->m_rhiTexture = rhiTexture;
+
+	ShaderAPIStats& stats = GetStatsMutable();
+	Atomic::Add(stats.textureMem, -texture->m_texSize);
 	texture->m_texSize = imgCalcMipMappedSize(texture->GetFormat(), newSize.width, newSize.height, 1, 0, mipmapCount) * newSize.arraySize;
+	Atomic::Add(stats.textureMem, texture->m_texSize);
 
 	// add default view
 	{

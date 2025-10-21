@@ -24,6 +24,10 @@ CWGPUTexture::~CWGPUTexture()
 
 void CWGPUTexture::Release()
 {
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Add(stats.textureMem, -m_texSize);
+	m_texSize = 0;
+
 	for (WGPUTextureView view : m_rhiViews)
 		wgpuTextureViewRelease(view);
 	m_rhiViews.clear();
@@ -62,7 +66,7 @@ bool CWGPUTexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& s
 
 	//m_rhiViews.reserve(arraySize);
 
-	m_texSize = image->GetMipMappedSize(mipStart) * arraySize;
+	m_texSize = image->GetMipMappedSize(mipStart, mipCount) * arraySize;
 	m_arraySize = arraySize;
 	m_mipCount = mipCount;
 	m_width = texWidth;
@@ -141,6 +145,9 @@ bool CWGPUTexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& s
 
 	wgpuTextureAddRef(rhiTexture);
 	m_rhiTexture = rhiTexture;
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Add(stats.textureMem, m_texSize);
 
 	// create main texture view
 	WGPUTextureViewDescriptor rhiTexViewDesc = {};

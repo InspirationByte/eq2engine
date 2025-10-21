@@ -850,10 +850,20 @@ bool CGameHost::Frame()
 		debugoverlay->Graph_AddValue(&s_fpsGraph, gamefps);
 	}
 
-	debugoverlay->Text(color_white, "System framerate: %i", fps);
-	debugoverlay->Text(color_white, "Game framerate: %i (ft=%g)", gamefps, gameFrameTime);
-	debugoverlay->Text(color_white, "DPS/DIPS: %i/%i", g_renderAPI->GetDrawCallsCount(), g_renderAPI->GetDrawIndexedPrimitiveCallsCount());
-	debugoverlay->Text(color_white, "primitives: %i", g_renderAPI->GetTrianglesCount());
+	const ShaderAPIStats& stats = g_renderAPI->GetStats();
+	size_t totalMem = PPMemGetUsage();
+
+	debugoverlay->Text(color_white, "SYS FPS: %i", fps);
+	debugoverlay->Text(color_white, "GAME FPS: %i (%.4f)", gamefps, gameFrameTime);
+	debugoverlay->Text(color_white, "DRAWS/INDIRECT: %i/%i", stats.drawCount, stats.indirectDrawCount);
+	debugoverlay->Text(color_white, "DISPATCHS/INDIRECT: %i/%i", stats.dispatchCount, stats.indirectDispatchCount);
+	debugoverlay->Text(color_white, "UPDATE CNT BUFFER/TEXTURE : %i/%i", stats.bufferUpdateCount, stats.textureUpdateCount);
+	debugoverlay->Text(color_white, "BIND GROUPS : %i", stats.bindGroups);
+	debugoverlay->Text(color_white, "PIPELINES : %i", stats.pipelines);
+	debugoverlay->Text(color_white, "MEM BUFFER : %.2f", stats.bufferMem / 1024.0f / 1024.0f);
+	debugoverlay->Text(color_white, "MEM TEXTURE : %.2f", stats.textureMem / 1024.0f / 1024.0f);
+	if (totalMem)
+		debugoverlay->Text(color_white, "MEM SYS : %.2f", totalMem / 1024.0f / 1024.0f);
 	debugoverlay->Draw(m_winSize.x, m_winSize.y, timescale * sys_timescale.GetFloat());
 	g_matSystem->Setup2D(m_winSize.x, m_winSize.y);
 

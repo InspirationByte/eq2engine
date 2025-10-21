@@ -42,10 +42,8 @@ public:
 // Renderer statistics
 //-------------------------------------------------------------
 
-	int						GetDrawCallsCount() const;
-	int						GetDrawIndexedPrimitiveCallsCount() const;
-	int						GetTrianglesCount() const;
-	void					ResetCounters();
+	const ShaderAPIStats&	GetStats() const { return m_stats; }
+	ShaderAPIStats&			GetStatsMutable() { return m_stats; }
 
 //-------------------------------------------------------------
 // MT Synchronization
@@ -102,15 +100,12 @@ protected:
 
 	ShaderAPIParams			m_params;
 	ShaderAPICapabilities	m_caps;
+	ShaderAPIStats			m_stats;
 
 	Map<int, ITexture*>		m_TextureList{ PP_SL };
 	Array<IVertexFormat*>	m_VFList{ PP_SL };
 
 	int						m_progressiveTextureFrequency{ 0 };
-
-	int						m_statDrawIndexedCount{ 0 };
-	int						m_statDrawCount{ 0 };
-	int						m_statPrimitiveCount{ 0 };
 };
 
 #ifdef _RETAIL

@@ -1247,7 +1247,6 @@ void CEGFViewFrame::ReDraw()
 			renderFlags |= RFLAG_ATTACHMENTS;
 
 		g_matSystem->GetConfiguration().wireframeMode = m_wireframe->IsChecked();
-		g_renderAPI->ResetCounters();
 
 		IGPURenderPassRecorderPtr modelDrawRenderPass = g_renderAPI->BeginRenderPass(
 			Builder<RenderPassDesc>()
@@ -1259,9 +1258,6 @@ void CEGFViewFrame::ReDraw()
 
 		// Now we can draw our model
 		g_model.Render(renderFlags, g_fCamDistance, m_lodSpin->GetValue(), m_lodOverride->GetValue(), g_frametime, modelDrawRenderPass);
-
-
-		debugoverlay->Text(color_white, "polygon count: %d\n", g_renderAPI->GetTrianglesCount());
 
 		// reset some values
 		g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);

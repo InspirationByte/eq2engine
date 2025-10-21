@@ -211,20 +211,21 @@ void CNVRHIRenderAPI::ReloadShaderPackage(int id)
 
 void CNVRHIRenderAPI::PrintAPIInfo() const
 {
-	Msg("ShaderAPI: WGPURenderAPI\n");
+	Msg("ShaderAPI: %s\n", GetRendererName());
 
 	Msg("  Maximum texture anisotropy: %d\n", m_caps.maxTextureAnisotropicLevel);
 	Msg("  Maximum drawable textures: %d\n", m_caps.maxTextureUnits);
 	Msg("  Maximum vertex textures: %d\n", m_caps.maxVertexTextureUnits);
 	Msg("  Maximum texture size: %d x %d\n", m_caps.maxTextureSize, m_caps.maxTextureSize);
 
-	MsgInfo("------ Loaded textures ------\n");
+	Msg("  Vertex format count: %d\n", m_VFList.numElem());
+	Msg("  Texture count: %d\n", m_TextureList.size());
 
 	CScopedMutex scoped(g_sapi_TextureMutex);
 	for (auto it = m_TextureList.begin(); !it.atEnd(); ++it)
 	{
 		CNVRHITexture* pTexture = static_cast<CNVRHITexture*>(*it);
-		MsgInfo("     %s (%d) - %dx%d\n", pTexture->GetName(), pTexture->Ref_Count(), pTexture->GetWidth(), pTexture->GetHeight());
+		MsgInfo("     %s (%d) - %dx%d (%.2f MB)\n", pTexture->GetName(), pTexture->Ref_Count(), pTexture->GetWidth(), pTexture->GetHeight(), pTexture->m_texSize / 1024.0f / 1024.0f);
 	}
 }
 
@@ -451,6 +452,11 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 		ASSERT_FAIL("Failed to create render target %s\n", texture->GetName());
 		return;
 	}
+
+	ShaderAPIStats& stats = GetStatsMutable();
+	Atomic::Add(stats.textureMem, -texture->m_texSize);
+	texture->m_texSize = imgCalcMipMappedSize(texture->GetFormat(), newSize.width, newSize.height, 1, 0, mipmapCount) * newSize.arraySize;
+	Atomic::Add(stats.textureMem, texture->m_texSize);
 
 	texture->m_rhiTexture = rhiTexture;
 	texture->m_rhiDimension = rhiTextureDesc.dimension;

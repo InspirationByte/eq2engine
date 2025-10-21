@@ -12,6 +12,9 @@
 
 CNVRHIBuffer::~CNVRHIBuffer()
 {
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Add(stats.bufferMem, -m_bufSize);
+
 	CNVRHIRenderAPI::Instance.ReleaseRHITransientBufferHeap(m_transientHeapIdx);
 	m_transientHeapIdx = -1;
 	m_rhiBuffer = nullptr;
@@ -97,6 +100,9 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 
 	if (!m_rhiBuffer)
 		return;
+
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Add(stats.bufferMem, m_bufSize);
 
 	//MsgInfo("NVRHI: created buffer %s - %lld bytes\n", GetDbgName(), sizeInBytes);
 	if(bufferUsageFlags & BUFFERUSAGE_TRANSIENT)

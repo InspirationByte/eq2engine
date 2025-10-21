@@ -217,6 +217,15 @@ CWGPUBindingLayout::~CWGPUBindingLayout()
 CWGPURenderPipeline::~CWGPURenderPipeline()
 {
 	wgpuRenderPipelineRelease(m_rhiRenderPipeline);
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Decrement(stats.pipelines);
+}
+
+CWGPURenderPipeline::CWGPURenderPipeline()
+{
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.pipelines);
 }
 
 //--------------------------------------------
@@ -224,6 +233,15 @@ CWGPURenderPipeline::~CWGPURenderPipeline()
 CWGPUComputePipeline::~CWGPUComputePipeline()
 {
 	wgpuComputePipelineRelease(m_rhiComputePipeline);
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Decrement(stats.pipelines);
+}
+
+CWGPUComputePipeline::CWGPUComputePipeline()
+{
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.pipelines);
 }
 
 //--------------------------------------------
@@ -231,6 +249,15 @@ CWGPUComputePipeline::~CWGPUComputePipeline()
 CWGPUBindGroup::~CWGPUBindGroup()
 {
 	wgpuBindGroupRelease(m_rhiBindGroup);
+
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Decrement(stats.bindGroups);
+}
+
+CWGPUBindGroup::CWGPUBindGroup()
+{
+	ShaderAPIStats& stats = CWGPURenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.bindGroups);
 }
 
 //--------------------------------------------

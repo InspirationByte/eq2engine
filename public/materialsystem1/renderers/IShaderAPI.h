@@ -33,6 +33,21 @@ struct ShaderAPIParams
 
 //---------------------------------------------------------------
 
+struct ShaderAPIStats
+{
+	uint64		bufferMem{ 0 };
+	uint64		textureMem{ 0 };
+	uint		bindGroups{ 0 };
+	uint		pipelines{ 0 };
+
+	uint		drawCount{ 0 };
+	uint		dispatchCount{ 0 };
+	uint		indirectDrawCount{ 0 };
+	uint		indirectDispatchCount{ 0 };
+	uint		bufferUpdateCount{ 0 };
+	uint		textureUpdateCount{ 0 };
+};
+
 //---------------------------------
 // Pipeline layout. Used for creating bind groups and pipelines
 class IGPUBindingLayout : public RefCountedObject<IGPUBindingLayout> {};
@@ -88,11 +103,7 @@ public:
 
 	virtual bool						IsDeviceActive() const = 0;
 	virtual bool						IsDeviceValidationActive() const = 0;
-
-	virtual int							GetDrawCallsCount() const = 0;
-	virtual int							GetDrawIndexedPrimitiveCallsCount() const = 0;
-	virtual int							GetTrianglesCount() const = 0;
-	virtual void						ResetCounters() = 0;
+	virtual const ShaderAPIStats&		GetStats() const = 0;
 
 //-------------------------------------------------------------
 // MT Synchronization
