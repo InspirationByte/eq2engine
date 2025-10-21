@@ -153,7 +153,7 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 	nvrhi::CommandListHandle writeCmd = CNVRHIRenderAPI::Instance.AcquireRHICommandList(cmdListIdx);
 	writeCmd->open();
 	writeCmd->setEnableAutomaticBarriers(false);
-	writeCmd->beginTrackingTextureState(rhiTexture, nvrhi::AllSubresources, nvrhi::ResourceStates::Common);
+	writeCmd->beginTrackingTextureState(rhiTexture, nvrhi::AllSubresources, nvrhi::ResourceStates::CopyDest);
 	for (int arrIdx = 0; arrIdx < arraySize; ++arrIdx)
 	{
 		int mipMapLevel = image->GetMipMapCount() - 1;
@@ -348,6 +348,7 @@ void CNVRHITexture::Unlock(IGPUCommandRecorder* writeCmdRecorder)
 			int cmdListIdx = -1;
 			nvrhi::CommandListHandle writeCmd = CNVRHIRenderAPI::Instance.AcquireRHICommandList(cmdListIdx);
 			writeCmd->open();
+			writeCmd->setTextureState(m_rhiTexture, nvrhi::TextureSubresourceSet(data.lockOrigin.mipLevel, 1, data.lockOrigin.arraySlice, 1), nvrhi::ResourceStates::CopyDest);
 			writeCmd->writeTexture(m_rhiTexture, data.lockOrigin.arraySlice, data.lockOrigin.mipLevel, data.lockData, data.lockPitch);
 			writeCmd->close();
 
