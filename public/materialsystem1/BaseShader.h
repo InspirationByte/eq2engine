@@ -25,6 +25,8 @@ struct MatSysCamera;
 	}														\
 	class C##name##Shader : public CBaseShader {			\
 	public:													\
+		inline static uint				s_sharedBindGroupVersion[MAX_BINDGROUPS] = { COM_UINT_MAX, COM_UINT_MAX, COM_UINT_MAX, COM_UINT_MAX }; \
+		inline static IGPUBindGroup*	s_sharedBindGroup[MAX_BINDGROUPS]; \
 		ArrayCRef<int> GetSupportedVertexLayoutIds() const override { \
 			return C##name##ShaderLocalNamespace::GetSupportedVertexLayoutIds(); \
 		} \
@@ -33,6 +35,20 @@ struct MatSysCamera;
 		C##name##Shader(IMaterial* material) : CBaseShader(material) {} \
 		void Init(IShaderAPI* renderAPI) override { \
 			CBaseShader::Init(renderAPI); ShaderInitParams(renderAPI); \
+		} \
+		void Unload() override { \
+			CBaseShader::Unload(); \
+			for (int i = 0; i < BINDGROUP_COUNT; ++i) { if(s_sharedBindGroup[i] && s_sharedBindGroup[i]->Ref_Drop()) s_sharedBindGroup[i] = nullptr; } \
+		} \
+		IGPUBindGroupPtr GetSharedBindGroup(EBindGroupId bindGroupId, uint version) const override {	\
+			if(version != COM_UINT_MAX && version != s_sharedBindGroupVersion[bindGroupId]) return nullptr; \
+			return IGPUBindGroupPtr(s_sharedBindGroup[bindGroupId]); \
+		} \
+		void SetSharedBindGroup(EBindGroupId bindGroupId, IGPUBindGroup* bindGroup, uint version) const override {	\
+			bindGroup->Ref_Grab(); \
+			if(s_sharedBindGroup[bindGroupId]) s_sharedBindGroup[bindGroupId]->Ref_Drop(); \
+			s_sharedBindGroup[bindGroupId] = bindGroup; \
+			s_sharedBindGroupVersion[bindGroupId] = version; \
 		}
 
 #define END_SHADER_CLASS };	\
@@ -125,7 +141,7 @@ class CBaseShader : public IMatSystemShader
 public:
 	CBaseShader(IMaterial* material);
 
-	void						Unload();
+	virtual void				Unload();
 
 	virtual void				Init(IShaderAPI* renderAPI);
 	void						InitShader(IShaderAPI* renderAPI);
@@ -145,12 +161,11 @@ protected:
 	class PipelineCreatorJob;
 	struct PipelineInfo
 	{
-		mutable IGPUBindGroupPtr	bindGroup[MAX_BINDGROUPS];
+		mutable IGPUBindGroupPtr	bindGroup[MAX_BINDGROUPS];	// pipeline bind groups
 		IGPURenderPipelinePtr		pipeline;
 		IGPUBindingLayoutPtr		layout;
 		int							vertexLayoutId{ 0 };
 		mutable uint				instMngToken{ COM_UINT_MAX };
-		mutable uint				renderPassVersion{ COM_UINT_MAX };
 	};
 
 	struct BindGroupSetupParams
@@ -163,6 +178,8 @@ protected:
 	};
 
 	virtual ArrayCRef<int>		GetSupportedVertexLayoutIds() const = 0;
+	virtual IGPUBindGroupPtr	GetSharedBindGroup(EBindGroupId bindGroupId, uint version) const = 0;
+	virtual void				SetSharedBindGroup(EBindGroupId bindGroupId, IGPUBindGroup* bindGroup, uint version) const = 0;
 
 	virtual IGPUBindGroupPtr	GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const { return nullptr; }
 	virtual void				FillBindGroupLayout_Constant(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const {}
@@ -179,6 +196,7 @@ protected:
 	const PipelineInfo&			EnsureRenderPipeline(IShaderAPI* renderAPI, const PipelineInputParams& inputParams, bool onInit);
 
 	IGPUBindGroupPtr			CreatePersistentBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const;
+	IGPUBindGroupPtr			CreateSharedBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, uint version, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const;
 	IGPUBindGroupPtr			CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const;
 	IGPUBindGroupPtr			GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo) const;
 
@@ -202,6 +220,8 @@ protected:
 	Vector4D					GetTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar) const;
 
 	using PipelineInfoMap = Map<uint, PipelineInfo>;
+	PipelineInfo*				m_lastPipelineInfo{ nullptr };
+	uint						m_lastPipelineInfoHash{ 0 };
 
 	mutable PipelineInfoMap		m_renderPipelines{ PP_SL };
 	MatSysShaderPipelineCache*	m_pipelineCache{ nullptr };

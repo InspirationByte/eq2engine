@@ -122,6 +122,15 @@ static const char* s_bindGroupNames[] = {
 	"Instances"
 };
 
+
+IGPUBindGroupPtr CBaseShader::CreateSharedBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, uint version, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const
+{
+	bindGroupDesc.groupIdx = bindGroupId;
+	IGPUBindGroupPtr bindGroup = renderAPI->CreateSharedBindGroup(pipelineInfo.layout, bindGroupDesc);
+	SetSharedBindGroup(bindGroupId, bindGroup, version);
+	return bindGroup;
+}
+
 IGPUBindGroupPtr CBaseShader::CreatePersistentBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const
 {
 	bindGroupDesc.groupIdx = bindGroupId;
@@ -356,13 +365,20 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 	const bool usePipelineCache = r_pipelineCacheDisable->GetBool() == false;
 
 	const uint pipelineId = GetRenderPipelineId(inputParams);
+	if (m_lastPipelineInfoHash == pipelineId && m_lastPipelineInfo)
+		return *m_lastPipelineInfo;
+
 	PipelineInfoMap::Iterator it;
 	
 	{
 		CScopedReadLocker lock(m_renderPipelinesLock);
 		it = m_renderPipelines.find(pipelineId);
 		if (it)
+		{
+			m_lastPipelineInfo = &(*it);
+			m_lastPipelineInfoHash = pipelineId;
 			return *it;
+		}
 	}
 	{
 		CScopedWriteLocker lock(m_renderPipelinesLock);
@@ -394,6 +410,9 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 
 			newPipelineInfo.pipeline = (*cacheIt).pipeline;
 			newPipelineInfo.layout = (*cacheIt).layout;
+
+			m_lastPipelineInfo = &newPipelineInfo;
+			m_lastPipelineInfoHash = pipelineId;
 			return newPipelineInfo;
 		}
 	}
@@ -442,6 +461,9 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 		if (!newPipelineInfo.pipeline)
 		{
 			MsgError("Failed to create render pipeline for shader %s", GetName());
+
+			m_lastPipelineInfo = &newPipelineInfo;
+			m_lastPipelineInfoHash = pipelineId;
 			return newPipelineInfo;
 		}
 
@@ -529,6 +551,8 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 		g_parallelJobs->GetJobMng()->StartJob(pipelineJob);
 	}
 
+	m_lastPipelineInfo = &newPipelineInfo;
+	m_lastPipelineInfoHash = pipelineId;
 	return newPipelineInfo;
 }
 
@@ -550,8 +574,10 @@ bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputPara
 
 	for (int i = 0; i < BINDGROUP_COUNT; ++i)
 	{
-		EBindGroupId bindGroupId = static_cast<EBindGroupId>(i);
-		passContext.recorder->SetBindGroup(bindGroupId, GetBindGroup(renderAPI, bindGroupId, setupParams));
+		const EBindGroupId bindGroupId = static_cast<EBindGroupId>(i);
+
+		IGPUBindGroupPtr bindGroup = GetBindGroup(renderAPI, bindGroupId, setupParams);
+		passContext.recorder->SetBindGroup(bindGroupId, bindGroup);
 	}
 	return true;
 }
