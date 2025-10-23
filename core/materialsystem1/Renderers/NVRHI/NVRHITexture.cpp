@@ -20,6 +20,9 @@
 CNVRHITexture::~CNVRHITexture()
 {
 	Release();
+
+	if ((m_flags & TEXFLAG_TRANSIENT) == 0)
+		CNVRHIRenderAPI::Instance.FreeTexture(this);
 }
 
 void CNVRHITexture::Release()
@@ -33,14 +36,6 @@ void CNVRHITexture::Release()
 	m_rhiViews.clear();
 	m_rhiTexture = nullptr;
 	m_transientHeapIdx = -1;
-}
-
-void CNVRHITexture::Ref_DeleteObject()
-{
-	if ((m_flags & TEXFLAG_TRANSIENT) == 0)
-		CNVRHIRenderAPI::Instance.FreeTexture(this);
-
-	RefCountedObject::Ref_DeleteObject();
 }
 
 bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& sampler, int flags)

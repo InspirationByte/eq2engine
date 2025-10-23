@@ -1,6 +1,7 @@
 #pragma once
 #include "renderers/IShaderAPI.h"
 #include "ShaderInfo.h"
+#include "ResourcePool.h"
 
 static_assert(MAX_BINDGROUPS <= nvrhi::c_MaxBindingLayouts, "Max binding layouts is not correct");
 
@@ -15,6 +16,8 @@ using NVRHIBindingLayoutsCRef = ArrayCRef<nvrhi::BindingLayoutHandle>;
 class CNVRHIBindingLayout : public IGPUBindingLayout
 {
 public:
+	DECLARE_RENDER_RESOURCE(CNVRHIBindingLayout);
+
 	struct EntryId
 	{
 		int nameId;
@@ -35,6 +38,8 @@ using CNVRHIBindingLayoutPtr = CRefPtr<CNVRHIBindingLayout>;
 class CNVRHIRenderPipeline : public IGPURenderPipeline
 {
 public:
+	DECLARE_RENDER_RESOURCE(CNVRHIRenderPipeline);
+
 	~CNVRHIRenderPipeline();
 	CNVRHIRenderPipeline();
 
@@ -51,6 +56,8 @@ public:
 class CNVRHIComputePipeline : public IGPUComputePipeline
 {
 public:
+	DECLARE_RENDER_RESOURCE(CNVRHIComputePipeline);
+
 	~CNVRHIComputePipeline();
 	CNVRHIComputePipeline();
 
@@ -65,6 +72,8 @@ public:
 class CNVRHIBindGroup : public IGPUBindGroup
 {
 public:
+	DECLARE_RENDER_RESOURCE(CNVRHIBindGroup);
+
 	~CNVRHIBindGroup();
 	CNVRHIBindGroup();
 
@@ -81,6 +90,8 @@ public:
 class CNVRHICommandBuffer : public IGPUCommandBuffer
 {
 public:
+	DECLARE_RENDER_RESOURCE(CNVRHICommandBuffer);
+
 	~CNVRHICommandBuffer() = default;
 
 	nvrhi::CommandListHandle	m_rhiCommandList;

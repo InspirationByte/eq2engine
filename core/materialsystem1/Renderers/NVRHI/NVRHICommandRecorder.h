@@ -1,9 +1,12 @@
 #pragma once
 #include "renderers/IGPUCommandRecorder.h"
+#include "ResourcePool.h"
 
 class CNVRHICommandRecorder : public IGPUCommandRecorder
 {
 public:
+	DECLARE_RENDER_RESOURCE(CNVRHICommandRecorder);
+
 	~CNVRHICommandRecorder() = default;
 
 	void*						GetUserData() const { return m_userData; }

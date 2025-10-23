@@ -23,6 +23,7 @@
 #include "ShaderAPI.h"
 #include "Texture.h"
 #include "VertexFormat.h"
+#include "ResourcePool.h"
 
 using namespace Threading;
 

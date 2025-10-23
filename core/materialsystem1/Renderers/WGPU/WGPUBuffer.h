@@ -8,12 +8,15 @@
 #pragma once
 #include "WGPUBackend.h"
 #include "renderers/IGPUBuffer.h"
+#include "ResourcePool.h"
 
 struct BufferInfo;
 
 class CWGPUBuffer : public IGPUBuffer
 {
 public:
+	DECLARE_RENDER_RESOURCE(CWGPUBuffer);
+
 	~CWGPUBuffer();
 	CWGPUBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* label = nullptr);
 

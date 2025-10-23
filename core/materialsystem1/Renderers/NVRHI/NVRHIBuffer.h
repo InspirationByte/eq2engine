@@ -8,20 +8,23 @@
 #pragma once
 #include "NVRHIRenderDefs.h"
 #include "renderers/IGPUBuffer.h"
+#include "ResourcePool.h"
 
 struct BufferInfo;
 
 class CNVRHIBuffer : public IGPUBuffer
 {
 public:
+	DECLARE_RENDER_RESOURCE(CNVRHIBuffer);
+
 	~CNVRHIBuffer();
 	CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* label);
 
-	int64		GetSize() const { return m_bufSize; }
+	int64					GetSize() const { return m_bufSize; }
 
-	void		Update(const void* data, int64 size, int64 offset);
-	MapFuture	Lock(int lockOfs, int sizeToLock, int flags);
-	void		Unlock();
+	void					Update(const void* data, int64 size, int64 offset);
+	MapFuture				Lock(int lockOfs, int sizeToLock, int flags);
+	void					Unlock();
 
 	nvrhi::IBuffer*			GetNVRHIBufferHandle() const { return m_rhiBuffer; }
 	nvrhi::ResourceStates	GetNVRHIResourceStates() const;

@@ -178,7 +178,7 @@ IGPUCommandBufferPtr CNVRHICommandRecorder::End()
 	m_rhiCommandList->close();
 
 	// simply transfer command list
-	CRefPtr<CNVRHICommandBuffer> commandBuffer = CRefPtr_new(CNVRHICommandBuffer);
+	CRefPtr<CNVRHICommandBuffer> commandBuffer = CNVRHICommandBuffer::Create();
 	commandBuffer->m_rhiCommandList = m_rhiCommandList;
 	commandBuffer->m_dbgName = std::move(m_dbgName);
 	commandBuffer->m_cmdListIdx = m_cmdListIdx;
@@ -192,7 +192,7 @@ IGPUCommandBufferPtr CNVRHICommandRecorder::End()
 
 IGPURenderPassRecorderPtr CNVRHICommandRecorder::BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData) const
 {
-	CRefPtr<CNVRHIRenderPassRecorder> renderPass = CRefPtr_new(CNVRHIRenderPassRecorder, m_rhiCommandList, m_cmdListIdx, userData);
+	CRefPtr<CNVRHIRenderPassRecorder> renderPass = CNVRHIRenderPassRecorder::Create(m_rhiCommandList, m_cmdListIdx, userData);
 	renderPass->InternalBeginRenderPass(renderPassDesc);
 
 	return IGPURenderPassRecorderPtr(renderPass);
@@ -202,7 +202,7 @@ IGPURenderPassRecorderPtr CNVRHICommandRecorder::BeginRenderPass(const RenderPas
 
 IGPUComputePassRecorderPtr CNVRHICommandRecorder::BeginComputePass(const char* name, void* userData) const
 {
-	CRefPtr<CNVRHIComputePassRecorder> renderPass = CRefPtr_new(CNVRHIComputePassRecorder, m_rhiCommandList, m_cmdListIdx, userData, name);
+	CRefPtr<CNVRHIComputePassRecorder> renderPass = CNVRHIComputePassRecorder::Create(m_rhiCommandList, m_cmdListIdx, userData, name);
 
 	return IGPUComputePassRecorderPtr(renderPass);
 }

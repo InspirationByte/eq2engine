@@ -1,10 +1,13 @@
 #pragma once
 #include "WGPUBackend.h"
 #include "renderers/IShaderAPI.h"
+#include "ResourcePool.h"
 
 class CWGPUComputePassRecorder : public IGPUComputePassRecorder
 {
 public:
+	DECLARE_RENDER_RESOURCE(CWGPUComputePassRecorder);
+
 	~CWGPUComputePassRecorder();
 
 	void					DbgPopGroup() const;

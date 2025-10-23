@@ -1,9 +1,12 @@
 #pragma once
 #include "renderers/IShaderAPI.h"
+#include "ResourcePool.h"
 
 class CNVRHIRenderPassRecorder : public IGPURenderPassRecorder
 {
 public:
+	DECLARE_RENDER_RESOURCE(CNVRHIRenderPassRecorder);
+
 	CNVRHIRenderPassRecorder(nvrhi::ICommandList* cmdList, int cmdListIdx, void* userData);
 	~CNVRHIRenderPassRecorder() = default;
 

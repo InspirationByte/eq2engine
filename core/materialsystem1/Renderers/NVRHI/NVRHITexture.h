@@ -8,13 +8,17 @@
 #pragma once
 #include <nvrhi/nvrhi.h>
 #include "Texture.h"
+#include "ResourcePool.h"
 
 class CNVRHITexture : public CTexture
 {
 	friend class CNVRHIRenderAPI;
 	friend class CNVRHISwapChainDXGI;
 	friend class CNVRHISwapChainVK;
+
 public:
+	DECLARE_RENDER_RESOURCE(CNVRHITexture);
+
 	~CNVRHITexture();
 
 	bool			Init(const CRefPtr<CImage> image, const SamplerStateParams& sampler, int flags = 0);
@@ -29,7 +33,6 @@ public:
 	nvrhi::TextureDimension				GetNVRHIDimension() const { return m_rhiDimension; }
 
 protected:
-	void			Ref_DeleteObject();
 
 	Array<nvrhi::TextureSubresourceSet>	m_rhiViews{ PP_SL };
 	nvrhi::TextureHandle	m_rhiTexture{ nullptr };

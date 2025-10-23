@@ -344,7 +344,7 @@ IGPUCommandBufferPtr CNVRHIRenderPassRecorder::End()
 	}
 	m_rhiCommandList->close();
 
-	CRefPtr<CNVRHICommandBuffer> commandBuffer = CRefPtr_new(CNVRHICommandBuffer);
+	CRefPtr<CNVRHICommandBuffer> commandBuffer = CNVRHICommandBuffer::Create();
 	commandBuffer->m_rhiCommandList = m_rhiCommandList;
 	commandBuffer->m_dbgName = std::move(m_dbgName);
 	commandBuffer->m_cmdListIdx = m_cmdListIdx;

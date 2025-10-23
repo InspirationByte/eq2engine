@@ -184,7 +184,7 @@ IGPUCommandBufferPtr CWGPUCommandRecorder::End()
 		return nullptr;
 	}
 
-	CRefPtr<CWGPUCommandBuffer> commandBuffer = CRefPtr_new(CWGPUCommandBuffer);
+	CRefPtr<CWGPUCommandBuffer> commandBuffer = CWGPUCommandBuffer::Create();
 
 	WGPUCommandBuffer rhiCommandBuffer = wgpuCommandEncoderFinish(m_rhiCommandEncoder, nullptr);
 	wgpuCommandEncoderRelease(m_rhiCommandEncoder);
@@ -208,7 +208,7 @@ IGPURenderPassRecorderPtr CWGPUCommandRecorder::BeginRenderPass(const RenderPass
 		return nullptr;
 
 	IVector2D renderTargetDims = 0;
-	CRefPtr<CWGPURenderPassRecorder> renderPass = CRefPtr_new(CWGPURenderPassRecorder);
+	CRefPtr<CWGPURenderPassRecorder> renderPass = CWGPURenderPassRecorder::Create();
 	for (int i = 0; i < renderPassDesc.colorTargets.numElem(); ++i)
 	{
 		const RenderPassDesc::ColorTargetDesc& colorTarget = renderPassDesc.colorTargets[i];
@@ -252,7 +252,7 @@ IGPUComputePassRecorderPtr CWGPUCommandRecorder::BeginComputePass(const char* na
 	if (!rhiComputePassEncoder)
 		return nullptr;
 
-	CRefPtr<CWGPUComputePassRecorder> renderPass = CRefPtr_new(CWGPUComputePassRecorder);
+	CRefPtr<CWGPUComputePassRecorder> renderPass = CWGPUComputePassRecorder::Create();
 
 	//renderPass->m_rhiCommandEncoder = rhiCommandEncoder;
 	renderPass->m_rhiComputePassEncoder = rhiComputePassEncoder;

@@ -1,10 +1,13 @@
 #pragma once
 #include "WGPUBackend.h"
 #include "renderers/IShaderAPI.h"
+#include "ResourcePool.h"
 
 class CWGPURenderPassRecorder : public IGPURenderPassRecorder
 {
 public:
+	DECLARE_RENDER_RESOURCE(CWGPURenderPassRecorder);
+
 	~CWGPURenderPassRecorder();
 
 	IVector2D				GetRenderTargetDimensions() const { return m_renderTargetDims; }

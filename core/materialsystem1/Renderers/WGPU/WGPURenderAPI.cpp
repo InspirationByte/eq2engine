@@ -207,7 +207,7 @@ void CWGPURenderAPI::PrintAPIInfo() const
 
 ITexturePtr CWGPURenderAPI::CreateTextureResource(const char* pszName)
 {
-	CRefPtr<CWGPUTexture> texture = CRefPtr_new(CWGPUTexture);
+	CRefPtr<CWGPUTexture> texture = CWGPUTexture::Create();
 	texture->SetName(pszName);
 
 	m_TextureList.insert(texture->m_nameHash, texture);
@@ -217,7 +217,7 @@ ITexturePtr CWGPURenderAPI::CreateTextureResource(const char* pszName)
 // It will add new rendertarget
 ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const TextureDesc& targetDesc)
 {
-	CRefPtr<CWGPUTexture> texture = CRefPtr_new(CWGPUTexture);
+	CRefPtr<CWGPUTexture> texture = CWGPUTexture::Create();
 	texture->SetName(targetDesc.name);
 	texture->SetFlags(targetDesc.flags | TEXFLAG_RENDERTARGET);
 	texture->SetFormat(targetDesc.format);
@@ -380,7 +380,7 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 
 IGPUBufferPtr CWGPURenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name) const
 {
-	CRefPtr<CWGPUBuffer> buffer = CRefPtr_new(CWGPUBuffer, bufferInfo, bufferUsageFlags, name);
+	CRefPtr<CWGPUBuffer> buffer = CWGPUBuffer::Create(bufferInfo, bufferUsageFlags, name);
 	//TODO: buffer->IsValid();
 
 	return IGPUBufferPtr(buffer);
@@ -448,7 +448,7 @@ IGPUBindingLayoutPtr CWGPURenderAPI::CreateBindingLayout(const BindingLayoutDesc
 	if (!rhiPipelineLayout)
 		return nullptr;
 
-	CRefPtr<CWGPUBindingLayout> pipelineLayout = CRefPtr_new(CWGPUBindingLayout);
+	CRefPtr<CWGPUBindingLayout> pipelineLayout = CWGPUBindingLayout::Create();
 	pipelineLayout->m_rhiBindGroupLayout.append(rhiBindGroupLayout);
 	pipelineLayout->m_rhiPipelineLayout = rhiPipelineLayout;
 
@@ -508,7 +508,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateSharedBindGroup(const IGPUBindingLayout* 
 	if (!rhiBindGroup)
 		return nullptr;
 	
-	CRefPtr<CWGPUBindGroup> bindGroup = CRefPtr_new(CWGPUBindGroup);
+	CRefPtr<CWGPUBindGroup> bindGroup = CWGPUBindGroup::Create();
 	bindGroup->m_rhiBindGroup = rhiBindGroup;
 
 	return IGPUBindGroupPtr(bindGroup);
@@ -555,7 +555,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPURenderPipeline* rende
 	if (!rhiBindGroup)
 		return nullptr;
 
-	CRefPtr<CWGPUBindGroup> bindGroup = CRefPtr_new(CWGPUBindGroup);
+	CRefPtr<CWGPUBindGroup> bindGroup = CWGPUBindGroup::Create();
 	bindGroup->m_rhiBindGroup = rhiBindGroup;
 
 	return IGPUBindGroupPtr(bindGroup);
@@ -597,7 +597,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUComputePipeline* comp
 	if (!rhiBindGroup)
 		return nullptr;
 
-	CRefPtr<CWGPUBindGroup> bindGroup = CRefPtr_new(CWGPUBindGroup);
+	CRefPtr<CWGPUBindGroup> bindGroup = CWGPUBindGroup::Create();
 	bindGroup->m_rhiBindGroup = rhiBindGroup;
 
 	return IGPUBindGroupPtr(bindGroup);
@@ -1109,7 +1109,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 			return nullptr;
 		}
 
-		CRefPtr<CWGPURenderPipeline> renderPipeline = CRefPtr_new(CWGPURenderPipeline);
+		CRefPtr<CWGPURenderPipeline> renderPipeline = CWGPURenderPipeline::Create();
 		renderPipeline->m_rhiRenderPipeline = rhiRenderPipeline;
 		renderPipeline->m_shaderInfo = &shaderInfo;
 		renderPipeline->m_vertexShaderModuleIdx = vertexShaderModuleIdx;
@@ -1128,7 +1128,7 @@ IGPUCommandRecorderPtr CWGPURenderAPI::CreateCommandRecorder(const char* name, v
 	if (!rhiCommandEncoder)
 		return nullptr;
 
-	CRefPtr<CWGPUCommandRecorder> commandRecorder = CRefPtr_new(CWGPUCommandRecorder);
+	CRefPtr<CWGPUCommandRecorder> commandRecorder = CWGPUCommandRecorder::Create();
 	commandRecorder->m_rhiCommandEncoder = rhiCommandEncoder;
 	commandRecorder->m_userData = userData;
 
@@ -1151,7 +1151,7 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 		return nullptr;
 
 	IVector2D renderTargetDims = 0;
-	CRefPtr<CWGPURenderPassRecorder> renderPass = CRefPtr_new(CWGPURenderPassRecorder);
+	CRefPtr<CWGPURenderPassRecorder> renderPass = CWGPURenderPassRecorder::Create();
 	for (int i = 0; i < renderPassDesc.colorTargets.numElem(); ++i)
 	{
 		const RenderPassDesc::ColorTargetDesc& colorTarget = renderPassDesc.colorTargets[i];
@@ -1272,7 +1272,7 @@ IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipeli
 			return nullptr;
 		}
 
-		CRefPtr<CWGPUComputePipeline> computePipeline = CRefPtr_new(CWGPUComputePipeline);
+		CRefPtr<CWGPUComputePipeline> computePipeline = CWGPUComputePipeline::Create();
 		computePipeline->m_rhiComputePipeline = rhiComputePipeline;
 		computePipeline->m_shaderInfo = &shaderInfo;
 		computePipeline->m_computeShaderModuleIdx = computeShaderModuleIdx;
@@ -1295,7 +1295,7 @@ IGPUComputePassRecorderPtr CWGPURenderAPI::BeginComputePass(const char* name, vo
 	if (!rhiComputePassEncoder)
 		return nullptr;
 
-	CRefPtr<CWGPUComputePassRecorder> renderPass = CRefPtr_new(CWGPUComputePassRecorder);
+	CRefPtr<CWGPUComputePassRecorder> renderPass = CWGPUComputePassRecorder::Create();
 	renderPass->m_rhiCommandEncoder = rhiCommandEncoder;
 	renderPass->m_rhiComputePassEncoder = rhiComputePassEncoder;
 	renderPass->m_userData = userData;

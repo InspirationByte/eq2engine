@@ -1,10 +1,13 @@
 #pragma once
 #include "WGPUBackend.h"
 #include "renderers/IGPUCommandRecorder.h"
+#include "ResourcePool.h"
 
 class CWGPUCommandRecorder : public IGPUCommandRecorder
 {
 public:
+	DECLARE_RENDER_RESOURCE(CWGPUCommandRecorder);
+
 	~CWGPUCommandRecorder();
 	void*						GetUserData() const { return m_userData; }
 

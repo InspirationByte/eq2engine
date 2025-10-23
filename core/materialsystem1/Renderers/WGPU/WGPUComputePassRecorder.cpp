@@ -88,7 +88,7 @@ IGPUCommandBufferPtr CWGPUComputePassRecorder::End()
 		return nullptr;
 	}
 
-	CRefPtr<CWGPUCommandBuffer> commandBuffer = CRefPtr_new(CWGPUCommandBuffer);
+	CRefPtr<CWGPUCommandBuffer> commandBuffer = CWGPUCommandBuffer::Create();
 
 	WGPUCommandBuffer rhiCommandBuffer = wgpuCommandEncoderFinish(m_rhiCommandEncoder, nullptr);
 	wgpuCommandEncoderRelease(m_rhiCommandEncoder);

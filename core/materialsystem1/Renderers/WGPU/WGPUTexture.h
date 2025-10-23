@@ -8,12 +8,15 @@
 #pragma once
 #include "WGPUBackend.h"
 #include "Texture.h"
+#include "ResourcePool.h"
 
 class CWGPUTexture : public CTexture
 {
 	friend class CWGPURenderAPI;
 	friend class CWGPUSwapChain;
 public:
+	DECLARE_RENDER_RESOURCE(CWGPUTexture);
+
 	~CWGPUTexture();
 
 	bool			Init(const CRefPtr<CImage> image, const SamplerStateParams& sampler, int flags = 0);

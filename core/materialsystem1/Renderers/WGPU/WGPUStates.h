@@ -1,12 +1,15 @@
 #pragma once
 #include "WGPUBackend.h"
 #include "renderers/IShaderAPI.h"
+#include "ResourcePool.h"
 
 struct ShaderInfo;
 
 class CWGPUBindingLayout : public IGPUBindingLayout
 {
 public:
+	DECLARE_RENDER_RESOURCE(CWGPUBindingLayout);
+
 	~CWGPUBindingLayout();
 
 	using BindGroupLayoutMap = Map<int, int>;
@@ -19,6 +22,8 @@ public:
 class CWGPURenderPipeline : public IGPURenderPipeline
 {
 public:
+	DECLARE_RENDER_RESOURCE(CWGPURenderPipeline);
+
 	~CWGPURenderPipeline();
 	CWGPURenderPipeline();
 
@@ -33,6 +38,8 @@ public:
 class CWGPUComputePipeline : public IGPUComputePipeline
 {
 public:
+	DECLARE_RENDER_RESOURCE(CWGPUComputePipeline);
+
 	~CWGPUComputePipeline();
 	CWGPUComputePipeline();
 
@@ -46,6 +53,8 @@ public:
 class CWGPUBindGroup : public IGPUBindGroup
 {
 public:
+	DECLARE_RENDER_RESOURCE(CWGPUBindGroup);
+
 	~CWGPUBindGroup();
 	CWGPUBindGroup();
 
@@ -55,6 +64,8 @@ public:
 class CWGPUCommandBuffer : public IGPUCommandBuffer
 {
 public:
+	DECLARE_RENDER_RESOURCE(CWGPUCommandBuffer);
+
 	~CWGPUCommandBuffer();
 
 	WGPUCommandBuffer	m_rhiCommandBuffer{ nullptr };

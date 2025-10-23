@@ -253,7 +253,7 @@ const char* CNVRHIRenderAPI::GetRendererName() const
 
 ITexturePtr CNVRHIRenderAPI::CreateTextureResource(const char* pszName)
 {
-	CRefPtr<CNVRHITexture> texture = CRefPtr_new(CNVRHITexture);
+	CRefPtr<CNVRHITexture> texture = CNVRHITexture::Create();
 	texture->SetName(pszName);
 
 	m_TextureList.insert(texture->m_nameHash, texture);
@@ -263,7 +263,7 @@ ITexturePtr CNVRHIRenderAPI::CreateTextureResource(const char* pszName)
 // It will add new rendertarget
 ITexturePtr	CNVRHIRenderAPI::CreateRenderTarget(const TextureDesc& targetDesc)
 {
-	CRefPtr<CNVRHITexture> texture = CRefPtr_new(CNVRHITexture);
+	CRefPtr<CNVRHITexture> texture = CNVRHITexture::Create();
 	texture->SetName(targetDesc.name);
 	texture->SetFlags(targetDesc.flags | TEXFLAG_RENDERTARGET);
 	texture->SetFormat(targetDesc.format);
@@ -511,7 +511,7 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 
 IGPUBufferPtr CNVRHIRenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name) const
 {
-	CRefPtr<CNVRHIBuffer> buffer = CRefPtr_new(CNVRHIBuffer, bufferInfo, bufferUsageFlags, name);
+	CRefPtr<CNVRHIBuffer> buffer = CNVRHIBuffer::Create(bufferInfo, bufferUsageFlags, name);
 	//TODO: buffer->IsValid();
 
 	return IGPUBufferPtr(buffer);
@@ -519,7 +519,7 @@ IGPUBufferPtr CNVRHIRenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int bu
 
 IGPUBindingLayoutPtr CNVRHIRenderAPI::CreateBindingLayout(const BindingLayoutDesc& layoutDesc) const
 {
-	CRefPtr<CNVRHIBindingLayout> pipelineLayout = CRefPtr_new(CNVRHIBindingLayout);
+	CRefPtr<CNVRHIBindingLayout> pipelineLayout = CNVRHIBindingLayout::Create();
 	pipelineLayout->m_dbgName = layoutDesc.name;
 
 	// make name to index map
@@ -556,7 +556,7 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(const BindGroupDesc& bindG
 		return nullptr;
 	}
 
-	CRefPtr<CNVRHIBindGroup> bindGroup = CRefPtr_new(CNVRHIBindGroup);
+	CRefPtr<CNVRHIBindGroup> bindGroup = CNVRHIBindGroup::Create();
 	bindGroup->m_dbgName = bindGroupDesc.name;
 	bindGroup->m_rhiBindingSets.insert(0, std::move(rhiBindSet));
 
@@ -573,7 +573,7 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateSharedBindGroup(const IGPUBindingLayout*
 
 	const CNVRHIBindingLayout* bindingLayoutImpl = static_cast<const CNVRHIBindingLayout*>(bindingLayout);
 
-	CRefPtr<CNVRHIBindGroup> bindGroup = CRefPtr_new(CNVRHIBindGroup);
+	CRefPtr<CNVRHIBindGroup> bindGroup = CNVRHIBindGroup::Create();
 	bindGroup->m_bindingLayout.Assign(bindingLayoutImpl);
 	bindGroup->m_dbgName = bindGroupDesc.name;
 	bindGroup->MakeResourceRefs(bindGroupDesc);
@@ -1050,11 +1050,11 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 			return nullptr;
 		}
 
-		renderPipeline = CRefPtr_new(CNVRHIRenderPipeline);
+		renderPipeline = CNVRHIRenderPipeline::Create();
 		renderPipeline->m_rhiRenderPipeline = rhiRenderPipeline;
 	}
 #else
-	renderPipeline = CRefPtr_new(CNVRHIRenderPipeline);
+	renderPipeline = CNVRHIRenderPipeline::Create();
 #endif
 
 	renderPipeline->m_shaderInfo = &shaderInfo;
@@ -1145,7 +1145,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 			return nullptr;
 		}
 
-		CRefPtr<CNVRHIComputePipeline> computePipeline = CRefPtr_new(CNVRHIComputePipeline);
+		CRefPtr<CNVRHIComputePipeline> computePipeline = CNVRHIComputePipeline::Create();
 		computePipeline->m_shaderInfo = &shaderInfo;
 		computePipeline->m_rhiComputePipeline = rhiComputePipeline;
 		computePipeline->m_dbgName = std::move(pipelineName);
@@ -1170,7 +1170,7 @@ IGPUCommandRecorderPtr CNVRHIRenderAPI::CreateCommandRecorder(const char* name, 
 	nvrhi::CommandListHandle rhiCommandList = AcquireRHICommandList(cmdListIdx);
 	rhiCommandList->open();
 
-	CRefPtr<CNVRHICommandRecorder> commandRecorder = CRefPtr_new(CNVRHICommandRecorder);
+	CRefPtr<CNVRHICommandRecorder> commandRecorder = CNVRHICommandRecorder::Create();
 	commandRecorder->m_dbgName = name;
 	commandRecorder->m_rhiCommandList = rhiCommandList;
 	commandRecorder->m_userData = userData;
@@ -1185,7 +1185,7 @@ IGPURenderPassRecorderPtr CNVRHIRenderAPI::BeginRenderPass(const RenderPassDesc&
 	nvrhi::CommandListHandle rhiCommandList = AcquireRHICommandList(cmdListIdx);
 	rhiCommandList->open();
 
-	CRefPtr<CNVRHIRenderPassRecorder> renderPass = CRefPtr_new(CNVRHIRenderPassRecorder, rhiCommandList, cmdListIdx, userData);
+	CRefPtr<CNVRHIRenderPassRecorder> renderPass = CNVRHIRenderPassRecorder::Create(rhiCommandList, cmdListIdx, userData);
 	renderPass->InternalBeginRenderPass(renderPassDesc);
 
 	return IGPURenderPassRecorderPtr(renderPass);
@@ -1197,7 +1197,7 @@ IGPUComputePassRecorderPtr CNVRHIRenderAPI::BeginComputePass(const char* name, v
 	nvrhi::CommandListHandle rhiCommandList = AcquireRHICommandList(cmdListIdx);
 	rhiCommandList->open();
 
-	CRefPtr<CNVRHIComputePassRecorder> renderPass = CRefPtr_new(CNVRHIComputePassRecorder, rhiCommandList, cmdListIdx, userData, name);
+	CRefPtr<CNVRHIComputePassRecorder> renderPass = CNVRHIComputePassRecorder::Create(rhiCommandList, cmdListIdx, userData, name);
 	return IGPUComputePassRecorderPtr(renderPass);
 }
 

@@ -20,6 +20,9 @@
 CWGPUTexture::~CWGPUTexture()
 {
 	Release();
+
+	if ((m_flags & TEXFLAG_TRANSIENT) == 0)
+		CWGPURenderAPI::Instance.FreeTexture(this);
 }
 
 void CWGPUTexture::Release()
