@@ -70,7 +70,10 @@ bool CNVRHIRenderLibD3D12::InitCaps()
 #undef INIT_FN
 
 	g_consoleCommands->RegisterCommand(&d3d12_adapter);
+
+#ifdef NVRHI_WITH_VALIDATION
 	g_consoleCommands->RegisterCommand(&d3d12_validation);
+#endif
 
 	return true;
 }
@@ -82,6 +85,7 @@ IShaderAPI* CNVRHIRenderLibD3D12::GetRenderer() const
 
 bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 {
+#ifdef NVRHI_WITH_VALIDATION
 	const bool isDeviceValidationEnabled = (g_cmdLine->Find("-rhivalidation") != -1);
 	if (isDeviceValidationEnabled)
 	{
@@ -89,6 +93,7 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 		nvrhi_validation.SetBool(true);
 		nvrhi_breakOnError.SetBool(true);
 	}
+#endif
 
 	EqWString adapterName;
 	AnsiUnicodeConverter(adapterName, d3d12_adapter.GetString());
@@ -102,22 +107,25 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 		EqString descAdapterName;
 		AnsiUnicodeConverter(descAdapterName, rhiAdapterDesc.Description);
 		Msg("* NVRHI Adapter: %s\n", descAdapterName.ToCString());
-
-		//rhiAdapterDesc.DedicatedVideoMemory
 	}
 
+	HRESULT hr;
+	UINT dxgiFactoryFlags = 0;
+
+#ifdef NVRHI_WITH_VALIDATION
 	const bool debugRuntimeLayer = d3d12_validation.GetBool();
 
-	HRESULT hr;
 	if (debugRuntimeLayer)
 	{
 		RefCountPtr<ID3D12Debug> pDebug;
 		hr = s_d3d12GetDebugInterfaceFnPtr(IID_PPV_ARGS(&pDebug));
 		if (hr == S_OK && pDebug)
 			pDebug->EnableDebugLayer();
-	}
 
-	UINT dxgiFactoryFlags = debugRuntimeLayer ? DXGI_CREATE_FACTORY_DEBUG : 0;
+		dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+	}
+#endif
+
 	hr = CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_dxgiFactory));
 	HR_ASSERT(hr, "Cannot create IDXGIFactory2 interface");
 
@@ -127,6 +135,7 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 		IID_PPV_ARGS(&m_rhiDevice12));
 	HR_RETURN(hr, "Failed to create D3D12 device");
 
+#ifdef NVRHI_WITH_VALIDATION
 	if (debugRuntimeLayer)
 	{
 		RefCountPtr<ID3D12InfoQueue> rhiInfoQueue;
@@ -153,7 +162,7 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 			rhiInfoQueue->AddStorageFilterEntries(&filter);
 		}
 	}
-
+#endif // NVRHI_WITH_VALIDATION
 	{
 		RefCountPtr<IDXGIFactory5> pDxgiFactory5;
 		if (SUCCEEDED(m_dxgiFactory->QueryInterface(IID_PPV_ARGS(&pDxgiFactory5))))
@@ -165,6 +174,7 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 			}
 		}
 	}
+
 
 	rhiAdapter->QueryInterface(IID_PPV_ARGS(&m_dxgiAdapter));
 
@@ -255,10 +265,16 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	deviceDesc.pCopyCommandQueue = m_rhiCopyQueue;
 
 	m_nvrhiDevice = nvrhi::d3d12::createDevice(deviceDesc);
+#ifdef NVRHI_WITH_VALIDATION
 	if (nvrhi_validation.GetBool())
+	{
 		CNVRHIRenderAPI::Instance.m_rhiDevice = nvrhi::validation::createValidationLayer(m_nvrhiDevice);
+	}
 	else
+#endif
+	{
 		CNVRHIRenderAPI::Instance.m_rhiDevice = m_nvrhiDevice;
+	}
 
 	// create default swap chain
 	if (params.windowInfo.windowType != RHI_WINDOW_HANDLE_UNKNOWN)

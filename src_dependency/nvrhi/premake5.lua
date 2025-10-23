@@ -11,13 +11,10 @@ project "nvrhi"
 		-- no NVRHI_WITH_RTXMU
 		-- no NVRHI_WITH_AFTERMATH
 	}
-	
 	files
 	{
 		"NVRHI/include/**.h",
-		"NVRHI/src/**.h",
 		"NVRHI/src/common/**.cpp",
-		"NVRHI/src/validation/**.cpp"
 	}
 	removefiles {
 		"NVRHI/src/common/dxgi*.cpp",	
@@ -37,21 +34,20 @@ project "nvrhi"
 		}
 		includedirs {
 			VULKAN_SDK_LOCATION.."/include",
+			"NVRHI/thirdparty/Vulkan-Headers/include"
 		}
 		libdirs { 
 			VULKAN_SDK_LOCATION.."./lib",
 		}
 	end
 	
-	filter "configurations:Debug"
-		defines { "NVRHI_WITH_VALIDATION" }
-	
 	filter "system:windows"
 		defines {
 			"NVRHI_D3D12_WITH_D3D12MA",
 		}
 		includedirs {
-			"./NVRHI/thirdparty/D3D12MA/include"
+			"NVRHI/thirdparty/D3D12MA/include",
+			"NVRHI/thirdparty/DirectX-Headers/include"
 		}
 		files {
 			"NVRHI/src/d3d11/**.cpp",
@@ -60,9 +56,24 @@ project "nvrhi"
 			"NVRHI/thirdparty/D3D12MA/src/**.cpp",
 			"NVRHI/thirdparty/D3D12MA/include/**.h"
 		}
-		
+
+project "nvrhi-validation"
+	kind "StaticLib"
+	properties {
+		"thirdpartylib"
+	}
+	uses {
+		"nvrhi"
+	}
+	files {
+		"NVRHI/src/validation/**.cpp",	
+	}
+	filter "configurations:Retail or configurations:Profile"
+		kind "None"
+
 usage "nvrhi"
 	includedirs { 
-		"./NVRHI/include"
+		"NVRHI/include",
+		"NVRHI/thirdparty/DirectX-Headers/include"
 	}
 	links "nvrhi"

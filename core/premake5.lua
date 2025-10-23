@@ -125,7 +125,7 @@ project "eqNVRHI"
 	properties { "unitybuild" }
 	uses {
 		"coreLib", "frameworkLib", "e2Core",
-		"eqRHIBaseLib", "nvrhi"
+		"eqRHIBaseLib", "nvrhi", "nvrhi-validation"
 	}
 	defines{
 		"EQRHI_NVRHI",

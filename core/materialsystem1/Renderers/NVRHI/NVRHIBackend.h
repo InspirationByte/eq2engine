@@ -1,5 +1,9 @@
 #pragma once
 
+#if !defined(_RETAIL) && !defined(_PROFILE)
+#define NVRHI_WITH_VALIDATION
+#endif
+
 enum ENVRHIBackendType : int
 {
 	NVRHI_BACKEND_D3D11 = 0,
