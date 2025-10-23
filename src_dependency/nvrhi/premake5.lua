@@ -19,6 +19,9 @@ project "nvrhi"
 		"NVRHI/src/common/**.cpp",
 		"NVRHI/src/validation/**.cpp"
 	}
+	removefiles {
+		"NVRHI/src/common/dxgi*.cpp",	
+	}
 	includedirs {
 		"./NVRHI/include"
 	}
@@ -53,6 +56,7 @@ project "nvrhi"
 		files {
 			"NVRHI/src/d3d11/**.cpp",
 			"NVRHI/src/d3d12/**.cpp",
+			"NVRHI/src/common/dxgi*.cpp",
 			"NVRHI/thirdparty/D3D12MA/src/**.cpp",
 			"NVRHI/thirdparty/D3D12MA/include/**.h"
 		}
