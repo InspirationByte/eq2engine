@@ -216,7 +216,6 @@ struct GRIMBaseRenderer::GPULodList
 	int		firstLodInfo = -1; // item index in buffer pointing to GPULodInfo
 };
 
-// this is only here for software reference impl
 struct GRIMBaseRenderer::GPUInstanceBound
 {
 	int		first{ 0 };

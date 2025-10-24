@@ -765,23 +765,27 @@ void GRIMBaseRenderer::FilterInstances_Compute(IntermediateState& intermediate)
 	{
 		IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("FilterInstances");
 
-		// filter instances by group mask
-		computeRecorder->SetPipeline(m_filterInstancesPipeline);
-		computeRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(m_filterInstancesPipeline,
+		IGPUBindGroupPtr srcInstancesBindGroup = g_renderAPI->CreateBindGroup(m_filterInstancesPipeline,
 			Builder<BindGroupDesc>()
 			.GroupIndex(0)
 			.Buffer(StringIdConst24("archetypeIds"), m_instAllocator.GetInstanceArchetypesBuffer())
 			.Buffer(StringIdConst24("groupMasks"), m_instAllocator.GetInstanceGroupMaskBuffer())
 			.Buffer(StringIdConst24("drawParams"), rendState.filterParamsBuffer, 0, sizeof(params))
 			.End()
-		));
-		computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_filterInstancesPipeline,
+		);
+
+		IGPUBindGroupPtr drawnInstancesBindGroup = g_renderAPI->CreateBindGroup(m_filterInstancesPipeline,
 			Builder<BindGroupDesc>()
 			.GroupIndex(1)
 			.Buffer(StringIdConst24("instanceInfos"), filteredInstanceInfosBuffer)
 			.Buffer(StringIdConst24("countBuffer"), filteredInstanceCountBuffer)
 			.End()
-		));
+		);
+
+		// filter instances by group mask
+		computeRecorder->SetPipeline(m_filterInstancesPipeline);
+		computeRecorder->SetBindGroup(0, srcInstancesBindGroup);
+		computeRecorder->SetBindGroup(1, drawnInstancesBindGroup);
 
 		const IVector2D workGroups = VisCalcWorkSize(params.maxInstanceIds);
 		computeRecorder->DispatchWorkgroups(workGroups.x, workGroups.y);
@@ -856,22 +860,24 @@ void GRIMBaseRenderer::UpdateInstanceBounds_Compute(IntermediateState& intermedi
 
 	GRIMRenderState& rendState = intermediate.renderState;
 
-	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("CalcInstanceBounds");
-	computeRecorder->SetPipeline(m_instCalcBoundsPipeline);
-	computeRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(m_instCalcBoundsPipeline,
+	IGPUBindGroupPtr instancesBindGroup = g_renderAPI->CreateBindGroup(m_instCalcBoundsPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(0)
 		.Buffer(StringIdConst24("instanceInfos"), rendState.culledInstanceInfosBuffer)
 		.Buffer(StringIdConst24("instanceSrcIds"), rendState.sortedInstanceIdsBuffer)
-		.End())
-	);
-	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_instCalcBoundsPipeline,
+		.End());
+
+	IGPUBindGroupPtr drawDataBindGroup = g_renderAPI->CreateBindGroup(m_instCalcBoundsPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(1)
 		.Buffer(StringIdConst24("drawInstanceBounds"), rendState.drawInstanceBoundsBuffer)
 		.Buffer(StringIdConst24("instanceIds"), rendState.instanceIdsBuffer)
-		.End())
-	);
+		.End());
+
+	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("CalcInstanceBounds");
+	computeRecorder->SetPipeline(m_instCalcBoundsPipeline);
+	computeRecorder->SetBindGroup(0, instancesBindGroup);
+	computeRecorder->SetBindGroup(1, drawDataBindGroup);
 
 	// TODO: DispatchWorkgroupsIndirect (use as result from VisibilityCullInstances)
 	IVector2D workGroups = VisCalcWorkSize(intermediate.maxNumberOfObjects);
@@ -885,21 +891,17 @@ void GRIMBaseRenderer::UpdateIndirectInstances_Compute(IntermediateState& interm
 
 	GRIMRenderState& rendState = intermediate.renderState;
 
-	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("UpdateIndirectInstances");
-	computeRecorder->SetPipeline(m_instPrepareDrawIndirectPipeline);
-	computeRecorder->SetBindGroup(0, m_updateBindGroup0);
-	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
+	IGPUBindGroupPtr drawDataBindGroup = g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(1)
 		.Buffer(StringIdConst24("drawInstanceBounds"), rendState.drawInstanceBoundsBuffer)
-		.End())
-	);
-	computeRecorder->SetBindGroup(2, g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
-		Builder<BindGroupDesc>()
-		.GroupIndex(2)
 		.Buffer(StringIdConst24("indirectDraws"), rendState.drawInvocationsBuffer)
-		.End())
-	);
+		.End());
+
+	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("UpdateIndirectInstances");
+	computeRecorder->SetPipeline(m_instPrepareDrawIndirectPipeline);
+	computeRecorder->SetBindGroup(0, m_updateBindGroup0);
+	computeRecorder->SetBindGroup(1, drawDataBindGroup);
 
 	constexpr int GROUP_SIZE = 32;
 	const int numBounds = m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS;
