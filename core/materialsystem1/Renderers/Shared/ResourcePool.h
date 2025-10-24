@@ -40,17 +40,22 @@ struct RenderResources
 	static ResourceType* Alloc()
 	{
 		ResourcePool<ResourceType>& resPool = GetResourcePool<ResourceType>();
-		Threading::CScopedMutex m(resPool.mutex);
-		return resPool.memPool.allocate();
+		{
+			Threading::CScopedMutex m(resPool.mutex);
+			return resPool.memPool.allocate();
+		}
 	}
 
 	template<typename ResourceType>
 	static void Free(ResourceType* res)
 	{
-		ResourcePool<ResourceType>& effPool = GetResourcePool<ResourceType>();
-		Threading::CScopedMutex m(effPool.mutex);
 		res->~ResourceType();
-		effPool.memPool.deallocate(res);
+
+		ResourcePool<ResourceType>& resPool = GetResourcePool<ResourceType>();
+		{
+			Threading::CScopedMutex m(resPool.mutex);
+			resPool.memPool.deallocate(res);
+		}
 	}
 
 	static void Terminate();
