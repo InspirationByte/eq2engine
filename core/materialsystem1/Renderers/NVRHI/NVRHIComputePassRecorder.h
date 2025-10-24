@@ -37,6 +37,7 @@ public:
 	IGPUComputePipelinePtr		m_pipeline;
 
 	nvrhi::CommandListHandle	m_rhiCommandList{ nullptr };
+	IGPUBuffer*					m_lastIndirectBuffer{ nullptr };
 	EqString					m_dbgName;
 	void*						m_userData{ nullptr };
 	int							m_cmdListIdx{ -1 };

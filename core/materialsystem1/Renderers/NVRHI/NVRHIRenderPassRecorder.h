@@ -61,6 +61,7 @@ public:
 	GPUBufferView				m_rhiVertexBuffers[MAX_VERTEXSTREAM];
 	IGPUBindGroupPtr			m_bindings[MAX_BINDGROUPS];
 	GPUBufferView				m_indexBuffer;
+	IGPUBuffer*					m_lastIndirectBuffer{ nullptr };
     nvrhi::FramebufferHandle	m_rhiFramebuffer;
     nvrhi::Viewport				m_rhiViewport;
 	nvrhi::Rect					m_rhiScissor;

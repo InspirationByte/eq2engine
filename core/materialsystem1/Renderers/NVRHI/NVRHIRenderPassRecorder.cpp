@@ -108,30 +108,38 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 
 void CNVRHIRenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)
 {
-	for (int i = 0; i < MAX_BINDGROUPS; ++i)
-		m_bindings[i] = nullptr;
+	const bool pipelineChanged = m_pipeline != pipeline;
+	m_graphicsStateDirty = m_graphicsStateDirty || pipelineChanged;
+	if (pipelineChanged)
+	{
+		for (int i = 0; i < MAX_BINDGROUPS; ++i)
+			m_bindings[i] = nullptr;
+	}
 
 	m_pipeline.Assign(pipeline);
-	m_graphicsStateDirty = true;
 }
 
 void CNVRHIRenderPassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup)
 {
+	m_graphicsStateDirty = m_graphicsStateDirty || m_bindings[groupIndex] != bindGroup;
 	m_bindings[groupIndex].Assign(bindGroup);
-	m_graphicsStateDirty = true;
 }
 
 void CNVRHIRenderPassRecorder::SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset, int64 size)
 {
-	m_rhiVertexBuffers[slot] = GPUBufferView(vertexBuffer, offset, size);
-	m_graphicsStateDirty = true;
+	GPUBufferView vtxBuffer(vertexBuffer, offset, size);
+	m_graphicsStateDirty = m_graphicsStateDirty || vtxBuffer != m_rhiVertexBuffers[slot];
+
+	m_rhiVertexBuffers[slot] = vtxBuffer;
 }
 
 void CNVRHIRenderPassRecorder::SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat indexFormat, int64 offset, int64 size)
 {
-	m_indexBuffer = GPUBufferView(indexBuf, offset, size);
+	GPUBufferView idxBuffer(indexBuf, offset, size);
+	m_graphicsStateDirty = m_graphicsStateDirty || idxBuffer != m_indexBuffer || m_indexFormat != indexFormat;
+
+	m_indexBuffer = idxBuffer;
 	m_indexFormat = indexFormat;
-	m_graphicsStateDirty = true;
 }
 
 void CNVRHIRenderPassRecorder::SetViewport(const AARectangle& rectangle, float minDepth, float maxDepth)
@@ -194,7 +202,8 @@ void CNVRHIRenderPassRecorder::DrawIndexedIndirect(IGPUBuffer* indirectBuffer, i
 	ASSERT_MSG(indirectBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDIRECT, "buffer doesn't have Indirect buffer usage bit");
 
 	// since indirect buffer is part of state, we need to update it
-	m_graphicsStateDirty = true;
+	m_graphicsStateDirty = m_graphicsStateDirty || indirectBuffer != m_lastIndirectBuffer;
+	m_lastIndirectBuffer = indirectBuffer;
 
 	CommitGraphicsState(indirectBufferImpl->GetNVRHIBufferHandle());
 
@@ -209,6 +218,11 @@ void CNVRHIRenderPassRecorder::DrawIndirect(IGPUBuffer* indirectBuffer, int indi
 	CNVRHIBuffer* indirectBufferImpl = static_cast<CNVRHIBuffer*>(indirectBuffer);
 	ASSERT(indirectBufferImpl);
 	ASSERT_MSG(indirectBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDIRECT, "buffer doesn't have Indirect buffer usage bit");
+
+	// since indirect buffer is part of state, we need to update it
+	m_graphicsStateDirty = m_graphicsStateDirty || indirectBuffer != m_lastIndirectBuffer;
+	m_lastIndirectBuffer = indirectBuffer;
+
 	CommitGraphicsState(indirectBufferImpl->GetNVRHIBufferHandle());
 
 	m_rhiCommandList->drawIndirect(indirectOffset);
@@ -216,7 +230,6 @@ void CNVRHIRenderPassRecorder::DrawIndirect(IGPUBuffer* indirectBuffer, int indi
 	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
 	Atomic::Increment(stats.indirectDrawCount);
 }
-
 
 void CNVRHIRenderPassRecorder::MultiDrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset)
 {

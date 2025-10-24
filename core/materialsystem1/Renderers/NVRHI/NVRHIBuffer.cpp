@@ -209,24 +209,25 @@ Future<BufferMapData> CNVRHIBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 		return errorPromise.CreateFuture();
 	}
 
-	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
-
 	Promise<BufferMapData> promise;
 
-	BufferMapData lockData;
-	lockData.flags = flags;
-	lockData.size = sizeToLock;
-	lockData.offset = lockOfs;
+	g_renderWorker.Execute(__func__, [this, promise, flags, sizeToLock, lockOfs]() {
+		nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
 
-	// mapBuffer is blocking
-	lockData.data = rhiDevice->mapBuffer(m_rhiBuffer, (m_usageFlags & BUFFERUSAGE_READ) ? nvrhi::CpuAccessMode::Read : nvrhi::CpuAccessMode::Write);
-	if(!lockData.data)
-		promise.SetError(-1, "Failed to lock buffer, wrong usage?");
-	else
-		promise.SetResult(std::move(lockData));
+		BufferMapData lockData;
+		lockData.flags = flags;
+		lockData.size = sizeToLock;
+		lockData.offset = lockOfs;
+
+		lockData.data = rhiDevice->mapBuffer(m_rhiBuffer, (m_usageFlags & BUFFERUSAGE_READ) ? nvrhi::CpuAccessMode::Read : nvrhi::CpuAccessMode::Write);
+		if (!lockData.data)
+			promise.SetError(-1, "Failed to lock buffer, wrong usage?");
+		else
+			promise.SetResult(std::move(lockData));
+		return 0;
+	});
 
 	m_isLocked = true;
-
 	return promise.CreateFuture();
 }
 

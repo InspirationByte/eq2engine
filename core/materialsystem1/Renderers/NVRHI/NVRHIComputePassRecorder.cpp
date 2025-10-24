@@ -82,7 +82,8 @@ void CNVRHIComputePassRecorder::DispatchWorkgroupsIndirect(IGPUBuffer* indirectB
 	ASSERT_MSG(indirectBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDIRECT, "buffer doesn't have Indirect buffer usage bit");
 
 	// since indirect buffer is part of state, we need to update it
-	m_computeStateDirty = true;
+	m_computeStateDirty = m_computeStateDirty || indirectBuffer != m_lastIndirectBuffer;
+	m_lastIndirectBuffer = indirectBuffer;
 
 	CommitComputeState(indirectBufferImpl->GetNVRHIBufferHandle());
 	m_rhiCommandList->dispatchIndirect(indirectOffset);
