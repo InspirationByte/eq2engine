@@ -34,11 +34,6 @@ ComputeSortShader::ComputeSortShader()
 		.ShaderLayoutId(StringIdConst24("InitKeys"))
 		.End()
 	);
-	m_prepareParamBufferPipeline = g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
-		.ShaderName(BITONIC_MERGE_SORT_SHADERNAME)
-		.ShaderLayoutId(StringIdConst24("PrepareParamBuffer"))
-		.End()
-	);
 	m_sortPipelines.insert(COMPUTESORT_FLOAT, g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
 		.ShaderName(BITONIC_MERGE_SORT_SHADERNAME)
 		.ShaderLayoutId(StringIdConst24("SortFloat"))
@@ -100,12 +95,11 @@ void ComputeSortShader::RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUC
 	if (keysCount <= 0)
 		return;
 
-	const uint n = keysCount;
-	uint N = 1;
-	while (N < n)
-		N *= 2;
+	const ShaderAPICapabilities& rhiCaps = g_renderAPI->GetCaps();
 
-	const int TILE_SIZE = 256;
+	uint N = 1;
+	while (N < keysCount)
+		N *= 2;
 
 	struct ParamsData
 	{
@@ -113,88 +107,48 @@ void ComputeSortShader::RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUC
 		uint strideTrailingZeros = 0;
 		uint innerReminder = 0;
 		uint innerLastIdx = 0;
-
-		uint indirectX = 1;
-		uint _indirectY = 1;
-		uint _indirectZ = 1;
-		uint _padding = 0;
 	};
-	static thread_local Array<ParamsData>	paramsDataList{ PP_SL };
 
-	paramsDataList.clear();
-	paramsDataList.reserve(N);
-
-	for (uint mergeGroupSize = 2; mergeGroupSize <= N; mergeGroupSize <<= 1)
-	{
-		uint innerReminder = 0;
-		for (uint stride = mergeGroupSize >> 1; stride >= 1; stride >>= 1)
-		{
-			const uint strideTrailingZeros = trailingZeroCnt(stride);
-			const uint innerLastIdx = (mergeGroupSize >> strideTrailingZeros) - 1;
-
-			const uint x = (n + TILE_SIZE - 1) - (n - 1) % TILE_SIZE;
-			ASSERT(x % TILE_SIZE == 0);
-
-			ParamsData& data = paramsDataList.append();
-			data.stride = stride;
-			data.strideTrailingZeros = strideTrailingZeros;
-			data.innerReminder = innerReminder;
-			data.innerLastIdx = innerLastIdx;
-			data.indirectX = x / TILE_SIZE;
-
-			// Starting from the second iteration, inner index
-			// should be odd to be the left one
-			innerReminder = 1;
-		}
-	}
-
-	const ShaderAPICapabilities& rhiCaps = g_renderAPI->GetCaps();
-
+	const uint L = (N >= 2) ? (32 - leadingZeroCnt(N)) - 1 : 0;
+	const int paramsDataCount = static_cast<size_t>(L) * (L + 1) / 2;
 	const int alignedParamSize = max(sizeof(ParamsData), rhiCaps.minStorageBufferOffsetAlignment);
 
-	IGPUBufferPtr paramsBuffer = m_paramsBuffer;
+	const BufferInfo paramBufferInfo(alignedParamSize, paramsDataCount);
 
-	const BufferInfo paramBufferInfo(alignedParamSize, paramsDataList.numElem());
+	IGPUBufferPtr paramsBuffer = m_paramsBuffer;
 	if(!paramsBuffer || paramsBuffer->GetSize() < paramBufferInfo.GetBufferSize())
 	{
-		paramsBuffer = g_renderAPI->CreateBuffer(paramBufferInfo, BUFFERUSAGE_UNIFORM | BUFFERUSAGE_STORAGE | BUFFERUSAGE_INDIRECT, "SortParams");
+		paramsBuffer = g_renderAPI->CreateBuffer(paramBufferInfo, BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST, "SortParams");
 		m_paramsBuffer = paramsBuffer;
-	}
 
-	{
-		struct SmolStruct
-		{
-			int steps;
-			int paramCount;
-		} smol;
-		smol.steps = alignedParamSize / sizeof(ParamsData);
-		smol.paramCount = paramsDataList.numElem();
+		// create parameter list
+		static thread_local Array<ParamsData> paramsDataList{ PP_SL };
+		paramsDataList.clear();
+		paramsDataList.reserve(paramsDataCount);
 
-		IGPUBufferPtr sortTmpParamsBuffer = m_tmpParamsBuffer;
-		const BufferInfo tmpParamsBufferInfo(sizeof(ParamsData), paramsDataList.numElem() + 1);
-		if(!sortTmpParamsBuffer || sortTmpParamsBuffer->GetSize() < tmpParamsBufferInfo.GetBufferSize())
+		for (uint mergeGroupSize = 2; mergeGroupSize <= N; mergeGroupSize <<= 1)
 		{
-			sortTmpParamsBuffer = g_renderAPI->CreateBuffer(tmpParamsBufferInfo, BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "SortTmpParams");
-			m_tmpParamsBuffer = sortTmpParamsBuffer;
+			uint innerReminder = 0;
+			for (uint stride = mergeGroupSize >> 1; stride >= 1; stride >>= 1)
+			{
+				const uint strideTrailingZeros = trailingZeroCnt(stride);
+				const uint innerLastIdx = (mergeGroupSize >> strideTrailingZeros) - 1;
+
+				ParamsData& data = paramsDataList.append();
+				data.stride = stride;
+				data.strideTrailingZeros = strideTrailingZeros;
+				data.innerReminder = innerReminder;
+				data.innerLastIdx = innerLastIdx;
+
+				// Starting from the second iteration, inner index
+				// should be odd to be the left one
+				innerReminder = 1;
+			}
 		}
 
-		cmdRecorder->WriteBuffer(sortTmpParamsBuffer, &smol, sizeof(smol), 0);
-		cmdRecorder->WriteBuffer(sortTmpParamsBuffer, paramsDataList.ptr(), sizeof(ParamsData) * paramsDataList.numElem(), sizeof(smol));
-
-		IGPUBindGroupPtr paramsGroup = g_renderAPI->CreateBindGroup(m_prepareParamBufferPipeline, Builder<BindGroupDesc>()
-			.GroupIndex(0)
-			.Buffer(StringIdConst24("srcParams"), sortTmpParamsBuffer)
-			.Buffer(StringIdConst24("dstParams"), paramsBuffer)
-			.End()
-		);
-
-		IGPUComputePassRecorderPtr computePassRecorder = cmdRecorder->BeginComputePass("PrepareParams");
-		computePassRecorder->SetPipeline(m_prepareParamBufferPipeline);
-		computePassRecorder->SetBindGroup(0, paramsGroup);
-
-		constexpr int GROUP_SIZE = 16;
-		computePassRecorder->DispatchWorkgroups(paramsDataList.numElem() / GROUP_SIZE + 1);
-		computePassRecorder->Complete();
+		// write params aligned
+		for (int i = 0; i < paramsDataCount; ++i)
+			cmdRecorder->WriteBuffer(paramsBuffer, &paramsDataList[i], sizeof(ParamsData), alignedParamSize * i);
 	}
 
 	IGPUBindGroupPtr sortDataGroup = g_renderAPI->CreateBindGroup(sortPipeline, Builder<BindGroupDesc>()
@@ -208,7 +162,12 @@ void ComputeSortShader::RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUC
 	computePassRecorder->SetPipeline(sortPipeline);
 	computePassRecorder->SetBindGroup(0, sortDataGroup);
 
-	for (int i = 0; i < paramsDataList.numElem(); ++i)
+	constexpr int SORT_TILE_SIZE = 256;
+	const uint x = (keysCount + SORT_TILE_SIZE - 1) - (keysCount - 1) % SORT_TILE_SIZE;
+	ASSERT(x% SORT_TILE_SIZE == 0);
+
+	const uint workgroupCountX = x / SORT_TILE_SIZE;
+	for (int i = 0; i < paramsDataCount; ++i)
 	{
 		IGPUBindGroupPtr paramsBindGroup = g_renderAPI->CreateBindGroup(sortPipeline, Builder<BindGroupDesc>()
 			.GroupIndex(1)
@@ -216,7 +175,7 @@ void ComputeSortShader::RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUC
 			.End()
 		);
 		computePassRecorder->SetBindGroup(1, paramsBindGroup);
-		computePassRecorder->DispatchWorkgroupsIndirect(paramsBuffer, alignedParamSize * i + offsetOf(ParamsData, indirectX));
+		computePassRecorder->DispatchWorkgroups(workgroupCountX);
 	}
 
 	computePassRecorder->Complete();
