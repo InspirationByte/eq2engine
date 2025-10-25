@@ -138,6 +138,7 @@ static nvrhi::Format GetNVRHITextureFormat(ETextureFormat formatWithFlags)
 
 // EIndexFormat
 static nvrhi::Format g_nvrhiIndexFormat[] = {
+	nvrhi::Format::UNKNOWN,
 	nvrhi::Format::R16_UINT,
 	nvrhi::Format::R32_UINT,
 };

@@ -1038,7 +1038,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 	rhiRenderPipelineDesc.primitive.frontFace = WGPUFrontFace_CW; // for now always, TODO
 	rhiRenderPipelineDesc.primitive.cullMode = g_wgpuCullMode[pipelineDesc.primitive.cullMode];
 	rhiRenderPipelineDesc.primitive.topology = g_wgpuPrimTopology[pipelineDesc.primitive.topology];
-	rhiRenderPipelineDesc.primitive.stripIndexFormat = g_wgpuStripIndexFormat[pipelineDesc.primitive.stripIndex];
+	rhiRenderPipelineDesc.primitive.stripIndexFormat = g_wgpuIndexFormat[pipelineDesc.primitive.stripIndex];
 
 	EqString pipelineName = EqString::Format("%s-%s:%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString(), shaderInfo.GetShaderQueryStr(pipelineDesc.shaderQuery).ToCString());
 	rhiRenderPipelineDesc.label = _WSTR(pipelineName);

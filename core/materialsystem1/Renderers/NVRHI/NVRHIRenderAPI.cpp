@@ -1031,8 +1031,10 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 
 	// Primitive toplogy
 	rhiGraphicsPipelineDesc.renderState.rasterState.cullMode = g_nvrhiCullMode[pipelineDesc.primitive.cullMode];
-	rhiGraphicsPipelineDesc.setPrimType(g_nvrhiPrimitiveType[pipelineDesc.primitive.topology]);
-	rhiGraphicsPipelineDesc.setInputLayout(rhiInputLayout);
+	rhiGraphicsPipelineDesc
+		.setPrimType(g_nvrhiPrimitiveType[pipelineDesc.primitive.topology])
+		.setStripIndexFormat(g_nvrhiIndexFormat[pipelineDesc.primitive.stripIndex])
+		.setInputLayout(rhiInputLayout);
 
 	// TODO: use framebuffer info and VK_KHR_dynamic_rendering on Vulkan
 	CRefPtr<CNVRHIRenderPipeline> renderPipeline;

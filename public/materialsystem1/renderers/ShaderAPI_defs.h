@@ -326,17 +326,17 @@ enum EPrimTopology : uint8
 	PRIM_TRIANGLE_STRIP
 };
 
-enum EIndexFormat : uint8
-{
-	INDEXFMT_UINT16 = 0,
-	INDEXFMT_UINT32,
-};
-
 enum EStripIndexFormat : uint8
 {
 	STRIPINDEX_NONE = 0,
 	STRIPINDEX_UINT16,
 	STRIPINDEX_UINT32,
+};
+
+enum EIndexFormat : uint8
+{
+	INDEXFMT_UINT16 = STRIPINDEX_UINT16,
+	INDEXFMT_UINT32 = STRIPINDEX_UINT32,
 };
 
 typedef int (*PRIMCOUNTER)(int numPrimitives);

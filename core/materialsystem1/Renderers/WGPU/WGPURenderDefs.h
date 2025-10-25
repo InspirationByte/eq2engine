@@ -266,7 +266,7 @@ static WGPUPrimitiveTopology g_wgpuPrimTopology[] = {
 };
 
 // EStripIndexFormat
-static WGPUIndexFormat g_wgpuStripIndexFormat[] = {
+static WGPUIndexFormat g_wgpuIndexFormat[] = {
 	WGPUIndexFormat_Undefined,
 	WGPUIndexFormat_Uint16,
 	WGPUIndexFormat_Uint32,
@@ -310,10 +310,3 @@ static WGPUStoreOp g_wgpuStoreOp[] = {
 	WGPUStoreOp_Store,
 	WGPUStoreOp_Discard,
 };
-
-// EIndexFormat
-static WGPUIndexFormat g_wgpuIndexFormat[] = {
-	WGPUIndexFormat_Uint16,
-	WGPUIndexFormat_Uint32,
-};
-
