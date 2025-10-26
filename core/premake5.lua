@@ -129,7 +129,8 @@ project "eqNVRHI"
 	}
 	defines{
 		"EQRHI_NVRHI",
-		"RENDERER_TYPE=1"
+		"RENDERER_TYPE=1",
+		"VK_USE_PLATFORM_WIN32_KHR"
 	}
 	files {
 		"materialsystem1/Renderers/NVRHI/**.cpp",

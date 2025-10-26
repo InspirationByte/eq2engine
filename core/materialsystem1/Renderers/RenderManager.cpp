@@ -58,14 +58,13 @@ IRenderLibrary* CEqRenderManager::CreateRenderer(const ShaderAPIParams& params) 
 
 #elif RENDERER_TYPE == RHI_NVRHI
 
+	EqStringRef backendName = r_backend.GetString();
+
 	s_currentRenderLib = &s_NVRHIRenderLibD3D12;
 
-	EqStringRef backendName = r_backend.GetString();
-	/*if (backendName.CompareCaseIns("D3D11"))
+	/*if (!backendName.CompareCaseIns("D3D11"))
 		s_currentRenderLib = &s_NVRHIRenderLibD3D11;
-	else*/ if (backendName.CompareCaseIns("D3D12"))
-		s_currentRenderLib = &s_NVRHIRenderLibD3D12;
-	else if (backendName.CompareCaseIns("Vulkan"))
+	else*/ if (!backendName.CompareCaseIns("Vulkan"))
 		s_currentRenderLib = &s_NVRHIRenderLibVK;
 
 #elif RENDERER_TYPE == RHI_WGPU

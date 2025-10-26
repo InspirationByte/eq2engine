@@ -7,6 +7,9 @@
 
 #pragma once
 #include <nvrhi/vulkan.h>
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
+#include <vulkan/vulkan.hpp>
+
 #include "../IRenderLibrary.h"
 #include "../RenderWorker.h"
 
@@ -52,6 +55,24 @@ protected:
 
 	CRefPtr<CNVRHISwapChainVK>	m_currentSwapChain;
 	CRefPtr<CNVRHISwapChainVK>	m_defaultSwapChain;
+
+	uint32_t					m_vkDeviceApiVersion = VK_HEADER_VERSION_COMPLETE;
+	PFN_vkGetInstanceProcAddr	m_vkGetInstanceProcAddr = nullptr;
+
+	vk::Instance				m_vkInstance;
+	vk::DebugReportCallbackEXT	m_vkDebugReportCallback;
+
+	vk::PhysicalDevice			m_vkPhysicalDevice;
+	int							m_vkGraphicsQueueFamily = -1;
+	int							m_vkComputeQueueFamily = -1;
+	int							m_vkTransferQueueFamily = -1;
+	int							m_vkPresentQueueFamily = -1;
+
+	vk::Device					m_vkDevice;
+	vk::Queue					m_vkGraphicsQueue;
+	vk::Queue					m_vkComputeQueue;
+	vk::Queue					m_vkTransferQueue;
+	vk::Queue					m_vkPresentQueue;
 
 	nvrhi::DeviceHandle			m_nvrhiDevice;
 	nvrhi::EventQueryHandle		m_nvrhiFrameWaitQuery;

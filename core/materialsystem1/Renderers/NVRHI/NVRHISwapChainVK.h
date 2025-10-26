@@ -7,6 +7,9 @@
 
 #pragma once
 #include <nvrhi/vulkan.h>
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
+#include <vulkan/vulkan.hpp>
+
 #include "renderers/ISwapChain.h"
 #include "renderers/ShaderAPI_defs.h"
 #include "NVRHITexture.h"
@@ -23,7 +26,7 @@ public:
 
 	void			SetVSync(bool enable);
 
-	void* GetWindow() const;
+	void*			GetWindow() const;
 	ITexturePtr		GetBackbuffer() const;
 
 	void			GetBackbufferSize(int& wide, int& tall) const;
@@ -37,13 +40,15 @@ protected:
 
 	void			UpdateBackbufferView() const;
 
-	//DXGI_SWAP_CHAIN_DESC1				m_dxgiSwapChainDesc{};
-	//Array<nvrhi::TextureHandle>			m_rhiSwapChainTextures{ PP_SL };
-	//Array<RefCountPtr<ID3D12Resource>>	m_d3d12SwapChainBuffers{ PP_SL };
-	//RefCountPtr<IDXGISwapChain3>		m_dxgiSwapChain;
+	vk::SurfaceKHR				m_vkWindowSurface;
+	vk::SwapchainKHR			m_vkSwapChain;
 
-	CRefPtr<CNVRHITexture>		m_textureRef;
+	Array<nvrhi::TextureHandle>	m_rhiSwapChainTextures{ PP_SL };
+	Array<vk::Image>			m_vkSwapChainBuffers{ PP_SL };
+	uint						m_swapChainIndex{ COM_UINT_MAX };
+
 	nvrhi::Format				m_swapChainFormat{ nvrhi::Format::RGBA8_UNORM };
+	CRefPtr<CNVRHITexture>		m_textureRef;
 
 	RenderWindowInfo			m_winInfo;
 	int							m_vSync{ 0 };
