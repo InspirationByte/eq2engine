@@ -1,4 +1,5 @@
 #pragma once
+#include <nvrhi/nvrhi.h>
 #include "renderers/ITexture.h"
 
 #if !defined(_RETAIL) && !defined(_PROFILE)

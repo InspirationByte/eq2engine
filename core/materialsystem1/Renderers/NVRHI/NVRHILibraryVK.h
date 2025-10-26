@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include <nvrhi/nvrhi.h>
+#include <nvrhi/vulkan.h>
 #include "../IRenderLibrary.h"
 #include "../RenderWorker.h"
 
@@ -20,6 +20,7 @@ class CNVRHIRenderLibVK
 public:
 	CNVRHIRenderLibVK();
 
+	bool			InitCaps();
 	bool			InitAPI(const ShaderAPIParams& params);
 	void			ExitAPI();
 	
@@ -48,7 +49,13 @@ protected:
 
 	Array<CNVRHISwapChainVK*>	m_swapChains{ PP_SL };
 	int							m_swapChainCounter{ 0 };
-	CNVRHISwapChainVK*			m_currentSwapChain{ nullptr };
+
+	CRefPtr<CNVRHISwapChainVK>	m_currentSwapChain;
+	CRefPtr<CNVRHISwapChainVK>	m_defaultSwapChain;
+
+	nvrhi::DeviceHandle			m_nvrhiDevice;
+	nvrhi::EventQueryHandle		m_nvrhiFrameWaitQuery;
+
 	bool						m_windowed{ false };
 };
 

@@ -1,5 +1,3 @@
-local VULKAN_SDK_LOCATION = os.getenv("VULKAN_SDK") or ""
-
 project "nvrhi"
 	properties {
 		"staticlib",
@@ -64,6 +62,7 @@ project "nvrhi-validation"
 usage "nvrhi"
 	includedirs { 
 		"NVRHI/include",
+		"NVRHI/thirdparty/Vulkan-Headers/include",
 		"NVRHI/thirdparty/DirectX-Headers/include"
 	}
 	links "nvrhi"

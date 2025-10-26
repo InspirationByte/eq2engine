@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include <nvrhi/nvrhi.h>
+#include <nvrhi/validation.h>
 
 #include "core/core_common.h"
 #include "core/IConsoleCommands.h"
@@ -24,30 +25,12 @@
 
 DECLARE_CVAR(vulkan_validation, "0", nullptr, CV_UNREGISTERED);
 DECLARE_CVAR(vulkan_break_on_error, "0", nullptr, CV_UNREGISTERED);
+DECLARE_CVAR_F(nvrhi_validation);
+DECLARE_CVAR_F(nvrhi_breakOnError);
 
 
 CNVRHIRenderLibVK::CNVRHIRenderLibVK()
 {
-	m_windowed = true;
-	m_endFrameWait.Raise();
-}
-
-CNVRHIRenderLibVK::~CNVRHIRenderLibVK()
-{
-}
-
-bool CNVRHIRenderLibVK::InitCaps()
-{
-	m_mainThreadId = Threading::GetCurrentThreadID();
-
-	// optionally use WGPUInstanceDescriptor::nextInChain for WGPUDawnTogglesDescriptor
-	// with various toggles enabled or disabled: https://dawn.googlesource.com/dawn/+/refs/heads/main/src/dawn/native/Toggles.cpp
-
-	m_instance = wgpuCreateInstance(nullptr);
-	if (!m_instance)
-		return false;
-
-	return true;
 }
 
 IShaderAPI* CNVRHIRenderLibVK::GetRenderer() const
@@ -55,37 +38,74 @@ IShaderAPI* CNVRHIRenderLibVK::GetRenderer() const
 	return &CNVRHIRenderAPI::Instance;
 }
 
+bool CNVRHIRenderLibVK::IsMainThread(uintptr_t threadId) const
+{
+	return g_renderWorker.GetThreadID() == threadId;
+}
+
+bool CNVRHIRenderLibVK::InitCaps()
+{
+	CNVRHIRenderAPI::Instance.m_rhiBackendType = NVRHI_BACKEND_VULKAN;
+	/*
+	m_d3d12Lib = LoadLibraryA("d3d12.dll");
+	if (!m_d3d12Lib) {
+		MsgError("Failed to load d3d12.dll");
+		return false;
+	}
+
+#define INIT_FN(fn, name) fn = reinterpret_cast<decltype(fn)>(GetProcAddress(m_d3d12Lib, name))
+	INIT_FN(s_d3d12CreateDeviceFnPtr, "D3D12CreateDevice");
+	INIT_FN(s_d3d12GetDebugInterfaceFnPtr, "D3D12GetDebugInterface");
+	INIT_FN(s_d3d12SerializeVersionedRootSignatureFnPtr, "D3D12SerializeVersionedRootSignature");
+#undef INIT_FN
+
+	g_consoleCommands->RegisterCommand(&d3d12_adapter);
+
+#ifdef NVRHI_WITH_VALIDATION
+	g_consoleCommands->RegisterCommand(&d3d12_validation);
+#endif
+*/
+
+	return true;
+}
+
 bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 {
+	constexpr int jobQueueSize = 1024;
+
+	g_renderWorker.Init(this, nullptr, jobQueueSize);
+
+	m_nvrhiFrameWaitQuery = m_nvrhiDevice->createEventQuery();
+	m_nvrhiDevice->setEventQuery(m_nvrhiFrameWaitQuery, nvrhi::CommandQueue::Graphics);
 
 	{
 		// fill ShaderAPI capabilities
 		ShaderAPICapabilities& caps = CNVRHIRenderAPI::Instance.m_caps;
-		caps.minUniformBufferOffsetAlignment = supLimits.minUniformBufferOffsetAlignment;
-		caps.minStorageBufferOffsetAlignment = supLimits.minStorageBufferOffsetAlignment;
-		caps.maxDynamicUniformBuffersPerPipelineLayout = supLimits.maxDynamicUniformBuffersPerPipelineLayout;
-		caps.maxDynamicStorageBuffersPerPipelineLayout = supLimits.maxDynamicStorageBuffersPerPipelineLayout;
-		caps.maxVertexStreams = supLimits.maxVertexBuffers;
-		caps.maxVertexAttributes = supLimits.maxVertexAttributes;
-		caps.maxTextureSize = supLimits.maxTextureDimension2D;
-		caps.maxTextureArrayLayers = supLimits.maxTextureArrayLayers;
-		caps.maxTextureUnits = supLimits.maxSampledTexturesPerShaderStage;
-		caps.maxVertexTextureUnits = supLimits.maxSampledTexturesPerShaderStage;
-		caps.maxBindGroups = supLimits.maxBindGroups;
-		caps.maxBindingsPerBindGroup = supLimits.maxBindingsPerBindGroup;
+		caps.minUniformBufferOffsetAlignment = nvrhi::c_ConstantBufferOffsetSizeAlignment;
+		caps.minStorageBufferOffsetAlignment = 256;
+		caps.maxDynamicUniformBuffersPerPipelineLayout = 1000;
+		caps.maxDynamicStorageBuffersPerPipelineLayout = 1000;
+		caps.maxVertexStreams = MAX_VERTEXSTREAM;
+		caps.maxVertexAttributes = MAX_GENERIC_ATTRIB * 4;
+		caps.maxTextureSize = 32768;
+		caps.maxTextureArrayLayers = 1024;
+		caps.maxTextureUnits = MAX_TEXTUREUNIT;
+		caps.maxVertexTextureUnits = MAX_TEXTUREUNIT;
+		caps.maxBindGroups = MAX_BINDGROUPS;
+		caps.maxBindingsPerBindGroup = 1000;
 		caps.maxTextureAnisotropicLevel = 16;
-		caps.maxRenderTargets = supLimits.maxColorAttachments;
+		caps.maxRenderTargets = MAX_RENDERTARGETS;
 
-		caps.maxComputeInvocationsPerWorkgroup = supLimits.maxComputeInvocationsPerWorkgroup;
-		caps.maxComputeWorkgroupSizeX = supLimits.maxComputeWorkgroupSizeX;
-		caps.maxComputeWorkgroupSizeY = supLimits.maxComputeWorkgroupSizeY;
-		caps.maxComputeWorkgroupSizeZ = supLimits.maxComputeWorkgroupSizeZ;
-		caps.maxComputeWorkgroupsPerDimension = supLimits.maxComputeWorkgroupsPerDimension;
+		caps.maxComputeInvocationsPerWorkgroup = 1024;
+		caps.maxComputeWorkgroupSizeX = 1024;
+		caps.maxComputeWorkgroupSizeY = 1024;
+		caps.maxComputeWorkgroupSizeZ = 64;
+		caps.maxComputeWorkgroupsPerDimension = 65535;
 		caps.multiDrawIndirectSupport = false;	// NVRHI doesn't support this currently
 
 		caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED
-									| SHADER_CAPS_PIXEL_SUPPORTED
-									| SHADER_CAPS_COMPUTE_SUPPORTED;
+			| SHADER_CAPS_PIXEL_SUPPORTED
+			| SHADER_CAPS_COMPUTE_SUPPORTED;
 
 		for (int i = FORMAT_R8; i <= FORMAT_RGBA32F; i++)
 		{
@@ -106,51 +126,101 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 			caps.textureFormatsSupported[i] = true;
 
 		caps.textureFormatsSupported[FORMAT_ATI1N] = false;
+	}
 
+	nvrhi::vulkan::DeviceDesc deviceDesc;
+	deviceDesc.errorCB = &CNVRHIMessageCallback::Instance;
+	/*
+	deviceDesc.pDevice = m_rhiDevice12;
+	deviceDesc.pAdapter = m_dxgiAdapter;
+	deviceDesc.pGraphicsCommandQueue = m_rhiGraphicsQueue;
+	deviceDesc.pComputeCommandQueue = m_rhiComputeQueue;
+	deviceDesc.pCopyCommandQueue = m_rhiCopyQueue;
+	*/
+	m_nvrhiDevice = nvrhi::vulkan::createDevice(deviceDesc);
+#ifdef NVRHI_WITH_VALIDATION
+	if (nvrhi_validation.GetBool())
+	{
+		CNVRHIRenderAPI::Instance.m_rhiDevice = nvrhi::validation::createValidationLayer(m_nvrhiDevice);
+	}
+	else
+#endif
+	{
+		CNVRHIRenderAPI::Instance.m_rhiDevice = m_nvrhiDevice;
 	}
 
 	// create default swap chain
-	m_currentSwapChain = static_cast<CNVRHISwapChainVK*>(CreateSwapChain(params.windowInfo));
-
-	CNVRHIRenderAPI::Instance.m_rhiDevice = m_rhiDevice;
-	CNVRHIRenderAPI::Instance.m_rhiQueue = m_deviceQueue;
+	m_defaultSwapChain = CRefPtr<CNVRHISwapChainVK>(static_cast<CNVRHISwapChainVK*>(CreateSwapChain(params.windowInfo).Ptr()));
 
 	return true;
 }
 
 void CNVRHIRenderLibVK::ExitAPI()
 {
-	m_endFrameWait.Wait(500);
 	g_renderWorker.Shutdown();
 
-	m_swapChains.clear();
+	//if (m_defaultSwapChain)
+	//	m_defaultSwapChain->m_dxgiSwapChain->SetFullscreenState(false, nullptr);
+
+	m_nvrhiDevice->waitForIdle();
+	m_nvrhiDevice->runGarbageCollection();
+
+	m_defaultSwapChain = nullptr;
 	m_currentSwapChain = nullptr;
 
-
+	CNVRHIRenderAPI::Instance.m_rhiDevice = nullptr;
+	m_nvrhiDevice = nullptr;
+	m_nvrhiFrameWaitQuery = nullptr;
 }
 
 void CNVRHIRenderLibVK::BeginFrame(ISwapChain* swapChain)
 {
-	m_endFrameWait.Wait();
-
 	CNVRHIRenderAPI::Instance.m_deviceLost = false;
-	m_currentSwapChain = swapChain ? static_cast<CNVRHISwapChain*>(swapChain) : m_swapChains[0];
+	m_currentSwapChain.Assign(swapChain ? static_cast<CNVRHISwapChainVK*>(swapChain) : m_defaultSwapChain);
 
 	// must obtain valid texture view upon Present
 	g_renderWorker.WaitForExecute(__func__, [this]() {
 		m_currentSwapChain->UpdateResize();
 		m_currentSwapChain->UpdateBackbufferView();
 		return 0;
+		});
+
+	g_renderWorker.Execute(__func__, [this]() {
+		m_nvrhiDevice->runGarbageCollection();
+		return 0;
 	});
 }
 
 void CNVRHIRenderLibVK::EndFrame()
 {
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	stats.drawCount = 0;
+	stats.dispatchCount = 0;
+	stats.indirectDrawCount = 0;
+	stats.indirectDispatchCount = 0;
+	stats.bufferUpdateCount = 0;
+	stats.textureUpdateCount = 0;
+
 	g_renderWorker.Execute(__func__, [this]() {
 		m_currentSwapChain->SwapBuffers();
-		m_endFrameWait.Raise();
+
+		const int bufferCount = 3;// m_currentSwapChain->m_rhiSwapChainTextures.numElem();
+		if (bufferCount > 2)
+		{
+			// sync on previous frame's command queue completion
+			m_nvrhiDevice->waitEventQuery(m_nvrhiFrameWaitQuery);
+		}
+
+		m_nvrhiDevice->resetEventQuery(m_nvrhiFrameWaitQuery);
+		m_nvrhiDevice->setEventQuery(m_nvrhiFrameWaitQuery, nvrhi::CommandQueue::Graphics);
+
+		if (bufferCount < 3)
+		{
+			// sync on current frame's command queue completion for double buffering
+			m_nvrhiDevice->waitEventQuery(m_nvrhiFrameWaitQuery);
+		}
 		return 0;
-	});
+		});
 }
 
 ITexturePtr	CNVRHIRenderLibVK::GetCurrentBackbuffer() const
@@ -158,7 +228,7 @@ ITexturePtr	CNVRHIRenderLibVK::GetCurrentBackbuffer() const
 	return m_currentSwapChain->GetBackbuffer();
 }
 
-ISwapChain* CNVRHIRenderLibVK::CreateSwapChain(const RenderWindowInfo& windowInfo)
+ISwapChainPtr CNVRHIRenderLibVK::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	bool justCreated = false;
 
@@ -168,16 +238,9 @@ ISwapChain* CNVRHIRenderLibVK::CreateSwapChain(const RenderWindowInfo& windowInf
 
 	ASSERT_MSG(justCreated, "%s texture already has been created", texName.ToCString());
 
-	CNVRHISwapChain* swapChain = PPNew CNVRHISwapChain(this, windowInfo, swapChainTexture);
+	CRefPtr<CNVRHISwapChainVK> swapChain = CRefPtr_new(CNVRHISwapChainVK, windowInfo, swapChainTexture);
 
-	m_swapChains.append(swapChain);
-	return swapChain;
-}
-
-void CNVRHIRenderLibVK::DestroySwapChain(ISwapChain* swapChain)
-{
-	if (m_swapChains.fastRemove(static_cast<CNVRHISwapChain*>(swapChain)))
-		delete swapChain;
+	return ISwapChainPtr(swapChain);
 }
 
 void CNVRHIRenderLibVK::SetVSync(bool enable)
@@ -213,62 +276,5 @@ bool CNVRHIRenderLibVK::IsWindowed() const
 
 bool CNVRHIRenderLibVK::CaptureScreenshot(CImage &img)
 {
-	ITexturePtr currentTexture = m_currentSwapChain->GetBackbuffer();
-
-	const int bytesPerPixel = GetBytesPerPixel(GetTexFormat(currentTexture->GetFormat()));
-	const bool rbSwapped = HasTexFormatFlags(currentTexture->GetFormat(), TEXFORMAT_FLAG_SWAP_RB);
-
-	const BufferInfo bufInfo(bytesPerPixel, currentTexture->GetWidth() * currentTexture->GetHeight());
-	IGPUBufferPtr tempBuffer = g_renderAPI->CreateBuffer(bufInfo, BUFFERUSAGE_READ | BUFFERUSAGE_COPY_DST, "ScreenshotImgBuffer");
-	IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("ScreenshotCmd");
-	cmdRecorder->CopyTextureToBuffer(TextureCopyInfo{ currentTexture }, tempBuffer, TextureExtent{ currentTexture->GetWidth(), currentTexture->GetHeight(), 1 });
-	Future<bool> cmdFuture = g_renderAPI->SubmitCommandBufferAwaitable(cmdRecorder->End());
-	
-	// wait until image is copied to the buffer
-	while (!cmdFuture.Wait(0)) {
-		WGPU_INSTANCE_SPIN
-	}
-
-	// map buffer so we can read back pixels to our screenshot image memory
-	IGPUBuffer::MapFuture future = tempBuffer->Lock(0, tempBuffer->GetSize(), 0);
-	future.AddCallback([currentTexture, bytesPerPixel, rbSwapped, &img](const FutureResult<BufferMapData>& result) {
-		ASSERT(result->data);
-
-		const TextureExtent size = currentTexture->GetSize();
-		ubyte* dst = img.Create(FORMAT_RGB8, size.width, size.height, 1, 1);
-
-		for (int y = 0; y < size.height; y++)
-		{
-			const ubyte* src = (ubyte*)result->data + bytesPerPixel * y * size.width;
-			for (int x = 0; x < size.width; ++x)
-			{
-				if(rbSwapped)
-				{
-					dst[0] = src[2];
-					dst[1] = src[1];
-					dst[2] = src[0];
-				}
-				else
-				{
-					dst[0] = src[0];
-					dst[1] = src[1];
-					dst[2] = src[2];
-				}
-				dst += 3;
-				src += bytesPerPixel;
-			}
-		}
-	});
-
-	// force WebGPU to process everything it has queued
-	while (!future.Wait(0)) {
-		WGPU_INSTANCE_SPIN
-	}
-
-	return true;
-}
-
-bool CNVRHIRenderLibVK::IsMainThread(uintptr_t threadId) const
-{
-	return g_renderWorker.GetThreadID() == threadId; // always run in separate thread
+	return nvrhiCaptureBackbufferImage(m_currentSwapChain->GetBackbuffer(), img);
 }
