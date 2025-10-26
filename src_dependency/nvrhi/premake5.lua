@@ -6,6 +6,7 @@ project "nvrhi"
 	
 	defines {
 		"NOMINMAX",
+		"VK_NO_PROTOTYPES",
 		-- no NVRHI_WITH_RTXMU
 		-- no NVRHI_WITH_AFTERMATH
 	}

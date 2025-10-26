@@ -7,6 +7,7 @@
 
 #include <nvrhi/nvrhi.h>
 #include <nvrhi/validation.h>
+#include <vulkan/vulkan.hpp>
 
 #include "core/core_common.h"
 #include "core/IConsoleCommands.h"
@@ -28,6 +29,10 @@ DECLARE_CVAR(vulkan_break_on_error, "0", nullptr, CV_UNREGISTERED);
 DECLARE_CVAR_F(nvrhi_validation);
 DECLARE_CVAR_F(nvrhi_breakOnError);
 
+namespace vk::detail
+{
+	DispatchLoaderDynamic defaultDispatchLoaderDynamic;
+}
 
 CNVRHIRenderLibVK::CNVRHIRenderLibVK()
 {
