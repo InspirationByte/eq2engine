@@ -1,4 +1,5 @@
 #pragma once
+#include "renderers/ITexture.h"
 
 #if !defined(_RETAIL) && !defined(_PROFILE)
 #define NVRHI_WITH_VALIDATION
@@ -18,3 +19,4 @@ struct CNVRHIMessageCallback : public nvrhi::IMessageCallback
 	void message(nvrhi::MessageSeverity severity, const char* messageText) override;
 };
 
+bool nvrhiCaptureBackbufferImage(ITexturePtr srcTexture, CImage& dstImage);
