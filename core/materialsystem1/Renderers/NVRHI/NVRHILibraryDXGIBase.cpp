@@ -235,62 +235,68 @@ bool CNVRHIRenderLibDXGIBase::IsWindowed() const
 
 bool CNVRHIRenderLibDXGIBase::CaptureScreenshot(CImage &img)
 {
-	/*
 	ITexturePtr currentTexture = m_currentSwapChain->GetBackbuffer();
+	CNVRHITexture* currentTextureImpl = static_cast<CNVRHITexture*>(currentTexture.Ptr());
+	const TextureExtent size = currentTexture->GetSize();
+	const ETextureFormat textureFmt = currentTexture->GetFormat();
 
-	const int bytesPerPixel = GetBytesPerPixel(GetTexFormat(currentTexture->GetFormat()));
-	const bool rbSwapped = HasTexFormatFlags(currentTexture->GetFormat(), TEXFORMAT_FLAG_SWAP_RB);
+	auto rhiTextureDesc = nvrhi::TextureDesc()
+		.setWidth(size.width)
+		.setHeight(size.height)
+		.setFormat(GetNVRHITextureFormat(textureFmt))
+		.setInitialState(nvrhi::ResourceStates::CopyDest)
+		.setKeepInitialState(true);
 
-	const BufferInfo bufInfo(bytesPerPixel, currentTexture->GetWidth() * currentTexture->GetHeight());
-	IGPUBufferPtr tempBuffer = g_renderAPI->CreateBuffer(bufInfo, BUFFERUSAGE_READ | BUFFERUSAGE_COPY_DST, "ScreenshotImgBuffer");
-	IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("ScreenshotCmd");
-	cmdRecorder->CopyTextureToBuffer(TextureCopyInfo{ currentTexture }, tempBuffer, TextureExtent{ currentTexture->GetWidth(), currentTexture->GetHeight(), 1 });
-	Future<bool> cmdFuture = g_renderAPI->SubmitCommandBufferAwaitable(cmdRecorder->End());
-	
-	// wait until image is copied to the buffer
-	while (!cmdFuture.Wait(0)) {
-		WGPU_INSTANCE_SPIN
-	}
+	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
+	nvrhi::StagingTextureHandle rhiStagingTexture = rhiDevice->createStagingTexture(rhiTextureDesc, nvrhi::CpuAccessMode::Read);
+	if (!rhiStagingTexture)
+		return false;
 
-	// map buffer so we can read back pixels to our screenshot image memory
-	IGPUBuffer::MapFuture future = tempBuffer->Lock(0, tempBuffer->GetSize(), 0);
-	future.AddCallback([currentTexture, bytesPerPixel, rbSwapped, &img](const FutureResult<BufferMapData>& result) {
-		ASSERT(result->data);
+	// copy backbuffer to readback staging texture
+	int cmdListIdx = -1;
+	nvrhi::CommandListHandle rhiCopyCommandList = CNVRHIRenderAPI::Instance.AcquireRHICommandList(cmdListIdx);
+	rhiCopyCommandList->open();
+	rhiCopyCommandList->copyTexture(rhiStagingTexture, {}, currentTextureImpl->GetNVRHITextureHandle(), {});
+	rhiCopyCommandList->close();
 
-		const TextureExtent size = currentTexture->GetSize();
-		ubyte* dst = img.Create(FORMAT_RGB8, size.width, size.height, 1, 1);
-
-		for (int y = 0; y < size.height; y++)
-		{
-			const ubyte* src = (ubyte*)result->data + bytesPerPixel * y * size.width;
-			for (int x = 0; x < size.width; ++x)
-			{
-				if(rbSwapped)
-				{
-					dst[0] = src[2];
-					dst[1] = src[1];
-					dst[2] = src[0];
-				}
-				else
-				{
-					dst[0] = src[0];
-					dst[1] = src[1];
-					dst[2] = src[2];
-				}
-				dst += 3;
-				src += bytesPerPixel;
-			}
-		}
+	g_renderWorker.WaitForExecute(__func__, [&]() {
+		uint64_t lastSubmitInstance = rhiDevice->executeCommandList(rhiCopyCommandList);
+		rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
+		CNVRHIRenderAPI::Instance.ReleaseCommandList(cmdListIdx);
+		return 0;
 	});
 
-	// force WebGPU to process everything it has queued
-	while (!future.Wait(0)) {
-		WGPU_INSTANCE_SPIN
+	size_t stagingRowPitch = 0;
+	void* data = rhiDevice->mapStagingTexture(rhiStagingTexture, nvrhi::TextureSlice{}, nvrhi::CpuAccessMode::Read, &stagingRowPitch);
+	if (!data)
+		return false;
+
+	const int bytesPerPixel = GetBytesPerPixel(GetTexFormat(textureFmt));
+	const bool rbSwapped = HasTexFormatFlags(textureFmt, TEXFORMAT_FLAG_SWAP_RB);
+	ubyte* dst = img.Create(FORMAT_RGB8, size.width, size.height, 1, 1);
+	for (int y = 0; y < size.height; y++)
+	{
+		const ubyte* src = (ubyte*)data + bytesPerPixel * y * size.width;
+		for (int x = 0; x < size.width; ++x)
+		{
+			if (rbSwapped)
+			{
+				dst[0] = src[2];
+				dst[1] = src[1];
+				dst[2] = src[0];
+			}
+			else
+			{
+				dst[0] = src[0];
+				dst[1] = src[1];
+				dst[2] = src[2];
+			}
+			dst += 3;
+			src += bytesPerPixel;
+		}
 	}
 
+	rhiDevice->unmapStagingTexture(rhiStagingTexture);
 	return true;
-
-	*/
-	return false;
 }
 
