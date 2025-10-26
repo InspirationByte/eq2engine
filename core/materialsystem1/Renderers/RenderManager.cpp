@@ -18,17 +18,17 @@ static CEmptyRenderLib  s_EmptyRenderLib;
 
 #elif RENDERER_TYPE == RHI_NVRHI
 
-DECLARE_CVAR(r_backend, "d3d11", "Rendering backend to use", CV_ARCHIVE);
+DECLARE_CVAR(r_backend, "d3d12", "Rendering backend to use", CV_ARCHIVE);
+
+#include "NVRHI/NVRHILibraryVK.h"
+static CNVRHIRenderLibVK s_NVRHIRenderLibVK;
 
 #ifdef _WIN32
 //#include "NVRHI/NVRHILibraryD3D11.h"
 #include "NVRHI/NVRHILibraryD3D12.h"
-//static CNVRHIRenderLibD3D11  s_NVRHIRenderLibD3D11;
-static CNVRHIRenderLibD3D12  s_NVRHIRenderLibD3D12;
+//static CNVRHIRenderLibD3D11 s_NVRHIRenderLibD3D11;
+static CNVRHIRenderLibD3D12 s_NVRHIRenderLibD3D12;
 #endif
-
-//#include "NVRHI/NVRHILibraryVK.h"
-//static CNVRHIRenderLibVK	s_NVRHIRenderLibVK;
 
 #elif RENDERER_TYPE == RHI_WGPU
 
@@ -60,13 +60,13 @@ IRenderLibrary* CEqRenderManager::CreateRenderer(const ShaderAPIParams& params) 
 
 	s_currentRenderLib = &s_NVRHIRenderLibD3D12;
 
-	//EqStringRef backendName = r_backend.GetString();
-	//if (backendName.CompareCaseIns("D3D11"))
-	//	s_currentRenderLib = &s_NVRHIRenderLibD3D11;
-	//else if (backendName.CompareCaseIns("D3D12"))
-	//	s_currentRenderLib = &s_NVRHIRenderLibD3D12;
-	//else if (backendName.CompareCaseIns("Vulkan"))
-	//	s_currentRenderLib = &s_NVRHIRenderLibVK;
+	EqStringRef backendName = r_backend.GetString();
+	/*if (backendName.CompareCaseIns("D3D11"))
+		s_currentRenderLib = &s_NVRHIRenderLibD3D11;
+	else*/ if (backendName.CompareCaseIns("D3D12"))
+		s_currentRenderLib = &s_NVRHIRenderLibD3D12;
+	else if (backendName.CompareCaseIns("Vulkan"))
+		s_currentRenderLib = &s_NVRHIRenderLibVK;
 
 #elif RENDERER_TYPE == RHI_WGPU
 

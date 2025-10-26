@@ -11,39 +11,25 @@ project "nvrhi"
 		-- no NVRHI_WITH_RTXMU
 		-- no NVRHI_WITH_AFTERMATH
 	}
-	files
-	{
+	files {
 		"NVRHI/include/**.h",
 		"NVRHI/src/common/**.cpp",
+		"NVRHI/src/common/**.h",
+		"NVRHI/src/vulkan/**.cpp",
+		"NVRHI/src/vulkan/**.h"
 	}
 	removefiles {
-		"NVRHI/src/common/dxgi*.cpp",	
+		"NVRHI/src/common/dxgi*.cpp",
+		"NVRHI/src/common/dxgi*.h",
 	}
 	includedirs {
-		"./NVRHI/include"
-	}
-	
-	if false then -- VULKAN_SDK_LOCATION ~= "" then
-		defines {
-			"NOMINMAX",
-			"NVRHI_WITH_VULKAN",
-			"VK_USE_PLATFORM_WIN32_KHR"
-		}
-		files {
-			"NVRHI/src/vulkan/**.cpp"
-		}
-		includedirs {
-			VULKAN_SDK_LOCATION.."/include",
-			"NVRHI/thirdparty/Vulkan-Headers/include"
-		}
-		libdirs { 
-			VULKAN_SDK_LOCATION.."./lib",
-		}
-	end
-	
+		"NVRHI/include",
+		"NVRHI/thirdparty/Vulkan-Headers/include"
+	}	
 	filter "system:windows"
 		defines {
 			"NVRHI_D3D12_WITH_D3D12MA",
+			"VK_USE_PLATFORM_WIN32_KHR"
 		}
 		includedirs {
 			"NVRHI/thirdparty/D3D12MA/include",
@@ -51,8 +37,11 @@ project "nvrhi"
 		}
 		files {
 			"NVRHI/src/d3d11/**.cpp",
+			"NVRHI/src/d3d11/**.h",
 			"NVRHI/src/d3d12/**.cpp",
+			"NVRHI/src/d3d12/**.h",
 			"NVRHI/src/common/dxgi*.cpp",
+			"NVRHI/src/common/dxgi*.h",
 			"NVRHI/thirdparty/D3D12MA/src/**.cpp",
 			"NVRHI/thirdparty/D3D12MA/include/**.h"
 		}
@@ -66,7 +55,8 @@ project "nvrhi-validation"
 		"nvrhi"
 	}
 	files {
-		"NVRHI/src/validation/**.cpp",	
+		"NVRHI/src/validation/**.cpp",
+		"NVRHI/src/validation/**.h",
 	}
 	filter "configurations:Retail or configurations:Profile"
 		kind "None"

@@ -12,18 +12,18 @@
 #include "NVRHITexture.h"
 
 class CNVRHIRenderLibVK;
+using nvrhi::RefCountPtr;
 
 class CNVRHISwapChainVK : public ISwapChain
 {
 public:
-	friend class CNVRHIRenderLib;
+	friend class CNVRHIRenderLibVK;
 
-	~CNVRHISwapChainVK();
-	CNVRHISwapChainVK(CNVRHIRenderLib* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture);
+	CNVRHISwapChainVK(const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture);
 
 	void			SetVSync(bool enable);
 
-	void*			GetWindow() const;
+	void* GetWindow() const;
 	ITexturePtr		GetBackbuffer() const;
 
 	void			GetBackbufferSize(int& wide, int& tall) const;
@@ -32,17 +32,19 @@ public:
 	bool			SwapBuffers();
 
 	bool			UpdateResize();
-	
+
 protected:
 
 	void			UpdateBackbufferView() const;
 
-	CRefPtr<CNVRHITexture>	m_textureRef;
+	//DXGI_SWAP_CHAIN_DESC1				m_dxgiSwapChainDesc{};
+	//Array<nvrhi::TextureHandle>			m_rhiSwapChainTextures{ PP_SL };
+	//Array<RefCountPtr<ID3D12Resource>>	m_d3d12SwapChainBuffers{ PP_SL };
+	//RefCountPtr<IDXGISwapChain3>		m_dxgiSwapChain;
 
-	CNVRHIRenderLib*	m_host{ nullptr };
-	RenderWindowInfo	m_winInfo;
+	CRefPtr<CNVRHITexture>		m_textureRef;
+	nvrhi::Format				m_swapChainFormat{ nvrhi::Format::RGBA8_UNORM };
 
-	//WGPUSurface			m_surface{ nullptr };
-	IVector2D			m_backbufferSize{ 0 };
-	int					m_vSync{ -1 };
+	RenderWindowInfo			m_winInfo;
+	int							m_vSync{ 0 };
 };

@@ -11,19 +11,46 @@
 #include "NVRHILibraryVK.h"
 #include "NVRHIRenderDefs.h"
 
-constexpr int TOGGLE_BIT = 0x80000000;
-
-CNVRHISwapChainVK::CNVRHISwapChainVK(CNVRHIRenderLib* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture)
-	: m_host(host)
-	, m_winInfo(windowInfo)
+CNVRHISwapChainVK::CNVRHISwapChainVK(const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture)
+	: m_winInfo(windowInfo)
 {
 	m_textureRef = CRefPtr<CNVRHITexture>(static_cast<CNVRHITexture*>(swapChainTexture.Ptr()));
-}
+	auto rhiDefaultTexViewDesc = nvrhi::TextureSubresourceSet()
+		.setNumMipLevels(nvrhi::TextureSubresourceSet::AllMipLevels)
+		.setNumArraySlices(nvrhi::TextureSubresourceSet::AllArraySlices);
+	m_textureRef->m_rhiViews.append(rhiDefaultTexViewDesc);
+	m_textureRef->m_format = FORMAT_RGBA8;
 
-CNVRHISwapChainVK::~CNVRHISwapChainVK()
-{
-	if(m_surface)
-		NVRHISurfaceRelease(m_surface);
+	/*
+	m_dxgiSwapChainDesc = {};
+	m_dxgiSwapChainDesc.Width = 800;
+	m_dxgiSwapChainDesc.Height = 600;
+	m_dxgiSwapChainDesc.SampleDesc.Count = 1;	// TODO
+	m_dxgiSwapChainDesc.SampleDesc.Quality = 0; // TODO
+	m_dxgiSwapChainDesc.BufferUsage = DXGI_USAGE_SHADER_INPUT | DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	m_dxgiSwapChainDesc.BufferCount = SWAP_CHAIN_BUFFERS;
+	m_dxgiSwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	m_dxgiSwapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
+	if (CNVRHIRenderLibDXGIBase::Instance->m_dxgiTearingSupported)
+		m_dxgiSwapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+
+	switch (m_swapChainFormat)
+	{
+	case nvrhi::Format::SRGBA8_UNORM:
+		m_dxgiSwapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		m_textureRef->m_format = MakeTexFormat(FORMAT_RGBA8, TEXFORMAT_FLAG_SRGB);
+		break;
+	case nvrhi::Format::SBGRA8_UNORM:
+		m_dxgiSwapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+		m_textureRef->m_format = MakeTexFormat(FORMAT_RGBA8, TEXFORMAT_FLAG_SWAP_RB | TEXFORMAT_FLAG_SRGB);
+		break;
+	default:
+		m_dxgiSwapChainDesc.Format = nvrhi::d3d12::convertFormat(m_swapChainFormat);
+		break;
+	}
+	//m_dxgiSwapChainDesc.Flags = (dxgi_maxFrameLatency.GetInt() > 0 ? DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT : 0);
+	*/
 }
 
 void* CNVRHISwapChainVK::GetWindow() const
@@ -38,171 +65,72 @@ ITexturePtr CNVRHISwapChainVK::GetBackbuffer() const
 
 void CNVRHISwapChainVK::UpdateBackbufferView() const
 {
-	WGPUSurfaceTexture rhiSurfTex{};
-	wgpuSurfaceGetCurrentTexture(m_surface, &rhiSurfTex);
-
-	switch (rhiSurfTex.status)
-	{
-    case WGPUSurfaceGetCurrentTextureStatus_Success:
-		// All good, could check for `surfTex.suboptimal` here.
-		break;
-	case WGPUSurfaceGetCurrentTextureStatus_Timeout:
-	case WGPUSurfaceGetCurrentTextureStatus_Outdated:
-	case WGPUSurfaceGetCurrentTextureStatus_Lost:
-	case WGPUSurfaceGetCurrentTextureStatus_Error:
-		return;
-	case WGPUSurfaceGetCurrentTextureStatus_OutOfMemory:
-	case WGPUSurfaceGetCurrentTextureStatus_DeviceLost:
-	case WGPUSurfaceGetCurrentTextureStatus_Force32:
-		// Fatal error
-		ASSERT_FAIL("wgpuSurfaceGetCurrentTexture status=%#.8x\n", rhiSurfTex.status);
-		return;
-    }
-
-	ASSERT_MSG(rhiSurfTex.texture != nullptr, "Swapchain texture has not been created");
-
-	{
-		if (m_textureRef->m_rhiTexture)
-		{
-			wgpuTextureRelease(m_textureRef->m_rhiTexture);
-			m_textureRef->m_rhiTexture = nullptr;
-		}
-
-		m_textureRef->m_rhiTexture = rhiSurfTex.texture;
-	}
-
-	{
-		if (m_textureRef->m_rhiViews.numElem())
-			wgpuTextureViewRelease(m_textureRef->m_rhiViews[0]);
-		else
-			m_textureRef->m_rhiViews.setNum(1);
-		m_textureRef->m_rhiViews[0] = wgpuTextureCreateView(rhiSurfTex.texture, nullptr);
-	}
+	//m_textureRef->m_rhiTexture = m_rhiSwapChainTextures[m_dxgiSwapChain->GetCurrentBackBufferIndex()];
 }
 
 void CNVRHISwapChainVK::GetBackbufferSize(int& wide, int& tall) const
-{	 
-	wide = m_backbufferSize.x;
-	tall = m_backbufferSize.y;
+{
+	//wide = m_dxgiSwapChainDesc.Width;
+	//tall = m_dxgiSwapChainDesc.Height;
 }
 
 void CNVRHISwapChainVK::SetVSync(bool enable)
 {
-	if((m_vSync > 0) != enable)
-		m_vSync = TOGGLE_BIT | (int)enable;
+	if ((m_vSync > 0) != enable)
+		m_vSync = (int)enable;
 }
 
 bool CNVRHISwapChainVK::UpdateResize()
 {
-	if ((m_vSync & TOGGLE_BIT) == 0 && m_textureRef->GetWidth() == m_backbufferSize.x && m_textureRef->GetHeight() == m_backbufferSize.y)
+	/*
+	if (m_textureRef->GetWidth() == m_dxgiSwapChainDesc.Width && m_textureRef->GetHeight() == m_dxgiSwapChainDesc.Height)
 		return true;
 
-	m_vSync &= ~TOGGLE_BIT;
+	// Make sure all frame is finished
+	nvrhi::DeviceHandle nvrhiDevice = CNVRHIRenderLibDXGIBase::Instance->m_nvrhiDevice;
+	nvrhiDevice->waitForIdle();
+	nvrhiDevice->runGarbageCollection();
 
-	m_textureRef->SetDimensions(m_backbufferSize.x, m_backbufferSize.y);
-	m_textureRef->Release();
+	// release render targets
+	m_d3d12SwapChainBuffers.clear();
+	m_rhiSwapChainTextures.clear();
+	m_textureRef->m_rhiTexture = nullptr;
 
-	if (!m_surface)
+	m_textureRef->SetDimensions(m_dxgiSwapChainDesc.Width, m_dxgiSwapChainDesc.Height);
+
+	const HRESULT hr = m_dxgiSwapChain->ResizeBuffers(
+		m_dxgiSwapChainDesc.BufferCount,
+		m_dxgiSwapChainDesc.Width,
+		m_dxgiSwapChainDesc.Height,
+		m_dxgiSwapChainDesc.Format,
+		m_dxgiSwapChainDesc.Flags);
+
+	if (FAILED(hr))
 	{
-		WGPUSurfaceDescriptor surfDesc = {};
-
-		WGPUSurfaceSourceWindowsHWND windowsSurfDesc = {};
-		WGPUSurfaceSourceXlibWindow x11SurfDesc = {};
-		WGPUSurfaceSourceWaylandSurface waylandSurfDesc = {};
-		WGPUSurfaceSourceAndroidNativeWindow androidWindowSurfDesc = {};
-
-		switch (m_winInfo.windowType)
-		{
-		case RHI_WINDOW_HANDLE_NATIVE_WINDOWS:
-			windowsSurfDesc.chain.sType = WGPUSType_SurfaceSourceWindowsHWND;
-			windowsSurfDesc.hinstance = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::TOPLEVEL);
-			windowsSurfDesc.hwnd = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
-			surfDesc.nextInChain = &windowsSurfDesc.chain;
-			break;
-		case RHI_WINDOW_HANDLE_NATIVE_X11:
-			x11SurfDesc.chain.sType = WGPUSType_SurfaceSourceXlibWindow;
-			x11SurfDesc.display = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::DISPLAY);
-			x11SurfDesc.window = (uint64_t)m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
-			surfDesc.nextInChain = &x11SurfDesc.chain;
-			break;
-		case RHI_WINDOW_HANDLE_NATIVE_WAYLAND:
-			waylandSurfDesc.chain.sType = WGPUSType_SurfaceSourceWaylandSurface;
-			waylandSurfDesc.display = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::DISPLAY);
-			waylandSurfDesc.surface = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::SURFACE);
-			surfDesc.nextInChain = &waylandSurfDesc.chain;
-			break;
-		case RHI_WINDOW_HANDLE_NATIVE_ANDROID:
-			androidWindowSurfDesc.chain.sType = WGPUSType_SurfaceSourceAndroidNativeWindow;
-			androidWindowSurfDesc.window = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
-			surfDesc.nextInChain = &androidWindowSurfDesc.chain;
-			break;
-		default:
-			ASSERT_FAIL("Unsupported RHI_WINDOW_HANDLE value!");
-		}
-	
-		m_surface = wgpuInstanceCreateSurface(m_host->m_instance, &surfDesc);
+		MsgError("CNVRHISwapChainDXGI UpdateResize failed\n");
+		return false;
 	}
 
-	WGPUSurfaceCapabilities surfCapabilities;
-	wgpuSurfaceGetCapabilities(m_surface, m_host->m_rhiAdapter, &surfCapabilities);
-
-	ASSERT_MSG(surfCapabilities.formatCount > 0, "Surface capabilities format count is 0");
-
-	WGPUTextureFormat rhiSurfaceFormat = surfCapabilities.formats[0];
-	for(int i = 1; i < FORMAT_COUNT; ++i)
-	{
-		const ETextureFormat format = static_cast<ETextureFormat>(i);
-		const ETextureFormat srgbFormat = MakeTexFormat(format, TEXFORMAT_FLAG_SRGB);
-		const ETextureFormat rbSwapFormat = MakeTexFormat(format, TEXFORMAT_FLAG_SWAP_RB);
-		const ETextureFormat rbSwapSrgbFormat = MakeTexFormat(format, TEXFORMAT_FLAG_SWAP_RB | TEXFORMAT_FLAG_SRGB);
-
-		if(GetWGPUTextureFormat(format) == rhiSurfaceFormat)
-		{
-			m_textureRef->SetFormat(format);
-			break;
-		}
-
-		if(GetWGPUTextureFormat(srgbFormat) == rhiSurfaceFormat)
-		{
-			m_textureRef->SetFormat(srgbFormat);
-			break;
-		}
-
-		if(GetWGPUTextureFormat(rbSwapFormat) == rhiSurfaceFormat)
-		{	
-			m_textureRef->SetFormat(rbSwapFormat);
-			break;
-		}
-
-		if(GetWGPUTextureFormat(rbSwapSrgbFormat) == rhiSurfaceFormat)
-		{	
-			m_textureRef->SetFormat(rbSwapSrgbFormat);
-			break;
-		}
-	}
-
-	WGPUSurfaceConfiguration rhiSurfaceConfig{};
-	rhiSurfaceConfig.device = m_host->m_rhiDevice;
-	rhiSurfaceConfig.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;	// requires SurfaceCapabilities feature
-	rhiSurfaceConfig.format = rhiSurfaceFormat;
-	rhiSurfaceConfig.presentMode = m_vSync ? WGPUPresentMode_Fifo : WGPUPresentMode_Mailbox;
-	rhiSurfaceConfig.alphaMode = WGPUCompositeAlphaMode_Opaque;	// TODO: get from surface capabilities
-	rhiSurfaceConfig.width = m_backbufferSize.x;
-	rhiSurfaceConfig.height = m_backbufferSize.y;
-
-	wgpuSurfaceConfigure(m_surface, &rhiSurfaceConfig);
-	return m_surface;
+	CNVRHIRenderLibVK::Instance->CreateSwapchainTargets(this);
+	m_textureRef->m_rhiTexture = nullptr;
+	*/
+	return true;
 }
 
 bool CNVRHISwapChainVK::SetBackbufferSize(int wide, int tall)
-{	 
-	m_backbufferSize = IVector2D(wide, tall);
+{
+	//m_dxgiSwapChainDesc.Width = wide;
+	//m_dxgiSwapChainDesc.Height = tall;
 	return true;
 }
-	 
+
 bool CNVRHISwapChainVK::SwapBuffers()
 {
-	if (m_surface)
-		wgpuSurfacePresent(m_surface);
+	//UINT presentFlags = 0;
+	//if (m_vSync == 0 && (m_dxgiSwapChainDesc.Flags & DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING))
+	//	presentFlags |= DXGI_PRESENT_ALLOW_TEARING;
+	//
+	//m_dxgiSwapChain->Present(m_vSync, presentFlags);
+
 	return true;
 }
