@@ -8,7 +8,7 @@
 #pragma once
 #include "ds/SlottedArray.h"
 
-enum ETextureFormat : int;
+enum ETextureFormat : uint16;
 
 class IGPUBuffer;
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;

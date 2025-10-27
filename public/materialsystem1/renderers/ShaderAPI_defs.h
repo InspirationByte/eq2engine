@@ -444,7 +444,7 @@ FLUENT_BEGIN_TYPE(RenderPipelineDesc);
 	FLUENT_SET_VALUE(shaderVertexLayoutId, ShaderVertexLayoutId)
 FLUENT_END_TYPE
 
-enum EBufferBindType : int
+enum EBufferBindType : uint8
 {
 	BUFFERBIND_UNIFORM = 0,
 	BUFFERBIND_STORAGE,
@@ -726,24 +726,6 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 FLUENT_END_TYPE
 
 //------------------------------------------------------------
-// Texture builder
-
-struct TextureInfo // TODO: use
-{
-	const char*			name{ nullptr };
-	int					width{ -1 };
-	int					height{ -1 };
-	int					depth{ 1 };
-	int					arraySize{ 1 };
-	ETextureFormat		format{ FORMAT_RGBA8 };
-	SamplerStateParams	samplerParams; // NOTE: OpenGL have sampler and textures working together, while newer APIs don't
-	int					flags = 0;
-
-	const ubyte*		data = nullptr;
-	int					dataSize = 0;
-};
-
-//------------------------------------------------------------
 // Buffer builder
 
 enum EBufferUsage : int
@@ -835,8 +817,8 @@ struct TextureDesc
 	ETextureFormat		format{ FORMAT_NONE };
 
 	TextureExtent		size;
-	int					mipmapCount{ 1 };
-	int					sampleCount{ 1 };
+	int16				mipmapCount{ 1 };
+	int16				sampleCount{ 1 };
 
 	SamplerStateParams	sampler{};
 };
