@@ -58,7 +58,9 @@ IRenderLibrary* CEqRenderManager::CreateRenderer(const ShaderAPIParams& params) 
 
 #elif RENDERER_TYPE == RHI_NVRHI
 
+#if PLAT_WIN
 	s_currentRenderLib = &s_NVRHIRenderLibD3D12;
+#endif
 
 	//EqStringRef backendName = r_backend.GetString();
 	//if (backendName.CompareCaseIns("D3D11"))
