@@ -331,7 +331,8 @@ void CEqPhysicsWorld::InitGrid(const BoundingBox& worldBBox)
 	btVector3 boxMin, boxMax;
 	ConvertDKToBulletVectors(boxMin, worldBBox.minPoint);
 	ConvertDKToBulletVectors(boxMax, worldBBox.maxPoint);
-	m_broadphase = new btDbvtBroadphase();
+
+	m_broadphase = new btDbvtBroadphase(nullptr, true);
 
 	for(CEqRigidBody* body : m_dynObjects)
 		SetupCollisionObjectBroadphase(body);
@@ -1188,20 +1189,25 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 	movingMoveables.resize(m_moveable.numElem());
 
 	{
+		PROF_EVENT("Moving Bodies PreSim");
+		for (CEqRigidBody* body : m_moveable)
+		{
+			// execute pre-simulation callbacks
+			IEqPhysCallback* callbacks = body->m_callbacks;
+			if (callbacks)
+				callbacks->PreSimulate(m_fDt);
+
+			// clear contact pairs and results
+			body->ClearContacts();
+		}
+	}
+
+	{
 		PROF_EVENT("Moving Bodies Integrate");
 
 		// move all bodies
 		for (CEqRigidBody* body : m_moveable)
 		{
-			// execute pre-simulation callbacks
-			IEqPhysCallback* callbacks = body->m_callbacks;
-
-			if (callbacks) 	// execute pre-simulation callbacks
-				callbacks->PreSimulate(m_fDt);
-
-			// clear contact pairs and results
-			body->ClearContacts();
-
 			// apply velocities
 			IntegrateSingle(body);
 
@@ -1299,9 +1305,25 @@ bool CEqPhysicsWorld::TestLineCollision(
 		if (isDynamic && !(objectTypeTesting & EQPHYS_FILTER_FLAG_DYNAMICOBJECTS))
 			return;
 
+		const bool forceRaycast = (filterParams && (filterParams->flags & EQPHYS_FILTER_FLAG_FORCE_RAYCAST));
+		if (!forceRaycast && (collObj->m_flags & COLLOBJ_NO_RAYCAST))
+			return;
+
+		if (!(rayMask & collObj->GetContents()))
+			return;
+
+		if (!CheckAllowContactTest(filterParams, collObj))
+			return;
+
+		if (!collObj->m_collObject)
+			return;
+
 		if (skipObjects.contains(collObj))
 			return;
 		skipObjects.insert(collObj);
+
+		if (!rayBox.Intersects(collObj->m_aabb_transformed))
+			return;
 
 		eqCollisionInfo tempColl;
 		if (TestLineSingleObject(collObj, start, end, rayBox, tempColl, closest, rayMask, filterParams, nullptr))
@@ -1385,9 +1407,25 @@ bool CEqPhysicsWorld::TestConvexSweepCollision(
 		if (isDynamic && !(objectTypeTesting & EQPHYS_FILTER_FLAG_DYNAMICOBJECTS))
 			return;
 
+		const bool forceRaycast = (filterParams && (filterParams->flags & EQPHYS_FILTER_FLAG_FORCE_RAYCAST));
+		if (!forceRaycast && (collObj->m_flags & COLLOBJ_NO_RAYCAST))
+			return;
+
+		if (!(rayMask & collObj->GetContents()))
+			return;
+
+		if (!collObj->m_collObject)
+			return;
+
+		if (!CheckAllowContactTest(filterParams, collObj))
+			return;
+
 		if (skipObjects.contains(collObj))
 			return;
 		skipObjects.insert(collObj);
+
+		if (!rayBox.Intersects(collObj->m_aabb_transformed))
+			return;
 
 		eqCollisionInfo tempColl;
 		if (TestConvexSweepSingleObject(collObj, start, end, rayBox, tempColl, closest, rayMask, filterParams, &params))
@@ -1510,23 +1548,6 @@ bool CEqPhysicsWorld::TestLineSingleObject(
 	if(!object)
 		return false;
 
-	const bool forceRaycast = (filterParams && (filterParams->flags & EQPHYS_FILTER_FLAG_FORCE_RAYCAST));
-
-	if (!forceRaycast && (object->m_flags & COLLOBJ_NO_RAYCAST))
-		return false;
-
-	if(!(rayMask & object->GetContents()))
-		return false;
-
-	if (!object->m_collObject)
-		return false;
-
-	if (!CheckAllowContactTest(filterParams, object))
-		return false;
-
-	if(!rayBox.Intersects(object->m_aabb_transformed))
-		return false;
-
 	const Quaternion& objQuat = object->m_orientation;
 	const Vector3D& position = object->m_position;
 
@@ -1645,23 +1666,6 @@ bool CEqPhysicsWorld::TestConvexSweepSingleObject(CEqCollisionObject* object,
 												void* args)
 {
 	using namespace EqBulletUtils;
-
-	const bool forceRaycast = (filterParams && (filterParams->flags & EQPHYS_FILTER_FLAG_FORCE_RAYCAST));
-
-	if (!forceRaycast && (object->m_flags & COLLOBJ_NO_RAYCAST))
-		return false;
-
-	if(!(rayMask & object->GetContents()))
-		return false;
-
-	if (!object->m_collObject)
-		return false;
-
-	if (!CheckAllowContactTest(filterParams, object))
-		return false;
-
-	if(!raybox.Intersects(object->m_aabb_transformed))
-		return false;
 
 	const SweptTestParams& params = *reinterpret_cast<SweptTestParams*>(args);
 
