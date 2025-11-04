@@ -332,6 +332,7 @@ void CEqPhysicsWorld::InitGrid(const BoundingBox& worldBBox)
 	ConvertDKToBulletVectors(boxMin, worldBBox.minPoint);
 	ConvertDKToBulletVectors(boxMax, worldBBox.maxPoint);
 
+	gDbvtMargin = 1.0f;
 	m_broadphase = new btDbvtBroadphase(nullptr, true);
 
 	for(CEqRigidBody* body : m_dynObjects)
