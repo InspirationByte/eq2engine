@@ -23,9 +23,9 @@ public:
 	static uint64	Decrement(volatile uint64& var);
 
 	static int32	Add(int32 volatile& var, int32 val);
-	static uint32	Add(uint32 volatile& var, uint32 val);
+	static uint32	Add(uint32 volatile& var, int32 val);
 	static int64	Add(int64 volatile& var, int64 val);
-	static uint64	Add(uint64 volatile& var, uint64 val);
+	static uint64	Add(uint64 volatile& var, int64 val);
 
 	static int32	CompareExchange(int32 volatile& var, int32 oldVal, int32 newVal);
 	static uint32	CompareExchange(uint32 volatile& var, uint32 oldVal, uint32 newVal);

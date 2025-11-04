@@ -44,7 +44,7 @@ inline uint32	Atomic::Increment(volatile uint32& var)						{ return _Interlocked
 inline int32	Atomic::Decrement(volatile int32& var)						{ return _InterlockedDecrement((long volatile*)&var); }
 inline uint32	Atomic::Decrement(volatile uint32& var)						{ return _InterlockedDecrement((long volatile*)&var); }
 inline int32	Atomic::Add(int32 volatile& var, int32 val)					{ return _InterlockedExchangeAdd((long volatile*)&var, val) + val; }
-inline uint32	Atomic::Add(uint32 volatile& var, uint32 val)				{ return _InterlockedExchangeAdd((long volatile*)&var, val) + val; }
+inline uint32	Atomic::Add(uint32 volatile& var, int32 val)				{ return _InterlockedExchangeAdd((long volatile*)&var, val) + val; }
 
 inline int32	Atomic::CompareExchange(int32 volatile& var, int32 oldVal, int32 newVal)	{ return _InterlockedCompareExchange((long volatile*)&var, newVal, oldVal); }
 inline uint32	Atomic::CompareExchange(uint32 volatile& var, uint32 oldVal, uint32 newVal)	{ return _InterlockedCompareExchange((long volatile*)&var, newVal, oldVal); }
@@ -67,7 +67,7 @@ inline uint64	Atomic::Increment(volatile uint64& var)						{ return _Interlocked
 inline int64	Atomic::Decrement(volatile int64& var)						{ return _InterlockedDecrement64((__int64 volatile*)&var); }
 inline uint64	Atomic::Decrement(volatile uint64& var)						{ return _InterlockedDecrement64((__int64 volatile*)&var); }
 inline int64	Atomic::Add(int64 volatile& var, int64 val)					{ return _InterlockedExchangeAdd64(&var, val) + val; }
-inline uint64	Atomic::Add(uint64 volatile& var, uint64 val)				{ return _InterlockedExchangeAdd64((__int64 volatile*)&var, (__int64)val) + val; }
+inline uint64	Atomic::Add(uint64 volatile& var, int64 val)				{ return _InterlockedExchangeAdd64((__int64 volatile*)&var, (__int64)val) + val; }
 
 template <typename T> 
 inline T* Atomic::CompareExchange(T* volatile& ptr, T* oldVal, T* newVal)	{ return (T*)_InterlockedCompareExchange64((__int64 volatile*)&ptr, (__int64&)newVal, (__int64&)oldVal); }
@@ -102,7 +102,7 @@ inline int64	Atomic::Add(int64 volatile& var, int64 val)
 			return oldVal + val;
 }
 
-inline uint64	Atomic::Add(uint64 volatile& var, uint64 val)
+inline uint64	Atomic::Add(uint64 volatile& var, int64 val)
 {
 	for (uint64 oldVal = var;; oldVal = var)
 		if (_InterlockedCompareExchange64((__int64 volatile*)&var, (__int64)(oldVal + val), oldVal) == oldVal)
@@ -150,9 +150,9 @@ inline int64	Atomic::Decrement(volatile int64& var)						{ return __sync_add_and
 inline uint64	Atomic::Decrement(volatile uint64& var)						{ return __sync_add_and_fetch(&var, -1); }
 
 inline int32	Atomic::Add(int32 volatile& var, int32 val)					{ return __sync_add_and_fetch(&var, val); }
-inline uint32	Atomic::Add(uint32 volatile& var, uint32 val)				{ return __sync_add_and_fetch(&var, val); }
+inline uint32	Atomic::Add(uint32 volatile& var, int32 val)				{ return __sync_add_and_fetch(&var, val); }
 inline int64	Atomic::Add(int64 volatile& var, int64 val)					{ return __sync_add_and_fetch(&var, val); }
-inline uint64	Atomic::Add(uint64 volatile& var, uint64 val)				{ return __sync_add_and_fetch(&var, val); }
+inline uint64	Atomic::Add(uint64 volatile& var, int64 val)				{ return __sync_add_and_fetch(&var, val); }
 
 inline int32	Atomic::CompareExchange(int32 volatile& var, int32 oldVal, int32 newVal)	{ return __sync_val_compare_and_swap(&var, oldVal, newVal); }
 inline uint32	Atomic::CompareExchange(uint32 volatile& var, uint32 oldVal, uint32 newVal)	{ return __sync_val_compare_and_swap(&var, oldVal, newVal); }
