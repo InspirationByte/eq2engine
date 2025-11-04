@@ -1150,38 +1150,38 @@ inline void btDbvt::collideTV(const btDbvtNode* root,
 							  DBVT_IPOLICY) const
 {
 	DBVT_CHECKTYPE
-	if (root)
-	{
-		ATTRIBUTE_ALIGNED16(btDbvtVolume)
-		volume(vol);
-		btAlignedObjectArray<const btDbvtNode*> stack;
-		stack.resize(0);
+	if (!root)
+		return;
+
+	ATTRIBUTE_ALIGNED16(btDbvtVolume) volume(vol);
+	btAlignedObjectArray<const btDbvtNode*> stack;
+	stack.resize(0);
+
 #ifndef BT_DISABLE_STACK_TEMP_MEMORY
-		char tempmemory[SIMPLE_STACKSIZE * sizeof(const btDbvtNode*)];
-		stack.initializeFromBuffer(tempmemory, 0, SIMPLE_STACKSIZE);
+	char tempmemory[SIMPLE_STACKSIZE * sizeof(const btDbvtNode*)];
+	stack.initializeFromBuffer(tempmemory, 0, SIMPLE_STACKSIZE);
 #else
-		stack.reserve(SIMPLE_STACKSIZE);
+	stack.reserve(SIMPLE_STACKSIZE);
 #endif  //BT_DISABLE_STACK_TEMP_MEMORY
 
-		stack.push_back(root);
-		do
+	stack.push_back(root);
+	do
+	{
+		const btDbvtNode* n = stack[stack.size() - 1];
+		stack.pop_back();
+		if (!Intersect(n->volume, volume))
+			continue;
+
+		if (n->isinternal())
 		{
-			const btDbvtNode* n = stack[stack.size() - 1];
-			stack.pop_back();
-			if (Intersect(n->volume, volume))
-			{
-				if (n->isinternal())
-				{
-					stack.push_back(n->childs[0]);
-					stack.push_back(n->childs[1]);
-				}
-				else
-				{
-					policy.Process(n);
-				}
-			}
-		} while (stack.size() > 0);
-	}
+			stack.push_back(n->childs[0]);
+			stack.push_back(n->childs[1]);
+		}
+		else
+		{
+			policy.Process(n);
+		}
+	} while (stack.size() > 0);\
 }
 
 //
@@ -1192,31 +1192,30 @@ inline void btDbvt::collideTVNoStackAlloc(const btDbvtNode* root,
 										  DBVT_IPOLICY) const
 {
 	DBVT_CHECKTYPE
-	if (root)
+	if (!root)
+		return;
+
+	ATTRIBUTE_ALIGNED16(btDbvtVolume) volume(vol);
+	stack.resize(0);
+	stack.reserve(SIMPLE_STACKSIZE);
+	stack.push_back(root);
+	do
 	{
-		ATTRIBUTE_ALIGNED16(btDbvtVolume)
-		volume(vol);
-		stack.resize(0);
-		stack.reserve(SIMPLE_STACKSIZE);
-		stack.push_back(root);
-		do
+		const btDbvtNode* n = stack[stack.size() - 1];
+		stack.pop_back();
+		if (!Intersect(n->volume, volume))
+			return;
+
+		if (n->isinternal())
 		{
-			const btDbvtNode* n = stack[stack.size() - 1];
-			stack.pop_back();
-			if (Intersect(n->volume, volume))
-			{
-				if (n->isinternal())
-				{
-					stack.push_back(n->childs[0]);
-					stack.push_back(n->childs[1]);
-				}
-				else
-				{
-					policy.Process(n);
-				}
-			}
-		} while (stack.size() > 0);
-	}
+			stack.push_back(n->childs[0]);
+			stack.push_back(n->childs[1]);
+		}
+		else
+		{
+			policy.Process(n);
+		}
+	} while (stack.size() > 0);
 }
 
 DBVT_PREFIX
@@ -1233,42 +1232,40 @@ inline void btDbvt::rayTestInternal(const btDbvtNode* root,
 {
 	(void)rayTo;
 	DBVT_CHECKTYPE
-	if (root)
-	{
-		btVector3 resultNormal;
+	if (!root)
+		return;
 
-		int depth = 1;
-		int treshold = DOUBLE_STACKSIZE - 2;
-		stack.resize(DOUBLE_STACKSIZE);
-		stack[0] = root;
-		btVector3 bounds[2];
-		do
+	int depth = 1;
+	int treshold = DOUBLE_STACKSIZE - 2;
+
+	stack.resize(DOUBLE_STACKSIZE);
+	stack[0] = root;
+	do
+	{
+		const btDbvtNode* node = stack[--depth];
+		const btVector3 bounds[] = {
+			node->volume.Mins() - aabbMax,
+			node->volume.Maxs() - aabbMin
+		};
+		btScalar tmin = 1.f, lambda_min = 0.f;
+		if (!btRayAabb2(rayFrom, rayDirectionInverse, signs, bounds, tmin, lambda_min, lambda_max))
+			continue;
+
+		if (node->isinternal())
 		{
-			const btDbvtNode* node = stack[--depth];
-			bounds[0] = node->volume.Mins() - aabbMax;
-			bounds[1] = node->volume.Maxs() - aabbMin;
-			btScalar tmin = 1.f, lambda_min = 0.f;
-			unsigned int result1 = false;
-			result1 = btRayAabb2(rayFrom, rayDirectionInverse, signs, bounds, tmin, lambda_min, lambda_max);
-			if (result1)
+			if (depth > treshold)
 			{
-				if (node->isinternal())
-				{
-					if (depth > treshold)
-					{
-						stack.resize(stack.size() * 2);
-						treshold = stack.size() - 2;
-					}
-					stack[depth++] = node->childs[0];
-					stack[depth++] = node->childs[1];
-				}
-				else
-				{
-					policy.Process(node);
-				}
+				stack.resize(stack.size() * 2);
+				treshold = stack.size() - 2;
 			}
-		} while (depth);
-	}
+			stack[depth++] = node->childs[0];
+			stack[depth++] = node->childs[1];
+		}
+		else
+		{
+			policy.Process(node);
+		}
+	} while (depth);
 }
 
 //
@@ -1279,70 +1276,69 @@ inline void btDbvt::rayTest(const btDbvtNode* root,
 							DBVT_IPOLICY)
 {
 	DBVT_CHECKTYPE
-	if (root)
-	{
-		btVector3 rayDir = (rayTo - rayFrom);
-		rayDir.normalize();
+	if (!root)
+		return;
 
-		///what about division by zero? --> just set rayDirection[i] to INF/BT_LARGE_FLOAT
-		btVector3 rayDirectionInverse;
-		rayDirectionInverse[0] = rayDir[0] == btScalar(0.0) ? btScalar(BT_LARGE_FLOAT) : btScalar(1.0) / rayDir[0];
-		rayDirectionInverse[1] = rayDir[1] == btScalar(0.0) ? btScalar(BT_LARGE_FLOAT) : btScalar(1.0) / rayDir[1];
-		rayDirectionInverse[2] = rayDir[2] == btScalar(0.0) ? btScalar(BT_LARGE_FLOAT) : btScalar(1.0) / rayDir[2];
-		unsigned int signs[3] = {rayDirectionInverse[0] < 0.0, rayDirectionInverse[1] < 0.0, rayDirectionInverse[2] < 0.0};
+	btVector3 rayDir = (rayTo - rayFrom);
+	rayDir.normalize();
 
-		btScalar lambda_max = rayDir.dot(rayTo - rayFrom);
+	///what about division by zero? --> just set rayDirection[i] to INF/BT_LARGE_FLOAT
+	btVector3 rayDirectionInverse;
+	rayDirectionInverse[0] = rayDir[0] == btScalar(0.0) ? btScalar(BT_LARGE_FLOAT) : btScalar(1.0) / rayDir[0];
+	rayDirectionInverse[1] = rayDir[1] == btScalar(0.0) ? btScalar(BT_LARGE_FLOAT) : btScalar(1.0) / rayDir[1];
+	rayDirectionInverse[2] = rayDir[2] == btScalar(0.0) ? btScalar(BT_LARGE_FLOAT) : btScalar(1.0) / rayDir[2];
+	unsigned int signs[3] = {rayDirectionInverse[0] < 0.0, rayDirectionInverse[1] < 0.0, rayDirectionInverse[2] < 0.0};
 
-		btVector3 resultNormal;
+	btScalar lambda_max = rayDir.dot(rayTo - rayFrom);
 
-		btAlignedObjectArray<const btDbvtNode*> stack;
+	btAlignedObjectArray<const btDbvtNode*> stack;
 
-		int depth = 1;
-		int treshold = DOUBLE_STACKSIZE - 2;
+	int depth = 1;
+	int treshold = DOUBLE_STACKSIZE - 2;
 
-		char tempmemory[DOUBLE_STACKSIZE * sizeof(const btDbvtNode*)];
+	char tempmemory[DOUBLE_STACKSIZE * sizeof(const btDbvtNode*)];
 #ifndef BT_DISABLE_STACK_TEMP_MEMORY
-		stack.initializeFromBuffer(tempmemory, DOUBLE_STACKSIZE, DOUBLE_STACKSIZE);
+	stack.initializeFromBuffer(tempmemory, DOUBLE_STACKSIZE, DOUBLE_STACKSIZE);
 #else   //BT_DISABLE_STACK_TEMP_MEMORY
-		stack.resize(DOUBLE_STACKSIZE);
+	stack.resize(DOUBLE_STACKSIZE);
 #endif  //BT_DISABLE_STACK_TEMP_MEMORY
-		stack[0] = root;
-		btVector3 bounds[2];
-		do
-		{
-			const btDbvtNode* node = stack[--depth];
+	stack[0] = root;
 
-			bounds[0] = node->volume.Mins();
-			bounds[1] = node->volume.Maxs();
+	do
+	{
+		const btDbvtNode* node = stack[--depth];
+		const btVector3 bounds[] = {
+			node->volume.Mins(),
+			node->volume.Maxs()
+		};
 
-			btScalar tmin = 1.f, lambda_min = 0.f;
-			unsigned int result1 = btRayAabb2(rayFrom, rayDirectionInverse, signs, bounds, tmin, lambda_min, lambda_max);
+		btScalar tmin = 1.f, lambda_min = 0.f;
+		const bool result1 = btRayAabb2(rayFrom, rayDirectionInverse, signs, bounds, tmin, lambda_min, lambda_max);
 
 #ifdef COMPARE_BTRAY_AABB2
-			btScalar param = 1.f;
-			bool result2 = btRayAabb(rayFrom, rayTo, node->volume.Mins(), node->volume.Maxs(), param, resultNormal);
-			btAssert(result1 == result2);
+		btScalar param = 1.f;
+		const bool result2 = btRayAabb(rayFrom, rayTo, node->volume.Mins(), node->volume.Maxs(), param, resultNormal);
+		btAssert(result1 == result2);
 #endif  //TEST_BTRAY_AABB2
 
-			if (result1)
+		if (!result1)
+			continue;
+
+		if (node->isinternal())
+		{
+			if (depth > treshold)
 			{
-				if (node->isinternal())
-				{
-					if (depth > treshold)
-					{
-						stack.resize(stack.size() * 2);
-						treshold = stack.size() - 2;
-					}
-					stack[depth++] = node->childs[0];
-					stack[depth++] = node->childs[1];
-				}
-				else
-				{
-					policy.Process(node);
-				}
+				stack.resize(stack.size() * 2);
+				treshold = stack.size() - 2;
 			}
-		} while (depth);
-	}
+			stack[depth++] = node->childs[0];
+			stack[depth++] = node->childs[1];
+		}
+		else
+		{
+			policy.Process(node);
+		}
+	} while (depth);
 }
 
 //
@@ -1354,25 +1350,100 @@ inline void btDbvt::collideKDOP(const btDbvtNode* root,
 								DBVT_IPOLICY)
 {
 	DBVT_CHECKTYPE
-	if (root)
+	if (!root)
+		return;
+
+	const int inside = (1 << count) - 1;
+	btAlignedObjectArray<sStkNP> stack;
+	int signs[sizeof(unsigned) * 8];
+	btAssert(count < int(sizeof(signs) / sizeof(signs[0])));
+	for (int i = 0; i < count; ++i)
 	{
-		const int inside = (1 << count) - 1;
-		btAlignedObjectArray<sStkNP> stack;
-		int signs[sizeof(unsigned) * 8];
-		btAssert(count < int(sizeof(signs) / sizeof(signs[0])));
-		for (int i = 0; i < count; ++i)
+		signs[i] = ((normals[i].x() >= 0) ? 1 : 0) +
+					((normals[i].y() >= 0) ? 2 : 0) +
+					((normals[i].z() >= 0) ? 4 : 0);
+	}
+	stack.reserve(SIMPLE_STACKSIZE);
+	stack.push_back(sStkNP(root, 0));
+	do
+	{
+		sStkNP se = stack[stack.size() - 1];
+		bool out = false;
+		stack.pop_back();
+		for (int i = 0, j = 1; (!out) && (i < count); ++i, j <<= 1)
 		{
-			signs[i] = ((normals[i].x() >= 0) ? 1 : 0) +
-					   ((normals[i].y() >= 0) ? 2 : 0) +
-					   ((normals[i].z() >= 0) ? 4 : 0);
+			if (0 == (se.mask & j))
+			{
+				const int side = se.node->volume.Classify(normals[i], offsets[i], signs[i]);
+				switch (side)
+				{
+					case -1:
+						out = true;
+						break;
+					case +1:
+						se.mask |= j;
+						break;
+				}
+			}
 		}
-		stack.reserve(SIMPLE_STACKSIZE);
-		stack.push_back(sStkNP(root, 0));
-		do
+
+		if (!out)
 		{
-			sStkNP se = stack[stack.size() - 1];
+			if ((se.mask != inside) && (se.node->isinternal()))
+			{
+				stack.push_back(sStkNP(se.node->childs[0], se.mask));
+				stack.push_back(sStkNP(se.node->childs[1], se.mask));
+			}
+			else
+			{
+				if (policy.AllLeaves(se.node)) enumLeaves(se.node, policy);
+			}
+		}
+	} while (stack.size());
+}
+
+//
+DBVT_PREFIX
+inline void btDbvt::collideOCL(const btDbvtNode* root,
+							   const btVector3* normals,
+							   const btScalar* offsets,
+							   const btVector3& sortaxis,
+							   int count,
+							   DBVT_IPOLICY,
+							   bool fsort)
+{
+	DBVT_CHECKTYPE
+	if (!root)
+		return;
+
+	const unsigned srtsgns = (sortaxis[0] >= 0 ? 1 : 0) +
+								(sortaxis[1] >= 0 ? 2 : 0) +
+								(sortaxis[2] >= 0 ? 4 : 0);
+	const int inside = (1 << count) - 1;
+	btAlignedObjectArray<sStkNPS> stock;
+	btAlignedObjectArray<int> ifree;
+	btAlignedObjectArray<int> stack;
+	int signs[sizeof(unsigned) * 8];
+	btAssert(count < int(sizeof(signs) / sizeof(signs[0])));
+	for (int i = 0; i < count; ++i)
+	{
+		signs[i] = ((normals[i].x() >= 0) ? 1 : 0) +
+					((normals[i].y() >= 0) ? 2 : 0) +
+					((normals[i].z() >= 0) ? 4 : 0);
+	}
+	stock.reserve(SIMPLE_STACKSIZE);
+	stack.reserve(SIMPLE_STACKSIZE);
+	ifree.reserve(SIMPLE_STACKSIZE);
+	stack.push_back(allocate(ifree, stock, sStkNPS(root, 0, root->volume.ProjectMinimum(sortaxis, srtsgns))));
+	do
+	{
+		const int id = stack[stack.size() - 1];
+		sStkNPS se = stock[id];
+		stack.pop_back();
+		ifree.push_back(id);
+		if (se.mask != inside)
+		{
 			bool out = false;
-			stack.pop_back();
 			for (int i = 0, j = 1; (!out) && (i < count); ++i, j <<= 1)
 			{
 				if (0 == (se.mask & j))
@@ -1389,141 +1460,68 @@ inline void btDbvt::collideKDOP(const btDbvtNode* root,
 					}
 				}
 			}
-			if (!out)
-			{
-				if ((se.mask != inside) && (se.node->isinternal()))
-				{
-					stack.push_back(sStkNP(se.node->childs[0], se.mask));
-					stack.push_back(sStkNP(se.node->childs[1], se.mask));
-				}
-				else
-				{
-					if (policy.AllLeaves(se.node)) enumLeaves(se.node, policy);
-				}
-			}
-		} while (stack.size());
-	}
-}
-
-//
-DBVT_PREFIX
-inline void btDbvt::collideOCL(const btDbvtNode* root,
-							   const btVector3* normals,
-							   const btScalar* offsets,
-							   const btVector3& sortaxis,
-							   int count,
-							   DBVT_IPOLICY,
-							   bool fsort)
-{
-	DBVT_CHECKTYPE
-	if (root)
-	{
-		const unsigned srtsgns = (sortaxis[0] >= 0 ? 1 : 0) +
-								 (sortaxis[1] >= 0 ? 2 : 0) +
-								 (sortaxis[2] >= 0 ? 4 : 0);
-		const int inside = (1 << count) - 1;
-		btAlignedObjectArray<sStkNPS> stock;
-		btAlignedObjectArray<int> ifree;
-		btAlignedObjectArray<int> stack;
-		int signs[sizeof(unsigned) * 8];
-		btAssert(count < int(sizeof(signs) / sizeof(signs[0])));
-		for (int i = 0; i < count; ++i)
-		{
-			signs[i] = ((normals[i].x() >= 0) ? 1 : 0) +
-					   ((normals[i].y() >= 0) ? 2 : 0) +
-					   ((normals[i].z() >= 0) ? 4 : 0);
+			if (out) continue;
 		}
-		stock.reserve(SIMPLE_STACKSIZE);
-		stack.reserve(SIMPLE_STACKSIZE);
-		ifree.reserve(SIMPLE_STACKSIZE);
-		stack.push_back(allocate(ifree, stock, sStkNPS(root, 0, root->volume.ProjectMinimum(sortaxis, srtsgns))));
-		do
+		if (!policy.Descent(se.node))
+			continue;
+
+		if (se.node->isinternal())
 		{
-			const int id = stack[stack.size() - 1];
-			sStkNPS se = stock[id];
-			stack.pop_back();
-			ifree.push_back(id);
-			if (se.mask != inside)
+			const btDbvtNode* pns[] = {se.node->childs[0], se.node->childs[1]};
+			sStkNPS nes[] = {sStkNPS(pns[0], se.mask, pns[0]->volume.ProjectMinimum(sortaxis, srtsgns)),
+								sStkNPS(pns[1], se.mask, pns[1]->volume.ProjectMinimum(sortaxis, srtsgns))};
+			const int q = nes[0].value < nes[1].value ? 1 : 0;
+			int j = stack.size();
+			if (fsort && (j > 0))
 			{
-				bool out = false;
-				for (int i = 0, j = 1; (!out) && (i < count); ++i, j <<= 1)
-				{
-					if (0 == (se.mask & j))
-					{
-						const int side = se.node->volume.Classify(normals[i], offsets[i], signs[i]);
-						switch (side)
-						{
-							case -1:
-								out = true;
-								break;
-							case +1:
-								se.mask |= j;
-								break;
-						}
-					}
-				}
-				if (out) continue;
-			}
-			if (policy.Descent(se.node))
-			{
-				if (se.node->isinternal())
-				{
-					const btDbvtNode* pns[] = {se.node->childs[0], se.node->childs[1]};
-					sStkNPS nes[] = {sStkNPS(pns[0], se.mask, pns[0]->volume.ProjectMinimum(sortaxis, srtsgns)),
-									 sStkNPS(pns[1], se.mask, pns[1]->volume.ProjectMinimum(sortaxis, srtsgns))};
-					const int q = nes[0].value < nes[1].value ? 1 : 0;
-					int j = stack.size();
-					if (fsort && (j > 0))
-					{
-						/* Insert 0	*/
-						j = nearest(&stack[0], &stock[0], nes[q].value, 0, stack.size());
-						stack.push_back(0);
+				/* Insert 0	*/
+				j = nearest(&stack[0], &stock[0], nes[q].value, 0, stack.size());
+				stack.push_back(0);
 
-						//void * memmove ( void * destination, const void * source, size_t num );
+				//void * memmove ( void * destination, const void * source, size_t num );
 
 #if DBVT_USE_MEMMOVE
-						{
-							int num_items_to_move = stack.size() - 1 - j;
-							if (num_items_to_move > 0)
-								memmove(&stack[j + 1], &stack[j], sizeof(int) * num_items_to_move);
-						}
-#else
-						for (int k = stack.size() - 1; k > j; --k)
-						{
-							stack[k] = stack[k - 1];
-						}
-#endif
-						stack[j] = allocate(ifree, stock, nes[q]);
-						/* Insert 1	*/
-						j = nearest(&stack[0], &stock[0], nes[1 - q].value, j, stack.size());
-						stack.push_back(0);
-#if DBVT_USE_MEMMOVE
-						{
-							int num_items_to_move = stack.size() - 1 - j;
-							if (num_items_to_move > 0)
-								memmove(&stack[j + 1], &stack[j], sizeof(int) * num_items_to_move);
-						}
-#else
-						for (int k = stack.size() - 1; k > j; --k)
-						{
-							stack[k] = stack[k - 1];
-						}
-#endif
-						stack[j] = allocate(ifree, stock, nes[1 - q]);
-					}
-					else
-					{
-						stack.push_back(allocate(ifree, stock, nes[q]));
-						stack.push_back(allocate(ifree, stock, nes[1 - q]));
-					}
-				}
-				else
 				{
-					policy.Process(se.node, se.value);
+					int num_items_to_move = stack.size() - 1 - j;
+					if (num_items_to_move > 0)
+						memmove(&stack[j + 1], &stack[j], sizeof(int) * num_items_to_move);
 				}
+#else
+				for (int k = stack.size() - 1; k > j; --k)
+				{
+					stack[k] = stack[k - 1];
+				}
+#endif
+				stack[j] = allocate(ifree, stock, nes[q]);
+				/* Insert 1	*/
+				j = nearest(&stack[0], &stock[0], nes[1 - q].value, j, stack.size());
+				stack.push_back(0);
+#if DBVT_USE_MEMMOVE
+				{
+					int num_items_to_move = stack.size() - 1 - j;
+					if (num_items_to_move > 0)
+						memmove(&stack[j + 1], &stack[j], sizeof(int) * num_items_to_move);
+				}
+#else
+				for (int k = stack.size() - 1; k > j; --k)
+				{
+					stack[k] = stack[k - 1];
+				}
+#endif
+				stack[j] = allocate(ifree, stock, nes[1 - q]);
 			}
-		} while (stack.size());
-	}
+			else
+			{
+				stack.push_back(allocate(ifree, stock, nes[q]));
+				stack.push_back(allocate(ifree, stock, nes[1 - q]));
+			}
+		}
+		else
+		{
+			policy.Process(se.node, se.value);
+		}
+	} while (stack.size());
+
 }
 
 //
@@ -1532,29 +1530,30 @@ inline void btDbvt::collideTU(const btDbvtNode* root,
 							  DBVT_IPOLICY)
 {
 	DBVT_CHECKTYPE
-	if (root)
+	if (!root)
+		return;
+
+	btAlignedObjectArray<const btDbvtNode*> stack;
+	stack.reserve(SIMPLE_STACKSIZE);
+	stack.push_back(root);
+	do
 	{
-		btAlignedObjectArray<const btDbvtNode*> stack;
-		stack.reserve(SIMPLE_STACKSIZE);
-		stack.push_back(root);
-		do
+		const btDbvtNode* n = stack[stack.size() - 1];
+		stack.pop_back();
+		if (!policy.Descent(n))
+			continue;
+
+		if (n->isinternal())
 		{
-			const btDbvtNode* n = stack[stack.size() - 1];
-			stack.pop_back();
-			if (policy.Descent(n))
-			{
-				if (n->isinternal())
-				{
-					stack.push_back(n->childs[0]);
-					stack.push_back(n->childs[1]);
-				}
-				else
-				{
-					policy.Process(n);
-				}
-			}
-		} while (stack.size() > 0);
-	}
+			stack.push_back(n->childs[0]);
+			stack.push_back(n->childs[1]);
+		}
+		else
+		{
+			policy.Process(n);
+		}
+	} while (stack.size() > 0);
+
 }
 
 //
