@@ -44,6 +44,7 @@ project "nvrhi"
 	filter "system:windows"
 		defines {
 			"NVRHI_D3D12_WITH_D3D12MA",
+			"D3D12MA_USING_DIRECTX_HEADERS"
 		}
 		includedirs {
 			"NVRHI/thirdparty/D3D12MA/include",
@@ -53,7 +54,8 @@ project "nvrhi"
 			"NVRHI/src/d3d11/**.cpp",
 			"NVRHI/src/d3d12/**.cpp",
 			"NVRHI/src/common/dxgi*.cpp",
-			"NVRHI/thirdparty/D3D12MA/src/**.cpp",
+			"NVRHI/thirdparty/D3D12MA/src/D3D12MemAlloc.cpp",
+			"NVRHI/thirdparty/D3D12MA/src/Common.*",
 			"NVRHI/thirdparty/D3D12MA/include/**.h"
 		}
 
