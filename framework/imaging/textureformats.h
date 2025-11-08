@@ -7,7 +7,7 @@
 
 #pragma once
 
-enum EImageType : int
+enum EImageType : int8
 {
 	IMAGE_TYPE_INVALID = -1,
 	IMAGE_TYPE_1D = 0,
@@ -16,7 +16,7 @@ enum EImageType : int
 	IMAGE_TYPE_CUBE
 };
 
-enum ETextureFormat : int
+enum ETextureFormat : uint16
 {
 	FORMAT_NONE     	= 0,
 
@@ -118,7 +118,7 @@ static constexpr ETextureFormat FORMAT_IA32F	= FORMAT_RG32F;
 
 static constexpr const int TEXFORMAT_MASK = (1 << 10) - 1;
 
-enum ETextureFormatFlags
+enum ETextureFormatFlags : uint16
 {
 	TEXFORMAT_FLAG_SWAP_RB	= (1 << 10),	// Swaps R and B channels (for DXGI swap chains)
 	TEXFORMAT_FLAG_SRGB		= (1 << 11),	// SRGB variant

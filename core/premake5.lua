@@ -137,9 +137,21 @@ project "eqNVRHI"
 		"materialsystem1/Renderers/NVRHI/**.h"
 	}
 	removefiles {
-		"materialsystem1/Renderers/NVRHI/**D3D11.cpp",
-		"materialsystem1/Renderers/NVRHI/**D3D11.h"
+		"materialsystem1/Renderers/NVRHI/**DXGI*.cpp",
+		"materialsystem1/Renderers/NVRHI/**DXGI*.h",
+		"materialsystem1/Renderers/NVRHI/**D3D*.cpp",
+		"materialsystem1/Renderers/NVRHI/**D3D*.h",
+		"materialsystem1/Renderers/NVRHI/**VK*.cpp",
+		"materialsystem1/Renderers/NVRHI/**VK*.h"
 	}
+
+    filter "system:Windows"
+		files {
+			"materialsystem1/Renderers/NVRHI/**DXGI*.cpp",
+			"materialsystem1/Renderers/NVRHI/**DXGI*.h",
+			"materialsystem1/Renderers/NVRHI/**D3D12.cpp",
+			"materialsystem1/Renderers/NVRHI/**D3D12.h",
+		}
 	
 -- WebGPU renderer
 project "eqWGPURHI"

@@ -30,9 +30,13 @@ void CEqCollisionObject::Destroy()
 {
 	SAFE_DELETE(m_trimap);
 	SAFE_DELETE(m_collObject);
-	if (!m_studioShape)
+	if (m_shapeOwning & OWNS_SHAPE)
 	{
 		SAFE_DELETE(m_shape);
+	}
+		
+	if (m_shapeOwning & OWNS_SHAPE_LIST)
+	{
 		if (m_shapeList)
 		{
 			for (int i = 0; i < m_numShapes; ++i)
@@ -44,7 +48,7 @@ void CEqCollisionObject::Destroy()
 	m_shape = nullptr;
 	m_mesh = nullptr;
 	m_broadphaseProxy = nullptr;
-	m_studioShape = false;
+	m_shapeOwning = 0;
 	m_numShapes = 0;
 }
 
@@ -93,15 +97,14 @@ bool CEqCollisionObject::Initialize(const StudioPhyObjData& physObject)
 
 		btCompoundShape* compound = new btCompoundShape(false, m_numShapes);
 		for (int i = 0; i < m_numShapes; i++)
-			compound->addChildShape(btTransform::getIdentity(), m_shapeList[i]);
+			compound->addChildShape(btTransform::getIdentity(), shapes[i]);
 
 		m_shape = compound;
-		m_studioShape = false;
+		m_shapeOwning = OWNS_SHAPE;
 	}
 	else
 	{
 		m_shape = m_shapeList[0];
-		m_studioShape = true; // do not delete!
 	}
 	
 	ASSERT_MSG(m_shape, "No valid shape!");
@@ -135,6 +138,10 @@ bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh, bool internalEd
 	const bool buildBVH = true; // always 'true' because 'false' has not been fucking implemented...
 
 	btBvhTriangleMeshShape* meshShape = new btBvhTriangleMeshShape(m_mesh, buildBVH, buildBVH);
+	m_shape = meshShape;
+	m_shapeOwning = OWNS_SHAPE;
+	m_shape->setMargin(ph_margin.GetFloat());
+
 	if (internalEdges)
 	{
 		// WARNING: this is slow!
@@ -155,11 +162,10 @@ bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh, bool internalEd
 			subMeshShape->setOptimizedBvh(meshShape->getOptimizedBvh());
 			m_shapeList[i] = subMeshShape;
 		}
+
+		m_shapeOwning = OWNS_SHAPE | OWNS_SHAPE_LIST;
 	}
 	
-	m_shape = meshShape;
-	m_shape->setMargin(ph_margin.GetFloat());
-
 	InitAABB();
 
 	m_collObject = new btCollisionObject();
@@ -167,7 +173,6 @@ bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh, bool internalEd
 
 	m_collObject->setUserPointer(this);
 
-	m_studioShape = false;
 
 	return true;
 }
@@ -192,6 +197,8 @@ bool CEqCollisionObject::Initialize(const FVector3D& boxMins, const FVector3D& b
 	m_shapeList = nullptr;
 
 	m_shape = box;
+	m_shapeOwning = OWNS_SHAPE;
+
 	m_collObject = new btCollisionObject();
 	m_collObject->setCollisionShape(m_shape);
 
@@ -201,7 +208,6 @@ bool CEqCollisionObject::Initialize(const FVector3D& boxMins, const FVector3D& b
 
 	m_collObject->setUserPointer(this);
 
-	m_studioShape = false;
 
 	return true;
 }
@@ -215,6 +221,8 @@ bool CEqCollisionObject::Initialize(float radius)
 
 
 	m_shape = new btSphereShape(radius);
+	m_shapeOwning = OWNS_SHAPE;
+
 	m_collObject = new btCollisionObject();
 	m_collObject->setCollisionShape(m_shape);
 
@@ -223,8 +231,6 @@ bool CEqCollisionObject::Initialize(float radius)
 	InitAABB();
 
 	m_collObject->setUserPointer(this);
-
-	m_studioShape = false;
 
 	return true;
 }
@@ -237,6 +243,8 @@ bool CEqCollisionObject::Initialize(float radius, float height)
 	m_shapeList = nullptr;
 
 	m_shape = new btCylinderShape(btVector3(radius, height, radius));
+	m_shapeOwning = OWNS_SHAPE;
+
 	m_collObject = new btCollisionObject();
 	m_collObject->setCollisionShape(m_shape);
 
@@ -245,8 +253,6 @@ bool CEqCollisionObject::Initialize(float radius, float height)
 	InitAABB();
 
 	m_collObject->setUserPointer(this);
-
-	m_studioShape = false;
 
 	return true;
 }

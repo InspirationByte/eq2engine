@@ -15,9 +15,7 @@ property "e2_ws_settings"
 		 "build/lib/"
  	}
 	
-	if _ACTION ~= "vscode" then
-		location "%{ prj_location(prj, wks) }"
-	end
+	location "%{ prj_location(prj, wks) }"
 	
 	filter "kind:StaticLib"
 		targetdir "build/lib/%{cfg.platform}/%{cfg.buildcfg}"
@@ -204,6 +202,10 @@ property "thirdpartylib"
 	targetdir "build/thirdpartylib/%{cfg.platform}/%{cfg.buildcfg}"
 
 function prj_location(prj, wks, def)
+	if _ACTION == "vscode" then
+		return _MAIN_SCRIPT_DIR
+	end
+
 	if _ACTION == "gmake2" and wks ~= nil and def == nil then
 		def = _MAIN_SCRIPT_DIR.."/build/"..wks.name..".solution"
 	else

@@ -385,8 +385,6 @@ void CDkCore::Shutdown()
 
 	Msg("\n*Destroying core...\n");
 
-	// shutdown memory
-	PPMemShutdown();
 	Log_Close();
 	m_exceptionCb.clear(true);
 
@@ -395,6 +393,8 @@ void CDkCore::Shutdown()
 		CloseModule(m_modules[i]);
 		i--;
 	}
+
+	PPMemShutdown();
 }
 
 char* CDkCore::GetApplicationName() const

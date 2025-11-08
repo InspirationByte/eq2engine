@@ -28,7 +28,8 @@ project "nvrhi"
 	filter "system:windows"
 		defines {
 			"NVRHI_D3D12_WITH_D3D12MA",
-			"VK_USE_PLATFORM_WIN32_KHR"
+			"VK_USE_PLATFORM_WIN32_KHR",
+			"D3D12MA_USING_DIRECTX_HEADERS"
 		}
 		includedirs {
 			"NVRHI/thirdparty/D3D12MA/include",
@@ -41,7 +42,8 @@ project "nvrhi"
 			"NVRHI/src/d3d12/**.h",
 			"NVRHI/src/common/dxgi*.cpp",
 			"NVRHI/src/common/dxgi*.h",
-			"NVRHI/thirdparty/D3D12MA/src/**.cpp",
+			"NVRHI/thirdparty/D3D12MA/src/D3D12MemAlloc.cpp",
+			"NVRHI/thirdparty/D3D12MA/src/Common.*",
 			"NVRHI/thirdparty/D3D12MA/include/**.h"
 		}
 

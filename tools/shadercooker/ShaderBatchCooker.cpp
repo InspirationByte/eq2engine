@@ -359,7 +359,7 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 	ShaderInfo& shaderInfo = m_shaderList.append();
 	shaderInfo.crc32 = g_fileSystem->GetFileCRC32(shaderDefFileName, SP_ROOT);
 	shaderSection.GetValues(shaderInfo.name);
-	shaderInfo.sourceFilename = sourceText ? shaderDefFileName : sourceFileName;
+	shaderInfo.sourceFilename = sourceText ? shaderDefFileName : sourceFileName.ToCString();
 	shaderInfo.sourceText = sourceText;
 	shaderInfo.type = isExt ? ShaderInfo::SHADER_EXT : ShaderInfo::SHADER_BASE;
 	shaderSection.Get("DebugInfo").GetValues(shaderInfo.debugInfo);

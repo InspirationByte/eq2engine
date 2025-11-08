@@ -171,5 +171,11 @@ protected:
 	float					m_restitution{ 0.1f };
 	float					m_friction{ 0.1f };
 
-	bool					m_studioShape{ false };
+	enum EShapeOwning : uint8
+	{
+		OWNS_SHAPE = (1 << 0),
+		OWNS_SHAPE_LIST = (1 << 1),
+	};
+
+	uint8					m_shapeOwning{ 0 };
 };

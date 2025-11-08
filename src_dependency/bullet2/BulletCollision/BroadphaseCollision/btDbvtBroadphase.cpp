@@ -128,9 +128,9 @@ struct btDbvtTreeCollider : btDbvt::ICollide
 //
 
 //
-btDbvtBroadphase::btDbvtBroadphase(btOverlappingPairCache* paircache)
+btDbvtBroadphase::btDbvtBroadphase(btOverlappingPairCache* paircache, bool deferredCollide)
 {
-	m_deferedcollide = false;
+	m_deferedcollide = deferredCollide;
 	m_needcleanup = true;
 	m_releasepaircache = (paircache != 0) ? false : true;
 	m_prediction = 0;
@@ -315,10 +315,7 @@ void btDbvtBroadphase::setAabb(btBroadphaseProxy* absproxy,
 				if (delta[0] < 0) velocity[0] = -velocity[0];
 				if (delta[1] < 0) velocity[1] = -velocity[1];
 				if (delta[2] < 0) velocity[2] = -velocity[2];
-				if (
-					m_sets[0].update(proxy->leaf, aabb, velocity, gDbvtMargin)
-
-				)
+				if (m_sets[0].update(proxy->leaf, aabb, velocity, gDbvtMargin))
 				{
 					++m_updates_done;
 					docollide = true;

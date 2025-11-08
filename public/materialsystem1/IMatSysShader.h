@@ -13,7 +13,7 @@ class IMatSystemShader;
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 
-enum ETextureFormat : int;
+enum ETextureFormat : uint16;
 enum EPrimTopology : uint8;
 enum ECullMode : uint8;
 

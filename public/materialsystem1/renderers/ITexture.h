@@ -13,7 +13,7 @@ class CImage;
 using CImagePtr = CRefPtr<CImage>;
 
 struct SamplerStateParams;
-enum ETextureFormat : int;
+enum ETextureFormat : uint16;
 
 struct TextureDesc;
 
@@ -49,9 +49,9 @@ struct TextureOrigin
 
 struct TextureExtent
 {
-	int		width{ -1 };
-	int		height{ -1 };
-	int		arraySize{ 1 };
+	int16	width{ -1 };
+	int16	height{ -1 };
+	int16	arraySize{ 1 };
 
 	TextureExtent() = default;
 	TextureExtent(const IVector2D& size, int arraySize = 1)
