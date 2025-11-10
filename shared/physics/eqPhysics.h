@@ -43,9 +43,9 @@ struct eqContactPair;
 struct KVSection;
 class CEqCollisionObject;
 class CEqRigidBody;
+class CEqPhysicsBroadphase;
 class IEqPhysicsConstraint;
 class IEqPhysController;
-
 
 typedef void (*FNSIMULATECALLBACK)(float fDt, int iterNum);
 
@@ -171,20 +171,19 @@ protected:
 	Array<eqPhysSurfParam>			m_physSurfaceParams{ PP_SL };
 
 	Array<CEqRigidBody*>			m_moveable{ PP_SL };
-
 	Array<CEqRigidBody*>			m_dynObjects{ PP_SL };
 	Array<CEqCollisionObject*>		m_staticObjects{ PP_SL };
-
 	Array<CEqCollisionObject*>		m_ghostObjects{ PP_SL };
 
 	Array<IEqPhysicsConstraint*>	m_constraints{ PP_SL };
 	Array<IEqPhysController*>		m_controllers{ PP_SL };
+	
+	CEqPhysicsBroadphase*			m_broadphase{ nullptr };
 
 	btDispatcherInfo*				m_dispatchInfo{ nullptr };
 	btCollisionWorld*				m_collisionWorld{ nullptr };
 	btCollisionConfiguration*		m_collConfig{ nullptr };
 	btCollisionDispatcher*			m_collDispatcher{ nullptr };
-	btBroadphaseInterface*			m_broadphase{ nullptr };
 
 	int								m_numRayQueries{ 0 };
 	float							m_fDt{ 0.0f };

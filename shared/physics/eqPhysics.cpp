@@ -31,6 +31,7 @@
 #include "eqPhysics_Body.h"
 #include "eqPhysics_Contstraint.h"
 #include "eqPhysics_Controller.h"
+#include "eqPhysics_Broadphase.h"
 #include "eqBulletIndexedMesh.h"
 #include "BulletConvert.h"
 
@@ -327,13 +328,7 @@ void CEqPhysicsWorld::InitWorld()
 
 void CEqPhysicsWorld::InitGrid(const BoundingBox& worldBBox)
 {
-	using namespace EqBulletUtils;
-	btVector3 boxMin, boxMax;
-	ConvertDKToBulletVectors(boxMin, worldBBox.minPoint);
-	ConvertDKToBulletVectors(boxMax, worldBBox.maxPoint);
-
-	gDbvtMargin = 1.0f;
-	m_broadphase = new btDbvtBroadphase(nullptr, true);
+	m_broadphase = PPNew CEqPhysicsBroadphase();
 
 	for(CEqRigidBody* body : m_dynObjects)
 		SetupCollisionObjectBroadphase(body);
@@ -348,13 +343,13 @@ void CEqPhysicsWorld::InitGrid(const BoundingBox& worldBBox)
 void CEqPhysicsWorld::DestroyGrid()
 {
 	for (CEqRigidBody* body : m_dynObjects)
-		body->m_broadphaseProxy = nullptr;
+		body->m_broadphaseUnit = nullptr;
 
 	for (CEqCollisionObject* collObj : m_ghostObjects)
-		collObj->m_broadphaseProxy = nullptr;
+		collObj->m_broadphaseUnit = nullptr;
 
 	for (CEqCollisionObject* collObj : m_staticObjects)
-		collObj->m_broadphaseProxy = nullptr;
+		collObj->m_broadphaseUnit = nullptr;
 
 	SAFE_DELETE(m_broadphase);
 }
@@ -484,12 +479,12 @@ bool CEqPhysicsWorld::RemoveBody( CEqRigidBody* body )
 	if(!body)
 		return false;
 
-	if (body->m_broadphaseProxy)
+	if (body->m_broadphaseUnit)
 	{
 		Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
-		m_broadphase->destroyProxy(body->m_broadphaseProxy, m_collDispatcher);
+		m_broadphase->DestroyUnit(body->m_broadphaseUnit);
 	}
-	body->m_broadphaseProxy = nullptr;
+	body->m_broadphaseUnit = nullptr;
 
 	const bool result = m_dynObjects.fastRemove(body);
 	if (result)
@@ -518,12 +513,12 @@ bool CEqPhysicsWorld::RemoveGhostObject( CEqCollisionObject* object )
 	if(!object)
 		return false;
 
-	if (object->m_broadphaseProxy)
+	if (object->m_broadphaseUnit)
 	{
 		Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
-		m_broadphase->destroyProxy(object->m_broadphaseProxy, m_collDispatcher);
+		m_broadphase->DestroyUnit(object->m_broadphaseUnit);
 	}
-	object->m_broadphaseProxy = nullptr;
+	object->m_broadphaseUnit = nullptr;
 
 	if(!m_ghostObjects.fastRemove(object))
 		return false;
@@ -548,12 +543,12 @@ bool CEqPhysicsWorld::RemoveStaticObject( CEqCollisionObject* object )
 	if (!m_staticObjects.fastRemove(object))
 		return false;
 
-	if (object->m_broadphaseProxy)
+	if (object->m_broadphaseUnit)
 	{
 		Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
-		m_broadphase->destroyProxy(object->m_broadphaseProxy, m_collDispatcher);
+		m_broadphase->DestroyUnit(object->m_broadphaseUnit);
 	}
-	object->m_broadphaseProxy = nullptr;
+	object->m_broadphaseUnit = nullptr;
 
 	return true;
 }
@@ -923,17 +918,11 @@ void CEqPhysicsWorld::SetupCollisionObjectBroadphase( CEqCollisionObject* collOb
 	using namespace Threading;
 	using namespace EqBulletUtils;
 
-	btVector3 boxMin, boxMax;
-	ConvertDKToBulletVectors(boxMin, collObj->m_aabb_transformed.minPoint);
-	ConvertDKToBulletVectors(boxMax, collObj->m_aabb_transformed.maxPoint);
-
 	// check body is in the world
-	if (collObj->m_broadphaseProxy)
+	if (collObj->m_broadphaseUnit)
 	{
 		Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
-		collObj->m_broadphaseProxy->m_collisionFilterGroup = collObj->GetContents();
-		collObj->m_broadphaseProxy->m_collisionFilterMask = collObj->GetCollideMask();
-		m_broadphase->setAabb(collObj->m_broadphaseProxy, boxMin, boxMax, m_collDispatcher);
+		m_broadphase->SetAabb(collObj->m_broadphaseUnit, collObj->m_aabb_transformed);
 	}
 	else
 	{
@@ -941,7 +930,7 @@ void CEqPhysicsWorld::SetupCollisionObjectBroadphase( CEqCollisionObject* collOb
 			return;
 
 		Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
-		collObj->m_broadphaseProxy = m_broadphase->createProxy(boxMin, boxMax, 0, collObj, collObj->GetContents(), collObj->GetCollideMask(), m_collDispatcher);
+		collObj->m_broadphaseUnit = m_broadphase->CreateUnit(collObj->m_aabb_transformed, collObj);
 	}
 
 	collObj->m_flags &= ~COLLOBJ_BROADPHASE_DIRTY;
@@ -970,12 +959,8 @@ void CEqPhysicsWorld::DetectCollisionsSingle(CEqRigidBody* body)
 
 	body->UpdateBoundingBoxTransform();
 	const BoundingBox aabb = body->m_aabb_transformed;
-	
-	btVector3 boxMin, boxMax;
-	ConvertDKToBulletVectors(boxMin, aabb.minPoint);
-	ConvertDKToBulletVectors(boxMax, aabb.maxPoint);
 
-	CEqBroadphaseCallback broadphaseCb([this, body](CEqCollisionObject* collObj) {
+	auto broadphaseCb = [this, body](CEqCollisionObject* collObj) {
 		if (collObj == body)
 			return;
 
@@ -991,11 +976,11 @@ void CEqPhysicsWorld::DetectCollisionsSingle(CEqRigidBody* body)
 		{
 			DetectStaticVsBodyCollision(collObj, body, body->GetLastFrameTime());
 		}
-	});
+	};
 
 	{
 		Threading::CScopedReadLocker m(s_eqPhysDynamicRWLock);
-		m_broadphase->aabbTest(boxMin, boxMax, broadphaseCb);
+		m_broadphase->BoxTest(aabb, broadphaseCb);
 	}
 }
 
@@ -1297,7 +1282,7 @@ bool CEqPhysicsWorld::TestLineCollision(
 	rayBox.AddVertex(end);
 
 	bool processed = false;
-	CEqBroadphaseRayCallback broadphaseCb(Vector3D(end - start), [&](CEqCollisionObject* collObj) {
+	auto broadphaseCb = [&](CEqCollisionObject* collObj) {
 		processed = true;
 		const bool isDynamic = collObj->IsDynamic();
 		if (!isDynamic && !(objectTypeTesting & EQPHYS_FILTER_FLAG_STATICOBJECTS))
@@ -1335,15 +1320,11 @@ bool CEqPhysicsWorld::TestLineCollision(
 				coll = tempColl;
 			}
 		}
-	});
+	};
 
 	{
-		btVector3 rayStart, rayEnd;
-		ConvertDKToBulletVectors(rayStart, start);
-		ConvertDKToBulletVectors(rayEnd, end);
-
 		Threading::CScopedReadLocker m(s_eqPhysDynamicRWLock);
-		m_broadphase->rayTest(rayStart, rayEnd, broadphaseCb);
+		m_broadphase->RayTest(start, end, broadphaseCb, objectTypeTesting);
 	}
 
 	coll.fract = min(coll.fract, 1.0f);
@@ -1399,7 +1380,7 @@ bool CEqPhysicsWorld::TestConvexSweepCollision(
 	rayBox.AddVertex(end + sBoxSize);
 
 	bool processed = false;
-	CEqBroadphaseRayCallback broadphaseCb(Vector3D(end - start), [&](CEqCollisionObject* collObj) {
+	auto broadphaseCb = [&](CEqCollisionObject* collObj) {
 		processed = true;
 		const bool isDynamic = collObj->IsDynamic();
 		if (!isDynamic && !(objectTypeTesting & EQPHYS_FILTER_FLAG_STATICOBJECTS))
@@ -1437,7 +1418,7 @@ bool CEqPhysicsWorld::TestConvexSweepCollision(
 				coll = tempColl;
 			}
 		}
-	});
+	};
 
 	{
 		btVector3 rayStart, rayEnd;
@@ -1445,7 +1426,7 @@ bool CEqPhysicsWorld::TestConvexSweepCollision(
 		ConvertDKToBulletVectors(rayEnd, end);
 
 		Threading::CScopedReadLocker m(s_eqPhysDynamicRWLock);
-		m_broadphase->rayTest(rayStart, rayEnd, broadphaseCb, shapeMins, shapeMaxs);
+		m_broadphase->RayTest(start, end, broadphaseCb, objectTypeTesting, shapeBox);
 	}
 
 	coll.fract = min(coll.fract, 1.0f);
