@@ -15,18 +15,15 @@ $dependency_folder = $project_folder + '\\src_dependency'
 
 # Download required dependencies
 Invoke-WebRequest -Uri $windows_sdl2_url -OutFile SDL2.zip
-Expand-Archive SDL2.zip -DestinationPath $dependency_folder
-
 Invoke-WebRequest -Uri $windows_openal_url -OutFile OPENAL.zip
-Expand-Archive OPENAL.zip -DestinationPath $dependency_folder
-
 Invoke-WebRequest -Uri $windows_wx_hdrs_url -OutFile WX_HDRS.7z
-Expand-7Zip -ArchiveFileName WX_HDRS.7z -TargetPath ($dependency_folder + '\\wxWidgets')
-
 Invoke-WebRequest -Uri $windows_wx_libs_url -OutFile WX_LIBS.7z
-Expand-7Zip -ArchiveFileName WX_LIBS.7z -TargetPath ($dependency_folder + '\\wxWidgets')
-
 Invoke-WebRequest -Uri $windows_ffmpeg_url -OutFile FFMPEG.zip
+
+Expand-Archive SDL2.zip -DestinationPath $dependency_folder
+Expand-Archive OPENAL.zip -DestinationPath $dependency_folder
+Expand-7Zip -ArchiveFileName WX_HDRS.7z -TargetPath ($dependency_folder + '\\wxWidgets')
+Expand-7Zip -ArchiveFileName WX_LIBS.7z -TargetPath ($dependency_folder + '\\wxWidgets')
 Expand-Archive FFMPEG.zip -DestinationPath $dependency_folder
 
 # Generate project files
