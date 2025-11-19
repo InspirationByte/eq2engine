@@ -11,7 +11,7 @@
 class btCollisionShape;
 class btCollisionObject;
 struct btTriangleInfoMap;
-struct btBroadphaseProxy;
+struct eqPhysBroadphaseUnit;
 class btBroadphaseInterface;
 
 class CEqBulletIndexedMesh;
@@ -79,7 +79,7 @@ public:
 	virtual void				ClearContacts();
 
 	btCollisionObject*			GetBulletObject() const { return m_collObject; }					///< returns bullet physics collision object
-	btBroadphaseProxy*			GetBulletBroadphaseProxy() const { return m_broadphaseProxy; }
+	eqPhysBroadphaseUnit*		GetBBroadphaseUnit() const { return m_broadphaseUnit; }
 	btCollisionShape*			GetCompoundBulletShape() const { return m_shape; }					///< returns bullet physics shape (compound variant if multiple)
 	ArrayCRef<btCollisionShape*>	GetBulletCollisionShapes() const;								///< returns bullet physics shape
 	CEqBulletIndexedMesh*		GetMesh() const { return m_mesh; }									///< returns indexed shape
@@ -156,7 +156,7 @@ protected:
 	void*					m_userData{ nullptr };
 
 	btCollisionObject*		m_collObject{ nullptr };
-	btBroadphaseProxy*		m_broadphaseProxy{ nullptr };
+	eqPhysBroadphaseUnit*	m_broadphaseUnit{ nullptr };
 
 	CEqBulletIndexedMesh*	m_mesh{ nullptr };
 	btTriangleInfoMap*		m_trimap{ nullptr };

@@ -99,6 +99,7 @@ class BatchedJob : public SyncJob
 {
 public:
 	using BatchItemList = Array<ITEM>;
+	using BatchItems = ArrayRef<ITEM>;
 	using BatchItemSpan = ArrayRef<ITEM>;
 	
 	class Worker : public IParallelJob
@@ -119,11 +120,10 @@ public:
 	void StartJobs(CEqJobManager& jobMng);
 
 private:
-	virtual void GetJobItems(BatchItemList& batchJobItems) = 0;
-	virtual void OnInitWorker(Worker& workerJob) = 0;
+	virtual BatchItems GetJobItems() = 0;
+	virtual void OnInitWorker(Worker& workerJob) {};
 	virtual void Process(ITEM jobItem) = 0;
 
-	BatchItemList 	m_batchItems{ PP_SL };
 	Array<Worker>	m_workerJobs{ PP_SL };
 };
 
@@ -169,21 +169,21 @@ private:
 template<typename ITEM>
 void BatchedJob<ITEM>::StartJobs(CEqJobManager& jobMng)
 {
-	GetJobItems(m_batchItems);
-	if (!m_batchItems.numElem())
+	BatchItems batchJobItems = GetJobItems();
+	if (!batchJobItems.numElem())
 	{
 		jobMng.StartJob(this);
 		return;
 	}
 
 	const EqString batchJobName = m_jobName + "Worker";
-	const int tasksPerBatch = m_batchItems.numElem() / jobMng.GetJobThreadsCount();
+	const int tasksPerBatch = batchJobItems.numElem() / jobMng.GetJobThreadsCount();
 	m_workerJobs.assureSizeEmplace(jobMng.GetJobThreadsCount(), batchJobName, *this);
 
 	int numBatchs = 0;
 	for (Worker& workerJob : m_workerJobs)
 	{
-		workerJob.m_batchItems = ArrayRef(m_batchItems.ptr(), m_batchItems.numElem());
+		workerJob.m_batchItems = ArrayRef(batchJobItems.ptr(), batchJobItems.numElem());
 		workerJob.m_firstTask = numBatchs++;
 		workerJob.m_threadCount = jobMng.GetJobThreadsCount();
 		workerJob.InitJob();

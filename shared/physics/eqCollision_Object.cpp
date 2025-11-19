@@ -47,7 +47,7 @@ void CEqCollisionObject::Destroy()
 
 	m_shape = nullptr;
 	m_mesh = nullptr;
-	m_broadphaseProxy = nullptr;
+	m_broadphaseUnit = nullptr;
 	m_shapeOwning = 0;
 	m_numShapes = 0;
 }
