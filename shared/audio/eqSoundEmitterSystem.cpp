@@ -408,7 +408,7 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 				const SoundNodeDesc& nodeDesc = script->nodeDescs[i];
 				if (nodeDesc.type != SOUND_NODE_INPUT)
 					continue;
-				inputParams.Append(EqString::Format("  %s: %.2f\n", nodeDesc.name, emit->inputs[i].values[0]));
+				inputParams.AppendFmt("  %s: %.2f\n", nodeDesc.name, emit->inputs[i].values[0]);
 			}
 
 			DbgText3D()
@@ -536,7 +536,7 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 			const SoundNodeDesc& nodeDesc = script->nodeDescs[i];
 			if (nodeDesc.type != SOUND_NODE_INPUT)
 				continue;
-			inputParams.Append(EqString::Format("  %s: %.2f\n", nodeDesc.name, emitter->inputs[i].values[0]));
+			inputParams.AppendFmt("  %s: %.2f\n", nodeDesc.name, emitter->inputs[i].values[0]);
 		}
 
 		DbgText3D()

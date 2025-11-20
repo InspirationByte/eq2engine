@@ -562,7 +562,7 @@ void CEGFGenerator::ParseLodData(const KVSection& section, int lodIdx)
 
 		GenModel newModel = m_modelrefs[lodgroup->lodmodels[0]];
 		newModel.simplifyThreshold = simplifyThreshold;
-		newModel.name.Append(EqString::Format("_lod_%g", simplifyThreshold * 100));
+		newModel.name.AppendFmt("_lod_%g", simplifyThreshold * 100);
 
 		const int replaceByModel = m_modelrefs.append(newModel);
 		lodgroup->lodmodels.append(replaceByModel);

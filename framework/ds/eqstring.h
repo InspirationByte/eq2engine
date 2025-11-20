@@ -68,6 +68,10 @@ public:
 	void		Append(const CH* pszStr, int nCount = -1);
 	void		Append(const EqTStr& str);
 	void		Append(StrRef str);
+	void		AppendV(const CH* pszFormat, va_list argptr);
+
+	template <typename... Args>
+	void		AppendFmt(const CH* pszFormat, Args&&... args);
 
 	void		Insert(const CH* pszStr, int nInsertPos, int nInsertCount = -1);
 	void		Insert(const EqTStr& str, int nInsertPos);
@@ -103,7 +107,7 @@ public:
 	operator 	StrRef () const { return Ref(); }
 
 protected:
-
+	void		AppendF(const CH* pszFormat, ...);
 	bool		MakeInsertSpace(int startPos, int count);
 
 	const CH*	StrPtr() const;
@@ -133,4 +137,11 @@ template <typename... Args>
 inline EqTStrRef<CH> EqTStr<CH>::Format(const CH* pszFormat, Args&&... args)
 {
 	return FormatF(pszFormat, ::ToCString(std::forward<Args>(args))...);
+}
+
+template <typename CH>
+template <typename... Args>
+inline void EqTStr<CH>::AppendFmt(const CH* pszFormat, Args&&... args)
+{
+	AppendF(pszFormat, ::ToCString(std::forward<Args>(args))...);
 }

@@ -119,7 +119,7 @@ DECLARE_CMD_VARIANTS(bind, "Binds action to key", cmd_conKeyList, 0)
 		EqString agrstr;
 
 		for (int i = 2; i < CMD_ARGC; i++)
-			agrstr.Append(EqString::Format((i < CMD_ARGC - 1) ? "%s " : "%s", CMD_ARGV(i).ToCString()));
+			agrstr.AppendFmt((i < CMD_ARGC - 1) ? "%s " : "%s", CMD_ARGV(i));
 
 		g_inputCommandBinder->AddBinding(CMD_ARGV(0), CMD_ARGV(1), agrstr);
 	}

@@ -130,6 +130,10 @@ CH EqTStr<CH>::operator[](int idx) const
 template<typename CH>
 EqTStrRef<CH> EqTStr<CH>::FormatF(const CH* pszFormat, ...)
 {
+	ASSERT(pszFormat);
+	if (!pszFormat)
+		return nullptr;
+
 	EqTStrRef<CH> newString;
 	va_list argptr;
 
@@ -143,6 +147,10 @@ EqTStrRef<CH> EqTStr<CH>::FormatF(const CH* pszFormat, ...)
 template<typename CH>
 EqTStrRef<CH> EqTStr<CH>::FormatV(const CH* pszFormat, va_list argptr)
 {
+	ASSERT(pszFormat);
+	if (!pszFormat)
+		return nullptr;
+
 	EqTStr<CH>& newString = EqTStrRef<CH>::GetTempString(nullptr, 0);
 	newString.Resize(CString::Length(pszFormat) + 128, false);
 
@@ -358,6 +366,47 @@ template<typename CH>
 void EqTStr<CH>::Append(StrRef str)
 {
 	Append(str.ToCString(), str.Length());
+}
+
+template<typename CH>
+void EqTStr<CH>::AppendV(const CH* pszFormat, va_list argptr)
+{
+	ASSERT(pszFormat);
+	if (!pszFormat)
+		return;
+
+	const int newLength = m_nLength + CString::Length(pszFormat) + 128;
+	if (!ExtendAlloc(newLength + 1))
+		return;
+
+	va_list varg;
+	va_copy(varg, argptr);
+
+	const int reqSize = CString::PrintFV(m_pszString + m_nLength, newLength, pszFormat, varg);
+	if (m_nLength + reqSize < m_nAllocated)
+	{
+		m_nLength += reqSize;
+		return;
+	}
+
+	if (!ExtendAlloc(reqSize + 1))
+		return;
+	m_nLength += CString::PrintFV(m_pszString + m_nLength, m_nAllocated - m_nLength, pszFormat, argptr);
+}
+
+template<typename CH>
+void EqTStr<CH>::AppendF(const CH* pszFormat, ...)
+{
+	ASSERT(pszFormat);
+	if (!pszFormat)
+		return;
+
+	EqTStrRef<CH> newString;
+	va_list argptr;
+
+	va_start(argptr, pszFormat);
+	AppendV(pszFormat, argptr);
+	va_end(argptr);
 }
 
 template<typename CH>
