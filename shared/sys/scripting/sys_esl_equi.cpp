@@ -109,7 +109,7 @@ static const EqWString& S_UIFormatString(const esl::ScriptState& state, int star
 					{
 						esl::Object<EqWString> wstrObj(state, luaArgIdx);
 						EqWString& str = wstrObj.Get();
-						formattedStr.Append(EqWString::Format(fmtSpan, str.ToCString()));
+						formattedStr.AppendFmt(fmtSpan, str);
 					}
 					else if (type == LUA_TSTRING)
 					{
@@ -119,17 +119,17 @@ static const EqWString& S_UIFormatString(const esl::ScriptState& state, int star
 						else
 							AnsiUnicodeConverter(temp, str);
 
-						formattedStr.Append(EqWString::Format(fmtSpan, temp.ToCString()));
+						formattedStr.AppendFmt(fmtSpan, temp);
 					}
 					else if (lua_isinteger(state, luaArgIdx))
 					{
 						const uint64 num = lua_tointeger(state, luaArgIdx);
-						formattedStr.Append(EqWString::Format(fmtSpan, num));
+						formattedStr.AppendFmt(fmtSpan, num);
 					}
 					else if (lua_isnumber(state, luaArgIdx))
 					{
 						const float num = lua_tonumber(state, luaArgIdx);
-						formattedStr.Append(EqWString::Format(fmtSpan, num));
+						formattedStr.AppendFmt(fmtSpan, num);
 					}
 					else
 					{

@@ -262,7 +262,7 @@ static int DefaultAssertHandler(PPSourceLine sl, const char* expression, const c
 		assertMessage.Append("\n\n");
 	}
 
-	assertMessage.Append(EqString::Format("file: %s\nline: %d", sl.GetFileName(), sl.GetLine()));
+	assertMessage.AppendFmt("file: %s\nline: %d", sl.GetFileName(), sl.GetLine());
 
 	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n***ASSERTION FAILED***\n%s\n******\n", assertMessage.ToCString());
 

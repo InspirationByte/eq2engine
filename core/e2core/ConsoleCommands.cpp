@@ -212,7 +212,7 @@ DECLARE_CONCOMMAND_FN(set)
 	EqString joinArgs;
 
 	for (int i = 1; i < CMD_ARGC; i++)
-		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*)"%s " : (char*)"%s", CMD_ARGV(i)));
+		joinArgs.AppendFmt(i < CMD_ARGC - 1 ? (char*)"%s " : (char*)"%s", CMD_ARGV(i));
 
 	if (IsAllowedToExecute(pConVar))
 	{
@@ -232,7 +232,7 @@ DECLARE_CONCOMMAND_FN(seti)
 
 	EqString joinArgs;
 	for (int i = 1; i < CMD_ARGC; i++)
-		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*)"%s " : (char*)"%s", CMD_ARGV(i)));
+		joinArgs.AppendFmt(i < CMD_ARGC - 1 ? (char*)"%s " : (char*)"%s", CMD_ARGV(i));
 
 	ConVar* pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0));
 

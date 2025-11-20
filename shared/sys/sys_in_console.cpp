@@ -855,7 +855,7 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 		{
 			// remove from this position
 			m_inputText.Remove(currentStatementStart, inputText.Length());
-			m_inputText.Append(EqString::Format("%s ", m_foundCmdList[0]->GetName()));
+			m_inputText.AppendFmt("%s ", m_foundCmdList[0]->GetName());
 
 			m_cursorPos = m_startCursorPos = m_inputText.Length();
 			OnTextUpdate();

@@ -307,7 +307,10 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 			return false;
 
 		if(!renderLib->InitAPI(config.shaderApiParams))
+		{
+			renderLib->ExitAPI();
 			return false;
+		}
 
 		// we created all we've need
 		shaderAPI = renderLib->GetRenderer();

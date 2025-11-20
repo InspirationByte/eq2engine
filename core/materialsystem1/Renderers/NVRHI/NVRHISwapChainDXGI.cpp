@@ -13,7 +13,7 @@
 #include <nvrhi/d3d12.h>
 
 // Triple buffering for NVRHI with command queue event query sync method
-constexpr int SWAP_CHAIN_BUFFERS = 3;
+static constexpr int SWAP_CHAIN_BUFFERS = 3;
 
 //DECLARE_CVAR_E(dxgi_maxFrameLatency);
 
