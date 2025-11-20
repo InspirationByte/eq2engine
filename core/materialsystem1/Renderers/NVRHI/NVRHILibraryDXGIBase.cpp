@@ -113,9 +113,12 @@ void CNVRHIRenderLibDXGIBase::ExitAPI()
 
 	if (m_defaultSwapChain)
 		m_defaultSwapChain->m_dxgiSwapChain->SetFullscreenState(false, nullptr);
-
-	m_nvrhiDevice->waitForIdle();
-	m_nvrhiDevice->runGarbageCollection();
+	
+	if (m_nvrhiDevice)
+	{
+		m_nvrhiDevice->waitForIdle();
+		m_nvrhiDevice->runGarbageCollection();
+	}
 
 	m_defaultSwapChain = nullptr;
 	m_currentSwapChain = nullptr;
