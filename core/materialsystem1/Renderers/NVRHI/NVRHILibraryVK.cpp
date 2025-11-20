@@ -28,6 +28,9 @@ DECLARE_CVAR(vulkan_break_on_error, "0", nullptr, CV_UNREGISTERED);
 DECLARE_CVAR_F(nvrhi_validation);
 DECLARE_CVAR_F(nvrhi_breakOnError);
 
+// Triple buffering for NVRHI with command queue event query sync method
+static constexpr uint32 SWAP_CHAIN_BUFFERS = 3;
+
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 static VKAPI_ATTR vk::Bool32 VKAPI_CALL vulkanDebugCallback(
@@ -117,17 +120,23 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 	}
 #endif
 
-	Array<const char*> vkEnabledExts(PP_SL);
-	Array<const char*> vkEnabledLayers(PP_SL);
+	m_enabledExtensions.instance.append(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+	m_enabledExtensions.device.append(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	m_enabledExtensions.device.append(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
+#if defined(__APPLE__) && defined( VK_KHR_portability_subset )
+	// This is required for using the MoltenVK portability subset implementation on macOS
+	m_enabledExtensions.device.append(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+#endif
+
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-	vkEnabledExts.append(VK_KHR_SURFACE_EXTENSION_NAME);
-	vkEnabledExts.append(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+	m_enabledExtensions.instance.append(VK_KHR_SURFACE_EXTENSION_NAME);
+	m_enabledExtensions.instance.append(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #endif
 
 #ifdef NVRHI_WITH_VALIDATION
 	if (vulkan_validation.GetBool())
 	{
-		vkEnabledLayers.append("VK_LAYER_KHRONOS_validation");
+		m_enabledExtensions.layers.append("VK_LAYER_KHRONOS_validation");
 
 		/*
 		Suppress specific [ WARNING-Shader-OutputNotConsumed ] validation warnings which are by design:
@@ -149,12 +158,21 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 	}
 #endif
 
+	Array<const char*> vkInstExtNames(PP_SL);
+	Array<const char*> vkLayerNames(PP_SL);
+
 	// create instance
 	{
-		MsgInfo("Enabled Vulkan instance extensions:\n");
-		for (const char* ext : vkEnabledExts)
+		DevMsg(DEVMSG_RENDER, "Enabled Vulkan instance extensions:\n");
+		for (const char* ext : m_enabledExtensions.instance)
 		{
-			MsgInfo("    %s\n", ext);
+			DevMsg(DEVMSG_RENDER, "    %s\n", ext);
+			vkInstExtNames.append(ext);
+		}
+
+		for (const char* ext : m_enabledExtensions.layers)
+		{
+			vkLayerNames.append(ext);
 		}
 
 		auto applicationInfo = vk::ApplicationInfo()
@@ -162,12 +180,13 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 			.setPApplicationName(g_eqCore->GetApplicationName())
 			.setPEngineName("eq2");
 
+
 		// create the vulkan instance
 		vk::InstanceCreateInfo info = vk::InstanceCreateInfo()
-			.setEnabledLayerCount(vkEnabledLayers.numElem())
-			.setPpEnabledLayerNames(vkEnabledLayers.ptr())
-			.setEnabledExtensionCount(vkEnabledExts.numElem())
-			.setPpEnabledExtensionNames(vkEnabledExts.ptr())
+			.setEnabledLayerCount(vkLayerNames.numElem())
+			.setPpEnabledLayerNames(vkLayerNames.ptr())
+			.setEnabledExtensionCount(vkInstExtNames.numElem())
+			.setPpEnabledExtensionNames(vkInstExtNames.ptr())
 			.setPApplicationInfo(&applicationInfo);
 
 		const vk::Result res = vk::createInstance(&info, nullptr, &m_vkInstance);
@@ -205,20 +224,41 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 	if (!m_defaultSwapChain)
 		return false;
 
-	// pick physical device
-	{
-		// TODO
-	}
+	if(!PickPhysicalDevice())
+		return false;
+
+	if(!FindQueueFamilies(m_vkPhysicalDevice, m_defaultSwapChain->m_vkWindowSurface))
+		return false;
+
+	if(!CreateDevice())
+		return false;
+
+	// TODO: ShaderAPIParams
+	const bool enableComputeQueue = false;
+	const bool enableCopyQueue = false;
 
 	nvrhi::vulkan::DeviceDesc deviceDesc;
 	deviceDesc.errorCB = &CNVRHIMessageCallback::Instance;
-	/*
-	deviceDesc.pDevice = m_rhiDevice12;
-	deviceDesc.pAdapter = m_dxgiAdapter;
-	deviceDesc.pGraphicsCommandQueue = m_rhiGraphicsQueue;
-	deviceDesc.pComputeCommandQueue = m_rhiComputeQueue;
-	deviceDesc.pCopyCommandQueue = m_rhiCopyQueue;
-	*/
+	deviceDesc.instance = m_vkInstance;
+	deviceDesc.physicalDevice = m_vkPhysicalDevice;
+	deviceDesc.device = m_vkDevice;
+	deviceDesc.graphicsQueue = m_vkGraphicsQueue;
+	deviceDesc.graphicsQueueIndex = m_vkGraphicsQueueFamily;
+	if (enableComputeQueue)
+	{
+		deviceDesc.computeQueue = m_vkComputeQueue;
+		deviceDesc.computeQueueIndex = m_vkComputeQueueFamily;
+	}
+	if (enableCopyQueue)
+	{
+		deviceDesc.transferQueue = m_vkTransferQueue;
+		deviceDesc.transferQueueIndex = m_vkTransferQueueFamily;
+	}
+	deviceDesc.instanceExtensions = vkLayerNames.ptr();
+	deviceDesc.numInstanceExtensions = vkLayerNames.numElem();
+	deviceDesc.deviceExtensions = vkInstExtNames.ptr();
+	deviceDesc.numDeviceExtensions = vkInstExtNames.numElem();
+
 	m_nvrhiDevice = nvrhi::vulkan::createDevice(deviceDesc);
 #ifdef NVRHI_WITH_VALIDATION
 	if (nvrhi_validation.GetBool())
@@ -290,6 +330,144 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 	return true;
 }
 
+bool CNVRHIRenderLibVK::PickPhysicalDevice()
+{
+	int width, height;
+	m_defaultSwapChain->GetBackbufferSize(width, height);
+
+	const vk::Format vkRequestedFormat = vk::Format(nvrhi::vulkan::convertFormat(m_defaultSwapChain->m_swapChainFormat));
+	const vk::Extent2D vkRequestedExtent(width, height);
+
+	auto devices = m_vkInstance.enumeratePhysicalDevices();
+
+	// Start building an error message in case we cannot find a device.
+	EqString errorStream;
+	errorStream.Append("Cannot find suitable Vulkan device that supports required extensions & properties.\n");
+
+	// build a list of GPUs
+	Array<vk::PhysicalDevice> discreteGPUs(PP_SL);
+	Array<vk::PhysicalDevice> otherGPUs(PP_SL);
+	for (const auto& dev : devices)
+	{
+		auto prop = dev.getProperties();
+		errorStream.AppendFmt("%s:\n", prop.deviceName.data());
+
+		// check that all required device extensions are present
+		Array<EqString> requiredExtensions = m_enabledExtensions.device;
+		auto deviceExtensions = dev.enumerateDeviceExtensionProperties();
+		for (const auto& ext : deviceExtensions)
+		{
+			const int idx = arrayFindIndex(requiredExtensions, EqString(ext.extensionName.data(), ext.extensionName.size()));
+			if(idx != -1)
+				requiredExtensions.fastRemoveIndex(idx);
+		}
+
+		bool deviceIsGood = true;
+
+		if (!requiredExtensions.isEmpty())
+		{
+			// device is missing one or more required extensions
+			for (const auto& ext : requiredExtensions)
+				errorStream.AppendFmt("- missing ext %s:\n", ext);
+
+			deviceIsGood = false;
+		}
+
+		auto deviceFeatures = dev.getFeatures();
+		if (!deviceFeatures.samplerAnisotropy)
+		{
+			errorStream.Append("  - samplerAnisotropy unsupported\n");
+			deviceIsGood = false;
+		}
+		if (!deviceFeatures.textureCompressionBC)
+		{
+			errorStream.Append("  - textureCompressionBC unsupported \n");
+			deviceIsGood = false;
+		}
+
+		// check that this device supports our intended swap chain creation parameters
+		auto surfaceCaps = dev.getSurfaceCapabilitiesKHR(m_defaultSwapChain->m_vkWindowSurface);
+		auto surfaceFmts = dev.getSurfaceFormatsKHR(m_defaultSwapChain->m_vkWindowSurface);
+		auto surfacePModes = dev.getSurfacePresentModesKHR(m_defaultSwapChain->m_vkWindowSurface);
+
+		// clamp swapChainBufferCount to the min/max capabilities of the surface
+		uint32 swapBufferCount = 0;
+		swapBufferCount = max(surfaceCaps.minImageCount, SWAP_CHAIN_BUFFERS);
+		swapBufferCount = surfaceCaps.maxImageCount > 0 ? min(swapBufferCount, surfaceCaps.maxImageCount) : swapBufferCount;
+
+		bool surfaceFormatPresent = false;
+		for (const vk::SurfaceFormatKHR& surfaceFmt : surfaceFmts)
+		{
+			if (surfaceFmt.format == vkRequestedFormat)
+			{
+				surfaceFormatPresent = true;
+				break;
+			}
+		}
+
+		if (!surfaceFormatPresent)
+		{
+			errorStream.Append("  - does not support the requested swap chain format\n");
+			deviceIsGood = false;
+		}
+
+		if (find(surfacePModes.begin(), surfacePModes.end(), vk::PresentModeKHR::eFifo) == surfacePModes.end())
+		{
+			errorStream.Append("  - does not support the required surface present modes\n");
+			deviceIsGood = false;
+		}
+
+		if (!FindQueueFamilies(dev, m_defaultSwapChain->m_vkWindowSurface))
+		{
+			errorStream.Append("  - does not support the necessary queue types\n");
+			deviceIsGood = false;
+		}
+
+		// check that we can present from the graphics queue
+		uint32_t canPresent = dev.getSurfaceSupportKHR(m_vkGraphicsQueueFamily, m_defaultSwapChain->m_vkWindowSurface);
+		if (!canPresent)
+		{
+			errorStream.Append("  - surface cannot present\n");
+			deviceIsGood = false;
+		}
+
+		if (!deviceIsGood)
+			continue;
+
+		if (prop.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
+			discreteGPUs.append(dev);
+		else
+			otherGPUs.append(dev);
+	}
+
+	// pick the first discrete GPU if it exists, otherwise the first integrated GPU
+	if (!discreteGPUs.isEmpty())
+	{
+		m_vkPhysicalDevice = discreteGPUs[0];
+		return true;
+	}
+
+	if (!otherGPUs.isEmpty())
+	{
+		m_vkPhysicalDevice = otherGPUs[0];
+		return true;
+	}
+
+	MsgError("%s", errorStream.ToCString());
+
+	return false;
+}
+
+bool CNVRHIRenderLibVK::FindQueueFamilies(vk::PhysicalDevice vkPhysicalDevice, vk::SurfaceKHR vkSurface)
+{
+	return false;
+}
+
+bool CNVRHIRenderLibVK::CreateDevice()
+{
+	return false;
+}
+
 void CNVRHIRenderLibVK::ExitAPI()
 {
 	g_renderWorker.Shutdown();
@@ -297,8 +475,11 @@ void CNVRHIRenderLibVK::ExitAPI()
 	//if (m_defaultSwapChain)
 	//	m_defaultSwapChain->m_dxgiSwapChain->SetFullscreenState(false, nullptr);
 
-	m_nvrhiDevice->waitForIdle();
-	m_nvrhiDevice->runGarbageCollection();
+	if (m_nvrhiDevice)
+	{
+		m_nvrhiDevice->waitForIdle();
+		m_nvrhiDevice->runGarbageCollection();
+	}
 
 	m_defaultSwapChain = nullptr;
 	m_currentSwapChain = nullptr;

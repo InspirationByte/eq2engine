@@ -44,11 +44,24 @@ public:
 
 	virtual ISwapChainPtr	CreateSwapChain(const RenderWindowInfo& windowInfo);
 protected:
+	bool			PickPhysicalDevice();
+	bool			FindQueueFamilies(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);
+	bool			CreateDevice();
 
 	const char*		GetAsyncThreadName() const { return "EqRenderThread"; }
 	void			BeginAsyncOperation(uintptr_t threadId) {}
 	void			EndAsyncOperation() {}
 	bool			IsMainThread(uintptr_t threadId) const;
+
+	struct VulkanExtensionSet
+	{
+		Array<EqString> instance{ PP_SL };
+		Array<EqString> layers{ PP_SL };
+		Array<EqString> device{ PP_SL };
+	};
+
+	// minimal set of required extensions
+	VulkanExtensionSet			m_enabledExtensions;
 
 	Array<CNVRHISwapChainVK*>	m_swapChains{ PP_SL };
 	int							m_swapChainCounter{ 0 };
