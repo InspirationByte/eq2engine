@@ -140,9 +140,7 @@ project "eqNVRHI"
 		"materialsystem1/Renderers/NVRHI/**DXGI*.cpp",
 		"materialsystem1/Renderers/NVRHI/**DXGI*.h",
 		"materialsystem1/Renderers/NVRHI/**D3D*.cpp",
-		"materialsystem1/Renderers/NVRHI/**D3D*.h",
-		"materialsystem1/Renderers/NVRHI/**VK*.cpp",
-		"materialsystem1/Renderers/NVRHI/**VK*.h"
+		"materialsystem1/Renderers/NVRHI/**D3D*.h"
 	}
 
     filter "system:Windows"
