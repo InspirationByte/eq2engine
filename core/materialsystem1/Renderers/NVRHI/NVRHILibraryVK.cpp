@@ -120,18 +120,47 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 	}
 #endif
 
-	m_enabledExtensions.instance.append(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-	m_enabledExtensions.device.append(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	m_enabledExtensions.device.append(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
+	{
+		m_enabledExtensions.instance.append(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+		m_enabledExtensions.device.append(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+		m_enabledExtensions.device.append(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
 #if defined(__APPLE__) && defined( VK_KHR_portability_subset )
-	// This is required for using the MoltenVK portability subset implementation on macOS
-	m_enabledExtensions.device.append(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+		// This is required for using the MoltenVK portability subset implementation on macOS
+		m_enabledExtensions.device.append(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
 #endif
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-	m_enabledExtensions.instance.append(VK_KHR_SURFACE_EXTENSION_NAME);
-	m_enabledExtensions.instance.append(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+		m_enabledExtensions.instance.append(VK_KHR_SURFACE_EXTENSION_NAME);
+		m_enabledExtensions.instance.append(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #endif
+	}
+
+	{
+
+#if defined(__APPLE__)
+#if defined( VK_KHR_portability_enumeration )
+		// needed for enumerating the MoltenVK portability implementation on macOS
+		m_optionalExtensions.instance.append(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+#endif
+		m_optionalExtensions.instance.append(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
+#endif
+		m_optionalExtensions.instance.append(VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME);
+		m_optionalExtensions.instance.append(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+
+		m_optionalExtensions.device.append(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+		m_optionalExtensions.device.append(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+		m_optionalExtensions.device.append(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+		m_optionalExtensions.device.append(VK_NV_MESH_SHADER_EXTENSION_NAME);
+		m_optionalExtensions.device.append(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME);
+#if USE_OPTICK
+		m_optionalExtensions.device.append(VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME);
+#endif
+#if defined( VK_KHR_format_feature_flags2 )
+		m_optionalExtensions.device.append(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME);
+#endif
+		m_optionalExtensions.device.append(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+		m_optionalExtensions.device.append(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
+	}
 
 #ifdef NVRHI_WITH_VALIDATION
 	if (vulkan_validation.GetBool())
@@ -233,10 +262,6 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 	if(!CreateDevice())
 		return false;
 
-	// TODO: ShaderAPIParams
-	const bool enableComputeQueue = false;
-	const bool enableCopyQueue = false;
-
 	nvrhi::vulkan::DeviceDesc deviceDesc;
 	deviceDesc.errorCB = &CNVRHIMessageCallback::Instance;
 	deviceDesc.instance = m_vkInstance;
@@ -244,12 +269,12 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 	deviceDesc.device = m_vkDevice;
 	deviceDesc.graphicsQueue = m_vkGraphicsQueue;
 	deviceDesc.graphicsQueueIndex = m_vkGraphicsQueueFamily;
-	if (enableComputeQueue)
+	if (m_vkComputeQueueFamily != -1)
 	{
 		deviceDesc.computeQueue = m_vkComputeQueue;
 		deviceDesc.computeQueueIndex = m_vkComputeQueueFamily;
 	}
-	if (enableCopyQueue)
+	if (m_vkTransferQueueFamily != -1)
 	{
 		deviceDesc.transferQueue = m_vkTransferQueue;
 		deviceDesc.transferQueueIndex = m_vkTransferQueueFamily;
@@ -460,12 +485,276 @@ bool CNVRHIRenderLibVK::PickPhysicalDevice()
 
 bool CNVRHIRenderLibVK::FindQueueFamilies(vk::PhysicalDevice vkPhysicalDevice, vk::SurfaceKHR vkSurface)
 {
-	return false;
+	// TODO: ShaderAPIParams
+	const bool enableComputeQueue = false;
+	const bool enableCopyQueue = false;
+
+	auto props = vkPhysicalDevice.getQueueFamilyProperties();
+
+	for (int i = 0; i < int(props.size()); i++)
+	{
+		const auto& queueFamily = props[i];
+
+		if (m_vkGraphicsQueueFamily == -1)
+		{
+			if (queueFamily.queueCount > 0 && (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics))
+			{
+				m_vkGraphicsQueueFamily = i;
+			}
+		}
+
+		if (m_vkComputeQueueFamily == -1 && enableComputeQueue)
+		{
+			if (queueFamily.queueCount > 0 &&
+				(queueFamily.queueFlags & vk::QueueFlagBits::eCompute) && !(queueFamily.queueFlags & vk::QueueFlagBits::eGraphics))
+			{
+				m_vkComputeQueueFamily = i;
+			}
+		}
+
+		if (m_vkTransferQueueFamily == -1 && enableComputeQueue)
+		{
+			if (queueFamily.queueCount > 0 &&
+				(queueFamily.queueFlags & vk::QueueFlagBits::eTransfer) && !(queueFamily.queueFlags & (vk::QueueFlagBits::eCompute | vk::QueueFlagBits::eGraphics)))
+			{
+				m_vkTransferQueueFamily = i;
+			}
+		}
+
+		if (m_vkPresentQueueFamily == -1 && queueFamily.queueCount > 0)
+		{
+			vk::Bool32 presentSupported;
+
+			// Use portable implmentation for detecting presentation support vs. Windows-specific Vulkan call
+			if (vkPhysicalDevice.getSurfaceSupportKHR(i, vkSurface, &presentSupported) == vk::Result::eSuccess && presentSupported)
+			{
+				m_vkPresentQueueFamily = i;
+			}
+		}
+	}
+
+	if (m_vkGraphicsQueueFamily == -1 || m_vkPresentQueueFamily == -1)
+		return false;
+
+	return true;
 }
 
 bool CNVRHIRenderLibVK::CreateDevice()
 {
-	return false;
+	// figure out which optional extensions are supported
+	auto deviceExtensions = m_vkPhysicalDevice.enumerateDeviceExtensionProperties();
+	for( const auto& ext : deviceExtensions )
+	{
+		const EqStringRef name = ext.extensionName.data();
+		if(arrayFindIndex(m_optionalExtensions.device, name) == -1 )
+			m_optionalExtensions.device.insert( name );
+	}
+
+	bool accelStructSupported = false;
+	bool bufferAddressSupported = false;
+	bool rayPipelineSupported = false;
+	bool rayQuerySupported = false;
+	bool meshletsSupported = false;
+	bool vrsSupported = false;
+	bool sync2Supported = false;
+
+	DevMsg(DEVMSG_RENDER, "Enabled Vulkan device extensions:\n");
+	for( const auto& ext : m_enabledExtensions.device )
+	{
+		DevMsg(DEVMSG_RENDER, "    %s\n", ext.ToCString() );
+
+		if( ext == VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME )
+		{
+			accelStructSupported = true;
+		}
+		else if( ext == VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME )
+		{
+			// RB: only makes problems at the moment
+			bufferAddressSupported = true;
+		}
+		else if( ext == VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME )
+		{
+			rayPipelineSupported = true;
+		}
+		else if( ext == VK_KHR_RAY_QUERY_EXTENSION_NAME )
+		{
+			rayQuerySupported = true;
+		}
+		else if( ext == VK_NV_MESH_SHADER_EXTENSION_NAME )
+		{
+			meshletsSupported = true;
+		}
+		else if( ext == VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME )
+		{
+			vrsSupported = true;
+		}
+		else if( ext == VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME )
+		{
+			sync2Supported = true;
+		}
+		else if( ext == VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME )
+		{
+			m_displayTimingEnabled = true;
+		}
+	}
+
+	Set<int> uniqueQueueFamilies(PP_SL);
+	uniqueQueueFamilies.insert(m_vkGraphicsQueueFamily);
+	uniqueQueueFamilies.insert(m_vkPresentQueueFamily);
+
+	if(m_vkComputeQueueFamily != -1)
+		uniqueQueueFamilies.insert( m_vkComputeQueueFamily );
+
+	if(m_vkTransferQueueFamily != 1)
+		uniqueQueueFamilies.insert( m_vkTransferQueueFamily );
+
+	float priority = 1.0f;
+	Array<vk::DeviceQueueCreateInfo> queueDesc(PP_SL);
+	for( auto it = uniqueQueueFamilies.begin(); it; ++it)
+	{
+		queueDesc.append( vk::DeviceQueueCreateInfo()
+							 .setQueueFamilyIndex( it.key() )
+							 .setQueueCount( 1 )
+							 .setPQueuePriorities( &priority ) );
+	}
+
+	auto accelStructFeatures = vk::PhysicalDeviceAccelerationStructureFeaturesKHR()
+							   .setAccelerationStructure( true );
+	auto rayPipelineFeatures = vk::PhysicalDeviceRayTracingPipelineFeaturesKHR()
+							   .setRayTracingPipeline( true )
+							   .setRayTraversalPrimitiveCulling( true );
+	auto rayQueryFeatures = vk::PhysicalDeviceRayQueryFeaturesKHR()
+							.setRayQuery( true );
+	auto meshletFeatures = vk::PhysicalDeviceMeshShaderFeaturesNV()
+						   .setTaskShader( true )
+						   .setMeshShader( true );
+
+	// get/set shading rate features which are detected individually by nvrhi (not just at extension level)
+	vk::PhysicalDeviceFeatures2 actualDeviceFeatures2;
+	vk::PhysicalDeviceFragmentShadingRateFeaturesKHR fragmentShadingRateFeatures;
+	actualDeviceFeatures2.pNext = &fragmentShadingRateFeatures;
+	m_vkPhysicalDevice.getFeatures2( &actualDeviceFeatures2 );
+
+	auto vrsFeatures = vk::PhysicalDeviceFragmentShadingRateFeaturesKHR()
+					   .setPipelineFragmentShadingRate( fragmentShadingRateFeatures.pipelineFragmentShadingRate )
+					   .setPrimitiveFragmentShadingRate( fragmentShadingRateFeatures.primitiveFragmentShadingRate )
+					   .setAttachmentFragmentShadingRate( fragmentShadingRateFeatures.attachmentFragmentShadingRate );
+
+	auto sync2Features = vk::PhysicalDeviceSynchronization2FeaturesKHR()
+						 .setSynchronization2( true );
+
+#if defined(__APPLE__) && defined( VK_KHR_portability_subset )
+	auto portabilityFeatures = vk::PhysicalDevicePortabilitySubsetFeaturesKHR()
+#if USE_OPTICK
+							   .setEvents( true )
+#endif
+							   .setImageViewFormatSwizzle( true );
+
+	void* pNext = &portabilityFeatures;
+#else
+	void* pNext = nullptr;
+#endif
+#define APPEND_EXTENSION(condition, desc) \
+	if (condition) { (desc).pNext = pNext; pNext = &(desc); }
+
+	APPEND_EXTENSION( accelStructSupported, accelStructFeatures )
+	APPEND_EXTENSION( rayPipelineSupported, rayPipelineFeatures )
+	APPEND_EXTENSION( rayQuerySupported, rayQueryFeatures )
+	APPEND_EXTENSION( meshletsSupported, meshletFeatures )
+	APPEND_EXTENSION( vrsSupported, vrsFeatures )
+	APPEND_EXTENSION( sync2Supported, sync2Features )
+#undef APPEND_EXTENSION
+
+	auto deviceFeatures = vk::PhysicalDeviceFeatures()
+						  .setShaderImageGatherExtended( true )
+						  .setShaderStorageImageReadWithoutFormat( actualDeviceFeatures2.features.shaderStorageImageReadWithoutFormat )
+						  .setSamplerAnisotropy( true )
+						  .setTessellationShader( true )
+						  .setTextureCompressionBC( true )
+#if !defined(__APPLE__)
+						  .setGeometryShader( true )
+#endif
+						  .setFillModeNonSolid( true )
+						  .setImageCubeArray( true )
+						  .setDualSrcBlend( true );
+
+	auto vulkan12features = vk::PhysicalDeviceVulkan12Features()
+							.setDescriptorIndexing( true )
+							.setRuntimeDescriptorArray( true )
+							.setDescriptorBindingPartiallyBound( true )
+							.setDescriptorBindingVariableDescriptorCount( true )
+							.setTimelineSemaphore( true )
+							.setShaderSampledImageArrayNonUniformIndexing( true )
+							.setBufferDeviceAddress( bufferAddressSupported )
+#if USE_OPTICK
+							.setHostQueryReset( true )
+#endif
+							.setPNext( pNext );
+
+	Array<const char*> vkDevExtNames(PP_SL);
+	Array<const char*> vkLayerNames(PP_SL);
+
+	for (const char* ext : m_enabledExtensions.device)
+		vkDevExtNames.append(ext);
+
+	for (const char* ext : m_enabledExtensions.layers)
+		vkLayerNames.append(ext);
+
+	auto deviceDesc = vk::DeviceCreateInfo()
+		.setPQueueCreateInfos(queueDesc.ptr())
+		.setQueueCreateInfoCount( queueDesc.numElem() )
+		.setPEnabledFeatures( &deviceFeatures )
+		.setEnabledExtensionCount( vkDevExtNames.numElem() )
+		.setPpEnabledExtensionNames(vkDevExtNames.ptr() )
+		.setEnabledLayerCount( vkLayerNames.numElem() )
+		.setPpEnabledLayerNames(vkLayerNames.ptr() )
+		.setPNext( &vulkan12features );
+
+	const vk::Result res = m_vkPhysicalDevice.createDevice( &deviceDesc, nullptr, &m_vkDevice );
+	if( res != vk::Result::eSuccess )
+	{
+		MsgError( "Failed to create a Vulkan physical device, error code = %s\n", nvrhi::vulkan::resultToString( ( VkResult )res ) );
+		return false;
+	}
+
+	m_vkDevice.getQueue( m_vkGraphicsQueueFamily, 0, &m_vkGraphicsQueue );
+	if(m_vkComputeQueueFamily != -1)
+		m_vkDevice.getQueue( m_vkComputeQueueFamily, 0, &m_vkComputeQueue );
+
+	if(m_vkTransferQueueFamily != -1)
+		m_vkDevice.getQueue( m_vkTransferQueueFamily, 0, &m_vkTransferQueue );
+
+	m_vkDevice.getQueue( m_vkPresentQueueFamily, 0, &m_vkPresentQueue );
+
+	VULKAN_HPP_DEFAULT_DISPATCHER.init( m_vkDevice );
+
+	// Determine if preferred image depth/stencil format D24S8 is supported (issue with Vulkan on AMD GPUs)
+	vk::ImageFormatProperties imageFormatProperties;
+	const vk::Result ret = m_vkPhysicalDevice.getImageFormatProperties( vk::Format::eD24UnormS8Uint,
+						   vk::ImageType::e2D,
+						   vk::ImageTiling::eOptimal,
+						   vk::ImageUsageFlags( vk::ImageUsageFlagBits::eDepthStencilAttachment ),
+						   vk::ImageCreateFlags( 0 ),
+						   &imageFormatProperties );
+
+	ShaderAPICapabilities& caps = CNVRHIRenderAPI::Instance.m_caps;
+	caps.renderTargetFormatsSupported[FORMAT_D24S8] = (ret == vk::Result::eSuccess);
+
+	// Determine which Vulkan surface present modes are supported by device and surface
+	auto surfacePModes = m_vkPhysicalDevice.getSurfacePresentModesKHR( m_defaultSwapChain->m_vkWindowSurface );
+	m_enablePModeMailbox = find( surfacePModes.begin(), surfacePModes.end(), vk::PresentModeKHR::eMailbox ) != surfacePModes.end();
+	m_enablePModeImmediate = find( surfacePModes.begin(), surfacePModes.end(), vk::PresentModeKHR::eImmediate ) != surfacePModes.end();
+	m_enablePModeFifoRelaxed = find( surfacePModes.begin(), surfacePModes.end(), vk::PresentModeKHR::eFifoRelaxed ) != surfacePModes.end();
+
+	// stash the device renderer string and api version
+	auto prop = m_vkPhysicalDevice.getProperties();
+	Msg("* NVRHI Vulkan Adapter: %s\n", prop.deviceName.data());
+
+	m_vkApiVersion = prop.apiVersion;
+
+	DevMsg(DEVMSG_RENDER, "Created Vulkan device: %s\n", prop.deviceName.data());
+
+	return true;
 }
 
 void CNVRHIRenderLibVK::ExitAPI()
@@ -536,7 +825,7 @@ void CNVRHIRenderLibVK::EndFrame()
 			m_nvrhiDevice->waitEventQuery(m_nvrhiFrameWaitQuery);
 		}
 		return 0;
-		});
+	});
 }
 
 ITexturePtr	CNVRHIRenderLibVK::GetCurrentBackbuffer() const
@@ -583,18 +872,18 @@ ISwapChainPtr CNVRHIRenderLibVK::CreateSwapChain(const RenderWindowInfo& windowI
 
 void CNVRHIRenderLibVK::SetVSync(bool enable)
 {
-	m_swapChains[0]->SetVSync(enable);
+	m_defaultSwapChain->SetVSync(enable);
 }
 
 void CNVRHIRenderLibVK::SetBackbufferSize(const int w, const int h)
 {
 	int oldW, oldH;
-	m_swapChains[0]->GetBackbufferSize(oldW, oldH);
+	m_defaultSwapChain->GetBackbufferSize(oldW, oldH);
 
 	if(w != oldW || h != oldH)
 		CNVRHIRenderAPI::Instance.m_deviceLost = true;
 
-	m_swapChains[0]->SetBackbufferSize(w, h);
+	m_defaultSwapChain->SetBackbufferSize(w, h);
 }
 
 // changes fullscreen mode

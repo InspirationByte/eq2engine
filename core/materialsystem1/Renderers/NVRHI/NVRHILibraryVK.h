@@ -62,8 +62,8 @@ protected:
 
 	// minimal set of required extensions
 	VulkanExtensionSet			m_enabledExtensions;
+	VulkanExtensionSet			m_optionalExtensions;
 
-	Array<CNVRHISwapChainVK*>	m_swapChains{ PP_SL };
 	int							m_swapChainCounter{ 0 };
 
 	CRefPtr<CNVRHISwapChainVK>	m_currentSwapChain;
@@ -71,25 +71,29 @@ protected:
 
 	uint32_t					m_vkDeviceApiVersion = VK_HEADER_VERSION_COMPLETE;
 	PFN_vkGetInstanceProcAddr	m_vkGetInstanceProcAddr = nullptr;
+	nvrhi::DeviceHandle			m_nvrhiDevice;
+	nvrhi::EventQueryHandle		m_nvrhiFrameWaitQuery;
 
 	vk::Instance				m_vkInstance;
 	vk::DebugReportCallbackEXT	m_vkDebugReportCallback;
-
 	vk::PhysicalDevice			m_vkPhysicalDevice;
-	int							m_vkGraphicsQueueFamily = -1;
-	int							m_vkComputeQueueFamily = -1;
-	int							m_vkTransferQueueFamily = -1;
-	int							m_vkPresentQueueFamily = -1;
-
 	vk::Device					m_vkDevice;
 	vk::Queue					m_vkGraphicsQueue;
 	vk::Queue					m_vkComputeQueue;
 	vk::Queue					m_vkTransferQueue;
 	vk::Queue					m_vkPresentQueue;
 
-	nvrhi::DeviceHandle			m_nvrhiDevice;
-	nvrhi::EventQueryHandle		m_nvrhiFrameWaitQuery;
+	uint32_t					m_vkApiVersion = VK_HEADER_VERSION_COMPLETE;
+
+	int							m_vkGraphicsQueueFamily{ -1 };
+	int							m_vkComputeQueueFamily{ -1 };
+	int							m_vkTransferQueueFamily{ -1 };
+	int							m_vkPresentQueueFamily{ -1 };
 
 	bool						m_windowed{ false };
+	bool						m_displayTimingEnabled{ false };
+	bool						m_enablePModeMailbox{ false };
+	bool						m_enablePModeImmediate{ false };
+	bool						m_enablePModeFifoRelaxed{ false };
 };
 
