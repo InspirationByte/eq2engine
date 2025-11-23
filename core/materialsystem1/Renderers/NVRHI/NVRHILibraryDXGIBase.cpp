@@ -80,11 +80,6 @@ RefCountPtr<IDXGIAdapter> CNVRHIRenderLibDXGIBase::FindAdapter(const wchar_t* ta
 	return rhiTargetAdapter;
 }
 
-CNVRHIRenderLibDXGIBase::CNVRHIRenderLibDXGIBase()
-{
-	CNVRHIRenderLibDXGIBase::Instance = this;
-}
-
 IShaderAPI* CNVRHIRenderLibDXGIBase::GetRenderer() const
 {
 	return &CNVRHIRenderAPI::Instance;
@@ -188,16 +183,15 @@ ITexturePtr	CNVRHIRenderLibDXGIBase::GetCurrentBackbuffer() const
 
 ISwapChainPtr CNVRHIRenderLibDXGIBase::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
-	bool justCreated = false;
-
-	EqString texName(EqString::Format("swapChain%d", m_swapChainCounter));
-	ITexturePtr swapChainTexture = g_renderAPI->FindOrCreateTexture(texName, justCreated);
+	EqStringRef texName = EqString::Format("swapChain%d", m_swapChainCounter);
 	++m_swapChainCounter;
+
+	bool justCreated = false;
+	ITexturePtr swapChainTexture = g_renderAPI->FindOrCreateTexture(texName, justCreated);
 
 	ASSERT_MSG(justCreated, "%s texture already has been created", texName.ToCString());
 
 	CRefPtr<CNVRHISwapChainDXGI> swapChain = CRefPtr_new(CNVRHISwapChainDXGI, windowInfo, swapChainTexture);
-
 	return ISwapChainPtr(swapChain);
 }
 
