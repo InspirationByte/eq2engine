@@ -25,6 +25,7 @@
 
 DECLARE_CVAR(vulkan_validation, "0", nullptr, CV_UNREGISTERED);
 DECLARE_CVAR(vulkan_break_on_error, "0", nullptr, CV_UNREGISTERED);
+DECLARE_CVAR_G(vulkan_fastsync, "0", nullptr, CV_UNREGISTERED);
 DECLARE_CVAR_F(nvrhi_validation);
 DECLARE_CVAR_F(nvrhi_breakOnError);
 
@@ -32,6 +33,8 @@ DECLARE_CVAR_F(nvrhi_breakOnError);
 static constexpr uint32 SWAP_CHAIN_BUFFERS = 3;
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+
+CNVRHIRenderLibVK* CNVRHIRenderLibVK::Instance = nullptr;
 
 static VKAPI_ATTR vk::Bool32 VKAPI_CALL vulkanDebugCallback(
 	vk::DebugReportFlagsEXT flags,
@@ -67,10 +70,6 @@ static VKAPI_ATTR vk::Bool32 VKAPI_CALL vulkanDebugCallback(
 	return VK_FALSE;
 }
 
-CNVRHIRenderLibVK::CNVRHIRenderLibVK()
-{
-}
-
 IShaderAPI* CNVRHIRenderLibVK::GetRenderer() const
 {
 	return &CNVRHIRenderAPI::Instance;
@@ -83,6 +82,7 @@ bool CNVRHIRenderLibVK::IsMainThread(uintptr_t threadId) const
 
 bool CNVRHIRenderLibVK::InitCaps()
 {
+	CNVRHIRenderLibVK::Instance = this;
 	CNVRHIRenderAPI::Instance.m_rhiBackendType = NVRHI_BACKEND_VULKAN;
 
 #if VK_HEADER_VERSION >= 301
@@ -103,7 +103,9 @@ bool CNVRHIRenderLibVK::InitCaps()
 
 #ifdef NVRHI_WITH_VALIDATION
 	g_consoleCommands->RegisterCommand(&vulkan_validation);
+	g_consoleCommands->RegisterCommand(&vulkan_break_on_error);
 #endif
+	g_consoleCommands->RegisterCommand(&vulkan_fastsync);
 
 	return true;
 }
@@ -209,7 +211,6 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 			.setPApplicationName(g_eqCore->GetApplicationName())
 			.setPEngineName("eq2");
 
-
 		// create the vulkan instance
 		vk::InstanceCreateInfo info = vk::InstanceCreateInfo()
 			.setEnabledLayerCount(vkLayerNames.numElem())
@@ -261,6 +262,15 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 
 	if(!CreateDevice())
 		return false;
+
+	// init device swapchain capabilities
+	{
+		auto surfaceCaps = m_vkPhysicalDevice.getSurfaceCapabilitiesKHR(m_defaultSwapChain->m_vkWindowSurface);
+		uint32 swapBufferCount = SWAP_CHAIN_BUFFERS;
+		swapBufferCount = max(surfaceCaps.minImageCount, swapBufferCount);
+		swapBufferCount = surfaceCaps.maxImageCount > 0 ? min(swapBufferCount, surfaceCaps.maxImageCount) : swapBufferCount;
+		m_swapChainBufferCount = swapBufferCount;
+	}
 
 	nvrhi::vulkan::DeviceDesc deviceDesc;
 	deviceDesc.errorCB = &CNVRHIMessageCallback::Instance;
@@ -411,14 +421,8 @@ bool CNVRHIRenderLibVK::PickPhysicalDevice()
 		}
 
 		// check that this device supports our intended swap chain creation parameters
-		auto surfaceCaps = dev.getSurfaceCapabilitiesKHR(m_defaultSwapChain->m_vkWindowSurface);
 		auto surfaceFmts = dev.getSurfaceFormatsKHR(m_defaultSwapChain->m_vkWindowSurface);
 		auto surfacePModes = dev.getSurfacePresentModesKHR(m_defaultSwapChain->m_vkWindowSurface);
-
-		// clamp swapChainBufferCount to the min/max capabilities of the surface
-		uint32 swapBufferCount = 0;
-		swapBufferCount = max(surfaceCaps.minImageCount, SWAP_CHAIN_BUFFERS);
-		swapBufferCount = surfaceCaps.maxImageCount > 0 ? min(swapBufferCount, surfaceCaps.maxImageCount) : swapBufferCount;
 
 		bool surfaceFormatPresent = false;
 		for (const vk::SurfaceFormatKHR& surfaceFmt : surfaceFmts)
@@ -489,11 +493,11 @@ bool CNVRHIRenderLibVK::FindQueueFamilies(vk::PhysicalDevice vkPhysicalDevice, v
 	const bool enableComputeQueue = false;
 	const bool enableCopyQueue = false;
 
-	auto props = vkPhysicalDevice.getQueueFamilyProperties();
+	auto queueFamiliyProps = vkPhysicalDevice.getQueueFamilyProperties();
 
-	for (int i = 0; i < int(props.size()); i++)
+	for (int i = 0; i < int(queueFamiliyProps.size()); i++)
 	{
-		const auto& queueFamily = props[i];
+		const auto& queueFamily = queueFamiliyProps[i];
 
 		if (m_vkGraphicsQueueFamily == -1)
 		{
@@ -512,7 +516,7 @@ bool CNVRHIRenderLibVK::FindQueueFamilies(vk::PhysicalDevice vkPhysicalDevice, v
 			}
 		}
 
-		if (m_vkTransferQueueFamily == -1 && enableComputeQueue)
+		if (m_vkTransferQueueFamily == -1 && enableCopyQueue)
 		{
 			if (queueFamily.queueCount > 0 &&
 				(queueFamily.queueFlags & vk::QueueFlagBits::eTransfer) && !(queueFamily.queueFlags & (vk::QueueFlagBits::eCompute | vk::QueueFlagBits::eGraphics)))
@@ -541,6 +545,8 @@ bool CNVRHIRenderLibVK::FindQueueFamilies(vk::PhysicalDevice vkPhysicalDevice, v
 
 bool CNVRHIRenderLibVK::CreateDevice()
 {
+	ASSERT_MSG(m_vkPhysicalDevice, "No Vulkan physical device");
+
 	// figure out which optional extensions are supported
 	auto deviceExtensions = m_vkPhysicalDevice.enumerateDeviceExtensionProperties();
 	for( const auto& ext : deviceExtensions )
@@ -605,7 +611,7 @@ bool CNVRHIRenderLibVK::CreateDevice()
 	if(m_vkComputeQueueFamily != -1)
 		uniqueQueueFamilies.insert( m_vkComputeQueueFamily );
 
-	if(m_vkTransferQueueFamily != 1)
+	if(m_vkTransferQueueFamily != -1)
 		uniqueQueueFamilies.insert( m_vkTransferQueueFamily );
 
 	float priority = 1.0f;
@@ -686,9 +692,6 @@ bool CNVRHIRenderLibVK::CreateDevice()
 							.setTimelineSemaphore( true )
 							.setShaderSampledImageArrayNonUniformIndexing( true )
 							.setBufferDeviceAddress( bufferAddressSupported )
-#if USE_OPTICK
-							.setHostQueryReset( true )
-#endif
 							.setPNext( pNext );
 
 	Array<const char*> vkDevExtNames(PP_SL);
@@ -776,6 +779,12 @@ void CNVRHIRenderLibVK::ExitAPI()
 	CNVRHIRenderAPI::Instance.m_rhiDevice = nullptr;
 	m_nvrhiDevice = nullptr;
 	m_nvrhiFrameWaitQuery = nullptr;
+
+#ifdef NVRHI_WITH_VALIDATION
+	g_consoleCommands->UnregisterCommand(&vulkan_validation);
+	g_consoleCommands->UnregisterCommand(&vulkan_break_on_error);
+#endif
+	g_consoleCommands->UnregisterCommand(&vulkan_fastsync);
 }
 
 void CNVRHIRenderLibVK::BeginFrame(ISwapChain* swapChain)
@@ -835,22 +844,20 @@ ITexturePtr	CNVRHIRenderLibVK::GetCurrentBackbuffer() const
 
 ISwapChainPtr CNVRHIRenderLibVK::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
-	bool justCreated = false;
-
-	EqString texName(EqString::Format("swapChain%d", m_swapChainCounter));
-	ITexturePtr swapChainTexture = g_renderAPI->FindOrCreateTexture(texName, justCreated);
+	EqStringRef texName = EqString::Format("swapChain%d", m_swapChainCounter);
 	++m_swapChainCounter;
+
+	bool justCreated = false;
+	ITexturePtr swapChainTexture = g_renderAPI->FindOrCreateTexture(texName, justCreated);
 
 	ASSERT_MSG(justCreated, "%s texture already has been created", texName.ToCString());
 
 	CRefPtr<CNVRHISwapChainVK> swapChain = CRefPtr_new(CNVRHISwapChainVK, windowInfo, swapChainTexture);
-
 	{
-		
 		// Create the platform-specific surface
 #if defined( VULKAN_USE_PLATFORM_SDL )
 		// Support generic SDL platform for linux and macOS
-		auto res = vk::Result(CreateSDLWindowSurface((VkInstance)m_VulkanInstance, (VkSurfaceKHR*)&m_WindowSurface));
+		auto res = vk::Result(CreateSDLWindowSurface((VkInstance)m_vkInstance, (VkSurfaceKHR*)&swapChain->m_vkWindowSurface));
 
 #elif defined( VK_USE_PLATFORM_WIN32_KHR )
 		auto surfaceCreateInfo = vk::Win32SurfaceCreateInfoKHR()

@@ -38,18 +38,22 @@ public:
 
 protected:
 
-	void			UpdateBackbufferView() const;
+	void			UpdateBackbufferView();
 
 	vk::SurfaceKHR				m_vkWindowSurface;
 	vk::SwapchainKHR			m_vkSwapChain;
 
 	Array<nvrhi::TextureHandle>	m_rhiSwapChainTextures{ PP_SL };
 	Array<vk::Image>			m_vkSwapChainBuffers{ PP_SL };
-	uint						m_swapChainIndex{ COM_UINT_MAX };
+	Array<vk::Semaphore>		m_vkPresentSemaphoreQueue{ PP_SL };
+	vk::Semaphore				m_vkPresentSemaphore;
+
+	uint						m_swapChainBufferIndex{ COM_UINT_MAX };
 
 	nvrhi::Format				m_swapChainFormat{ nvrhi::Format::RGBA8_UNORM };
 	CRefPtr<CNVRHITexture>		m_textureRef;
 
 	RenderWindowInfo			m_winInfo;
+	IVector2D					m_swapChainDimensions{ 0 };
 	int							m_vSync{ 0 };
 };

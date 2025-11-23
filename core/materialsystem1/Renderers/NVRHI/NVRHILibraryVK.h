@@ -21,7 +21,9 @@ class CNVRHIRenderLibVK
 {
 	friend class CNVRHISwapChainVK;
 public:
-	CNVRHIRenderLibVK();
+	static CNVRHIRenderLibVK* Instance;
+
+	CNVRHIRenderLibVK() = default;
 
 	bool			InitCaps();
 	bool			InitAPI(const ShaderAPIParams& params);
@@ -65,13 +67,14 @@ protected:
 	VulkanExtensionSet			m_optionalExtensions;
 
 	int							m_swapChainCounter{ 0 };
+	int							m_swapChainBufferCount = 0;
 
 	CRefPtr<CNVRHISwapChainVK>	m_currentSwapChain;
 	CRefPtr<CNVRHISwapChainVK>	m_defaultSwapChain;
 
 	uint32_t					m_vkDeviceApiVersion = VK_HEADER_VERSION_COMPLETE;
 	PFN_vkGetInstanceProcAddr	m_vkGetInstanceProcAddr = nullptr;
-	nvrhi::DeviceHandle			m_nvrhiDevice;
+	nvrhi::vulkan::DeviceHandle	m_nvrhiDevice;
 	nvrhi::EventQueryHandle		m_nvrhiFrameWaitQuery;
 
 	vk::Instance				m_vkInstance;
