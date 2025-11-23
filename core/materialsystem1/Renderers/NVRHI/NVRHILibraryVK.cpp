@@ -135,10 +135,18 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 		// This is required for using the MoltenVK portability subset implementation on macOS
 		m_enabledExtensions.device.append(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
 #endif
-
+		
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 		m_enabledExtensions.instance.append(VK_KHR_SURFACE_EXTENSION_NAME);
 		m_enabledExtensions.instance.append(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+#elif defined(VULKAN_USE_PLATFORM_SDL)
+		const RenderWindowInfo& windowInfo = params.windowInfo;
+		if(windowInfo.parent && windowInfo.parent->windowType == RHI_WINDOW_HANDLE_SDL)
+		{
+			Array<const char*>& instanceExts = *(Array<const char*>*)windowInfo.parent->get(RenderWindowInfo::EXTENSIONS);
+			for(const char* ext : instanceExts )
+				m_enabledExtensions.instance.insert(ext);
+		}
 #endif
 	}
 
@@ -901,13 +909,27 @@ ISwapChainPtr CNVRHIRenderLibVK::CreateSwapChain(const RenderWindowInfo& windowI
 	{
 		// Create the platform-specific surface
 #if defined( VULKAN_USE_PLATFORM_SDL )
+		VkResult surfaceCreateRes = VkResult::VK_ERROR_SURFACE_LOST_KHR;
+
 		// Support generic SDL platform for linux and macOS
-		auto res = vk::Result(CreateSDLWindowSurface((VkInstance)m_vkInstance, (VkSurfaceKHR*)&swapChain->m_vkWindowSurface));
+		if(windowInfo.parent && windowInfo.parent->windowType == RHI_WINDOW_HANDLE_SDL)
+		{
+			swapChain->m_vkWindowSurface = (vk::SurfaceKHR)windowInfo.parent->get(RenderWindowInfo::SURFACE, m_vkInstance);
+			if(swapChain->m_vkWindowSurface)
+			{
+				surfaceCreateRes = VkResult::VK_SUCCESS;
+			}
+		}
+		else
+		{
+			ASSERT_FAIL("Not supported window type");
+		}
+		auto res = vk::Result(surfaceCreateRes);
 
 #elif defined( VK_USE_PLATFORM_WIN32_KHR )
 		auto surfaceCreateInfo = vk::Win32SurfaceCreateInfoKHR()
-			.setHinstance((HINSTANCE)windowInfo.get(windowInfo.userData, RenderWindowInfo::TOPLEVEL))
-			.setHwnd((HWND)windowInfo.get(windowInfo.userData, RenderWindowInfo::WINDOW));
+			.setHinstance((HINSTANCE)windowInfo.get(RenderWindowInfo::TOPLEVEL))
+			.setHwnd((HWND)windowInfo.get(RenderWindowInfo::WINDOW));
 
 		auto res = m_vkInstance.createWin32SurfaceKHR(&surfaceCreateInfo, nullptr, &swapChain->m_vkWindowSurface);
 #endif

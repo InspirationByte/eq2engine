@@ -130,7 +130,6 @@ project "eqNVRHI"
 	defines{
 		"EQRHI_NVRHI",
 		"RENDERER_TYPE=1",
-		"VK_USE_PLATFORM_WIN32_KHR"
 	}
 	files {
 		"materialsystem1/Renderers/NVRHI/**.cpp",
@@ -143,7 +142,18 @@ project "eqNVRHI"
 		"materialsystem1/Renderers/NVRHI/**D3D*.h"
 	}
 
+	filter "system:Linux"
+		defines {
+			"VULKAN_USE_PLATFORM_SDL"
+			--"VK_USE_PLATFORM_XLIB_KHR",
+			--"VK_USE_PLATFORM_XCB_KHR",
+			--"VK_USE_PLATFORM_WAYLAND_KHR"
+		}
+
     filter "system:Windows"
+		defines {
+			"VK_USE_PLATFORM_WIN32_KHR"
+		}
 		files {
 			"materialsystem1/Renderers/NVRHI/**DXGI*.cpp",
 			"materialsystem1/Renderers/NVRHI/**DXGI*.h",

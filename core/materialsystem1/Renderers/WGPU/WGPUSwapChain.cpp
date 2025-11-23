@@ -28,7 +28,7 @@ CWGPUSwapChain::~CWGPUSwapChain()
 
 void* CWGPUSwapChain::GetWindow() const
 {
-	return m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
+	return m_winInfo.get(RenderWindowInfo::WINDOW);
 }
 
 ITexturePtr CWGPUSwapChain::GetBackbuffer() const
@@ -114,25 +114,25 @@ bool CWGPUSwapChain::UpdateResize()
 		{
 		case RHI_WINDOW_HANDLE_NATIVE_WINDOWS:
 			windowsSurfDesc.chain.sType = WGPUSType_SurfaceSourceWindowsHWND;
-			windowsSurfDesc.hinstance = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::TOPLEVEL);
-			windowsSurfDesc.hwnd = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
+			windowsSurfDesc.hinstance = m_winInfo.get(RenderWindowInfo::TOPLEVEL);
+			windowsSurfDesc.hwnd = m_winInfo.get(RenderWindowInfo::WINDOW);
 			surfDesc.nextInChain = &windowsSurfDesc.chain;
 			break;
 		case RHI_WINDOW_HANDLE_NATIVE_X11:
 			x11SurfDesc.chain.sType = WGPUSType_SurfaceSourceXlibWindow;
-			x11SurfDesc.display = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::DISPLAY);
-			x11SurfDesc.window = (uint64_t)m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
+			x11SurfDesc.display = m_winInfo.get(RenderWindowInfo::DISPLAY);
+			x11SurfDesc.window = (uint64_t)m_winInfo.get(RenderWindowInfo::WINDOW);
 			surfDesc.nextInChain = &x11SurfDesc.chain;
 			break;
 		case RHI_WINDOW_HANDLE_NATIVE_WAYLAND:
 			waylandSurfDesc.chain.sType = WGPUSType_SurfaceSourceWaylandSurface;
-			waylandSurfDesc.display = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::DISPLAY);
-			waylandSurfDesc.surface = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::SURFACE);
+			waylandSurfDesc.display = m_winInfo.get(RenderWindowInfo::DISPLAY);
+			waylandSurfDesc.surface = m_winInfo.get(RenderWindowInfo::SURFACE);
 			surfDesc.nextInChain = &waylandSurfDesc.chain;
 			break;
 		case RHI_WINDOW_HANDLE_NATIVE_ANDROID:
 			androidWindowSurfDesc.chain.sType = WGPUSType_SurfaceSourceAndroidNativeWindow;
-			androidWindowSurfDesc.window = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
+			androidWindowSurfDesc.window = m_winInfo.get(RenderWindowInfo::WINDOW);
 			surfDesc.nextInChain = &androidWindowSurfDesc.chain;
 			break;
 		default:

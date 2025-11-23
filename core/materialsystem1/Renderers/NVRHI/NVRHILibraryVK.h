@@ -12,6 +12,7 @@
 
 #include "../IRenderLibrary.h"
 #include "../RenderWorker.h"
+#include "NVRHISwapChainVK.h"
 
 class CNVRHISwapChainVK;
 

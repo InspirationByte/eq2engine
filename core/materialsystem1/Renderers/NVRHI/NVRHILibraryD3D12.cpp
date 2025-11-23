@@ -280,7 +280,7 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	// create default swap chain
 	if (params.windowInfo.windowType != RHI_WINDOW_HANDLE_UNKNOWN)
 	{
-		HWND mainWindow = (HWND)params.windowInfo.get(params.windowInfo.userData, RenderWindowInfo::WINDOW);
+		HWND mainWindow = (HWND)params.windowInfo.get(RenderWindowInfo::WINDOW);
 
 		m_defaultSwapChain = CRefPtr<CNVRHISwapChainDXGI>(static_cast<CNVRHISwapChainDXGI*>(CNVRHIRenderLibDXGIBase::CreateSwapChain(params.windowInfo).Ptr()));
 
@@ -326,7 +326,7 @@ ISwapChainPtr CNVRHIRenderLibD3D12::CreateSwapChain(const RenderWindowInfo& wind
 
 	RefCountPtr<IDXGISwapChain1> pSwapChain1;
 	HRESULT hr = m_dxgiFactory->CreateSwapChainForHwnd(m_rhiGraphicsQueue,
-		(HWND)windowInfo.get(windowInfo.userData, RenderWindowInfo::WINDOW),
+		(HWND)windowInfo.get(RenderWindowInfo::WINDOW),
 		&swapChainImpl->m_dxgiSwapChainDesc, &m_dxgiFullScreenDesc, nullptr,
 		&pSwapChain1);
 

@@ -42,7 +42,7 @@ CNVRHISwapChainVK::CNVRHISwapChainVK(const RenderWindowInfo& windowInfo, ITextur
 
 void* CNVRHISwapChainVK::GetWindow() const
 {
-	return m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
+	return m_winInfo.get(RenderWindowInfo::WINDOW);
 }
 
 ITexturePtr CNVRHISwapChainVK::GetBackbuffer() const

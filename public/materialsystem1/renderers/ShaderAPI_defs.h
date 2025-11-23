@@ -13,13 +13,16 @@
 enum ERHIWindowType : int
 {
 	RHI_WINDOW_HANDLE_UNKNOWN = -1,
-
+	
+	RHI_WINDOW_HANDLE_SDL,
 	RHI_WINDOW_HANDLE_NATIVE_WINDOWS,
 	RHI_WINDOW_HANDLE_NATIVE_X11,
 	RHI_WINDOW_HANDLE_NATIVE_WAYLAND,
 	RHI_WINDOW_HANDLE_NATIVE_COCOA,
 	RHI_WINDOW_HANDLE_NATIVE_ANDROID,
 };
+
+struct RenderWindowInfo;
 
 // designed to be sent as windowHandle param
 struct RenderWindowInfo
@@ -29,13 +32,17 @@ struct RenderWindowInfo
 		DISPLAY,
 		WINDOW,
 		SURFACE,
-		TOPLEVEL
+		TOPLEVEL,
+		EXTENSIONS,
 	};
-	using GetterFunc = void*(*)(void* userData, Attribute attrib);
+	using GetterFunc = void*(RenderWindowInfo::*)(Attribute attrib, void* arg) const;
 
-	ERHIWindowType	windowType{ RHI_WINDOW_HANDLE_UNKNOWN };
-	GetterFunc 		get{ nullptr };
-	void*			userData{ nullptr };
+	void*				get(Attribute attrib, void* arg = nullptr) const { return (this->*getFunc)(attrib, arg); }
+
+	ERHIWindowType		windowType{ RHI_WINDOW_HANDLE_UNKNOWN };
+	GetterFunc 			getFunc{ nullptr };
+	RenderWindowInfo*	parent{ nullptr };
+	void*				userData{ nullptr };
 };
 
 //---------------------------------------

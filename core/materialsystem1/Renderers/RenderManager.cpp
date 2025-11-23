@@ -62,12 +62,13 @@ IRenderLibrary* CEqRenderManager::CreateRenderer(const ShaderAPIParams& params) 
 
 #if PLAT_WIN
 	s_currentRenderLib = &s_NVRHIRenderLibD3D12;
-#endif
-
 	/*if (!backendName.CompareCaseIns("D3D11"))
 		s_currentRenderLib = &s_NVRHIRenderLibD3D11;
 	else*/ if (!backendName.CompareCaseIns("Vulkan"))
 		s_currentRenderLib = &s_NVRHIRenderLibVK;
+#else
+	s_currentRenderLib = &s_NVRHIRenderLibVK;
+#endif
 
 #elif RENDERER_TYPE == RHI_WGPU
 

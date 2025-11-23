@@ -7,6 +7,7 @@
 
 #include <SDL.h>
 #include <SDL_syswm.h>
+#include <SDL_vulkan.h>
 #undef far
 #undef near
 
@@ -346,7 +347,41 @@ void CGameHost::GetVideoModes(Array<SysVideoMode>& displayModes) const
 #endif
 }
 
-static void* Helper_GetWindowInfo(void* userData, RenderWindowInfo::Attribute attrib)
+struct HostRenderWindowInfoSDL : RenderWindowInfo
+{
+	void* GetWindowInfo(RenderWindowInfo::Attribute attrib, void* arg) const;
+	void* CreateVulkanSurface(RenderWindowInfo::Attribute attrib, void* arg) const;
+};
+
+void* HostRenderWindowInfoSDL::CreateVulkanSurface(RenderWindowInfo::Attribute attrib, void* arg) const
+{
+	SDL_Window* window = reinterpret_cast<SDL_Window*>(userData);
+	if(attrib == RenderWindowInfo::SURFACE)
+	{
+		VkSurfaceKHR surface = nullptr;
+		if(!SDL_Vulkan_CreateSurface( window, (VkInstance)arg, &surface ))
+		{
+			MsgError( "SDL_Vulkan_CreateSurface failed: %s\n", SDL_GetError() );
+			return nullptr;
+		}
+		return surface;
+	}
+	else if(attrib == RenderWindowInfo::EXTENSIONS)
+	{
+		uint32_t sdlCount = 0;
+		static Array<const char*> sdlInstanceExtensions(PP_SL);
+
+		SDL_Vulkan_GetInstanceExtensions( window, &sdlCount, nullptr );
+		sdlInstanceExtensions.setNum( sdlCount );
+		SDL_Vulkan_GetInstanceExtensions( window, &sdlCount, sdlInstanceExtensions.ptr() );
+
+		return &sdlInstanceExtensions;
+	}
+	ASSERT_FAIL("Unsupported attribute %d", attrib);
+	return nullptr;
+}
+
+void* HostRenderWindowInfoSDL::GetWindowInfo(RenderWindowInfo::Attribute attrib, void* arg) const
 {
 	// set window info
 	SDL_Window* window = reinterpret_cast<SDL_Window*>(userData);
@@ -405,7 +440,7 @@ static void* Helper_GetWindowInfo(void* userData, RenderWindowInfo::Attribute at
 			}
 #endif // PLAT_WIN
 		default:
-			ASSERT_FAIL("Not supported window type - %d", winfo.subsystem);
+			ASSERT_FAIL("Unsupported window type %d or attribute %d", winfo.subsystem, attrib);
 	}
 
 	return nullptr;
@@ -469,9 +504,15 @@ bool CGameHost::InitSystems()
 			else
 				rhiParams.screenFormat = FORMAT_RGB8;
 
+			RenderWindowInfo sdlWinInfo;
+			sdlWinInfo.getFunc = (RenderWindowInfo::GetterFunc)&HostRenderWindowInfoSDL::CreateVulkanSurface;
+			sdlWinInfo.userData = m_window;
+			sdlWinInfo.windowType = RHI_WINDOW_HANDLE_SDL;
+
 			RenderWindowInfo& winInfo = rhiParams.windowInfo;
+			winInfo.parent = &sdlWinInfo;
 			winInfo.userData = m_window;
-			winInfo.get = Helper_GetWindowInfo;
+			winInfo.getFunc = (RenderWindowInfo::GetterFunc)&HostRenderWindowInfoSDL::GetWindowInfo;
 
 			// needed for initialization
 			switch (winfo.subsystem)
