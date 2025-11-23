@@ -5,6 +5,7 @@
 #include "NVRHIBuffer.h"
 #include "NVRHIRenderAPI.h"
 #include "../RenderWorker.h"
+#include "NVRHIBackend.h"
 
 void nvrhiFillSamplerDesc(const SamplerStateParams& samplerParams, nvrhi::SamplerDesc& rhiSamplerDesc)
 {
@@ -25,6 +26,8 @@ void nvrhiFillSamplerDesc(const SamplerStateParams& samplerParams, nvrhi::Sample
 void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const ShaderInfo::Binding& binding, nvrhi::BindingSetDesc& rhiBindingSetDesc)
 {
 	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
+
+	const int bindingIndex = (CNVRHIRenderAPI::Instance.GetBackendType() == NVRHI_BACKEND_VULKAN) ? binding.index : binding.registerIdx;
 
 	switch (bindGroupEntry.type)
 	{
@@ -50,13 +53,13 @@ void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const Shad
 		switch (binding.rangeType)
 		{
 		case BINDING_RANGE_CBV:
-			rhiBindingSetItemDesc = nvrhi::BindingSetItem::ConstantBuffer(binding.registerIdx, rhiBuffer, bufferRange);
+			rhiBindingSetItemDesc = nvrhi::BindingSetItem::ConstantBuffer(bindingIndex, rhiBuffer, bufferRange);
 			break;
 		case BINDING_RANGE_SRV:
-			rhiBindingSetItemDesc = nvrhi::BindingSetItem::RawBuffer_SRV(binding.registerIdx, rhiBuffer, bufferRange);
+			rhiBindingSetItemDesc = nvrhi::BindingSetItem::RawBuffer_SRV(bindingIndex, rhiBuffer, bufferRange);
 			break;
 		case BINDING_RANGE_UAV:
-			rhiBindingSetItemDesc = nvrhi::BindingSetItem::RawBuffer_UAV(binding.registerIdx, rhiBuffer, bufferRange);
+			rhiBindingSetItemDesc = nvrhi::BindingSetItem::RawBuffer_UAV(bindingIndex, rhiBuffer, bufferRange);
 			break;
 		default:
 			ASSERT_FAIL("Unsupported binding range %d", binding.rangeType);
@@ -75,7 +78,7 @@ void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const Shad
 		nvrhi::SamplerHandle rhiSampler = CNVRHIRenderAPI::Instance.GetRHISampler(bindGroupEntry.sampler);
 		rhiBindingSetDesc.addItem(
 			nvrhi::BindingSetItem()
-			.Sampler(binding.registerIdx, rhiSampler)
+			.Sampler(bindingIndex, rhiSampler)
 		);
 		break;
 	}
@@ -99,13 +102,13 @@ void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const Shad
 		case BINDING_RANGE_SRV:
 			rhiBindingSetDesc.addItem(
 				nvrhi::BindingSetItem()
-				.Texture_SRV(binding.registerIdx, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, rhiSubResource, rhiDimension)
+				.Texture_SRV(bindingIndex, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, rhiSubResource, rhiDimension)
 			);
 			break;
 		case BINDING_RANGE_UAV:
 			rhiBindingSetDesc.addItem(
 				nvrhi::BindingSetItem()
-				.Texture_UAV(binding.registerIdx, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, rhiSubResource, rhiDimension)
+				.Texture_UAV(bindingIndex, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, rhiSubResource, rhiDimension)
 			);
 			break;
 		}
@@ -229,33 +232,35 @@ void CNVRHIBindingLayout::FillBindingSetDescByLayoutMap(const BindGroupDesc& bin
 
 static void nvrhiAddBindingToLayout(nvrhi::BindingLayoutDesc& layoutDesc, const ShaderInfo::Binding& binding)
 {
+	const int bindingIndex = (CNVRHIRenderAPI::Instance.GetBackendType() == NVRHI_BACKEND_VULKAN) ? binding.index : binding.registerIdx;
+
 	switch (binding.type)
 	{
 	case BINDENTRY_BUFFER:
 		switch (binding.rangeType)
 		{
 		case BINDING_RANGE_CBV:
-			layoutDesc.addItem(nvrhi::BindingLayoutItem::ConstantBuffer(binding.registerIdx));
+			layoutDesc.addItem(nvrhi::BindingLayoutItem::ConstantBuffer(bindingIndex));
 			break;
 		case BINDING_RANGE_SRV:
-			layoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_SRV(binding.registerIdx));
+			layoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_SRV(bindingIndex));
 			break;
 		case BINDING_RANGE_UAV:
-			layoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_UAV(binding.registerIdx));
+			layoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_UAV(bindingIndex));
 			break;
 		}
 		break;
 	case BINDENTRY_SAMPLER:
-		layoutDesc.addItem(nvrhi::BindingLayoutItem::Sampler(binding.registerIdx));
+		layoutDesc.addItem(nvrhi::BindingLayoutItem::Sampler(bindingIndex));
 		break;
 	case BINDENTRY_TEXTURE:
-		layoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_SRV(binding.registerIdx));
+		layoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_SRV(bindingIndex));
 		break;
 	case BINDENTRY_STORAGETEXTURE:
 		if (binding.rangeType == BINDING_RANGE_SRV)
-			layoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_SRV(binding.registerIdx));
+			layoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_SRV(bindingIndex));
 		else
-			layoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_UAV(binding.registerIdx));
+			layoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_UAV(bindingIndex));
 		break;
 	}
 }
@@ -294,6 +299,7 @@ void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const IGPUBindingLa
 				const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIdx];
 				maxBindGroupIdx = max(maxBindGroupIdx, binding.descriptorSetIdx);
 
+				// TODO: check differently on vulkan?
 				if (usedRegisters.find(binding.rangeType | (binding.registerIdx << 8)))
 				{
 #ifdef DEBUG_SHADER_BINDINGS
@@ -315,6 +321,19 @@ void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const IGPUBindingLa
 	{
 		FixedArray<nvrhi::BindingLayoutDesc, nvrhi::c_MaxBindingLayouts> rhiBindingLayoutDescList;
 		rhiBindingLayoutDescList.setNum(maxBindGroupIdx + 1);
+
+		if (CNVRHIRenderAPI::Instance.GetBackendType() == NVRHI_BACKEND_VULKAN)
+		{
+			static const nvrhi::VulkanBindingOffsets zeroOffsets = { 0, 0, 0, 0 };
+			int bindGroupIdx = 0;
+			for (nvrhi::BindingLayoutDesc& rhiDesc : rhiBindingLayoutDescList)
+			{
+				rhiDesc
+					.setRegisterSpaceAndDescriptorSet(bindGroupIdx)
+					.setBindingOffsets(zeroOffsets);
+				bindGroupIdx++;
+			}
+		}
 
 		const CNVRHIBindingLayout* bindingLayoutImpl = static_cast<const CNVRHIBindingLayout*>(bindingLayout);
 		if (bindingLayoutImpl)
@@ -343,7 +362,6 @@ void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const IGPUBindingLa
 		}
 
 		nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
-
 		for (nvrhi::BindingLayoutDesc& rhiDesc : rhiBindingLayoutDescList)
 		{
 			rhiDesc.setVisibility(rhiShaderType);

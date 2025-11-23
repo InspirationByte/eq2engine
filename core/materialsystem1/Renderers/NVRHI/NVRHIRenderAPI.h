@@ -42,6 +42,7 @@ public:
 
 	EShaderAPIType				GetShaderAPIClass() const { return SHADERAPI_NVRHI; }
 	const char*					GetRendererName() const;
+	ENVRHIBackendType			GetBackendType() const { return m_rhiBackendType; }
 
 //-------------------------------------------------------------
 // MT Synchronization
