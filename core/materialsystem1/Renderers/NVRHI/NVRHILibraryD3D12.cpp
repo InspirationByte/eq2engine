@@ -55,6 +55,7 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
 
 bool CNVRHIRenderLibD3D12::InitCaps()
 {
+	CNVRHIRenderLibDXGIBase::Instance = this;
 	CNVRHIRenderAPI::Instance.m_rhiBackendType = NVRHI_BACKEND_D3D12;
 
 	m_d3d12Lib = LoadLibraryA("d3d12.dll");
@@ -106,7 +107,7 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	{
 		EqString descAdapterName;
 		AnsiUnicodeConverter(descAdapterName, rhiAdapterDesc.Description);
-		Msg("* NVRHI Adapter: %s\n", descAdapterName.ToCString());
+		Msg("* NVRHI D3D12 Adapter: %s\n", descAdapterName.ToCString());
 	}
 
 	HRESULT hr;

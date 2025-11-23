@@ -124,15 +124,14 @@ static void GetExceptionStrings( DWORD code, const char* *pName, const char* *pD
 	*pDescription = "n/a";
 }
 
-static bool CreateMiniDump( EXCEPTION_POINTERS* pep )
+static bool CreateMiniDump( EXCEPTION_POINTERS* pep, char* dumpPath, int dumpPathMaxLen)
 {
 	const bool fullCrashDumps = g_eqCore->GetDebugSettings().fullCrashDumps;
 
 	SYSTEMTIME t;
 	GetSystemTime(&t);
 
-	char dumpPath[2048];
-	CString::PrintF(dumpPath, sizeof(dumpPath), "logs/%s_%4d%02d%02d_%02d%02d%02d.dmp", g_eqCore->GetApplicationName(), t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
+	CString::PrintF(dumpPath, dumpPathMaxLen, "logs/%s_%4d%02d%02d_%02d%02d%02d.dmp", g_eqCore->GetApplicationName(), t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
 
 	MINIDUMP_TYPE dumpType = MINIDUMP_TYPE(MiniDumpWithIndirectlyReferencedMemory | MiniDumpScanMemory);
 	if (fullCrashDumps)
@@ -237,26 +236,26 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 	const char* pDescription;
 	GetExceptionStrings(pRecord->ExceptionCode, &pName, &pDescription);
 
-	const bool miniDumpCreated = CreateMiniDump(ExceptionInfo);
+	char dumpPath[2048];
+	const bool miniDumpCreated = CreateMiniDump(ExceptionInfo, dumpPath, sizeof(dumpPath));
 	DoCoreExceptionCallbacks();
 
 	if (!g_eqCore->GetDebugSettings().crashOnAssert)
 	{
 		if (miniDumpCreated)
 		{
-			CrashMsg("We've got an fatal error\nMinidump is created logs folder.\n\n"
-				"Exception code: %s (0x%x)\n"
-				"Address: %p\n\n\n"
-				"See application log for details.",
+			CrashMsg("Exception code: %s (0x%x)\n"
+				"At address: %p\n\n"
+				"See application log for details.\nCrash dump path: %s",
 				pName, pRecord->ExceptionCode,
-				pRecord->ExceptionAddress);
+				pRecord->ExceptionAddress,
+				dumpPath);
 		}
 		else
 		{
-			CrashMsg("We've got an fatal error\nMinidump creation was failed.\n\n"
-				"Exception code: %s (0x%x)\n"
-				"Address: %p\n\n\n"
-				"See application log for details.",
+			CrashMsg("Exception code: %s (0x%x)\n"
+				"At address: %p\n\n"
+				"See application log for details.\nCrash dump was not created",
 				pName, pRecord->ExceptionCode,
 				pRecord->ExceptionAddress);
 		}

@@ -24,7 +24,7 @@ class CNVRHIRenderLibDXGIBase
 public:
 	static CNVRHIRenderLibDXGIBase* Instance;
 
-	CNVRHIRenderLibDXGIBase();
+	CNVRHIRenderLibDXGIBase() = default;
 
 	virtual bool	InitAPI(const ShaderAPIParams& params);
 	virtual void	ExitAPI();
