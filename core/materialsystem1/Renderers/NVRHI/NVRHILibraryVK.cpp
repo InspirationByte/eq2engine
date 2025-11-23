@@ -194,17 +194,67 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 
 	// create instance
 	{
-		DevMsg(DEVMSG_RENDER, "Enabled Vulkan instance extensions:\n");
-		for (const char* ext : m_enabledExtensions.instance)
 		{
-			DevMsg(DEVMSG_RENDER, "    %s\n", ext);
-			vkInstExtNames.append(ext);
+			Array<EqString> requiredExtensions = m_enabledExtensions.instance;
+
+			// figure out which optional extensions are supported
+			for (const auto& instanceExt : vk::enumerateInstanceExtensionProperties())
+			{
+				const EqString name = instanceExt.extensionName.data();
+				if (arrayFindIndex(m_optionalExtensions.instance, name) != -1)
+					m_enabledExtensions.instance.append(name);
+
+				requiredExtensions.remove(name);
+			}
+
+			if (!requiredExtensions.isEmpty())
+			{
+				EqString errorStr;
+				errorStr.Append("Cannot create a Vulkan instance because the following required extension(s) are not supported:");
+				for (const auto& ext : requiredExtensions)
+					errorStr.AppendFmt("  - %s\n", ext);
+
+				MsgError(errorStr);
+				return false;
+			}
+
+			DevMsg(DEVMSG_RENDER, "Enabled Vulkan instance extensions:\n");
+			for (const auto& ext : m_enabledExtensions.instance)
+				DevMsg(DEVMSG_RENDER, "    %s\n", ext.ToCString());
+
+			Array<EqString> requiredLayers = m_enabledExtensions.layers;
+
+			auto instanceVersion = vk::enumerateInstanceVersion();
+			for (const auto& layer : vk::enumerateInstanceLayerProperties())
+			{
+				const EqString name = layer.layerName.data();
+				if (arrayFindIndex(m_optionalExtensions.layers, name) != -1)
+					m_enabledExtensions.layers.append(name);
+
+				requiredLayers.remove(name);
+			}
+
+			if (!requiredLayers.isEmpty())
+			{
+				EqString errorStr;
+				errorStr.Append("Cannot create a Vulkan instance because the following required layer(s) are not supported:\n");
+				for (const auto& ext : requiredLayers)
+					errorStr.AppendFmt("  - %s\n", ext);
+
+				MsgError(errorStr);
+				return false;
+			}
+
+			DevMsg(DEVMSG_RENDER, "Enabled Vulkan layers:\n");
+			for (const auto& layer : m_enabledExtensions.layers)
+				DevMsg(DEVMSG_RENDER, "    %s\n", layer);
 		}
 
+		for (const char* ext : m_enabledExtensions.instance)
+			vkInstExtNames.append(ext);
+
 		for (const char* ext : m_enabledExtensions.layers)
-		{
 			vkLayerNames.append(ext);
-		}
 
 		auto applicationInfo = vk::ApplicationInfo()
 			.setApiVersion(VK_MAKE_VERSION(1, 2, 0))
@@ -222,7 +272,7 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 		const vk::Result res = vk::createInstance(&info, nullptr, &m_vkInstance);
 		if (res != vk::Result::eSuccess)
 		{
-			MsgError("Failed to create a Vulkan instance, error code = %s", nvrhi::vulkan::resultToString((VkResult)res));
+			MsgError("Failed to create a Vulkan instance, error code = %s\n", nvrhi::vulkan::resultToString((VkResult)res));
 			return false;
 		}
 
@@ -869,7 +919,7 @@ ISwapChainPtr CNVRHIRenderLibVK::CreateSwapChain(const RenderWindowInfo& windowI
 
 		if (res != vk::Result::eSuccess)
 		{
-			MsgError("Failed to create a Vulkan window surface, error code = %s", nvrhi::vulkan::resultToString((VkResult)res));
+			MsgError("Failed to create a Vulkan window surface, error code = %s\n", nvrhi::vulkan::resultToString((VkResult)res));
 			return nullptr;
 		}
 	}

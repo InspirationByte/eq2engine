@@ -187,7 +187,6 @@ bool CNVRHISwapChainVK::UpdateResize()
 	}
 	m_vkPresentSemaphore = m_vkPresentSemaphoreQueue.front();
 
-	m_swapChainBufferIndex = 0;
 	m_textureRef->m_rhiTexture = nullptr;
 
 	return true;
@@ -215,7 +214,7 @@ bool CNVRHISwapChainVK::SwapBuffers()
 		.setPNext(pNext);
 
 	const vk::Result res = CNVRHIRenderLibVK::Instance->m_vkPresentQueue.presentKHR(&info);
-	assert(res == vk::Result::eSuccess || res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR);
+	ASSERT_MSG(res == vk::Result::eSuccess || res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR, "Present failure");
 
 	// cycle the semaphore queue and setup presentSemaphore for the next swapchain image
 	m_vkPresentSemaphoreQueue.popBack();
