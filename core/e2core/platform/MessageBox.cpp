@@ -197,7 +197,7 @@ IEXPORTS void CrashMsg(const char* fmt, ...)
 	CString::PrintFV(string, sizeof(string), fmt, argptr);
 	va_end(argptr);
 
-	g_msgBoxCallback(string, "OMG IT'S CRASHED", MSGBOX_CRASH);
+	g_msgBoxCallback(string, "FATAL CRASH REPORT", MSGBOX_CRASH);
 }
 
 IEXPORTS void WarningMsg(const char* fmt, ...)
