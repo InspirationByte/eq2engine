@@ -111,13 +111,6 @@ bool CNVRHISwapChainVK::UpdateResize()
 	const int backBufferWidth = clamp(m_swapChainDimensions.x, surfaceCaps.minImageExtent.width, surfaceCaps.maxImageExtent.width);
 	const int backBufferHeight = clamp(m_swapChainDimensions.y, surfaceCaps.minImageExtent.height, surfaceCaps.maxImageExtent.height);
 
-	const uint32_t queues[] = {
-		CNVRHIRenderLibVK::Instance->m_vkGraphicsQueueFamily,
-		CNVRHIRenderLibVK::Instance->m_vkPresentQueueFamily
-	};
-
-	const bool enableSwapChainSharing = elementsOf(queues);
-
 	// set up Vulkan present mode based on vsync setting and available surface features
 	vk::PresentModeKHR presentMode;
 	switch (m_vSync)
@@ -134,17 +127,23 @@ bool CNVRHISwapChainVK::UpdateResize()
 		presentMode = vk::PresentModeKHR::eFifo;	// eFifo always supported according to Vulkan spec
 	}
 
+	FixedArray<uint32_t, 4> queues;
+	queues.addUnique(CNVRHIRenderLibVK::Instance->m_vkGraphicsQueueFamily);
+	queues.addUnique(CNVRHIRenderLibVK::Instance->m_vkPresentQueueFamily);
+
+	const bool enableSwapChainSharing = queues.numElem() > 1;
+
 	auto desc = vk::SwapchainCreateInfoKHR()
 		.setSurface(m_vkWindowSurface)
 		.setMinImageCount(CNVRHIRenderLibVK::Instance->m_swapChainBufferCount)
 		.setImageFormat(vkSurfaceFormat.format)
 		.setImageColorSpace(vkSurfaceFormat.colorSpace)
-		.setImageExtent(vk::Extent2D(m_swapChainDimensions.x, m_swapChainDimensions.y))
+		.setImageExtent(vk::Extent2D(backBufferWidth, backBufferHeight))
 		.setImageArrayLayers(1)
 		.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled)
 		.setImageSharingMode(enableSwapChainSharing ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive)
-		.setQueueFamilyIndexCount(enableSwapChainSharing ? elementsOf(queues) : 0)
-		.setPQueueFamilyIndices(enableSwapChainSharing ? queues : nullptr)
+		.setQueueFamilyIndexCount(enableSwapChainSharing ? queues.numElem() : 0)
+		.setPQueueFamilyIndices(enableSwapChainSharing ? queues.ptr() : nullptr)
 		.setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity)
 		.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
 		.setPresentMode(presentMode)
@@ -169,8 +168,8 @@ bool CNVRHISwapChainVK::UpdateResize()
 	for (auto image : images)
 	{
 		nvrhi::TextureDesc textureDesc;
-		textureDesc.width = m_swapChainDimensions.x;
-		textureDesc.height = m_swapChainDimensions.y;
+		textureDesc.width = backBufferWidth;
+		textureDesc.height = backBufferHeight;
 		textureDesc.format = m_swapChainFormat;
 		textureDesc.debugName = m_textureRef->GetName();
 		textureDesc.isRenderTarget = true;
@@ -217,7 +216,7 @@ bool CNVRHISwapChainVK::SwapBuffers()
 	ASSERT_MSG(res == vk::Result::eSuccess || res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR, "Present failure");
 
 	// cycle the semaphore queue and setup presentSemaphore for the next swapchain image
-	m_vkPresentSemaphoreQueue.popBack();
+	m_vkPresentSemaphoreQueue.popFront();
 	m_vkPresentSemaphoreQueue.append(m_vkPresentSemaphore);
 	m_vkPresentSemaphore = m_vkPresentSemaphoreQueue.front();
 

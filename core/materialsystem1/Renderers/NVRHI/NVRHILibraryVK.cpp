@@ -48,23 +48,27 @@ static VKAPI_ATTR vk::Bool32 VKAPI_CALL vulkanDebugCallback(
 {
 	if (flags & vk::DebugReportFlagBitsEXT::eError)
 	{
-		MsgError("VULKAN ERROR: location=0x%zx code=%d, layerPrefix='%s'] %s\n", location, code, layerPrefix, msg);
+		MsgError("VULKAN ERROR %s:%d:0x%zx: %s\n", layerPrefix, code, location, msg);
+		if (vulkan_break_on_error.GetBool())
+		{
+			_DEBUG_BREAK;
+		}
 	}
 	else if (flags & vk::DebugReportFlagBitsEXT::eWarning)
 	{
-		MsgError("VULKAN WARNING: location=0x%zx code=%d, layerPrefix='%s'] %s\n", location, code, layerPrefix, msg);
+		MsgError("VULKAN WARNING %s:%d:0x%zx: %s\n", layerPrefix, code, location, msg);
 	}
 	else if (flags & vk::DebugReportFlagBitsEXT::ePerformanceWarning)
 	{
-		MsgWarning("VULKAN PERFORMANCE: location=0x%zx code=%d, layerPrefix='%s'] %s\n", location, code, layerPrefix, msg);
+		MsgWarning("VULKAN PERFORMANCE %s:%d:0x%zx: %s\n", layerPrefix, code, location, msg);
 	}
 	else if (flags & vk::DebugReportFlagBitsEXT::eInformation)
 	{
-		MsgError("VULKANL location=0x%zx code=%d, layerPrefix='%s'] %s\n", location, code, layerPrefix, msg);
+		MsgError("VULKAN %s:%d:0x%zx: %s\n", layerPrefix, code, location, msg);
 	}
 	else if (flags & vk::DebugReportFlagBitsEXT::eDebug)
 	{
-		MsgError("VULKAN DEBUG: location=0x%zx code=%d, layerPrefix='%s'] %s\n", location, code, layerPrefix, msg);
+		MsgError("VULKAN DEBUG %s:%d:0x%zx: %s\n", layerPrefix, code, location, msg);
 	}
 
 	return VK_FALSE;
@@ -126,6 +130,7 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 		m_enabledExtensions.instance.append(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 		m_enabledExtensions.device.append(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 		m_enabledExtensions.device.append(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
+		m_enabledExtensions.device.append(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
 #if defined(__APPLE__) && defined( VK_KHR_portability_subset )
 		// This is required for using the MoltenVK portability subset implementation on macOS
 		m_enabledExtensions.device.append(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
@@ -442,7 +447,7 @@ bool CNVRHIRenderLibVK::PickPhysicalDevice()
 		auto deviceExtensions = dev.enumerateDeviceExtensionProperties();
 		for (const auto& ext : deviceExtensions)
 		{
-			const int idx = arrayFindIndex(requiredExtensions, EqString(ext.extensionName.data(), ext.extensionName.size()));
+			const int idx = arrayFindIndex(requiredExtensions, ext.extensionName.data());
 			if(idx != -1)
 				requiredExtensions.fastRemoveIndex(idx);
 		}
@@ -613,6 +618,7 @@ bool CNVRHIRenderLibVK::CreateDevice()
 	bool meshletsSupported = false;
 	bool vrsSupported = false;
 	bool sync2Supported = false;
+	bool dynamicRenderingSupported = false;
 
 	DevMsg(DEVMSG_RENDER, "Enabled Vulkan device extensions:\n");
 	for( const auto& ext : m_enabledExtensions.device )
@@ -620,38 +626,23 @@ bool CNVRHIRenderLibVK::CreateDevice()
 		DevMsg(DEVMSG_RENDER, "    %s\n", ext.ToCString() );
 
 		if( ext == VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME )
-		{
 			accelStructSupported = true;
-		}
 		else if( ext == VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME )
-		{
-			// RB: only makes problems at the moment
 			bufferAddressSupported = true;
-		}
 		else if( ext == VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME )
-		{
 			rayPipelineSupported = true;
-		}
 		else if( ext == VK_KHR_RAY_QUERY_EXTENSION_NAME )
-		{
 			rayQuerySupported = true;
-		}
 		else if( ext == VK_NV_MESH_SHADER_EXTENSION_NAME )
-		{
 			meshletsSupported = true;
-		}
 		else if( ext == VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME )
-		{
 			vrsSupported = true;
-		}
 		else if( ext == VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME )
-		{
 			sync2Supported = true;
-		}
+		else if (ext == VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
+			dynamicRenderingSupported = true;
 		else if( ext == VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME )
-		{
 			m_displayTimingEnabled = true;
-		}
 	}
 
 	Set<int> uniqueQueueFamilies(PP_SL);
@@ -697,7 +688,10 @@ bool CNVRHIRenderLibVK::CreateDevice()
 					   .setAttachmentFragmentShadingRate( fragmentShadingRateFeatures.attachmentFragmentShadingRate );
 
 	auto sync2Features = vk::PhysicalDeviceSynchronization2FeaturesKHR()
-						 .setSynchronization2( true );
+						.setSynchronization2( true );
+
+	auto dynamicRenderingFeatures = vk::PhysicalDeviceDynamicRenderingFeatures()
+						.setDynamicRendering(true);
 
 #if defined(__APPLE__) && defined( VK_KHR_portability_subset )
 	auto portabilityFeatures = vk::PhysicalDevicePortabilitySubsetFeaturesKHR()
@@ -719,6 +713,7 @@ bool CNVRHIRenderLibVK::CreateDevice()
 	APPEND_EXTENSION( meshletsSupported, meshletFeatures )
 	APPEND_EXTENSION( vrsSupported, vrsFeatures )
 	APPEND_EXTENSION( sync2Supported, sync2Features )
+	APPEND_EXTENSION( dynamicRenderingSupported, dynamicRenderingFeatures )
 #undef APPEND_EXTENSION
 
 	auto deviceFeatures = vk::PhysicalDeviceFeatures()
