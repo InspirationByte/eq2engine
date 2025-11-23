@@ -160,7 +160,7 @@ void CNVRHIRenderPassRecorder::SetScissorRectangle(const IAARectangle& rectangle
 
 	const Vector2D rectLT = screenRect.GetLeftTop();
 	const Vector2D rectRB = screenRect.GetRightBottom();
-	m_rhiScissor = nvrhi::Rect(rectLT.x, rectRB.y, rectLT.y, rectRB.y);
+	m_rhiScissor = nvrhi::Rect(rectLT.x, rectRB.x, rectLT.y, rectRB.y);
 	m_graphicsStateDirty = true;
 }
 
