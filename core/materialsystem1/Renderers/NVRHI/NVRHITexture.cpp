@@ -88,9 +88,14 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 		.setDebugName(m_name.ToCString())
 		.setMipLevels(mipCount)
 		.setIsUAV((flags & TEXFLAG_STORAGE) != 0)
-		.setFormat(GetNVRHITextureFormat(imgFmt))
-		.setInitialState(nvrhi::ResourceStates::ShaderResource)
-		.setKeepInitialState(true);
+		.setFormat(GetNVRHITextureFormat(imgFmt));
+
+	if(m_flags & TEXFLAG_COPY_DST)
+	{
+		rhiTextureDesc
+			.setInitialState(nvrhi::ResourceStates::CopyDest)
+			.setKeepInitialState(true);
+	}
 
 	if (IsCompressedFormat(imgFmt))
 	{
@@ -156,7 +161,7 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 	nvrhi::CommandListHandle writeCmd = CNVRHIRenderAPI::Instance.AcquireRHICommandList(cmdListIdx);
 	writeCmd->open();
 	writeCmd->setEnableAutomaticBarriers(false);
-	writeCmd->beginTrackingTextureState(rhiTexture, nvrhi::AllSubresources, nvrhi::ResourceStates::CopyDest);
+	writeCmd->beginTrackingTextureState(rhiTexture, nvrhi::AllSubresources, nvrhi::ResourceStates::Common);
 	for (int arrIdx = 0; arrIdx < arraySize; ++arrIdx)
 	{
 		int mipMapLevel = image->GetMipMapCount() - 1;
@@ -351,7 +356,7 @@ void CNVRHITexture::Unlock(IGPUCommandRecorder* writeCmdRecorder)
 			int cmdListIdx = -1;
 			nvrhi::CommandListHandle writeCmd = CNVRHIRenderAPI::Instance.AcquireRHICommandList(cmdListIdx);
 			writeCmd->open();
-			writeCmd->beginTrackingTextureState(m_rhiTexture, nvrhi::TextureSubresourceSet(data.lockOrigin.mipLevel, 1, data.lockOrigin.arraySlice, 1), nvrhi::ResourceStates::CopyDest);
+			writeCmd->beginTrackingTextureState(m_rhiTexture, nvrhi::TextureSubresourceSet(data.lockOrigin.mipLevel, 1, data.lockOrigin.arraySlice, 1), nvrhi::ResourceStates::Common);
 			writeCmd->writeTexture(m_rhiTexture, data.lockOrigin.arraySlice, data.lockOrigin.mipLevel, data.lockData, data.lockPitch);
 			writeCmd->close();
 
