@@ -59,7 +59,7 @@ CNVRHISwapChainDXGI::CNVRHISwapChainDXGI(const RenderWindowInfo& windowInfo, ITe
 
 void* CNVRHISwapChainDXGI::GetWindow() const
 {
-	return m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
+	return m_winInfo.get(RenderWindowInfo::WINDOW);
 }
 
 ITexturePtr CNVRHISwapChainDXGI::GetBackbuffer() const
