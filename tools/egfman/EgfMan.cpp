@@ -340,7 +340,7 @@ static void InitPhysicsScene()
 	IPhysicsObject* pObj = physics->CreateStaticObject(&info, COLLISION_GROUP_WORLD);
 }
 
-static void InitMatSystem(void* window)
+static void InitMatSystem(wxWindow* window)
 {
 	ASSERT_MSG(window, "InitMatSystem - NULL window");
 
@@ -379,20 +379,31 @@ static void InitMatSystem(void* window)
 		render_config.editormode = true;
 		materials_config.shaderApiParams.screenFormat = format;
 
-		static void* s_engineWindow = window;
-
-		RenderWindowInfo& winInfo = materials_config.shaderApiParams.windowInfo;
-		winInfo.windowType = RHI_WINDOW_HANDLE_NATIVE_WINDOWS;
-		winInfo.get = [](void*, RenderWindowInfo::Attribute attrib) -> void* {
-			switch (attrib)
+		struct RenderWindowInfoWx : RenderWindowInfo
+		{
+			static void Init(RenderWindowInfo& winInfo, wxWindow* window)
 			{
-			case RenderWindowInfo::WINDOW:
-				return s_engineWindow;
-			case RenderWindowInfo::DISPLAY:
-				return GetDC((HWND)s_engineWindow);
+				// TODO: other systems
+				winInfo.windowType = RHI_WINDOW_HANDLE_NATIVE_WINDOWS;
+				winInfo.userData = window;
+				winInfo.getFunc = (RenderWindowInfo::GetterFunc)&GetWindowAttrib;
 			}
-			return nullptr;
+
+			void* GetWindowAttrib(RenderWindowInfo::Attribute attrib) const
+			{
+				wxWindow* window = reinterpret_cast<wxWindow*>(userData);
+				switch (attrib)
+				{
+				case RenderWindowInfo::WINDOW:
+					return window->GetHWND();
+				case RenderWindowInfo::DISPLAY:
+					return GetDC((HWND)window->GetHWND());
+				}
+				return nullptr;
+			}
 		};
+
+		RenderWindowInfoWx::Init(materials_config.shaderApiParams.windowInfo, window);
 
 		g_matSystem->LoadShaderLibrary("eqBaseShaders");
 		if (!g_matSystem->Init(materials_config))
@@ -432,13 +443,7 @@ void CEGFViewFrame::InitializeEq()
 {
 	// create physics scene and add infinite plane
 	InitPhysicsScene();
-
-#ifdef PLAT_LINUX
-	// NOTE: we use wxGLCanvas instead
-	InitMatSystem(m_pRenderPanel->GetXWindow());
-#else
-	InitMatSystem(m_pRenderPanel->GetHandle());
-#endif
+	InitMatSystem(m_pRenderPanel);
 
 	const int modelArgIdx = g_cmdLine->Find("-model");
 	if (modelArgIdx != -1)
