@@ -15,6 +15,8 @@
 
 DECLARE_CVAR_F(vulkan_fastsync);
 
+constexpr int TOGGLE_BIT = 0x80000000;
+
 CNVRHISwapChainVK::CNVRHISwapChainVK(const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture)
 	: m_winInfo(windowInfo)
 {
@@ -99,13 +101,15 @@ void CNVRHISwapChainVK::GetBackbufferSize(int& wide, int& tall) const
 void CNVRHISwapChainVK::SetVSync(bool enable)
 {
 	if ((m_vSync > 0) != enable)
-		m_vSync = (int)enable;
+		m_vSync = TOGGLE_BIT | (int)enable;
 }
 
 bool CNVRHISwapChainVK::UpdateResize()
 {
-	if (m_textureRef->GetWidth() == m_swapChainDimensions.x && m_textureRef->GetHeight() == m_swapChainDimensions.y)
+	if ((m_vSync & TOGGLE_BIT) == 0 && m_textureRef->GetWidth() == m_swapChainDimensions.x && m_textureRef->GetHeight() == m_swapChainDimensions.y)
 		return true;
+
+	m_vSync &= ~TOGGLE_BIT;
 
 	m_textureRef->SetDimensions(m_swapChainDimensions.x, m_swapChainDimensions.y);
 
