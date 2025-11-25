@@ -190,15 +190,42 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 		0x609a13b: vertex shader writes to output location X.0 which is not consumed by fragment shader...
 		0x609a13b: Vertex attribute at location X not consumed by vertex shader.
 		0x609a13b: fragment shader writes to output location X with no matching attachment.
+		0x46877e3e: Inside the fragment shader, it writes to output Location 0 but there is no VkRenderingInfo::pColorAttachments[0] and this write is unused.
+
+		Suppress image view compatibility 2D <-> 2D Array
+		0x6174abc7: the sampled image descriptor VkImageViewType is VK_IMAGE_VIEW_TYPE_2D_ARRAY but the OpTypeImage has (Dim = 2D) and (Arrayed = 0)
+		0x1c95b84c: the sampled image descriptor VkImageViewType is VK_IMAGE_VIEW_TYPE_2D but the OpTypeImage has (Dim = 2D) and (Arrayed = 1)
+
+		Suppress texture loading transfer messages
+		0x46582f7b: command buffer VkCommandBuffer expects VkImage to be in layout VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+		
+		Suppress RGBA/BRGA validation warning for now
+		0x13365b2: the sampled image descriptor is accessed by a OpTypeImage that has a Format operand Rgba8 (equivalent to VK_FORMAT_R8G8B8A8_UNORM) which doesn't match the VkImageView format (VK_FORMAT_B8G8R8A8_UNORM)
 
 		Suppress false-positive descriptor count warning for MipMapGen pass which is by design:
 		0x3af3126a: vkCreateComputePipelines(): pCreateInfos[0].stage uses ... with a descriptorCount of X, but requires at least Y in the SPIR-V.
 		*/
+
+		EqStringRef suppressedMsgs[] = { "0x6174abc7", "0x1c95b84c", "0xc81ad50e", "0x9805298c", "0x609a13b", "0x46877e3e", "0x3af3126a", "0x13365b2", "0x46582f7b"};
 #ifdef _WIN32
-		//SetEnvironmentVariableA("VK_LAYER_MESSAGE_ID_FILTER", "0xc81ad50e;0x9805298c;0x609a13b;0x3af3126a");
+#define FMT_ENV_DELIM ";"
 #else
-		setenv("VK_LAYER_MESSAGE_ID_FILTER", "0xc81ad50e:0x9805298c:0x609a13b:0x3af3126a", 1);
+#define FMT_ENV_DELIM ":"
 #endif
+
+		EqString vkIdsStr;
+		bool first = true;
+		for (EqStringRef msgId : ArrayCRef(suppressedMsgs))
+		{
+			vkIdsStr.AppendFmt("%s%s", first ? "" : FMT_ENV_DELIM, msgId);
+			first = false;
+		}
+#ifdef _WIN32
+		SetEnvironmentVariableA("VK_LAYER_MESSAGE_ID_FILTER", vkIdsStr.ToCString());
+#else
+		setenv("VK_LAYER_MESSAGE_ID_FILTER", vkIdsStr.ToCString(), 1);
+#endif
+#undef FMT_ENV_DELIM
 	}
 #endif
 
