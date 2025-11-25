@@ -108,6 +108,7 @@ void CNVRHIRenderAPI::Shutdown()
 	m_rhiFreeTransientBufferHeaps.clear(true);
 	m_rhiCommandLists.clear(true);
 	m_rhiFreeCommandLists.clear(true);
+	m_rhiSamplers.clear(true);
 	m_rhiDevice = nullptr;
 }
 

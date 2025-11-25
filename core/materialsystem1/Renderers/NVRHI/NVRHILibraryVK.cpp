@@ -829,6 +829,10 @@ void CNVRHIRenderLibVK::ExitAPI()
 	if (m_vkDevice)
 		m_vkDevice.waitIdle();
 
+	CNVRHIRenderAPI::Instance.m_rhiDevice = nullptr;
+	m_nvrhiDevice = nullptr;
+	m_nvrhiFrameWaitQuery = nullptr;
+
 	if (m_vkDebugReportCallback)
 		m_vkInstance.destroyDebugReportCallbackEXT(m_vkDebugReportCallback);
 
@@ -840,10 +844,6 @@ void CNVRHIRenderLibVK::ExitAPI()
 		m_vkDevice.destroy();
 		m_vkDevice = nullptr;
 	}
-
-	CNVRHIRenderAPI::Instance.m_rhiDevice = nullptr;
-	m_nvrhiDevice = nullptr;
-	m_nvrhiFrameWaitQuery = nullptr;
 
 #ifdef NVRHI_WITH_VALIDATION
 	g_consoleCommands->UnregisterCommand(&vulkan_validation);
