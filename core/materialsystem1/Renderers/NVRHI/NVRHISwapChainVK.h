@@ -23,6 +23,7 @@ public:
 	friend class CNVRHIRenderLibVK;
 
 	CNVRHISwapChainVK(const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture);
+	~CNVRHISwapChainVK();
 
 	void			SetVSync(bool enable);
 
@@ -45,8 +46,8 @@ protected:
 
 	Array<nvrhi::TextureHandle>	m_rhiSwapChainTextures{ PP_SL };
 	Array<vk::Image>			m_vkSwapChainBuffers{ PP_SL };
-	Array<vk::Semaphore>		m_vkPresentSemaphoreQueue{ PP_SL };
-	vk::Semaphore				m_vkPresentSemaphore;
+	Array<vk::Semaphore>		m_vkPresentSemaphores{ PP_SL };
+	vk::Semaphore				m_vkCurrentPresentSemaphore;
 
 	uint						m_swapChainBufferIndex{ COM_UINT_MAX };
 

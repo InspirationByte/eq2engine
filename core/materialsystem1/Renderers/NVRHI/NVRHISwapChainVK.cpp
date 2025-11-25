@@ -40,6 +40,22 @@ CNVRHISwapChainVK::CNVRHISwapChainVK(const RenderWindowInfo& windowInfo, ITextur
 	}
 }
 
+CNVRHISwapChainVK::~CNVRHISwapChainVK()
+{
+	vk::Device vkDevice = CNVRHIRenderLibVK::Instance->m_vkDevice;
+	vk::Instance vkInstance = CNVRHIRenderLibVK::Instance->m_vkInstance;
+
+	for(vk::Semaphore& vkImgSemaphore : m_vkPresentSemaphores)
+		vkDevice.destroySemaphore(vkImgSemaphore);
+	m_vkCurrentPresentSemaphore = vk::Semaphore{};
+
+	if (m_vkWindowSurface)
+	{
+		vkInstance.destroySurfaceKHR(m_vkWindowSurface);
+		m_vkWindowSurface = nullptr;
+	}
+}
+
 void* CNVRHISwapChainVK::GetWindow() const
 {
 	return m_winInfo.get(RenderWindowInfo::WINDOW);
@@ -53,17 +69,15 @@ ITexturePtr CNVRHISwapChainVK::GetBackbuffer() const
 void CNVRHISwapChainVK::UpdateBackbufferView()
 {
 	nvrhi::vulkan::DeviceHandle nvrhiDevice = CNVRHIRenderLibVK::Instance->m_nvrhiDevice;
-	vk::Device vkDevice = CNVRHIRenderLibVK::Instance->m_vkDevice;
 
+	vk::Device vkDevice = CNVRHIRenderLibVK::Instance->m_vkDevice;
 	const vk::Result res = vkDevice.acquireNextImageKHR(m_vkSwapChain,
 		std::numeric_limits<uint64_t>::max(),
-		m_vkPresentSemaphore,
+		m_vkCurrentPresentSemaphore,
 		vk::Fence(),
 		&m_swapChainBufferIndex);
 
-	assert(res == vk::Result::eSuccess || res == vk::Result::eSuboptimalKHR);
-
-	nvrhiDevice->queueWaitForSemaphore(nvrhi::CommandQueue::Graphics, m_vkPresentSemaphore, 0);
+	ASSERT_MSG(res == vk::Result::eSuccess || res == vk::Result::eSuboptimalKHR, "Aquire Next Image failure");
 
 	if (!m_rhiSwapChainTextures.inRange(m_swapChainBufferIndex))
 	{
@@ -71,6 +85,9 @@ void CNVRHISwapChainVK::UpdateBackbufferView()
 		return;
 	}
 	m_textureRef->m_rhiTexture = m_rhiSwapChainTextures[m_swapChainBufferIndex];
+
+	nvrhiDevice->queueSignalSemaphore(nvrhi::CommandQueue::Graphics, m_vkCurrentPresentSemaphore, 0);
+	nvrhiDevice->queueWaitForSemaphore(nvrhi::CommandQueue::Graphics, m_vkCurrentPresentSemaphore, 0);
 }
 
 void CNVRHISwapChainVK::GetBackbufferSize(int& wide, int& tall) const
@@ -94,7 +111,11 @@ bool CNVRHISwapChainVK::UpdateResize()
 
 	vk::Device vkDevice = CNVRHIRenderLibVK::Instance->m_vkDevice;
 	vk::PhysicalDevice vkPhysicalDevice = CNVRHIRenderLibVK::Instance->m_vkPhysicalDevice;
+
+	// Make sure all frame is finished
 	nvrhi::DeviceHandle nvrhiDevice = CNVRHIRenderLibVK::Instance->m_nvrhiDevice;
+	nvrhiDevice->waitForIdle();
+	nvrhiDevice->runGarbageCollection();
 
 	const bool enablePModeMailbox = CNVRHIRenderLibVK::Instance->m_enablePModeMailbox;
 	const bool enablePModeImmediate = CNVRHIRenderLibVK::Instance->m_enablePModeImmediate;
@@ -152,9 +173,14 @@ bool CNVRHISwapChainVK::UpdateResize()
 
 	m_rhiSwapChainTextures.clear();
 	m_vkSwapChainBuffers.clear();
-	m_vkPresentSemaphoreQueue.clear();
-	m_vkPresentSemaphore = nullptr;
+	
+	for (vk::Semaphore& vkImgSemaphore : m_vkPresentSemaphores)
+		vkDevice.destroySemaphore(vkImgSemaphore);
+	m_vkPresentSemaphores.clear();
+	m_vkCurrentPresentSemaphore = vk::Semaphore{};
+
 	m_vkSwapChain = nullptr;
+	m_swapChainBufferIndex = 0;
 
 	const vk::Result res = vkDevice.createSwapchainKHR(&desc, nullptr, &m_vkSwapChain);
 	if (res != vk::Result::eSuccess)
@@ -182,9 +208,9 @@ bool CNVRHISwapChainVK::UpdateResize()
 		m_vkSwapChainBuffers.append(image);
 
 		// Give each swapchain image its own semaphore in case of overlap (e.g.MoltenVK async queue submit)
-		m_vkPresentSemaphoreQueue.append(vkDevice.createSemaphore(vk::SemaphoreCreateInfo()));
+		m_vkPresentSemaphores.append(vkDevice.createSemaphore(vk::SemaphoreCreateInfo()));
 	}
-	m_vkPresentSemaphore = m_vkPresentSemaphoreQueue.front();
+	m_vkCurrentPresentSemaphore = m_vkPresentSemaphores.front();
 
 	m_textureRef->m_rhiTexture = nullptr;
 
@@ -201,12 +227,11 @@ bool CNVRHISwapChainVK::SetBackbufferSize(int wide, int tall)
 bool CNVRHISwapChainVK::SwapBuffers()
 {
 	nvrhi::vulkan::DeviceHandle nvrhiDevice = CNVRHIRenderLibVK::Instance->m_nvrhiDevice;
-	nvrhiDevice->queueSignalSemaphore(nvrhi::CommandQueue::Graphics, m_vkPresentSemaphore, 0);
 
 	void* pNext = nullptr;
 	vk::PresentInfoKHR info = vk::PresentInfoKHR()
 		.setWaitSemaphoreCount(1)
-		.setPWaitSemaphores(&m_vkPresentSemaphore)
+		.setPWaitSemaphores(&m_vkCurrentPresentSemaphore)
 		.setSwapchainCount(1)
 		.setPSwapchains(&m_vkSwapChain)
 		.setPImageIndices(&m_swapChainBufferIndex)
@@ -215,10 +240,10 @@ bool CNVRHISwapChainVK::SwapBuffers()
 	const vk::Result res = CNVRHIRenderLibVK::Instance->m_vkPresentQueue.presentKHR(&info);
 	ASSERT_MSG(res == vk::Result::eSuccess || res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR, "Present failure");
 
-	// cycle the semaphore queue and setup presentSemaphore for the next swapchain image
-	m_vkPresentSemaphoreQueue.popFront();
-	m_vkPresentSemaphoreQueue.append(m_vkPresentSemaphore);
-	m_vkPresentSemaphore = m_vkPresentSemaphoreQueue.front();
+	// cycle the semaphore queue and setup m_PresentSemaphore for the next swapchain image
+	m_vkPresentSemaphores.popFront();
+	m_vkPresentSemaphores.append(m_vkCurrentPresentSemaphore);
+	m_vkCurrentPresentSemaphore = m_vkPresentSemaphores.front();
 
 	return true;
 }

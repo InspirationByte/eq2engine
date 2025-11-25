@@ -826,8 +826,20 @@ void CNVRHIRenderLibVK::ExitAPI()
 		m_nvrhiDevice->runGarbageCollection();
 	}
 
+	if (m_vkDevice)
+		m_vkDevice.waitIdle();
+
+	if (m_vkDebugReportCallback)
+		m_vkInstance.destroyDebugReportCallbackEXT(m_vkDebugReportCallback);
+
 	m_defaultSwapChain = nullptr;
 	m_currentSwapChain = nullptr;
+
+	if (m_vkDevice)
+	{
+		m_vkDevice.destroy();
+		m_vkDevice = nullptr;
+	}
 
 	CNVRHIRenderAPI::Instance.m_rhiDevice = nullptr;
 	m_nvrhiDevice = nullptr;
@@ -850,7 +862,7 @@ void CNVRHIRenderLibVK::BeginFrame(ISwapChain* swapChain)
 		m_currentSwapChain->UpdateResize();
 		m_currentSwapChain->UpdateBackbufferView();
 		return 0;
-		});
+	});
 
 	g_renderWorker.Execute(__func__, [this]() {
 		m_nvrhiDevice->runGarbageCollection();
