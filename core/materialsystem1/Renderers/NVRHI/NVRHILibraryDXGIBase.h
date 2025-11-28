@@ -56,7 +56,6 @@ protected:
 	void							EndAsyncOperation() {}
 	bool							IsMainThread(uintptr_t threadId) const;
 
-	DXGI_SWAP_CHAIN_FULLSCREEN_DESC	m_dxgiFullScreenDesc{};
 	RefCountPtr<IDXGIFactory2>		m_dxgiFactory;
 	RefCountPtr<IDXGIAdapter3>		m_dxgiAdapter;
 	nvrhi::DeviceHandle				m_nvrhiDevice;

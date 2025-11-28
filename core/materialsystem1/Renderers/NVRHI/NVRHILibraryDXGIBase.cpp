@@ -105,10 +105,7 @@ bool CNVRHIRenderLibDXGIBase::InitAPI(const ShaderAPIParams& params)
 void CNVRHIRenderLibDXGIBase::ExitAPI()
 {
 	g_renderWorker.Shutdown();
-
-	if (m_defaultSwapChain)
-		m_defaultSwapChain->m_dxgiSwapChain->SetFullscreenState(false, nullptr);
-	
+		
 	if (m_nvrhiDevice)
 	{
 		m_nvrhiDevice->waitForIdle();
@@ -214,12 +211,8 @@ void CNVRHIRenderLibDXGIBase::SetBackbufferSize(const int w, const int h)
 // changes fullscreen mode
 bool CNVRHIRenderLibDXGIBase::SetWindowed(bool enabled)
 {
-	if (m_defaultSwapChain)
-		m_defaultSwapChain->m_dxgiSwapChain->SetFullscreenState(enabled == false, nullptr);
-	m_dxgiFullScreenDesc.Windowed = enabled;
+	// Since SDL handles our windowed <-> fullscreen transitions we don't need to call swapchain->SetFullscreenState
 
-	// FIXME: currently switching to exclusive fullscreen will guarantee device lost
-	// need to handle it somehow...
 	m_windowed = enabled;
 	return true;
 }

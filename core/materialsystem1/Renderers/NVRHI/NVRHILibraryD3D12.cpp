@@ -280,26 +280,26 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	// create default swap chain
 	if (params.windowInfo.windowType != RHI_WINDOW_HANDLE_UNKNOWN)
 	{
-		HWND mainWindow = (HWND)params.windowInfo.get(RenderWindowInfo::WINDOW);
+		HWND window = (HWND)params.windowInfo.get(RenderWindowInfo::WINDOW);
 
 		m_defaultSwapChain = CRefPtr<CNVRHISwapChainDXGI>(static_cast<CNVRHISwapChainDXGI*>(CNVRHIRenderLibDXGIBase::CreateSwapChain(params.windowInfo).Ptr()));
 
-		m_dxgiFullScreenDesc = {};
-		m_dxgiFullScreenDesc.RefreshRate.Numerator = params.screenRefreshRateHZ;
-		m_dxgiFullScreenDesc.RefreshRate.Denominator = 1;
-		m_dxgiFullScreenDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE;
-		m_dxgiFullScreenDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-		m_dxgiFullScreenDesc.Windowed = m_windowed;
+		DXGI_SWAP_CHAIN_FULLSCREEN_DESC dxgiFullscreenDesc{};
+		dxgiFullscreenDesc.Windowed = true;
 
 		RefCountPtr<IDXGISwapChain1> pSwapChain1;
 		hr = m_dxgiFactory->CreateSwapChainForHwnd(m_rhiGraphicsQueue,
-			mainWindow,
-			&m_defaultSwapChain->m_dxgiSwapChainDesc, &m_dxgiFullScreenDesc, nullptr,
+			window,
+			&m_defaultSwapChain->m_dxgiSwapChainDesc, &dxgiFullscreenDesc, nullptr,
 			&pSwapChain1);
 		HR_ASSERT(hr, "Failed to create main swap chain");
 
 		hr = pSwapChain1->QueryInterface(IID_PPV_ARGS(&m_defaultSwapChain->m_dxgiSwapChain));
 		HR_ASSERT(hr, "Failed to create main swap chain");
+
+		// Required.
+		hr = m_dxgiFactory->MakeWindowAssociation(window, DXGI_MWA_NO_WINDOW_CHANGES);
+		HR_ASSERT(hr, "MakeWindowAssociation failed");
 	}
 
 	if (m_defaultSwapChain && !CreateSwapchainTargets(static_cast<CNVRHISwapChainDXGI*>(m_defaultSwapChain)))
@@ -317,23 +317,25 @@ ISwapChainPtr CNVRHIRenderLibD3D12::CreateSwapChain(const RenderWindowInfo& wind
 
 	CNVRHISwapChainDXGI* swapChainImpl = static_cast<CNVRHISwapChainDXGI*>(swapChain.Ptr());
 
-	DXGI_SWAP_CHAIN_FULLSCREEN_DESC dxgiFullScreenDesc = {};
-	dxgiFullScreenDesc.RefreshRate.Numerator = 0;
-	dxgiFullScreenDesc.RefreshRate.Denominator = 1;
-	dxgiFullScreenDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE;
-	dxgiFullScreenDesc.Scaling = DXGI_MODE_SCALING_STRETCHED;
-	dxgiFullScreenDesc.Windowed = false;
+	DXGI_SWAP_CHAIN_FULLSCREEN_DESC dxgiFullscreenDesc{};
+	dxgiFullscreenDesc.Windowed = true;
+
+	const HWND window = (HWND)windowInfo.get(RenderWindowInfo::WINDOW);
 
 	RefCountPtr<IDXGISwapChain1> pSwapChain1;
 	HRESULT hr = m_dxgiFactory->CreateSwapChainForHwnd(m_rhiGraphicsQueue,
-		(HWND)windowInfo.get(RenderWindowInfo::WINDOW),
-		&swapChainImpl->m_dxgiSwapChainDesc, &m_dxgiFullScreenDesc, nullptr,
+		window,
+		&swapChainImpl->m_dxgiSwapChainDesc, &dxgiFullscreenDesc, nullptr,
 		&pSwapChain1);
 
 	HR_ASSERT(hr, "Failed to create main swap chain");
 
 	hr = pSwapChain1->QueryInterface(IID_PPV_ARGS(&swapChainImpl->m_dxgiSwapChain));
 	HR_ASSERT(hr, "Failed to create main swap chain");
+
+	// Required.
+	hr = m_dxgiFactory->MakeWindowAssociation(window, DXGI_MWA_NO_WINDOW_CHANGES);
+	HR_ASSERT(hr, "MakeWindowAssociation failed");
 
 	if (!CreateSwapchainTargets(static_cast<CNVRHISwapChainDXGI*>(swapChain.Ptr())))
 		return nullptr;
