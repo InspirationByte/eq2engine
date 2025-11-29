@@ -80,7 +80,7 @@ workspace(WORKSPACE_NAME)
 	vscode_makefile "build/%{wks.name}.solution"
 	vscode_launch_cwd ("${workspaceRoot}/../build/bin64linux")
 	vscode_launch_environment {
-		LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}%{cfg.targetdir}:${workspaceRoot}/../build/bin64linux"
+		LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}/%{cfg.targetdir}:${workspaceRoot}/../build/bin64linux"
 	}
 	vscode_launch_visualizerFile "${workspaceRoot}/public/types.natvis"
 
