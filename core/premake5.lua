@@ -120,7 +120,7 @@ project "eqNVRHI"
 	properties { "sharedlib", "unitybuild" }
 	uses {
 		"coreLib", "frameworkLib", "e2Core",
-		"eqRHIBaseLib", "nvrhi"
+		"eqRHIBaseLib", "nvrhi", "nvrhi-validation"
 	}
 	defines{
 		"EQRHI_NVRHI",
@@ -136,11 +136,6 @@ project "eqNVRHI"
 		"materialsystem1/Renderers/NVRHI/**D3D*.cpp",
 		"materialsystem1/Renderers/NVRHI/**D3D*.h"
 	}
-
-	filter "configurations:Debug or configurations:Release*"
-		uses {
-			"nvrhi-validation"
-		}
 
 	filter "system:Linux"
 		defines {

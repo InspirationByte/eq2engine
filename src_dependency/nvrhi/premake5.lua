@@ -61,6 +61,10 @@ project "nvrhi-validation"
 		"NVRHI/src/validation/**.h",
 	}
 
+usage "nvrhi-validation"
+	filter "configurations:Debug or configurations:Release*"
+		links "nvrhi-validation"
+
 usage "nvrhi"
 	includedirs { 
 		"NVRHI/include",
