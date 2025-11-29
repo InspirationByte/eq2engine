@@ -278,6 +278,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 			}
 			else
 			{
+				g_eqCore->UnregisterInterface<IRenderManager>();
 				g_eqCore->CloseModule(renderModule);
 			}
 		};

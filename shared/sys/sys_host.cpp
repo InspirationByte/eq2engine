@@ -39,6 +39,7 @@
 #include "input/InputCommandBinder.h"
 
 #include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/ITextureLoader.h"
 
 
 #define DEFAULT_USERCONFIG_PATH		"cfg/user.cfg"
@@ -489,6 +490,12 @@ bool CGameHost::InitSystems()
 		}
 
 		MaterialsInitSettings matSystemCfg;
+		
+		RenderWindowInfo sdlWinInfo;
+		sdlWinInfo.getFunc = (RenderWindowInfo::GetterFunc)&HostRenderWindowInfoSDL::CreateVulkanSurface;
+		sdlWinInfo.userData = m_window;
+		sdlWinInfo.windowType = RHI_WINDOW_HANDLE_SDL;
+
 		{
 			ShaderAPIParams& rhiParams = matSystemCfg.shaderApiParams;
 
@@ -503,11 +510,6 @@ bool CGameHost::InitSystems()
 				rhiParams.screenFormat = FORMAT_RGB565;
 			else
 				rhiParams.screenFormat = FORMAT_RGB8;
-
-			RenderWindowInfo sdlWinInfo;
-			sdlWinInfo.getFunc = (RenderWindowInfo::GetterFunc)&HostRenderWindowInfoSDL::CreateVulkanSurface;
-			sdlWinInfo.userData = m_window;
-			sdlWinInfo.windowType = RHI_WINDOW_HANDLE_SDL;
 
 			RenderWindowInfo& winInfo = rhiParams.windowInfo;
 			winInfo.parent = &sdlWinInfo;
@@ -703,6 +705,9 @@ void CGameHost::ShutdownSystems()
 	g_inputCommandBinder->Shutdown();
 	g_consoleInput->Shutdown();
 	g_matSystem->Shutdown();
+
+	g_eqCore->UnregisterInterface<IMaterialSystem>();
+	g_eqCore->UnregisterInterface<ITextureLoader>();
 	g_eqCore->CloseModule( g_matsysmodule );
 
 	g_parallelJobs->Shutdown();

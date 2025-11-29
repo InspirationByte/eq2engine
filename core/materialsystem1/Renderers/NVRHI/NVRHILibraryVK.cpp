@@ -961,6 +961,10 @@ ISwapChainPtr CNVRHIRenderLibVK::CreateSwapChain(const RenderWindowInfo& windowI
 		}
 		else
 		{
+			if(windowInfo.parent)
+				MsgError("ERROR - Not supported window type %d of parent\n", windowInfo.parent->windowType);
+			else
+				MsgError("ERROR - Not supported window type %d\n", windowInfo.windowType);
 			ASSERT_FAIL("Not supported window type");
 		}
 		auto res = vk::Result(surfaceCreateRes);
