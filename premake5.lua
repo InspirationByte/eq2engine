@@ -77,7 +77,7 @@ workspace(WORKSPACE_NAME)
 	filter {}
 	
 	-- setup VSCode generator settings
-	vscode_makefile "build/%{wks.name}.solution"
+	vscode_makefile "build"
 	vscode_launch_cwd ("${workspaceRoot}/../build/bin64linux")
 	vscode_launch_environment {
 		LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}/%{cfg.targetdir}:${workspaceRoot}/../build/bin64linux"

@@ -62,6 +62,6 @@ jobs:
       run: ./utils/premake5 --file=premake5-tests.lua gmake2
       
     - name: make
-      working-directory: ./build/${{env.PROJECT_NAME}}.solution
+      working-directory: ./build
       run: make config=${{env.BUILD_CONFIGURATION_LOWER}}_${{env.BUILD_PLATFORM}} -j10
             
