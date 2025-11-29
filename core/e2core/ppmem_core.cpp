@@ -66,6 +66,9 @@ struct PPMemState
 {
 	PPMemState();
 
+	void	OnAlloc(int64 size, PPSourceLine sl);
+	void	OnFree(int64 size, PPSourceLine sl);
+
 	PPSourceMap				sourceFileNameMap{ PPSourceLine::Empty() };
 	PPSourceCounterMap		sourceCounterMap{ PPSourceLine::Empty() };
 	CEqTimer				timer;
@@ -79,6 +82,30 @@ PPMemState::PPMemState()
 {
 	Threading::CScopedMutex m(PPGetStateMutex());
 	s_memStates.append(this);
+}
+
+void PPMemState::OnAlloc(int64 size, PPSourceLine sl)
+{
+	Atomic::Increment(numAllocs);
+	Atomic::Add(allocMemCounter, size);
+	if (!sourceFileNameMap.find(sl.GetFileName()))
+		sourceFileNameMap.insert(sl.GetFileName(), strdup(sl.GetFileName()));
+
+	PPSrcCounter& cnt = sourceCounterMap[sl.data];
+	Atomic::Increment(cnt.counter);
+	Atomic::Increment(cnt.allocatedCount);
+	Atomic::Add(cnt.allocatedMem, size);
+	cnt.lastTimeStamp = timer.GetTimeMS();
+}
+
+void PPMemState::OnFree(int64 size, PPSourceLine sl)
+{
+	Atomic::Decrement(numAllocs);
+	Atomic::Add(allocMemCounter, -size);
+
+	PPSrcCounter& cnt = sourceCounterMap[sl.data];
+	Atomic::Decrement(cnt.allocatedCount);
+	Atomic::Add(cnt.allocatedMem, -size);
 }
 
 static PPMemState& PPGetState()
@@ -140,8 +167,6 @@ void PPMemInit()
 
 	_CrtSetAllocHook(EqAllocHook);
 #endif // defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
-
-	//PPMemShutdown();
 }
 
 void PPMemShutdown()
@@ -189,9 +214,10 @@ static void PPMemPlotAllocStatsCSV()
 
 	Threading::CScopedMutex m(PPGetStateMutex());
 
+	PPMemSLStat allocCounter{ PPSourceLine::Empty() };
+	PPSourceMap allocSourceNames{ PPSourceLine::Empty() };
 	for (PPMemState* st : s_memStates)
 	{
-		PPMemSLStat allocCounter{ PPSourceLine::Empty() };
 		for (auto it = st->sourceCounterMap.begin(); it; ++it)
 		{
 			SLStat& slStat = allocCounter[it.key()];
@@ -201,18 +227,22 @@ static void PPMemPlotAllocStatsCSV()
 			slStat.lastTimeStamp = srcCounter.lastTimeStamp;
 			slStat.totalMem += srcCounter.allocatedMem;
 			slStat.numAllocated++;
-		}
 
-		for (auto it = allocCounter.begin(); !it.atEnd(); ++it)
-		{
-			const SLStat& stat = *it;
 			const PPSourceLine sl = *(PPSourceLine*)&it.key();
-
 			const char* filename = st->sourceFileNameMap[sl.GetFileName()];
-			const int fileLine = sl.GetLine();
-
-			fprintf(statFile, "\"%s:%d\",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "\n", filename, fileLine, stat.numAllocated, stat.allocCounter, stat.lastTimeStamp, stat.checkFailed, stat.totalMem);
+			allocSourceNames.insert(sl.GetFileName(), filename);
 		}
+	}
+
+	for (auto it = allocCounter.begin(); !it.atEnd(); ++it)
+	{
+		const SLStat& stat = *it;
+		const PPSourceLine sl = *(PPSourceLine*)&it.key();
+
+		const char* filename = allocSourceNames[sl.GetFileName()];
+		const int fileLine = sl.GetLine();
+
+		fprintf(statFile, "\"%s:%d\",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "\n", filename, fileLine, stat.numAllocated, stat.allocCounter, stat.lastTimeStamp, stat.checkFailed, stat.totalMem);
 	}
 
 	fclose(statFile);
@@ -236,11 +266,12 @@ void PPMemInfo(bool saveStatFile)
 	// currently allocated items
 	for (PPMemState* st : s_memStates)
 	{
+		MsgInfo("State %" PRIu64 " allocactions, mem usage: %llu bytes (%.2f MB)\n", st->numAllocs, st->allocMemCounter, (st->allocMemCounter / 1024.0f) / 1024.0f);
 		totalUsage += st->allocMemCounter;
 		numAllocs += st->numAllocs;
 	}
 
-	MsgInfo("Total %" PRIu64 " allocactions, mem usage: %.2f MB\n", numAllocs, (totalUsage / 1024.0f) / 1024.0f);
+	MsgInfo("Total %" PRIu64 " allocactions, mem usage: %llu bytes (%.2f MB)\n", numAllocs, totalUsage, (totalUsage / 1024.0f) / 1024.0f);
 #endif // !PPMEM_DISABLED
 }
 
@@ -275,13 +306,9 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 	if (sl.data == 0) 
 	{
 		void* mem = PPInternalMalloc(size);
-		ASSERT_MSG(mem, "No mem left");
+		ASSERT_MSG(mem, "alloc: no mem left");
 		return mem;
 	}
-
-	// alignof(PPAllocInfo);
-	// sizeof(PPAllocInfo);
-	// sizeof(RawItem<PPAllocInfo, alignof(PPAllocInfo)>);
 
 	PPMemState& st = PPGetState();
 	// allocate more to store extra information of this
@@ -302,19 +329,7 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 			*tailCheckMark++ = PPMEM_CHECKMARK;
 	}
 
-	// increment alloc counters
-	{
-		Atomic::Increment(st.numAllocs);
-		Atomic::Add(st.allocMemCounter, alloc->size);
-		if (!st.sourceFileNameMap.find(sl.GetFileName()))
-			st.sourceFileNameMap.insert(sl.GetFileName(), strdup(sl.GetFileName()));
-
-		PPSrcCounter& cnt = st.sourceCounterMap[sl.data];
-		Atomic::Increment(cnt.counter);
-		Atomic::Increment(cnt.allocatedCount);
-		Atomic::Add(cnt.allocatedMem, size);
-		cnt.lastTimeStamp = st.timer.GetTimeMS();
-	}
+	st.OnAlloc(alloc->size, sl);
 
 	if( ppmem_breakOnAlloc.GetInt() != -1)
 		ASSERT_MSG(alloc->id == (uint)ppmem_breakOnAlloc.GetInt(), "PPDAlloc: Break on allocation id=%d", alloc->id);
@@ -341,7 +356,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 {
 #ifdef PPMEM_DISABLED
 	void* mem = realloc(ptr, size);
-	ASSERT_MSG(mem, "No mem left");
+	ASSERT_MSG(mem, "alloc: no mem left");
 	return mem;
 #else
 	PPAllocInfo* r_alloc = (PPAllocInfo*)ptr - 1;
@@ -363,14 +378,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 
 	// decrement alloc counters
 	// as realloc might change the pointer
-	{
-		Atomic::Decrement(r_st.numAllocs);
-		Atomic::Add(r_st.allocMemCounter, -r_alloc->size);
-
-		PPSrcCounter& cnt = r_st.sourceCounterMap[r_alloc->sl.data];
-		Atomic::Decrement(cnt.allocatedCount);
-		Atomic::Add(cnt.allocatedMem, -r_alloc->size);
-	}
+	r_st.OnFree(r_alloc->size, r_alloc->sl);
 
 	PPAllocInfo* alloc = (PPAllocInfo*)realloc((void*)r_alloc, sizeof(PPAllocInfo) + size + sizeof(uint) * PPMEM_EXTRA_MARKS);
 	ASSERT_MSG(alloc, "realloc: no mem left!");
@@ -388,17 +396,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 			*tailCheckMark++ = PPMEM_CHECKMARK;
 	}
 
-	// increment alloc counters
-	{
-		Atomic::Increment(st.numAllocs);
-		Atomic::Add(st.allocMemCounter, alloc->size);
-
-		PPSrcCounter& cnt = st.sourceCounterMap[sl.data];
-		Atomic::Increment(cnt.counter);
-		Atomic::Increment(cnt.allocatedCount);
-		Atomic::Add(cnt.allocatedMem, alloc->size);
-		cnt.lastTimeStamp = st.timer.GetTimeMS();
-	}
+	st.OnAlloc(alloc->size, sl);
 
 	return actualPtr;
 #endif // PPMEM_DISABLED
@@ -465,14 +463,7 @@ void PPFree(void* ptr)
 			*tailCheckMark++ = PPMEM_CHECKMARK_FREED;
 	}
 
-	{
-		Atomic::Decrement(st.numAllocs);
-		Atomic::Add(st.allocMemCounter, -alloc->size);
-
-		PPSrcCounter& cnt = st.sourceCounterMap[alloc->sl.data];
-		Atomic::Decrement(cnt.allocatedCount);
-		Atomic::Add(cnt.allocatedMem, -alloc->size);
-	}
+	st.OnFree(alloc->size, alloc->sl);
 
 	free((void*)alloc);
 #endif // PPMEM_DISABLED
