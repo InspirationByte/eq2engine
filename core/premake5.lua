@@ -4,9 +4,8 @@ group "Core"
 -- e2Core DLL
 
 project "e2Core"
-    kind "SharedLib"
 	properties { 
-		"unitybuild", "live_pp", "concurrency_vis"
+		"sharedlib", "unitybuild", "live_pp", "concurrency_vis"
 	}
     uses {
 		"coreLib", "frameworkLib", "dpkLib"
@@ -51,8 +50,7 @@ project "BaseShader"
 
 -- Material System DLL
 project "eqMatSystem"
-    kind "SharedLib"
-	properties { "unitybuild" }
+	properties { "sharedlib", "unitybuild" }
 	uses {
 		"coreLib", "frameworkLib", "e2Core",
 		"BaseShader"
@@ -69,8 +67,7 @@ project "eqMatSystem"
 
 -- Default Shaders DLL
 project "eqBaseShaders"
-    kind "SharedLib"
-	properties { "unitybuild" }
+	properties { "sharedlib", "unitybuild" }
 	uses {
 		"coreLib", "frameworkLib", "e2Core",
 		"BaseShader"
@@ -105,8 +102,7 @@ usage "eqRHIBaseLib"
 
 -- NULL renderer
 project "eqNullRHI"
-    kind "SharedLib"
-	properties { "unitybuild" }
+	properties { "sharedlib", "unitybuild" }
 	uses {
 		"coreLib", "frameworkLib", "e2Core",
 		"eqRHIBaseLib"
@@ -121,11 +117,10 @@ project "eqNullRHI"
 	
 -- D3D11/D3D12/Vulkan renderer
 project "eqNVRHI"
-	kind "SharedLib"
-	properties { "unitybuild" }
+	properties { "sharedlib", "unitybuild" }
 	uses {
 		"coreLib", "frameworkLib", "e2Core",
-		"eqRHIBaseLib", "nvrhi", "nvrhi-validation"
+		"eqRHIBaseLib", "nvrhi"
 	}
 	defines{
 		"EQRHI_NVRHI",
@@ -141,6 +136,11 @@ project "eqNVRHI"
 		"materialsystem1/Renderers/NVRHI/**D3D*.cpp",
 		"materialsystem1/Renderers/NVRHI/**D3D*.h"
 	}
+
+	filter "configurations:Debug or configurations:Release*"
+		uses {
+			"nvrhi-validation"
+		}
 
 	filter "system:Linux"
 		defines {
@@ -163,8 +163,7 @@ project "eqNVRHI"
 	
 -- WebGPU renderer
 project "eqWGPURHI"
-	kind "SharedLib"
-	properties { "unitybuild" }
+	properties { "sharedlib", "unitybuild" }
 	uses {
 		"coreLib", "frameworkLib", "e2Core",
 		"eqRHIBaseLib", 

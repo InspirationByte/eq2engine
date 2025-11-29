@@ -55,12 +55,11 @@ project "nvrhi-validation"
 	uses {
 		"nvrhi"
 	}
+	rtti "On" -- gmake generator kind None is kinda unfinished - behaviour is inconsistent between msvc generators
 	files {
 		"NVRHI/src/validation/**.cpp",
 		"NVRHI/src/validation/**.h",
 	}
-	filter "configurations:Retail or configurations:Profile"
-		kind "None"
 
 usage "nvrhi"
 	includedirs { 
