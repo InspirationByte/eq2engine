@@ -848,19 +848,22 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 
 	const bool isReadPriorityPath = CString::SubString(pathId, "$MOD$") || CString::SubString(pathId, "$LOCALIZE$");
 	const bool isWriteablePath = CString::SubString(pathId, "$WRITE$");
+	const bool isWritePath = !isReadPriorityPath || isWriteablePath;
 
-	FSSearchPathInfo pathInfo;
-	pathInfo.id = pathId;
-	pathInfo.path = pszDir;
-	pathInfo.writePath = !isReadPriorityPath || isWriteablePath;
+	int pathInfoIdx = -1;
+	{
+		FSSearchPathInfo pathInfo;
+		pathInfo.id = pathId;
+		pathInfo.path = pszDir;
+		pathInfo.writePath = isWritePath;
+		if(isReadPriorityPath)
+			pathInfoIdx = m_directories.insert(pathInfo, 0);
+		else
+			pathInfoIdx = m_directories.append(pathInfo);
+	}
 
-	if(isReadPriorityPath)
-		m_directories.insert(pathInfo, 0);
-	else
-		m_directories.append(pathInfo);
-
-	if(!pathInfo.writePath)
-		MapFiles(pathInfo);
+	if(!isWritePath)
+		MapFiles(m_directories[pathInfoIdx]);
 }
 
 void CFileSystem::RemoveSearchPath(const char* pathId)
