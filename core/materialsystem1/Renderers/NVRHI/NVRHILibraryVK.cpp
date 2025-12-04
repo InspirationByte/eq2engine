@@ -161,6 +161,8 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 #endif
 		m_optionalExtensions.instance.append(VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME);
 		m_optionalExtensions.instance.append(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+		m_optionalExtensions.instance.append(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+        m_optionalExtensions.instance.append(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
 		m_optionalExtensions.device.append(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
 		m_optionalExtensions.device.append(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
