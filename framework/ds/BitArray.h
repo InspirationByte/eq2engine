@@ -178,7 +178,7 @@ inline void BitArrayImpl::set(STORAGE_TYPE* bitArray, int bitCount, int index, b
 // set bit range
 inline void BitArrayImpl::setRange(STORAGE_TYPE* bitArray, int bitCount, int startIndex, int count, bool value)
 {
-	const int endIndex = min(bitCount, startIndex + count);
+	const int endIndex = min(bitCount, startIndex + count - 1);
 
 	ASSERT_MSG(startIndex >= 0 && endIndex < bitCount, "invalid bit range %d - %d (count = %d)", startIndex, endIndex, bitCount);
 
