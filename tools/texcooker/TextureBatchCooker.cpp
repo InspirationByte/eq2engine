@@ -528,9 +528,16 @@ void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 	DevMsg(DEVMSG_CORE, "*RUN '%s'", cmdLine.ToCString());
 
 	{
-		FILE* outFile = popen(cmdLine, "rt");
+		FILE* outFile = popen(cmdLine, "r");
 		if (outFile)
 		{
+#ifndef _WIN32
+			char b [BUFSIZ];
+			do {
+				while (fgets(b, BUFSIZ, outFile) != NULL) ;
+			} while (errno == EINTR);
+#endif
+
 			const int closeReturnVal = pclose(outFile);
 			DevMsg(DEVMSG_CORE, ": %x\n", closeReturnVal);
 		}
