@@ -928,7 +928,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 		rhiDepthStencil.stencilWriteMask = pipelineDesc.depthStencil.stencilWriteMask;
 
 		auto& rhiRasterState = rhiGraphicsPipelineDesc.renderState.rasterState;
-		rhiRasterState.depthBias = pipelineDesc.depthStencil.depthBias;
+		rhiRasterState.depthBias = pipelineDesc.depthStencil.depthBias != 0;
 		rhiRasterState.slopeScaledDepthBias = pipelineDesc.depthStencil.depthBiasSlopeScale;
 		rhiRasterState.depthBiasClamp = 0;				// TODO
 		rhiRasterState.depthClipEnable = true;			// FIXME: useful for something?
