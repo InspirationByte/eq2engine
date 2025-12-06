@@ -35,9 +35,9 @@ void GRIMResource::Reset()
 int	GRIMResource::GetSize() const
 {
 	if (type == BUFFER)
-		return buffer->GetSize();
+		return buffer ? buffer->GetSize() : 0;
 	else if (type == TEXTURE)
-		return texture->GetArraySize();
+		return texture ? texture->GetArraySize() : 0;
 
 	ASSERT_FAIL("Invalid type %d", type);
 	return 0;
