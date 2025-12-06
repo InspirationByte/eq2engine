@@ -519,10 +519,19 @@ void CMaterialSystem::CreateErrorTexture()
 
 void CMaterialSystem::CreateDefaultDepthTexture()
 {
+	ETextureFormat texFormat = FORMAT_D32F;
+	const ShaderAPICapabilities& caps = m_shaderAPI->GetCaps();
+	if(!caps.renderTargetFormatsSupported[texFormat])
+		texFormat = FORMAT_D24S8;
+	if(!caps.renderTargetFormatsSupported[texFormat])
+		texFormat = FORMAT_D24;
+	if(!caps.renderTargetFormatsSupported[texFormat])
+		texFormat = FORMAT_D16;
+
 	m_defaultDepthTexture = m_shaderAPI->CreateRenderTarget(
 		Builder<TextureDesc>()
 		.Name("_matSys_depthBuffer")
-		.Format(FORMAT_D24)
+		.Format(texFormat)
 		.Size(800, 600)
 		.Sampler(SamplerStateParams(TEXFILTER_NEAREST, TEXADDRESS_CLAMP))
 		.End()
