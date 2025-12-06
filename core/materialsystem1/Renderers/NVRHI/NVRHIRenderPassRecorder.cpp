@@ -43,24 +43,18 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 	CNVRHIRenderPipeline* pipelineImpl = static_cast<CNVRHIRenderPipeline*>(m_pipeline.Ptr());
 	ASSERT(pipelineImpl);
 
-	nvrhi::GraphicsPipelineHandle rhiPipeline = pipelineImpl->m_rhiRenderPipeline;
-	
-	nvrhi::IDevice* nvrhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
-#if 0
-	if(!rhiPipeline)
-		rhiPipeline = nvrhiDevice->createGraphicsPipeline(pipelineImpl->m_rhiPipelineDesc, m_rhiFramebuffer);
-#endif
-
 	if(indirectBuffer)
 		m_rhiCommandList->setBufferState(indirectBuffer, nvrhi::ResourceStates::IndirectArgument);
 
+	// FIXME: should be same count as render targets?
+	auto rhiViewportState = nvrhi::ViewportState()
+		.addViewport(m_rhiViewport)
+		.addScissorRect(m_rhiScissor);
+
 	auto rhiGraphicsState = nvrhi::GraphicsState()
-		.setPipeline(rhiPipeline)
+		.setPipeline(pipelineImpl->m_rhiRenderPipeline)
 		.setFramebuffer(m_rhiFramebuffer)
-		.setViewport(nvrhi::ViewportState()
-			.addViewport(m_rhiViewport)
-			.addScissorRect(m_rhiScissor)
-		)
+		.setViewport(rhiViewportState)
 		.setIndirectParams(indirectBuffer);
 
 	CNVRHIBuffer* indexBufferImpl = static_cast<CNVRHIBuffer*>(m_indexBuffer.buffer.Ptr());
@@ -158,8 +152,8 @@ void CNVRHIRenderPassRecorder::SetScissorRectangle(const IAARectangle& rectangle
 	rect.leftTop = clamp(rectangle.leftTop, screenRect.leftTop, screenRect.rightBottom);
 	rect.rightBottom = clamp(rectangle.rightBottom, screenRect.leftTop, screenRect.rightBottom);
 
-	const Vector2D rectLT = screenRect.GetLeftTop();
-	const Vector2D rectRB = screenRect.GetRightBottom();
+	const Vector2D rectLT = rect.GetLeftTop();
+	const Vector2D rectRB = rect.GetRightBottom();
 	m_rhiScissor = nvrhi::Rect(rectLT.x, rectRB.x, rectLT.y, rectRB.y);
 	m_graphicsStateDirty = true;
 }
