@@ -260,10 +260,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 			caps.textureFormatsSupported[i] = true;
 			caps.renderTargetFormatsSupported[i] = true;
 		}
-
-		caps.textureFormatsSupported[FORMAT_D32F] =
-		caps.renderTargetFormatsSupported[FORMAT_D32F] = true;
-
+		
 		for (int i = FORMAT_DXT1; i <= FORMAT_ATI2N; i++)
 			caps.textureFormatsSupported[i] = true;
 

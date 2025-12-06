@@ -341,6 +341,53 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 	}
 #endif
 
+	{
+		// fill default supposedly supported ShaderAPI capabilities
+		ShaderAPICapabilities& caps = CNVRHIRenderAPI::Instance.m_caps;
+		caps.minUniformBufferOffsetAlignment = nvrhi::c_ConstantBufferOffsetSizeAlignment;
+		caps.minStorageBufferOffsetAlignment = 256;
+		caps.maxDynamicUniformBuffersPerPipelineLayout = 1000;
+		caps.maxDynamicStorageBuffersPerPipelineLayout = 1000;
+		caps.maxVertexStreams = MAX_VERTEXSTREAM;
+		caps.maxVertexAttributes = MAX_GENERIC_ATTRIB * 4;
+		caps.maxTextureSize = 32768;
+		caps.maxTextureArrayLayers = 1024;
+		caps.maxTextureUnits = MAX_TEXTUREUNIT;
+		caps.maxVertexTextureUnits = MAX_TEXTUREUNIT;
+		caps.maxBindGroups = MAX_BINDGROUPS;
+		caps.maxBindingsPerBindGroup = 1000;
+		caps.maxTextureAnisotropicLevel = 16;
+		caps.maxRenderTargets = MAX_RENDERTARGETS;
+
+		caps.maxComputeInvocationsPerWorkgroup = 1024;
+		caps.maxComputeWorkgroupSizeX = 1024;
+		caps.maxComputeWorkgroupSizeY = 1024;
+		caps.maxComputeWorkgroupSizeZ = 64;
+		caps.maxComputeWorkgroupsPerDimension = 65535;
+		caps.multiDrawIndirectSupport = false;	// NVRHI doesn't support this currently
+
+		caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED
+			| SHADER_CAPS_PIXEL_SUPPORTED
+			| SHADER_CAPS_COMPUTE_SUPPORTED;
+
+		for (int i = FORMAT_R8; i <= FORMAT_RGBA32F; i++)
+		{
+			caps.textureFormatsSupported[i] = true;
+			caps.renderTargetFormatsSupported[i] = true;
+		}
+
+		for (int i = FORMAT_D16; i <= FORMAT_D32F; i++)
+		{
+			caps.textureFormatsSupported[i] = true;
+			caps.renderTargetFormatsSupported[i] = true;
+		}
+
+		for (int i = FORMAT_DXT1; i <= FORMAT_ATI2N; i++)
+			caps.textureFormatsSupported[i] = true;
+
+		caps.textureFormatsSupported[FORMAT_ATI1N] = false;
+	}
+
 	// create default swap chain
 	m_defaultSwapChain = CRefPtr<CNVRHISwapChainVK>(static_cast<CNVRHISwapChainVK*>(CreateSwapChain(params.windowInfo).Ptr()));
 	if (!m_defaultSwapChain)
@@ -403,56 +450,6 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 
 	m_nvrhiFrameWaitQuery = m_nvrhiDevice->createEventQuery();
 	m_nvrhiDevice->setEventQuery(m_nvrhiFrameWaitQuery, nvrhi::CommandQueue::Graphics);
-
-	{
-		// fill ShaderAPI capabilities
-		ShaderAPICapabilities& caps = CNVRHIRenderAPI::Instance.m_caps;
-		caps.minUniformBufferOffsetAlignment = nvrhi::c_ConstantBufferOffsetSizeAlignment;
-		caps.minStorageBufferOffsetAlignment = 256;
-		caps.maxDynamicUniformBuffersPerPipelineLayout = 1000;
-		caps.maxDynamicStorageBuffersPerPipelineLayout = 1000;
-		caps.maxVertexStreams = MAX_VERTEXSTREAM;
-		caps.maxVertexAttributes = MAX_GENERIC_ATTRIB * 4;
-		caps.maxTextureSize = 32768;
-		caps.maxTextureArrayLayers = 1024;
-		caps.maxTextureUnits = MAX_TEXTUREUNIT;
-		caps.maxVertexTextureUnits = MAX_TEXTUREUNIT;
-		caps.maxBindGroups = MAX_BINDGROUPS;
-		caps.maxBindingsPerBindGroup = 1000;
-		caps.maxTextureAnisotropicLevel = 16;
-		caps.maxRenderTargets = MAX_RENDERTARGETS;
-
-		caps.maxComputeInvocationsPerWorkgroup = 1024;
-		caps.maxComputeWorkgroupSizeX = 1024;
-		caps.maxComputeWorkgroupSizeY = 1024;
-		caps.maxComputeWorkgroupSizeZ = 64;
-		caps.maxComputeWorkgroupsPerDimension = 65535;
-		caps.multiDrawIndirectSupport = false;	// NVRHI doesn't support this currently
-
-		caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED
-			| SHADER_CAPS_PIXEL_SUPPORTED
-			| SHADER_CAPS_COMPUTE_SUPPORTED;
-
-		for (int i = FORMAT_R8; i <= FORMAT_RGBA32F; i++)
-		{
-			caps.textureFormatsSupported[i] = true;
-			caps.renderTargetFormatsSupported[i] = true;
-		}
-
-		for (int i = FORMAT_D16; i <= FORMAT_D32F; i++)
-		{
-			caps.textureFormatsSupported[i] = true;
-			caps.renderTargetFormatsSupported[i] = true;
-		}
-
-		caps.textureFormatsSupported[FORMAT_D32F] =
-			caps.renderTargetFormatsSupported[FORMAT_D32F] = true;
-
-		for (int i = FORMAT_DXT1; i <= FORMAT_ATI2N; i++)
-			caps.textureFormatsSupported[i] = true;
-
-		caps.textureFormatsSupported[FORMAT_ATI1N] = false;
-	}
 
 	return true;
 }
@@ -823,7 +820,8 @@ bool CNVRHIRenderLibVK::CreateDevice()
 						   &imageFormatProperties );
 
 	ShaderAPICapabilities& caps = CNVRHIRenderAPI::Instance.m_caps;
-	caps.renderTargetFormatsSupported[FORMAT_D24S8] = (ret == vk::Result::eSuccess);
+	caps.renderTargetFormatsSupported[FORMAT_D24S8] = 
+		caps.renderTargetFormatsSupported[FORMAT_D24] = (ret == vk::Result::eSuccess);
 
 	// Determine which Vulkan surface present modes are supported by device and surface
 	auto surfacePModes = m_vkPhysicalDevice.getSurfacePresentModesKHR( m_defaultSwapChain->m_vkWindowSurface );
