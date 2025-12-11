@@ -15,6 +15,7 @@ DECLARE_CVAR_G(nvrhi_breakOnError, "0", nullptr, 0);
 
 void CNVRHIMessageCallback::message(nvrhi::MessageSeverity severity, const char* messageText)
 {
+#ifdef NVRHI_WITH_VALIDATION
 	switch (severity)
 	{
 	case nvrhi::MessageSeverity::Info:
@@ -42,6 +43,7 @@ void CNVRHIMessageCallback::message(nvrhi::MessageSeverity severity, const char*
 		CrashMsg("NVRHI FATAL: %s", messageText);
 		break;
 	}
+#endif // !_PROFILE && !_RETAIL
 }
 
 bool nvrhiCaptureBackbufferImage(ITexturePtr srcTexture, CImage& dstImage)
