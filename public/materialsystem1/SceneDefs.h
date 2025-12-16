@@ -57,7 +57,7 @@ struct MatSysCamera
 	Matrix4x4		invViewProj;
 	Matrix4x4		view;
 	Matrix4x4		proj;
-	Vector3D		position; float _pad0;
+	Vector3D		position; float _pad0 = 0.0f;
 	MatSysViewport	viewport;
 	MatSysFog 		fog;
 };
