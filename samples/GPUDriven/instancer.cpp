@@ -50,6 +50,7 @@ void DemoGRIMRenderer::GetInstancesBindGroup(int bindGroupIdx, IGPUPipelineLayou
 
 void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& intermediate)
 {
+	CGPUScopedDbgGroup g("CullInstances", intermediate.cmdRecorder);
 	PROF_EVENT_F();
 
 	DemoRenderState& renderState = static_cast<DemoRenderState&>(intermediate.renderState);

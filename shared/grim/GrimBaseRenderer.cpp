@@ -718,6 +718,7 @@ IVector2D GRIMBaseRenderer::VisCalcWorkSize(int length) const
 
 void GRIMBaseRenderer::FilterInstances_Compute(IntermediateState& intermediate)
 {
+	CGPUScopedDbgGroup g("FilterInstances", intermediate.cmdRecorder);
 	PROF_EVENT_F();
 
 	const ShaderAPICapabilities& caps = g_renderAPI->GetCaps();
@@ -844,6 +845,7 @@ void GRIMBaseRenderer::FilterInstances_Software(IntermediateState& intermediate)
 
 void GRIMBaseRenderer::SortInstances_Compute(IntermediateState& intermediate)
 {
+	CGPUScopedDbgGroup g("SortInstances", intermediate.cmdRecorder);
 	PROF_EVENT_F();
 
 	GRIMRenderState& rendState = intermediate.renderState;
@@ -854,8 +856,26 @@ void GRIMBaseRenderer::SortInstances_Compute(IntermediateState& intermediate)
 	m_sortShader->SortKeys(StringIdConst24(SHADER_PIPELINE_SORT_INSTANCES), intermediate.cmdRecorder, rendState.sortedInstanceIdsBuffer, maxInstancesCount, rendState.culledInstanceInfosBuffer);
 }
 
+void GRIMBaseRenderer::SortInstances_Software(IntermediateState& intermediate)
+{
+	PROF_EVENT_F();
+
+	ArrayRef<GPUInstanceInfo> instanceInfos = intermediate.instanceInfos;
+
+	// COMPUTE SHADER REFERENCE: SortInstanceArchetypes
+	// Input / Output:
+	//		instanceInfos		: buffer<GPUInstanceInfo[]>
+
+	// sort instances by archetype
+	// as we need them to be linear for each draw call
+	arraySort(instanceInfos, [](const GPUInstanceInfo& a, const GPUInstanceInfo& b) {
+		return a.packedArchetypeId - b.packedArchetypeId;
+	});
+}
+
 void GRIMBaseRenderer::UpdateInstanceBounds_Compute(IntermediateState& intermediate)
 {
+	CGPUScopedDbgGroup g("UpdateInstanceBounds", intermediate.cmdRecorder);
 	PROF_EVENT_F();
 
 	GRIMRenderState& rendState = intermediate.renderState;
@@ -883,52 +903,6 @@ void GRIMBaseRenderer::UpdateInstanceBounds_Compute(IntermediateState& intermedi
 	IVector2D workGroups = VisCalcWorkSize(intermediate.maxNumberOfObjects);
 	computeRecorder->DispatchWorkgroups(workGroups.x, workGroups.y);
 	computeRecorder->Complete();
-}
-
-void GRIMBaseRenderer::UpdateIndirectInstances_Compute(IntermediateState& intermediate)
-{
-	PROF_EVENT_F();
-
-	GRIMRenderState& rendState = intermediate.renderState;
-
-	IGPUBindGroupPtr drawDataBindGroup = g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
-		Builder<BindGroupDesc>()
-		.GroupIndex(1)
-		.Buffer(StringIdConst24("drawInstanceBounds"), rendState.drawInstanceBoundsBuffer)
-		.Buffer(StringIdConst24("indirectDraws"), rendState.drawInvocationsBuffer)
-		.End());
-
-	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("UpdateIndirectInstances");
-	computeRecorder->SetPipeline(m_instPrepareDrawIndirectPipeline);
-	computeRecorder->SetBindGroup(0, m_updateBindGroup0);
-	computeRecorder->SetBindGroup(1, drawDataBindGroup);
-
-	constexpr int GROUP_SIZE = 32;
-	const int numBounds = m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS;
-	computeRecorder->DispatchWorkgroups(numBounds / GROUP_SIZE + 1);
-	computeRecorder->Complete();
-
-	// copy draw invocations to readback buffer
-	intermediate.cmdRecorder->CopyBufferToBuffer(rendState.drawInvocationsBuffer, 0, rendState.drawInvocationsReadbackBuffer, 0, rendState.drawInvocationsBuffer->GetSize());
-}
-
-//--------------------------------------------------------------------
-
-void GRIMBaseRenderer::SortInstances_Software(IntermediateState& intermediate)
-{
-	PROF_EVENT_F();
-
-	ArrayRef<GPUInstanceInfo> instanceInfos = intermediate.instanceInfos;
-
-	// COMPUTE SHADER REFERENCE: SortInstanceArchetypes
-	// Input / Output:
-	//		instanceInfos		: buffer<GPUInstanceInfo[]>
-
-	// sort instances by archetype
-	// as we need them to be linear for each draw call
-	arraySort(instanceInfos, [](const GPUInstanceInfo& a, const GPUInstanceInfo& b) {
-		return a.packedArchetypeId - b.packedArchetypeId;
-	});
 }
 
 void GRIMBaseRenderer::UpdateInstanceBounds_Software(IntermediateState& intermediate)
@@ -988,6 +962,34 @@ void GRIMBaseRenderer::UpdateInstanceBounds_Software(IntermediateState& intermed
 		}
 	}
 	cmdRecorder->WriteBuffer(instanceIdsBuffer, instanceIds.ptr(), sizeof(instanceIds[0]) * instanceIds.numElem(), 0);
+}
+
+void GRIMBaseRenderer::UpdateIndirectInstances_Compute(IntermediateState& intermediate)
+{
+	CGPUScopedDbgGroup g("UpdateIndirect", intermediate.cmdRecorder);
+	PROF_EVENT_F();
+
+	GRIMRenderState& rendState = intermediate.renderState;
+
+	IGPUBindGroupPtr drawDataBindGroup = g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
+		Builder<BindGroupDesc>()
+		.GroupIndex(1)
+		.Buffer(StringIdConst24("drawInstanceBounds"), rendState.drawInstanceBoundsBuffer)
+		.Buffer(StringIdConst24("indirectDraws"), rendState.drawInvocationsBuffer)
+		.End());
+
+	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("UpdateIndirectInstances");
+	computeRecorder->SetPipeline(m_instPrepareDrawIndirectPipeline);
+	computeRecorder->SetBindGroup(0, m_updateBindGroup0);
+	computeRecorder->SetBindGroup(1, drawDataBindGroup);
+
+	constexpr int GROUP_SIZE = 32;
+	const int numBounds = m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS;
+	computeRecorder->DispatchWorkgroups(numBounds / GROUP_SIZE + 1);
+	computeRecorder->Complete();
+
+	// copy draw invocations to readback buffer
+	intermediate.cmdRecorder->CopyBufferToBuffer(rendState.drawInvocationsBuffer, 0, rendState.drawInvocationsReadbackBuffer, 0, rendState.drawInvocationsBuffer->GetSize());
 }
 
 void GRIMBaseRenderer::UpdateIndirectInstances_Software(IntermediateState& intermediate)
@@ -1092,6 +1094,7 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 	intermediate.cmdRecorder.Assign(cmdRecorder);	// FIXME: create new and return cmd buffer only?
 	intermediate.maxNumberOfObjects = maxNumberOfObjects;
 
+	CGPUScopedDbgGroup dbgPrep("GRIMPrepareDraw", intermediate.cmdRecorder);
 	cmdRecorder->ClearBuffer(intermediate.renderState.drawInvocationsBuffer, 0, intermediate.renderState.drawInvocationsBuffer->GetSize());
 
 	if (IsSoftwareMode())
@@ -1103,8 +1106,6 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 		UpdateIndirectInstances_Software(intermediate);
 		return;
 	}
-
-	cmdRecorder->DbgPushGroup("GRIMPrepareDraw");
 
 	const int numBounds = m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS;
 
@@ -1123,27 +1124,11 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 	cmdRecorder->ClearBuffer(renderState.drawInstanceBoundsBuffer, 0, renderState.drawInstanceBoundsBuffer->GetSize());
 	cmdRecorder->WriteBuffer(renderState.drawInstanceBoundsBuffer, &numBounds, sizeof(int), 0);
 
-	cmdRecorder->DbgPushGroup("FilterInstances");
 	FilterInstances_Compute(intermediate);
-	cmdRecorder->DbgPopGroup();
-
-	cmdRecorder->DbgPushGroup("CullInstances");
 	VisibilityCullInstances_Compute(intermediate);
-	cmdRecorder->DbgPopGroup();
-
-	cmdRecorder->DbgPushGroup("SortInstances");
 	SortInstances_Compute(intermediate);
-	cmdRecorder->DbgPopGroup();
-
-	cmdRecorder->DbgPushGroup("CalcBounds");
 	UpdateInstanceBounds_Compute(intermediate);
-	cmdRecorder->DbgPopGroup();
-
-	cmdRecorder->DbgPushGroup("UpdateIndirect");
 	UpdateIndirectInstances_Compute(intermediate);
-	cmdRecorder->DbgPopGroup();
-
-	cmdRecorder->DbgPopGroup();
 }
 
 bool GRIMBaseRenderer::IsSoftwareMode() const
