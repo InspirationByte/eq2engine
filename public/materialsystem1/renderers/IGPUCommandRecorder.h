@@ -165,6 +165,15 @@ public:
 };
 using IGPUCommandRecorderPtr = CRefPtr<IGPUCommandRecorder>;
 
+class CGPUScopedDbgGroup
+{
+public:
+	CGPUScopedDbgGroup(const char* name, IGPUCommandRecorder* cmdRec) : m_cmdRecorder(cmdRec) { cmdRec->DbgPushGroup(name); }
+	~CGPUScopedDbgGroup() { m_cmdRecorder->DbgPopGroup(); }
+private:
+	IGPUCommandRecorder* m_cmdRecorder;
+};
+
 inline void IGPUCommandRecorder::WriteBufferView(const GPUBufferView& bufferView, const void* data, int64 size, int64 offset) const
 {
 	if (size < 0) // write whole view
