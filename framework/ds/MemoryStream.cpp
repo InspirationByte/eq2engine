@@ -84,13 +84,12 @@ VSSize CMemoryStream::Read(void *dest, VSSize count, VSSize size)
 	ASSERT_MSG(m_openFlags & FS_OPEN_READ, "Stream must be open for READ");
 
 	const VSSize numBytesToRead = size * count;
-	if (numBytesToRead <= 0)
-		return 0;
-
-	const int curPos = Tell();
+	const VSSize curPos = Tell();
 	ASSERT_MSG(curPos + numBytesToRead <= m_allocatedSize, "Reading more than CMemoryStream has (expected capacity %d, has %d)", curPos + numBytesToRead, m_allocatedSize);
 
 	const VSSize readBytes = min(static_cast<VSSize>(curPos + numBytesToRead), static_cast<VSSize>(m_allocatedSize)) - curPos;
+	if(readBytes <= 0)
+		return 0;
 
 	memcpy(dest, m_currentPtr, readBytes);
 	m_currentPtr += readBytes;
@@ -168,6 +167,12 @@ VSSize CMemoryStream::GetSize()
 // opens stream, if this is a file, data is filename
 bool CMemoryStream::Open(int openFlags, ubyte* data, VSSize dataSize)
 {
+	if(openFlags == FS_OPEN_READ && !data)
+	{
+		ASSERT_MSG(dataSize > 0, "NULL data for read-only memory stream");
+		return false;
+	}
+	
 	ASSERT(dataSize >= 0);
 	ASSERT_MSG(m_openFlags == 0, "Stream is already open");
 
