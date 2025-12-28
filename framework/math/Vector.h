@@ -637,30 +637,30 @@ TVec3D<T>	balance(const TVec3D<T> &v);
 template <typename T>
 TVec4D<T>	balance(const TVec4D<T> &v);
 
-// computes direction vectors from angles (degrees)
-void		AngleVectors(const Vector3D &angles,Vector3D *forward,Vector3D *right = nullptr,Vector3D *up = nullptr);
-
-// computes angles from direction vector
-Vector3D	VectorAngles(const Vector3D &forward);
-
-// computes other direction vectors from one
-void		VectorVectors( const Vector3D &forward, Vector3D &right, Vector3D &up );
-
-// rotates vector by degree angles around selected center
-void		VectorRotate( const Vector3D &in1, const Vector3D &angles, Vector3D *out, Vector3D *center = 0);
+// rotates vector around specified axis
+template <typename T>
+TVec3D<T> 	rotateVectorAroundAxis(const TVec3D<T>& v, float theta, const TVec3D<T>& axis);
 
 // rotates vector around y axis
-Vector3D	RotateXZBy(const Vector3D &vector, float degrees, Vector3D &center);
+template <typename T>
+TVec3D<T>	rotateVectorXZ(const TVec3D<T>& v, float theta);
 
 // rotates vector around z axis
-Vector3D	RotateXYBy(const Vector3D &vector, float degrees, Vector3D &center);
+template <typename T>
+TVec3D<T>	rotateVectorXY(const TVec3D<T>& v, float theta);
 
 // rotates vector around x axis
-Vector3D	RotateYZBy(const Vector3D &vector, float degrees, Vector3D &center);
-
-// vector multiply and add
 template <typename T>
-void		VectorMA(const TVec3D<T> &veca, T scale, const TVec3D<T> &vecb, TVec3D<T> &vecc);
+TVec3D<T>	rotateVectorYZ(const TVec3D<T>& v, float theta);
+
+// computes direction vectors from angles (degrees)
+void		AngleVectors(const Vector3D& angles, Vector3D* forward, Vector3D* right = nullptr, Vector3D* up = nullptr);
+
+// computes ZXY angles in degrees from given direction vector
+Vector3D	VectorAngles(const Vector3D& forward);
+
+// computes other direction vectors from one
+void		VectorVectors( const Vector3D& forward, Vector3D& right, Vector3D& up );
 
 // computes distance to plane
 template <typename T>

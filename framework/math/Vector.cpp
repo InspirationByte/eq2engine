@@ -111,11 +111,9 @@ float fract(float value)
 
 void AngleVectors(const Vector3D &angles, Vector3D *forward, Vector3D *right, Vector3D *up)
 {
-	float cp,cy,cr,sp,sy,sr;
-
+	float cp,cy,sp,sy;
 	SinCos(DEG2RAD(-angles.x),&sp,&cp);
 	SinCos(DEG2RAD(-angles.y),&sy,&cy);
-	SinCos(DEG2RAD(-angles.z),&sr,&cr);
 
 	if(forward)
 	{
@@ -124,133 +122,52 @@ void AngleVectors(const Vector3D &angles, Vector3D *forward, Vector3D *right, Ve
 		forward->z = cp*cy;
 	}
 
+	if (!up && !right)
+		return;
+
+	float sr,cr;
+	SinCos(DEG2RAD(-angles.z),&sr,&cr);
+
+	const float spsy = sp*sy;
+	const float cycr = cy*cr;
+	const float sysr = sy*sr;
 	if (up)
 	{
-		up->x = cy*sr-sp*sy*cr;
+		up->x = cy*sr-spsy*cr;
 		up->y = cp*cr;
-		up->z = -sy*sr-sp*cy*cr;
+		up->z = -sysr-sp*cycr;
 	}
 
 	if (right)
 	{
-		right->x = cy * cr + sp * sy * sr;
-		right->y = -cp * sr;
-		right->z = sp * cy * sr - sy * cr;
+		right->x = cycr+sp*sysr;
+		right->y = -cp*sr;
+		right->z = sp*cy*sr-sy*cr;
 	}
 }
 
-Vector3D VectorAngles(const Vector3D &forward)
+Vector3D VectorAngles(const Vector3D& forward)
 {
-	Vector3D angle;
+	const float y = fmodf(-atan2f(forward.x, forward.z) + M_PI_2_F, M_PI_2_F);
 
-	angle.y = RAD2DEG(atan2f(forward.x, forward.z)*-1);
+	const float z1 = sqrtf(forward.x * forward.x + forward.z * forward.z);
+	const float x = fmodf(atan2f(z1, forward.y) - M_PI_F * 0.5f + M_PI_2_F, M_PI_2_F);
 
-	if (angle.y < 0.0f)
-		angle.y += 360.0f;
-
-	if (angle.y >= 360.0f)
-		angle.y -= 360.0f;
-
-	float z1 = sqrtf(forward.x*forward.x + forward.z*forward.z);
-
-	angle.x = RAD2DEG(atan2f(z1, forward.y)) - 90.0f;
-
-	if (angle.x < 0.0f)
-		angle.x += 360.0f;
-
-	if (angle.x >= 360.0f)
-		angle.x -= 360.0f;
-
-	angle.z = 0.0f;
-
-	return angle;
+	return Vector3D(x, y, 0.0f) * M_RAD2DEG;
 }
 
 void VectorVectors( const Vector3D &forward, Vector3D &right, Vector3D &up )
 {
-	Vector3D tmp;
-
-	if (forward[0] == 0 && forward[1] == 0)
+	if (forward.x == 0 && forward.y == 0)
 	{
 		// pitch 90 degrees up/down from identity
-		right[0]	= -forward[2];	
-		right[1]	= 0; 
-		right[2]	= 0;
-
-		up[0]		= 0; 
-		up[1]		= 1; 
-		up[2]		= 0;
-	}
-	else
-	{
-		tmp[0] = 0; tmp[1] = 0; tmp[2] = 1.0;
-
-		right = cross( forward, tmp );
-		right = normalize( right );
-
-		up = cross( right, forward );
-		up = normalize( up );
-	}
-}
-
-void VectorRotate( const Vector3D &in1, const Vector3D &angles, Vector3D *out, Vector3D *center)
-{
-	Vector3D psvdCenter = vec3_zero;
-
-	if(center != nullptr)
-	{
-		psvdCenter = *center;
+		right = Vector3D(-forward.z, 0.0f, 0.0f);
+		up = vec3_up;
+		return;
 	}
 
-	Vector3D	temp = RotateYZBy(in1,-angles.x,psvdCenter);
-				temp = RotateXZBy(temp,-angles.y,psvdCenter);
-				temp = RotateXYBy(temp,-angles.z,psvdCenter);
-
-	out->y = temp.y;
-	out->z = temp.z;
-	out->x = temp.x;
-}
-
-Vector3D RotateXZBy(const Vector3D &vector,float degrees, Vector3D &center)
-{
-	degrees *= (float)(M_PI_F / 180.0f);
-	float cs,sn;
-	SinCos(degrees,&sn,&cs);
-	Vector3D out = vector;
-	out.x -= center.x;
-	out.z -= center.z;
-	out = Vector3D(vector.x * cs - vector.z * sn, vector.y, vector.x * sn + vector.z * cs);
-	out.x += center.x;
-	out.z += center.z;
-	return out;
-}
-
-Vector3D RotateXYBy(const Vector3D &vector,float degrees, Vector3D &center)
-{
-	degrees *= (float)(M_PI_F / 180.0f);
-	float cs,sn;
-	SinCos(degrees,&sn,&cs);
-	Vector3D out = vector;
-	out.x -= center.x;
-	out.y -= center.y;
-	out = Vector3D(vector.x * cs - vector.y * sn, vector.x * sn + vector.y * cs, vector.z);
-	out.x += center.x;
-	out.y += center.x;
-	return out;
-}
-
-Vector3D RotateYZBy(const Vector3D &vector,float degrees, Vector3D &center)
-{
-    degrees *= (float)(M_PI_F / 180.0f);
-	float cs,sn;
-	SinCos(degrees,&sn,&cs);
-	Vector3D out = vector;
-    out.z -= center.z;
-    out.y -= center.y;
-    out = Vector3D(vector.x, vector.y * cs - vector.z * sn, vector.y * sn + vector.z * cs);
-    out.z += center.z;
-    out.y += center.y;
-	return out;
+	right = normalize(cross( forward, vec3_forward ));
+	up = normalize(cross( right, forward ));
 }
 
 unsigned int toRGBA(const MColor& u)

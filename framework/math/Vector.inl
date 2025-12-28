@@ -1034,12 +1034,53 @@ inline TVec4D<T> balance(const TVec4D<T> &v)
 					fabs(v.z)*tmp.w);
 }
 
-
-// Vector multiply and add
 template <typename T>
-inline void VectorMA(const TVec3D<T> &veca, T scale, const TVec3D<T> &vecb, TVec3D<T> &vecc)
+TVec3D<T> rotateVectorAroundAxis(const TVec3D<T>& v, float theta, const TVec3D<T>& axis)
 {
-	vecc = veca + scale*vecb;
+	T cs,sn;
+	SinCos(theta, &sn, &cs);
+    
+    const TVec3D<T> t0 = v * cs;
+    const TVec3D<T> t1 = cross(axis, v) * sn;
+    const TVec3D<T> t2 = axis * dot(axis, v) * (1.0 - cs);
+    
+    return t0 + t1 + t2;
+}
+
+template <typename T>
+TVec3D<T> rotateVectorXZ(const TVec3D<T>& vector, float theta)
+{
+	T cs,sn;
+	SinCos(theta, &sn, &cs);
+
+	TVec3D<T> out = vector;
+	out.x = vector.x * cs - vector.z * sn;
+	out.z = vector.x * sn + vector.z * cs;
+	return out;
+}
+
+template <typename T>
+TVec3D<T> rotateVectorXY(const TVec3D<T>& vector, float theta)
+{
+	T cs,sn;
+	SinCos(theta, &sn, &cs);
+
+	TVec3D<T> out = vector;
+	out.x = vector.x * cs - vector.y * sn;
+	out.y = vector.x * sn + vector.y * cs;
+	return out;
+}
+
+template <typename T>
+TVec3D<T> rotateVectorYZ(const TVec3D<T>& vector,float theta)
+{
+	T cs,sn;
+	SinCos(theta, &sn, &cs);
+
+	TVec3D<T> out = vector;
+	out.y = vector.y * cs - vector.z * sn;
+	out.z = vector.y * sn + vector.z * cs;
+	return out;
 }
 
 template <typename T>
