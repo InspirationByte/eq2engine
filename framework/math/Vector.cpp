@@ -246,3 +246,15 @@ unsigned int rgbToRGB9E5(const MColor &rgb)
 		return r | (g << 9) | (b << 18) | (e << 27);
 	}
 }
+
+uint lerpRGBAPacked(uint a, uint b, float v)
+{ 
+   constexpr uint MASK1 = 0x00ff00ff; 
+   constexpr uint MASK2 = 0xff00ff00; 
+
+   const uint f2 = 256 * v;
+   const uint f1 = 256 - f2;
+
+   return   ((((( a & MASK1 ) * f1 ) + ( ( b & MASK1 ) * f2 )) >> 8 ) & MASK1 ) 
+          | ((((( a & MASK2 ) * f1 ) + ( ( b & MASK2 ) * f2 )) >> 8 ) & MASK2 );
+}

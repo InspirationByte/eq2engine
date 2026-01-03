@@ -863,6 +863,8 @@ MColor		rgbeToRGB(unsigned char* rgbe);
 uint		rgbToRGBE8(const MColor& rgb);
 uint		rgbToRGB9E5(const MColor& rgb);
 
+uint 		lerpRGBAPacked(uint a, uint b, float v);
+
 // pre-defined colors
 static const MColor color_black		= MColor(0xFF000000, true);
 static const MColor color_white		= MColor(0xFFFFFFFF, true);
