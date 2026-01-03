@@ -414,8 +414,7 @@ void Effects_DrawBillboard(const PFXBillboard& effect, const CViewParams& view, 
 	AngleVectors(angles, nullptr, &vRight, &vUp);
 
 	const AARectangle texCoords = rect;
-
-	const uint color = effect.color.pack();
+	const uint color = effect.color;
 
 	verts[0].point = effect.origin + (vUp * effect.size.y) + (effect.size.x * vRight);
 	verts[0].texcoord = Vector2D(texCoords.rightBottom.x, texCoords.rightBottom.y);
@@ -460,7 +459,7 @@ void Effects_DrawBillboard(const PFXBillboard& effect, const Matrix4x4& viewMatr
 	const Vector3D vUp = viewMatrix.rows[1].xyz();
 
 	const AARectangle texCoords = rect;
-	const uint color = effect.color.pack();
+	const uint color = effect.color;
 
 	verts[0].point = effect.origin + (vUp * effect.size.y) + (effect.size.x * vRight);
 	verts[0].texcoord = Vector2D(texCoords.rightBottom.x, texCoords.rightBottom.y);

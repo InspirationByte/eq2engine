@@ -132,13 +132,12 @@ enum EEffectFlags
 struct PFXBillboard
 {
 	PFXAtlasRef	atlasRef;
+	uint		color;
 
-	MColor		color;
 	Vector3D	origin;
 	Vector3D	lockDir;
-
 	Vector2D	size{ 1.0f, 1.0f };
-
+	
 	float		zAngle { 1.0f };
 	int			flags { 0 };
 };
