@@ -971,6 +971,9 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 
 	bool bAnyMoveButton = false;
 
+	Vector3D forward, right, up;
+	AngleVectors(cam_angles, forward, right, up);
+
 	if(event.ShiftDown())
 	{
 		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
@@ -993,9 +996,6 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 		{
 			if(event.Dragging())
 			{
-				Vector3D forward;
-				AngleVectors(cam_angles, &forward, nullptr, nullptr);
-
 				g_fCamDistance += move_delta_y * 0.05f;
 
 				if (g_fCamDistance < 0.1f)
@@ -1013,9 +1013,6 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 
 		if(event.ButtonIsDown(wxMOUSE_BTN_MIDDLE) && event.Dragging())
 		{
-			Vector3D right, up;
-			AngleVectors(cam_angles, nullptr, &right, &up);
-
 			camera_move_factor *= -1;
 
 			m_bIsMoving = true;
@@ -1183,7 +1180,7 @@ void CEGFViewFrame::ReDraw()
 	if(g_matSystem->BeginFrame(nullptr))
 	{
 		Vector3D forward, right;
-		AngleVectors(g_camera_rotation, &forward, &right);
+		AngleVectors(g_camera_rotation, forward, right);
 
 		g_pCameraParams.SetAngles(g_camera_rotation);
 		g_pCameraParams.SetOrigin(g_camera_target - forward * g_fCamDistance);

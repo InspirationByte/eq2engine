@@ -1051,7 +1051,7 @@ static void MakeDecalTexCoord(Array<EGFHwVertex>& verts, Array<int>& indices, co
 		Vector3D vaxis;
 
 		Vector3D axisAngles = VectorAngles(info.normal);
-		AngleVectors(axisAngles, nullptr, &uaxis, &vaxis);
+		AngleVectors(axisAngles, nullptr, uaxis, vaxis);
 
 		vaxis *= -1;
 

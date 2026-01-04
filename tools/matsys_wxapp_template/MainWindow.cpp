@@ -315,6 +315,9 @@ void CMainWindow::ProcessMouseEvents(wxMouseEvent& event)
 
 	bool bAnyMoveButton = false;
 
+	Vector3D forward, right, up;
+	AngleVectors(cam_angles, forward, right, up);
+
 	if(event.ShiftDown())
 	{
 		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
@@ -337,9 +340,6 @@ void CMainWindow::ProcessMouseEvents(wxMouseEvent& event)
 		{
 			if(event.Dragging())
 			{
-				Vector3D forward;
-				AngleVectors(cam_angles, &forward, NULL, NULL);
-
 				cam_pos -= forward*move_delta_y * camera_move_factor;
 
 				m_bIsMoving = true;
@@ -356,9 +356,6 @@ void CMainWindow::ProcessMouseEvents(wxMouseEvent& event)
 		{
 			if(event.Dragging())
 			{
-				Vector3D right, up;
-				AngleVectors(cam_angles, NULL, &right, &up);
-
 				camera_move_factor *= -1;
 
 				m_bIsMoving = true;
@@ -549,7 +546,7 @@ void CMainWindow::ReDraw()
 		g_pShaderAPI->Clear(true,true,false, ColorRGBA(0.0,0.0,0.0, 1));
 
 		Vector3D forward, right;
-		AngleVectors(g_camera_rotation, &forward, &right);
+		AngleVectors(g_camera_rotation, forward, right);
 
 		g_pCameraParams.SetAngles(g_camera_rotation);
 		g_pCameraParams.SetOrigin(g_camera_target + forward);

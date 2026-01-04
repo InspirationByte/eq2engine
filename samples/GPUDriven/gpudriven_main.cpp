@@ -208,7 +208,7 @@ void CState_GpuDrivenDemo::StepGame(float fDt)
 	PROF_EVENT_F();
 
 	Vector3D forward, right;
-	AngleVectors(s_currentView.GetAngles(), &forward, &right);
+	AngleVectors(s_currentView.GetAngles(), forward, right);
 
 	Vector3D moveVec = vec3_zero;
 

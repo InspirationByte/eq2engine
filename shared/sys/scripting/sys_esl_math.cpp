@@ -719,7 +719,7 @@ static esl::Any<2> L_LineSegIntersectsCircle2D(const esl::ScriptState& state, co
 static esl::Any<2> L_AngleVectors(const esl::ScriptState& state, const Vector3D& v)
 {
 	Vector3D forward, right, up;
-	AngleVectors(v, &right, &up);
+	AngleVectors(v, forward, right, up);
 
 	state.PushValue(forward);
 	state.PushValue(right);

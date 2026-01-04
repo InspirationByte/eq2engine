@@ -654,7 +654,9 @@ template <typename T>
 TVec3D<T>	rotateVectorYZ(const TVec3D<T>& v, float theta);
 
 // computes direction vectors from angles (degrees)
-void		AngleVectors(const Vector3D& angles, Vector3D* forward, Vector3D* right = nullptr, Vector3D* up = nullptr);
+void		AngleVectors(const Vector3D& angles, Vector3D& forward);
+void		AngleVectors(const Vector3D& angles, Vector3D& forward, Vector3D& right);
+void		AngleVectors(const Vector3D& angles, Vector3D& forward, Vector3D& right, Vector3D& up);
 
 // computes ZXY angles in degrees from given direction vector
 Vector3D	VectorAngles(const Vector3D& forward);

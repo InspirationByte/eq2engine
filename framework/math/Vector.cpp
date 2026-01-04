@@ -109,41 +109,59 @@ float fract(float value)
     return (float)fmod(value, 1.0f);
 }
 
-void AngleVectors(const Vector3D &angles, Vector3D *forward, Vector3D *right, Vector3D *up)
+void AngleVectors(const Vector3D& angles, Vector3D& forward)
 {
 	float cp,cy,sp,sy;
 	SinCos(DEG2RAD(-angles.x),&sp,&cp);
 	SinCos(DEG2RAD(-angles.y),&sy,&cy);
 
-	if(forward)
-	{
-		forward->x = cp*sy;
-		forward->y = sp;
-		forward->z = cp*cy;
-	}
+	forward.x = cp*sy;
+	forward.y = sp;
+	forward.z = cp*cy;
+}
 
-	if (!up && !right)
-		return;
-
-	float sr,cr;
+void AngleVectors(const Vector3D& angles, Vector3D& forward, Vector3D& right)
+{
+	float cp,cy,sp,sy,sr,cr;
+	SinCos(DEG2RAD(-angles.x),&sp,&cp);
+	SinCos(DEG2RAD(-angles.y),&sy,&cy);
 	SinCos(DEG2RAD(-angles.z),&sr,&cr);
 
-	const float spsy = sp*sy;
+	forward.x = cp*sy;
+	forward.y = sp;
+	forward.z = cp*cy;
+
 	const float cycr = cy*cr;
 	const float sysr = sy*sr;
-	if (up)
-	{
-		up->x = cy*sr-spsy*cr;
-		up->y = cp*cr;
-		up->z = -sysr-sp*cycr;
-	}
 
-	if (right)
-	{
-		right->x = cycr+sp*sysr;
-		right->y = -cp*sr;
-		right->z = sp*cy*sr-sy*cr;
-	}
+	right.x = cycr+sp*sysr;
+	right.y = -cp*sr;
+	right.z = sp*cy*sr-sy*cr;
+}
+
+void AngleVectors(const Vector3D& angles, Vector3D& forward, Vector3D& right, Vector3D& up)
+{
+	float cp,cy,sp,sy,sr,cr;
+	SinCos(DEG2RAD(-angles.x),&sp,&cp);
+	SinCos(DEG2RAD(-angles.y),&sy,&cy);
+	SinCos(DEG2RAD(-angles.z),&sr,&cr);
+
+	forward.x = cp*sy;
+	forward.y = sp;
+	forward.z = cp*cy;
+
+	const float sycr = sy*cr;
+	const float cycr = cy*cr;
+	const float sysr = sy*sr;
+	const float cysr = cy*sr;
+
+	right.x = cycr+sp*sysr;
+	right.y = -cp*sr;
+	right.z = sp*cysr-sycr;
+
+	up.x = cysr-sp*sycr;
+	up.y = cp*cr;
+	up.z = -sysr-sp*cycr;
 }
 
 Vector3D VectorAngles(const Vector3D& forward)

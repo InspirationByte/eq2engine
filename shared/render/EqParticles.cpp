@@ -410,25 +410,25 @@ void Effects_DrawBillboard(const PFXBillboard& effect, const CViewParams& view, 
 	if(effect.flags & EFFECT_FLAG_LOCK_Y)
 		angles.y = 0;
 
-	Vector3D vRight, vUp;
-	AngleVectors(angles, nullptr, &vRight, &vUp);
+	Vector3D forward, right, up;
+	AngleVectors(angles, forward, right, up);
 
 	const AARectangle texCoords = rect;
 	const uint color = effect.color;
 
-	verts[0].point = effect.origin + (vUp * effect.size.y) + (effect.size.x * vRight);
+	verts[0].point = effect.origin + (up * effect.size.y) + (effect.size.x * right);
 	verts[0].texcoord = Vector2D(texCoords.rightBottom.x, texCoords.rightBottom.y);
 	verts[0].color = color;
 
-	verts[1].point = effect.origin + (vUp * effect.size.y) - (effect.size.x * vRight);
+	verts[1].point = effect.origin + (up * effect.size.y) - (effect.size.x * right);
 	verts[1].texcoord = Vector2D(texCoords.rightBottom.x, texCoords.leftTop.y);
 	verts[1].color = color;
 
-	verts[2].point = effect.origin - (vUp * effect.size.y) + (effect.size.x * vRight);
+	verts[2].point = effect.origin - (up * effect.size.y) + (effect.size.x * right);
 	verts[2].texcoord = Vector2D(texCoords.leftTop.x, texCoords.rightBottom.y);
 	verts[2].color = color;
 
-	verts[3].point = effect.origin - (vUp * effect.size.y) - (effect.size.x * vRight);
+	verts[3].point = effect.origin - (up * effect.size.y) - (effect.size.x * right);
 	verts[3].texcoord = Vector2D(texCoords.leftTop.x, texCoords.leftTop.y);
 	verts[3].color = color;
 }
