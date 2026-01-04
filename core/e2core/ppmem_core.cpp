@@ -25,7 +25,7 @@
 #endif
 
 constexpr const uint PPMEM_CHECKMARK	   = MAKECHAR4('P','P','M','E');
-constexpr const uint PPMEM_CHECKMARK_FREED = MAKECHAR4('E','M','T','Y');
+constexpr const uint PPMEM_CHECKMARK_FREED = MAKECHAR4('F','R','E','E');
 constexpr const uint PPMEM_EXTRA_MARKS = 20;
 
 constexpr const uint PPMEM_MAX_STAT_THREADS = 128;
@@ -54,7 +54,12 @@ struct PPSrcCounter
 using PPSourceCounterMap = Map<uint64, PPSrcCounter>;
 using PPSourceMap = Map<const char*, const char*>;
 
-static inline FixedArray<PPMemState*, PPMEM_MAX_STAT_THREADS> s_memStates;
+using PPMemStateList = FixedArray<PPMemState*, PPMEM_MAX_STAT_THREADS>;
+static PPMemStateList& PPGetStateList()
+{
+	static FixedArray<PPMemState*, PPMEM_MAX_STAT_THREADS> s_memStates;
+	return s_memStates;
+}
 
 static Threading::CEqMutex& PPGetStateMutex()
 {
@@ -81,31 +86,32 @@ struct PPMemState
 PPMemState::PPMemState()
 {
 	Threading::CScopedMutex m(PPGetStateMutex());
-	s_memStates.append(this);
+	PPGetStateList().append(this);
 }
 
 void PPMemState::OnAlloc(int64 size, PPSourceLine sl)
 {
-	Atomic::Increment(numAllocs);
-	Atomic::Add(allocMemCounter, size);
+	++numAllocs;
+	allocMemCounter += size;
+
 	if (!sourceFileNameMap.find(sl.GetFileName()))
 		sourceFileNameMap.insert(sl.GetFileName(), strdup(sl.GetFileName()));
 
 	PPSrcCounter& cnt = sourceCounterMap[sl.data];
-	Atomic::Increment(cnt.counter);
-	Atomic::Increment(cnt.allocatedCount);
-	Atomic::Add(cnt.allocatedMem, size);
+	++cnt.counter;
+	++cnt.allocatedCount;
+	cnt.allocatedMem += size;
 	cnt.lastTimeStamp = timer.GetTimeMS();
 }
 
 void PPMemState::OnFree(int64 size, PPSourceLine sl)
 {
-	Atomic::Decrement(numAllocs);
-	Atomic::Add(allocMemCounter, -size);
+	++numAllocs;
+	allocMemCounter -= size;
 
 	PPSrcCounter& cnt = sourceCounterMap[sl.data];
-	Atomic::Decrement(cnt.allocatedCount);
-	Atomic::Add(cnt.allocatedMem, -size);
+	--cnt.allocatedCount;
+	cnt.allocatedMem -= size;
 }
 
 static PPMemState& PPGetState()
@@ -181,13 +187,13 @@ void PPMemShutdown()
 
 
 	Threading::CScopedMutex m(PPGetStateMutex());
-	for (PPMemState* st : s_memStates)
+	for (PPMemState* st : PPGetStateList())
 	{
 		for (auto it = st->sourceFileNameMap.begin(); it; ++it)
 			free((void*)*it);
 		delete st;
 	}
-	s_memStates.clear();
+	PPGetStateList().clear();
 }
 
 struct SLStat
@@ -216,7 +222,7 @@ static void PPMemPlotAllocStatsCSV()
 
 	PPMemSLStat allocCounter{ PPSourceLine::Empty() };
 	PPSourceMap allocSourceNames{ PPSourceLine::Empty() };
-	for (PPMemState* st : s_memStates)
+	for (PPMemState* st : PPGetStateList())
 	{
 		for (auto it = st->sourceCounterMap.begin(); it; ++it)
 		{
@@ -264,7 +270,7 @@ void PPMemInfo(bool saveStatFile)
 	Threading::CScopedMutex m(PPGetStateMutex());
 
 	// currently allocated items
-	for (PPMemState* st : s_memStates)
+	for (PPMemState* st : PPGetStateList())
 	{
 		MsgInfo("State %" PRIu64 " allocactions, mem usage: %llu bytes (%.2f MB)\n", st->numAllocs, st->allocMemCounter, (st->allocMemCounter / 1024.0f) / 1024.0f);
 		totalUsage += st->allocMemCounter;
@@ -281,7 +287,7 @@ IEXPORTS size_t	PPMemGetUsage()
 	return 0;
 #else
 	uint64 memCounterTotal = 0;
-	for (PPMemState* st : s_memStates)
+	for (PPMemState* st : PPGetStateList())
 		memCounterTotal += st->allocMemCounter;
 
 	return memCounterTotal;
@@ -310,17 +316,18 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 		return mem;
 	}
 
-	PPMemState& st = PPGetState();
 	// allocate more to store extra information of this
 	PPAllocInfo* alloc = (PPAllocInfo*)PPInternalMalloc(sizeof(PPAllocInfo) + size + sizeof(uint) * PPMEM_EXTRA_MARKS);
 	ASSERT_MSG(alloc, "alloc: no mem left");
+
+	PPMemState& st = PPGetState();
 
 	// actual pointer address
 	void* actualPtr = alloc + 1;
 	{
 		alloc->sl = sl;
 		alloc->size = size;
-		alloc->id = st.allocIdCounter++;
+		alloc->id = Atomic::Increment(st.allocIdCounter);
 		alloc->state = &st;
 
 		alloc->checkMark = PPMEM_CHECKMARK;
@@ -331,8 +338,8 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 
 	st.OnAlloc(alloc->size, sl);
 
-	if( ppmem_breakOnAlloc.GetInt() != -1)
-		ASSERT_MSG(alloc->id == (uint)ppmem_breakOnAlloc.GetInt(), "PPDAlloc: Break on allocation id=%d", alloc->id);
+	if( ppmem_breakOnAlloc.GetInt() != -1 && alloc->id == (uint)ppmem_breakOnAlloc.GetInt())
+		ASSERT_FAIL("PPDAlloc: Break on allocation id=%d", alloc->id);
 
 	return actualPtr;
 #endif // PPMEM_DISABLED
@@ -349,7 +356,6 @@ static int PPMemCmpTailCheckmarks(const ubyte* x)
 
 	return diff;
 }
-
 
 // reallocates memory block
 void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
@@ -388,7 +394,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 	// actual pointer address
 	void* actualPtr = alloc + 1;
 	{
-		alloc->id = st.allocIdCounter++;
+		alloc->id = Atomic::Increment(st.allocIdCounter);
 		alloc->state = &st;
 		alloc->size = size;
 		uint* tailCheckMark = (uint*)((ubyte*)actualPtr + size);
@@ -440,7 +446,7 @@ void PPFree(void* ptr)
 		return;
 	}
 
-	if (s_memStates.isEmpty())
+	if (PPGetStateList().isEmpty())
 	{
 		free((void*)alloc);
 		return;

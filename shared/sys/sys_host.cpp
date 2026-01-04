@@ -932,14 +932,14 @@ bool CGameHost::Frame()
 			else if (fps < 60)
 				params.textColor = ColorRGBA(1, 0.8f, 0, 1);
 
-			m_defaultFont->SetupRenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params, rendPassRecorder);
+			m_defaultFont->SetupRenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps), Vector2D(15), params, rendPassRecorder);
 
 			size_t totalMem = PPMemGetUsage();
 			if (totalMem)
 			{
 				FontStyleParam memParams;
 				memParams.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-				m_defaultFont->SetupRenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), memParams, rendPassRecorder);
+				m_defaultFont->SetupRenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f), Vector2D(15, 35), memParams, rendPassRecorder);
 			}
 		}
 
