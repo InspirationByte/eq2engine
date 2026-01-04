@@ -247,7 +247,7 @@ static void AssertLogMsg(ESpewType _dummy, const char* fmt, ...)
 
 static int DefaultAssertHandler(PPSourceLine sl, const char* expression, const char* message, bool skipOnly)
 {
-	const bool eqCoreInit = g_eqCore->IsInitialized();
+	const bool eqCoreInit = g_eqCore ? g_eqCore->IsInitialized() : false;
 
 	EqString assertMessage;
 	if (expression)
@@ -290,7 +290,7 @@ static int DefaultAssertHandler(PPSourceLine sl, const char* expression, const c
 			return _EQASSERT_IGNORE_ALWAYS;
 	}
 
-	if (g_eqCore->GetDebugSettings().assertPromptInDebugger)
+	if (eqCoreInit && g_eqCore->GetDebugSettings().assertPromptInDebugger)
 	{
 		const int res = g_msgBoxCallback(assertMessage + "\n -Press 'Abort' to Break the execution\n -Press 'Retry' to skip this assert\n -Press 'Ignore' to suppress this message", "Assertion failed", MSGBOX_ABORTRETRYINGORE);
 		if (res == MSGBOX_BUTTON_RETRY)
