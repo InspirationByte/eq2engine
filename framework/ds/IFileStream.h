@@ -118,6 +118,9 @@ static VSSize VSWrite(IFileStream* stream, T(&obj)[N])
 	return stream->Write(&obj, N, sizeof(T));
 }
 
+template <typename T>
+decltype(auto) ToCString(const T& value);
+
 template <typename... Args>
 inline void IFileStream::Print(const char* pszFormat, Args&&... args)
 {

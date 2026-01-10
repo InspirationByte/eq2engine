@@ -51,7 +51,7 @@ template<typename T> void PPSLPlacementNew(void* item, const PPSourceLine& sl) {
 #define	PPNewArrayRef(type, count)	ArrayRef(PPNew type[count], count)
 #define PPDeleteArrayRef(ref)		delete [] ref.ptr(), ref = nullptr
 
-#if defined(__clang__)
+#if defined(__clang__) || defined(_GLIBCXX_USE_NOEXCEPT)
 #define PPNOEXCEPT noexcept
 #else
 #define PPNOEXCEPT
