@@ -171,7 +171,7 @@ bool CDkCore::Init(const CoreAppInitParameters& initParams)
 #endif // _WIN32
 
 	// Assume the core is always init from first thread
-	Threading::SetCurrentThreadName("Main Thread");
+	Threading::SetCurrentThreadName(initParams.appName ? initParams.appName : "E2Core Application");
 
 	SetupBinPath();
 
