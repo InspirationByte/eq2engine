@@ -75,6 +75,7 @@ DECLARE_CMD_RENAME(con_toggle_m, "-con_toggle", nullptr, CV_INVISIBLE) {}
 DECLARE_CVAR(con_suggest, "1", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(con_minicon, "0", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(con_minicon_time, "5.0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(con_size, "0.5", nullptr, CV_ARCHIVE);
 
 // shows console
 DECLARE_CMD(con_show, "Show console", 0)
@@ -115,8 +116,8 @@ static int CON_SUGGESTIONS_MAX	= 40;
 
 CStaticAutoPtr<CEqConsoleInput> g_consoleInput;
 
-static ColorRGBA s_conBackColor = ColorRGBA(0.15f, 0.25f, 0.25f, 0.85f);
-static ColorRGBA s_conInputBackColor = ColorRGBA(0.15f, 0.25f, 0.25f, 0.85f);
+static ColorRGBA s_conBackColor = ColorRGBA(0.15f, 0.15f, 0.15f, 0.85f);
+static ColorRGBA s_conInputBackColor = s_conBackColor;
 static ColorRGBA s_conBorderColor = ColorRGBA(0.05f, 0.05f, 0.1f, 1.0f);
 static ColorRGBA s_conListItemSelectedBackground = ColorRGBA(1.0f, 1.0f, 1.0f, 0.8f);
 
@@ -340,7 +341,13 @@ void CEqConsoleInput::EndFrame(int width, int height, float frameTime)
 	if (m_visible)
 	{
 		if (m_showConsole)
-			DrawSelf(width, height, frameTime, rendPassRecorder);
+		{
+			int conHeight = con_size.GetFloat() * height;
+			if (conHeight < 400)
+				conHeight = min(height, 400);
+
+			DrawSelf(width, conHeight, frameTime, rendPassRecorder);
+		}
 
 		FontStyleParam versionTextStl;
 		versionTextStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
