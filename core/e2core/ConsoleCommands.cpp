@@ -32,16 +32,16 @@ static bool IsAllowedToExecute(const ConCommandBase* base)
 	return true;
 }
 
+static constexpr int CMDPRINT_TRAILING_SPACES = 40;
+
 static void PrintConVar(ConVar* pConVar)
 {
-	Msg("%s = \"%s\"\n\n", pConVar->GetName(), pConVar->GetString());
-	MsgError("   \"%s\"\n", pConVar->GetDesc());
+	Msg("%s = %-*s - %s\n", pConVar->GetName(), CMDPRINT_TRAILING_SPACES - CString::Length(pConVar->GetName()), pConVar->GetString(), pConVar->GetDesc());
 }
 
 static void PrintConCommand(ConCommandBase* pConCommand)
 {
-	Msg("%s\n", pConCommand->GetName());
-	MsgError("   \"%s\"\n", pConCommand->GetDesc());
+	Msg("%-*s - %s\n", CMDPRINT_TRAILING_SPACES, pConCommand->GetName(), pConCommand->GetDesc());
 }
 
 static int alpha_cmd_comp(const ConCommandBase* a, const ConCommandBase* b)

@@ -7,7 +7,7 @@
 
 #pragma once
 
-static constexpr const char* cmdDefaultDescString = "No description";
+static constexpr const char* cmdDefaultDescString = "<No description>";
 
 enum ECommandBaseFlags
 {
