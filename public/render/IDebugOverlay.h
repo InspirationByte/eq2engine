@@ -17,6 +17,10 @@
 #define ENABLE_DEBUG_DRAWING
 #endif
 
+#if !defined(_RETAIL)
+#define ENABLE_DEBUG_DRAWING_PROFILE
+#endif
+
 class IEqFont;
 class IGPURenderPassRecorder;
 
@@ -360,81 +364,81 @@ inline void DDVolume::Dispatch()
 
 inline void IDebugOverlay::Text3D(const Vector3D &origin, float dist, const MColor& color, const char* text, float fTime, int hashId, PPSourceLine sl)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	auto dd = DDText3D(sl).Position(origin).Distance(dist).Color(color).Text(text);
 	dd.nameHash = hashId;
 	dd.Time(fTime);
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
 
 inline void IDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const MColor& color, float fTime, int hashId, PPSourceLine sl)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	auto dd = DDBox(sl).Mins(mins).Maxs(maxs).Color(color);
 	dd.nameHash = hashId;
 	dd.Time(fTime);
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
 
 inline void IDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float height, const MColor& color, float fTime, int hashId, PPSourceLine sl)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	auto dd = DDCylinder(sl).Position(position).Radius(radius).Height(height).Color(color);
 	dd.nameHash = hashId;
 	dd.Time(fTime);
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
 
 inline void IDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const MColor& color1, const MColor& color2, float fTime, int hashId, PPSourceLine sl)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	auto dd = DDLine(sl).Start(start).End(end).ColorStart(color1).ColorEnd(color2);
 	dd.nameHash = hashId;
 	dd.Time(fTime);
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
 
 inline void IDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const MColor& color, float fTime, int hashId, PPSourceLine sl)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	auto dd = DDOrientedBox(sl).Mins(mins).Maxs(maxs).Position(position).Rotation(rotation).Color(color);
 	dd.nameHash = hashId;
 	dd.Time(fTime);
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
 
 inline void IDebugOverlay::Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime, int hashId, PPSourceLine sl)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	auto dd = DDSphere(sl).Position(position).Radius(radius).Color(color);
 	dd.nameHash = hashId;
 	dd.Time(fTime);
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
 
 inline void IDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const MColor& color, bool outline, float fTime, int hashId, PPSourceLine sl)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	auto dd = DDPoly(sl).Point(v0).Point(v1).Point(v2).Color(color).Outline(outline);
 	dd.nameHash = hashId;
 	dd.Time(fTime);
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
 
 inline void IDebugOverlay::Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, bool outline, float fTime, int hashId, PPSourceLine sl)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	auto dd = DDPoly(sl).Points(verts).Color(color).Outline(outline);
 	dd.nameHash = hashId;
 	dd.Time(fTime);
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
 
 inline void IDebugOverlay::Volume3D(ArrayCRef<Plane> planes, const MColor& color, float fTime, int hashId, PPSourceLine sl)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	auto dd = DDVolume(sl).Planes(planes).Color(color);
 	dd.nameHash = hashId;
 	dd.Time(fTime);
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 }

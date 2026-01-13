@@ -32,7 +32,7 @@ static constexpr const int MAX_MINICON_MESSAGES = 32;
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay* debugoverlay = (IDebugOverlay*)&g_DebugOverlays;
 
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 static Threading::CEqMutex	s_debugOverlayMutex;
 
 void CDebugOverlay::OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
@@ -78,17 +78,17 @@ static void GUIDrawWindow(const AARectangle &rect, const MColor& color1, IGPURen
 	if(meshBuilder.End(drawCmd))
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 
 void CDebugOverlay::Init(bool hidden)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	if (!hidden)
 	{
 		r_debugDrawFrameStats.SetBool(true);
 		r_debugDrawGraphs.SetBool(true);
 	}
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 
 	m_debugFont = g_fontCache->GetFont("debug", 0);
 	m_debugFont2 = g_fontCache->GetFont("default", 0);
@@ -96,15 +96,15 @@ void CDebugOverlay::Init(bool hidden)
 
 void CDebugOverlay::Shutdown()
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	m_dbgTexture = nullptr;
 	Clear();
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
 
 void CDebugOverlay::Text(const MColor& color, char const *fmt,...)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	if(!r_debugDrawFrameStats.GetBool())
 		return;
 
@@ -117,12 +117,12 @@ void CDebugOverlay::Text(const MColor& color, char const *fmt,...)
 	va_start (argptr,fmt);
 	textNode.text = EqString::FormatV(fmt, argptr);
 	va_end (argptr);
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
 
 void CDebugOverlay::TextFadeOut(int position, const MColor& color, float fFadeTime, char const* fmt, ...)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	if (position == 1)
 	{
 		if (!r_debugDrawFrameStats.GetBool())
@@ -149,12 +149,12 @@ void CDebugOverlay::TextFadeOut(int position, const MColor& color, float fFadeTi
 	}
 	else
 		m_RightTextFadeArray.append(std::move(textNode));
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
 
 void CDebugOverlay::Add(DDText3D& prim)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 	if (prim.nameHash != 0)
 		m_newNames.insert(prim.nameHash, m_frameId);
@@ -165,7 +165,7 @@ void CDebugOverlay::Add(DDText3D& prim)
 
 void CDebugOverlay::Add(DDLine& prim)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 	if (prim.nameHash != 0)
 		m_newNames.insert(prim.nameHash, m_frameId);
@@ -176,7 +176,7 @@ void CDebugOverlay::Add(DDLine& prim)
 
 void CDebugOverlay::Add(DDBox& prim)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 	if (prim.nameHash != 0)
 		m_newNames.insert(prim.nameHash, m_frameId);
@@ -187,7 +187,7 @@ void CDebugOverlay::Add(DDBox& prim)
 
 void CDebugOverlay::Add(DDCylinder& prim)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 	if (prim.nameHash != 0)
 		m_newNames.insert(prim.nameHash, m_frameId);
@@ -198,7 +198,7 @@ void CDebugOverlay::Add(DDCylinder& prim)
 
 void CDebugOverlay::Add(DDOrientedBox& prim)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 	if (prim.nameHash != 0)
 		m_newNames.insert(prim.nameHash, m_frameId);
@@ -209,7 +209,7 @@ void CDebugOverlay::Add(DDOrientedBox& prim)
 
 void CDebugOverlay::Add(DDSphere& prim)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 	if (prim.nameHash != 0)
 		m_newNames.insert(prim.nameHash, m_frameId);
@@ -220,7 +220,7 @@ void CDebugOverlay::Add(DDSphere& prim)
 
 void CDebugOverlay::Add(DDPoly& prim)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 	if (prim.nameHash != 0)
 		m_newNames.insert(prim.nameHash, m_frameId);
@@ -231,7 +231,7 @@ void CDebugOverlay::Add(DDPoly& prim)
 
 void CDebugOverlay::Add(DDVolume& prim)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 	if (prim.nameHash != 0)
 		m_newNames.insert(prim.nameHash, m_frameId);
@@ -242,7 +242,7 @@ void CDebugOverlay::Add(DDVolume& prim)
 
 void CDebugOverlay::Draw2DFunc(const OnDebugDrawFn& func, float fTime, int hashId)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
 	DebugDrawFunc_t fn(PP_SL);
@@ -256,12 +256,12 @@ void CDebugOverlay::Draw2DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 		m_newNames.insert(hashId, m_frameId);
 
 	m_draw2DFuncs.appendEmplace(fn);
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
 
 void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime, int hashId)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
 	DebugDrawFunc_t fn(PP_SL);
@@ -275,10 +275,10 @@ void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 		m_newNames.insert(hashId, m_frameId);
 
 	m_draw3DFuncs.append(fn);
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
 
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 static void DrawLineArray(ArrayRef<DDLine> lines, float frametime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!lines.numElem())
@@ -1139,11 +1139,11 @@ static void DrawSphereArray(ArrayRef<DDSphere> spheres, float frameTime, const V
 		g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 }
 
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 
 void CDebugOverlay::SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view )
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	m_projMat = proj;
 	m_viewMat = view;
 
@@ -1151,14 +1151,14 @@ void CDebugOverlay::SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view )
 
 	Matrix4x4 viewProj = m_projMat*m_viewMat;
 	m_frustum.LoadAsFrustum(viewProj);
-#endif // ENABLE_DEBUG_DRAWING
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
 
 void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 {
 	m_frameTime = m_timer.GetTime(true) * timescale;
 
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
 		Builder<RenderPassDesc>()
 		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
@@ -1443,7 +1443,7 @@ bool CDebugOverlay::CheckNodeLifetime(DDNodeBase& node)
 
 void CDebugOverlay::Clear()
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 	m_TextArray.clear();
 	m_Text3DArray.clear();
@@ -1470,7 +1470,7 @@ void CDebugOverlay::Clear()
 
 void CDebugOverlay::CleanOverlays()
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
 	for (int i = 0; i < m_draw2DFuncs.numElem(); i++)
@@ -1543,7 +1543,7 @@ void CDebugOverlay::CleanOverlays()
 
 void CDebugOverlay::Graph_DrawBucket(DDGraphBucket* pBucket)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	if (!r_debugDrawGraphs.GetBool())
 		return;
 
@@ -1555,7 +1555,7 @@ void CDebugOverlay::Graph_DrawBucket(DDGraphBucket* pBucket)
 
 void CDebugOverlay::Graph_AddValue(DDGraphBucket* bucket, float value)
 {
-#ifdef ENABLE_DEBUG_DRAWING
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	if(!r_debugDrawGraphs.GetBool())
 		return;
 
