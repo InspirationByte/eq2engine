@@ -915,6 +915,12 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	auto rhiFramebufferInfo = nvrhi::FramebufferInfo();
 	rhiFramebufferInfo.sampleCount = pipelineDesc.multiSample.count;
 	
+	auto& rhiRasterState = rhiGraphicsPipelineDesc.renderState.rasterState;
+	rhiRasterState.scissorEnable = true;
+	//rhiRasterState.fillMode = nvrhi::RasterFillMode::Solid;	// TODO
+	//rhiRasterState.frontCounterClockwise = false;				// TODO
+	//rhiRasterState.antialiasedLineEnable = true;				// TODO: use this setting, cool feature
+
 	// Depth state
 	// Optional when depth read = false
 	if (pipelineDesc.depthStencil.format != FORMAT_NONE)
@@ -927,12 +933,10 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 		rhiDepthStencil.stencilReadMask = pipelineDesc.depthStencil.stencilMask;
 		rhiDepthStencil.stencilWriteMask = pipelineDesc.depthStencil.stencilWriteMask;
 
-		auto& rhiRasterState = rhiGraphicsPipelineDesc.renderState.rasterState;
 		rhiRasterState.depthBias = pipelineDesc.depthStencil.depthBias != 0;
 		rhiRasterState.slopeScaledDepthBias = pipelineDesc.depthStencil.depthBiasSlopeScale;
 		rhiRasterState.depthBiasClamp = 0;				// TODO
 		rhiRasterState.depthClipEnable = true;			// FIXME: useful for something?
-		//rhiRasterState.antialiasedLineEnable = true;	// TODO: use this setting, cool feature
 
 		rhiDepthStencil.stencilRefValue = pipelineDesc.depthStencil.stencilRef;
 		rhiDepthStencil.stencilEnable = pipelineDesc.depthStencil.stencilTest;
