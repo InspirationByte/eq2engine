@@ -960,16 +960,19 @@ void CEqPhysicsWorld::DetectCollisionsSingle(CEqRigidBody* body)
 	body->UpdateBoundingBoxTransform();
 	const BoundingBox aabb = body->m_aabb_transformed;
 
+	const bool disabledCollisionChecks = (body->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK);
+	int objectTypeTesting = EQPHYS_FILTER_FLAG_STATICOBJECTS | EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
+	if(disabledCollisionChecks)
+		objectTypeTesting = EQPHYS_FILTER_FLAG_STATICOBJECTS;
+
+	// TODO: optimize broadphase with pairs
+	// right now it is O^2
 	auto broadphaseCb = [this, body](CEqCollisionObject* collObj) {
 		if (collObj == body)
 			return;
 
-		const bool disabledCollisionChecks = (body->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK);
 		if (collObj->IsDynamic())
 		{
-			if (disabledCollisionChecks)
-				return;
-
 			DetectBodyCollisions(body, static_cast<CEqRigidBody*>(collObj), body->GetLastFrameTime());
 		}
 		else // purpose for triggers
@@ -980,7 +983,7 @@ void CEqPhysicsWorld::DetectCollisionsSingle(CEqRigidBody* body)
 
 	{
 		Threading::CScopedReadLocker m(s_eqPhysDynamicRWLock);
-		m_broadphase->BoxTest(aabb, broadphaseCb);
+		m_broadphase->BoxTest(aabb, broadphaseCb, objectTypeTesting);
 	}
 }
 
@@ -1171,8 +1174,9 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 		}
 	}
 	
-	Array<CEqRigidBody*> movingMoveables{ PP_SL };
-	movingMoveables.resize(m_moveable.numElem());
+	static Array<CEqRigidBody*> simMovingMoveables{ PP_SL };
+	simMovingMoveables.clear();
+	simMovingMoveables.reserve(m_moveable.numElem());
 
 	{
 		PROF_EVENT("Moving Bodies PreSim");
@@ -1198,7 +1202,7 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 			IntegrateSingle(body);
 
 			if (!body->IsFrozen())
-				movingMoveables.append(body);
+				simMovingMoveables.append(body);
 		}
 	}
 
@@ -1209,15 +1213,16 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 
 	{
 		PROF_EVENT("Moving Bodies CollDet");
+
 		// calculate collisions
-		for (CEqRigidBody* body : movingMoveables)
+		for (CEqRigidBody* body : simMovingMoveables)
 			DetectCollisionsSingle(body);
 	}
 
 	{
 		PROF_EVENT("Moving Bodies Update");
 		// solve positions
-		for (CEqRigidBody* body : movingMoveables)
+		for (CEqRigidBody* body : simMovingMoveables)
 			body->Update(m_fDt);
 	}
 	
@@ -1225,7 +1230,7 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 		PROF_EVENT("Moving Bodies Process Contact Pairs");
 
 		// process generated contact pairs
-		for (CEqRigidBody* body : movingMoveables)
+		for (CEqRigidBody* body : simMovingMoveables)
 		{
 			for (eqContactPair& pair : body->m_contactPairs)
 				ProcessContactPair(pair);

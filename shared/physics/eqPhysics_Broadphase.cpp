@@ -158,9 +158,12 @@ void CEqPhysicsBroadphase::RayTest(const Vector3D& rayFrom, const Vector3D& rayT
 	}
 }
 
-void CEqPhysicsBroadphase::BoxTest(const BoundingBox& bbox, const EqFunction<void(CEqCollisionObject* collObj)>& processFunc)
+void CEqPhysicsBroadphase::BoxTest(const BoundingBox& bbox, const EqFunction<void(CEqCollisionObject* collObj)>& processFunc, int physFilterFlags)
 {
 	using namespace EqBulletUtils;
+
+	if(!physFilterFlags)
+		return;
 
 	btDbvtVolume dbvtBox;
 	ConvertDKToBulletVectors(dbvtBox.tMins(), bbox.minPoint);
@@ -169,6 +172,9 @@ void CEqPhysicsBroadphase::BoxTest(const BoundingBox& bbox, const EqFunction<voi
 	AABBTester aabbTester(processFunc);
 
 	// process all children, that overlap with  the given AABB bounds
-	m_sets[FIXED_SET].collideTV(m_sets[1].m_root, dbvtBox, aabbTester);
-	m_sets[DYNAMIC_SET].collideTV(m_sets[0].m_root, dbvtBox, aabbTester);
+	if (physFilterFlags & EQPHYS_FILTER_FLAG_STATICOBJECTS)
+		m_sets[FIXED_SET].collideTV(m_sets[1].m_root, dbvtBox, aabbTester);
+	
+	if (physFilterFlags & EQPHYS_FILTER_FLAG_DYNAMICOBJECTS)
+		m_sets[DYNAMIC_SET].collideTV(m_sets[0].m_root, dbvtBox, aabbTester);
 }

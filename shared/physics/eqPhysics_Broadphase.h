@@ -28,7 +28,7 @@ public:
 	void SetAabb(eqPhysBroadphaseUnit* unit, const BoundingBox& bbox);
 
 	void RayTest(const Vector3D& rayFrom, const Vector3D& rayTo, const ProcessObjectFunc& processFunc, int physFilterFlags, const BoundingBox& shapeBox = BoundingBox(0, 0));
-	void BoxTest(const BoundingBox& bbox, const ProcessObjectFunc& processFunc);
+	void BoxTest(const BoundingBox& bbox, const ProcessObjectFunc& processFunc, int physFilterFlags);
 
 private:
 	enum
