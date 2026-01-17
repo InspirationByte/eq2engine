@@ -13,7 +13,7 @@
 #include "NVRHILibraryVK.h"
 #include "NVRHIRenderDefs.h"
 
-DECLARE_CVAR_F(vulkan_fastsync);
+DECLARE_CVAR_F(vulkan_fastSync);
 
 constexpr int TOGGLE_BIT = 0x80000000;
 
@@ -141,7 +141,7 @@ bool CNVRHISwapChainVK::UpdateResize()
 	switch (m_vSync)
 	{
 	case 0:
-		presentMode = enablePModeMailbox && vulkan_fastsync.GetBool() ? vk::PresentModeKHR::eMailbox :
+		presentMode = enablePModeMailbox && vulkan_fastSync.GetBool() ? vk::PresentModeKHR::eMailbox :
 					 (enablePModeImmediate ? vk::PresentModeKHR::eImmediate : vk::PresentModeKHR::eFifo);
 		break;
 	case 1:
