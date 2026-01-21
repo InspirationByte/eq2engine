@@ -16,18 +16,24 @@ CNVRHIComputePassRecorder::CNVRHIComputePassRecorder(nvrhi::ICommandList* cmdLis
 
 void CNVRHIComputePassRecorder::DbgPopGroup() const
 {
+#ifdef RENDER_DEBUG_MARKERS
 	m_rhiCommandList->endMarker();
+#endif
 }
 
 void CNVRHIComputePassRecorder::DbgPushGroup(const char* groupLabel) const
 {
+#ifdef RENDER_DEBUG_MARKERS
 	m_rhiCommandList->beginMarker(groupLabel);
+#endif
 }
 
 void CNVRHIComputePassRecorder::DbgAddMarker(const char* label) const
 {
+#ifdef RENDER_DEBUG_MARKERS
 	m_rhiCommandList->beginMarker(label);
 	m_rhiCommandList->endMarker();
+#endif
 }
 
 void CNVRHIComputePassRecorder::CommitComputeState(nvrhi::IBuffer* indirectBuffer)

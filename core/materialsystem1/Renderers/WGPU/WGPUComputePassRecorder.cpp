@@ -16,17 +16,23 @@ CWGPUComputePassRecorder::~CWGPUComputePassRecorder()
 
 void CWGPUComputePassRecorder::DbgPopGroup() const
 {
+#ifdef RENDER_DEBUG_MARKERS
 	wgpuComputePassEncoderPopDebugGroup(m_rhiComputePassEncoder);
+#endif
 }
 
 void CWGPUComputePassRecorder::DbgPushGroup(const char* groupLabel) const
 {
+#ifdef RENDER_DEBUG_MARKERS
 	wgpuComputePassEncoderPushDebugGroup(m_rhiComputePassEncoder, _WSTR(groupLabel));
+#endif
 }
 
 void CWGPUComputePassRecorder::DbgAddMarker(const char* label) const
 {
+#ifdef RENDER_DEBUG_MARKERS
 	wgpuComputePassEncoderInsertDebugMarker(m_rhiComputePassEncoder, _WSTR(label));
+#endif
 }
 
 void CWGPUComputePassRecorder::SetPipeline(IGPUComputePipeline* pipeline)

@@ -19,17 +19,23 @@ CWGPURenderPassRecorder::~CWGPURenderPassRecorder()
 
 void CWGPURenderPassRecorder::DbgPopGroup() const
 {
+#ifdef RENDER_DEBUG_MARKERS
 	wgpuRenderPassEncoderPopDebugGroup(m_rhiRenderPassEncoder);
+#endif
 }
 
 void CWGPURenderPassRecorder::DbgPushGroup(const char* groupLabel) const
 {
+#ifdef RENDER_DEBUG_MARKERS
 	wgpuRenderPassEncoderPushDebugGroup(m_rhiRenderPassEncoder, _WSTR(groupLabel));
+#endif
 }
 
 void CWGPURenderPassRecorder::DbgAddMarker(const char* label) const
 {
+#ifdef RENDER_DEBUG_MARKERS
 	wgpuRenderPassEncoderInsertDebugMarker(m_rhiRenderPassEncoder, _WSTR(label));
+#endif
 }
 
 void CWGPURenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)

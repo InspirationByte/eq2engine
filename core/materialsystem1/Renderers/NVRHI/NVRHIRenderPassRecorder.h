@@ -57,6 +57,7 @@ public:
 	void					InternalBeginRenderPass(const RenderPassDesc& renderPassDesc);
 
 	void					CommitGraphicsState(nvrhi::IBuffer* indirectBuffer = nullptr);
+	bool					IsViewportAndScissorValid() const;
 
 	GPUBufferView				m_rhiVertexBuffers[MAX_VERTEXSTREAM];
 	IGPUBindGroupPtr			m_bindings[MAX_BINDGROUPS];

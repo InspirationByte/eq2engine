@@ -154,18 +154,24 @@ void CNVRHICommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, 
 
 void CNVRHICommandRecorder::DbgPopGroup() const
 {
+#ifdef RENDER_DEBUG_MARKERS
 	m_rhiCommandList->endMarker();
+#endif
 }
 
 void CNVRHICommandRecorder::DbgPushGroup(const char* groupLabel) const
 {
+#ifdef RENDER_DEBUG_MARKERS
 	m_rhiCommandList->beginMarker(groupLabel);
+#endif
 }
 
 void CNVRHICommandRecorder::DbgAddMarker(const char* label) const
 {
+#ifdef RENDER_DEBUG_MARKERS
 	m_rhiCommandList->beginMarker(label);
 	m_rhiCommandList->endMarker();
+#endif
 }
 
 IGPUCommandBufferPtr CNVRHICommandRecorder::End()

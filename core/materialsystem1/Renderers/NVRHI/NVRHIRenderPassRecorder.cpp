@@ -20,18 +20,24 @@ CNVRHIRenderPassRecorder::CNVRHIRenderPassRecorder(nvrhi::ICommandList* cmdList,
 
 void CNVRHIRenderPassRecorder::DbgPopGroup() const
 {
+#ifdef RENDER_DEBUG_MARKERS
 	m_rhiCommandList->endMarker();
+#endif
 }
 
 void CNVRHIRenderPassRecorder::DbgPushGroup(const char* groupLabel) const
 {
+#ifdef RENDER_DEBUG_MARKERS
 	m_rhiCommandList->beginMarker(groupLabel);
+#endif
 }
 
 void CNVRHIRenderPassRecorder::DbgAddMarker(const char* label) const
 {
+#ifdef RENDER_DEBUG_MARKERS
 	m_rhiCommandList->beginMarker(label);
 	m_rhiCommandList->endMarker();
+#endif
 }
 
 void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffer)
@@ -158,8 +164,25 @@ void CNVRHIRenderPassRecorder::SetScissorRectangle(const IAARectangle& rectangle
 	m_graphicsStateDirty = true;
 }
 
+bool CNVRHIRenderPassRecorder::IsViewportAndScissorValid() const
+{
+	if (m_rhiScissor.width() == 0 || m_rhiScissor.height() == 0)
+		return false;
+
+	if (m_rhiViewport.width() == 0 || m_rhiViewport.height() == 0)
+		return false;
+
+	return true;
+}
+
 void CNVRHIRenderPassRecorder::Draw(int vertexCount, int firstVertex, int instanceCount, int firstInstance)
 {
+	if (!IsViewportAndScissorValid())
+	{
+		DbgAddMarker("Draw skip");
+		return;
+	}
+
 	CommitGraphicsState();
 
 	m_rhiCommandList->draw(nvrhi::DrawArguments()
@@ -175,6 +198,12 @@ void CNVRHIRenderPassRecorder::Draw(int vertexCount, int firstVertex, int instan
 
 void CNVRHIRenderPassRecorder::DrawIndexed(int indexCount, int firstIndex, int instanceCount, int baseVertex, int firstInstance)
 {
+	if (!IsViewportAndScissorValid())
+	{
+		DbgAddMarker("DrawIndexed skip");
+		return;
+	}
+
 	CommitGraphicsState();
 
 	m_rhiCommandList->drawIndexed(nvrhi::DrawArguments()
@@ -195,6 +224,12 @@ void CNVRHIRenderPassRecorder::DrawIndexedIndirect(IGPUBuffer* indirectBuffer, i
 	ASSERT(indirectBufferImpl);
 	ASSERT_MSG(indirectBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDIRECT, "buffer doesn't have Indirect buffer usage bit");
 
+	if (!IsViewportAndScissorValid())
+	{
+		DbgAddMarker("DrawIndexedIndirect skip");
+		return;
+	}
+
 	// since indirect buffer is part of state, we need to update it
 	m_graphicsStateDirty = m_graphicsStateDirty || indirectBuffer != m_lastIndirectBuffer;
 	m_lastIndirectBuffer = indirectBuffer;
@@ -212,6 +247,12 @@ void CNVRHIRenderPassRecorder::DrawIndirect(IGPUBuffer* indirectBuffer, int indi
 	CNVRHIBuffer* indirectBufferImpl = static_cast<CNVRHIBuffer*>(indirectBuffer);
 	ASSERT(indirectBufferImpl);
 	ASSERT_MSG(indirectBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDIRECT, "buffer doesn't have Indirect buffer usage bit");
+
+	if (!IsViewportAndScissorValid())
+	{
+		DbgAddMarker("DrawIndirect skip");
+		return;
+	}
 
 	// since indirect buffer is part of state, we need to update it
 	m_graphicsStateDirty = m_graphicsStateDirty || indirectBuffer != m_lastIndirectBuffer;
