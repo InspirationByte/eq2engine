@@ -25,7 +25,7 @@
 
 DECLARE_CVAR(vulkan_validation, "0", nullptr, CV_UNREGISTERED);
 DECLARE_CVAR(vulkan_break_on_error, "0", nullptr, CV_UNREGISTERED);
-DECLARE_CVAR_G(vulkan_fastsync, "0", nullptr, CV_UNREGISTERED);
+DECLARE_CVAR_G(vulkan_fastSync, "0", nullptr, CV_UNREGISTERED);
 DECLARE_CVAR_F(nvrhi_validation);
 DECLARE_CVAR_F(nvrhi_breakOnError);
 
@@ -109,7 +109,7 @@ bool CNVRHIRenderLibVK::InitCaps()
 	g_consoleCommands->RegisterCommand(&vulkan_validation);
 	g_consoleCommands->RegisterCommand(&vulkan_break_on_error);
 #endif
-	g_consoleCommands->RegisterCommand(&vulkan_fastsync);
+	g_consoleCommands->RegisterCommand(&vulkan_fastSync);
 
 	return true;
 }
@@ -876,7 +876,7 @@ void CNVRHIRenderLibVK::ExitAPI()
 	g_consoleCommands->UnregisterCommand(&vulkan_validation);
 	g_consoleCommands->UnregisterCommand(&vulkan_break_on_error);
 #endif
-	g_consoleCommands->UnregisterCommand(&vulkan_fastsync);
+	g_consoleCommands->UnregisterCommand(&vulkan_fastSync);
 }
 
 void CNVRHIRenderLibVK::BeginFrame(ISwapChain* swapChain)
