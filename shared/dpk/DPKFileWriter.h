@@ -18,7 +18,8 @@
 
 class IFileStream;
 
-class CDPKFileWriter
+class CDPKFileWriter 
+	: public RefCountedObject<CDPKFileWriter, RefCountDefaultPolicy, RefCountedUnsafe>
 {
 public:
 	CDPKFileWriter(const char* mountPath, int compression = 0, const char* encryptKey = nullptr, bool skipPacking = false);
@@ -48,7 +49,6 @@ protected:
 		EqString		fileName;
 	};
 
-
 	char					m_mountPath[DPK_STRING_SIZE];
 	IceKey					m_ice;
 
@@ -56,12 +56,14 @@ protected:
 	COSFile					m_output;
 
 	EqString				m_packFileName;
-	ESearchPath				m_packFilePath;
 
+#if 0
 	Array<CMemoryStream*>	m_openStreams{ PP_SL };
+#endif
 	Map<int, FileInfo>		m_files{ PP_SL };
 
 	int						m_compressionLevel{ 0 };
+	ESearchPath				m_packFilePath;
 	bool					m_encrypted{ false };
 	bool					m_skipPacking{ false };
 };
