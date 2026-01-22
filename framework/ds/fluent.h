@@ -9,12 +9,14 @@ struct Builder;
 	template<> struct Builder<Type> : private Type { \
 		using ThisType = Builder<Type>; \
 		using RetType = Type; \
+		Builder<Type>(const Builder<Type>& oth) = delete; \
+		Builder<Type>(Builder<Type>&& oth) = delete; \
 		Builder<Type>() : ref(*this) {} \
 		Builder<Type>(Type& ref) : ref(ref) {}
 
 #define FLUENT_END_TYPE \
-		const RetType& End() const { return *this; } \
-		RetType&& End() { return std::move(*this); } \
+		const RetType& End() const { return ref; } \
+		RetType&& End() { return std::move(ref); } \
 		private: RetType& ref; \
 	};
 
