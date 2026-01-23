@@ -126,7 +126,7 @@ public:
 		// check if loader is only one owning the material
 		if (matSysMaterial->Ref_Count() == 1)
 		{
-			MsgWarning("Material %s is freed before loading\n", matSysMaterial->GetName());
+			MsgWarning("[MatSys] Material %s is freed before loading\n", matSysMaterial->GetName());
 
 			// switch state back
 			Atomic::CompareExchange(matSysMaterial->m_state, MATERIAL_LOAD_INQUEUE, MATERIAL_LOAD_NEED_LOAD);
@@ -412,7 +412,9 @@ void CMaterialSystem::LoadShaderPackages()
 		m_shaderAPI->FreeShaderPackage(it.key());
 
 		EqString shaderPackPath = fnmPathCombine("shaders", fnmPathApplyExt(factory.shaderName, "shd"));
-		m_shaderAPI->LoadShaderPackage(shaderPackPath);
+		const int shaderCount = m_shaderAPI->LoadShaderPackage(shaderPackPath);
+		if (!shaderCount)
+			MsgWarning("[MatSys] Shader '%s' missing shaders or package file\n", factory.shaderName);
 	}
 }
 
@@ -783,6 +785,7 @@ void CMaterialSystem::ReloadShader(const char* name)
 	CScopedMutex m(s_matSystemMutex);
 
 	const int shaderNameHash = StringId24(name);
+	int shaderPackageFiles = 0;
 
 	// load known shader packages by factory name
 	{
@@ -793,7 +796,13 @@ void CMaterialSystem::ReloadShader(const char* name)
 		MsgInfo("Reloading shader %s and associate materials\n", name);
 
 		MatSysShaderFactory& factory = *it;
-		m_shaderAPI->ReloadShaderPackage(it.key());
+		shaderPackageFiles = m_shaderAPI->ReloadShaderPackage(it.key());
+	}
+
+	if (!shaderPackageFiles)
+	{
+		MsgWarning("[MatSys] Shader '%s' missing shaders or package file\n", name);
+		return;
 	}
 
 	// clear pipeline cache first
@@ -906,7 +915,9 @@ void CMaterialSystem::RegisterShader(const MatSysShaderFactory& factory)
 	if (m_shaderAPI)
 	{
 		EqString shaderPackPath = fnmPathCombine("shaders", fnmPathApplyExt(factory.shaderName, "shd"));
-		m_shaderAPI->LoadShaderPackage(shaderPackPath);
+		const int shaderCount = m_shaderAPI->LoadShaderPackage(shaderPackPath);
+		if(!shaderCount)
+			MsgWarning("[MatSys] Shader '%s' missing shaders or package file\n", factory.shaderName);
 	}
 }
 

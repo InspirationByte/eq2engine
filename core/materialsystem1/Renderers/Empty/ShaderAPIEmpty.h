@@ -166,7 +166,7 @@ public:
 //-------------------------------------------------------------
 // Shaders
 	int				LoadShaderPackage(const char* filename) { return 0; }
-	void			ReloadShaderPackage(int id) {}
+	int				ReloadShaderPackage(int id) { return 0; }
 	void			FreeShaderPackage(int id) {}
 	void			ClearShaderPackages() {}
 	void			LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines, const char* entryPointName) const {}

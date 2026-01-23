@@ -80,10 +80,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 {
 	IPackFileReaderPtr shaderPackFile = g_fileSystem->OpenPackage(filename, SP_MOD | SP_DATA);
 	if (!shaderPackFile)
-	{
-		MsgError("Cannot open shader package '%s'\n", filename);
 		return 0;
-	}
 
 	KVSection shaderInfoKvs;
 	{
@@ -132,21 +129,18 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	return shaderNameId;
 }
 
-void CWGPURenderAPI::ReloadShaderPackage(int id)
+int CWGPURenderAPI::ReloadShaderPackage(int id)
 {
 	auto it = m_shaderCache.find(id);
 	if (it.atEnd())
-		return;
+		return 0;
 
 	ShaderInfo& shaderInfo = *it;
 	EqString packageName = shaderInfo.shaderPackFile->GetName();
 
 	IPackFileReaderPtr shaderPackFile = g_fileSystem->OpenPackage(packageName, SP_MOD | SP_DATA);
 	if (!shaderPackFile)
-	{
-		MsgError("Cannot open shader package '%s'\n", packageName.ToCString());
-		return;
-	}
+		return 0;
 
 	KVSection shaderInfoKvs;
 	{
@@ -154,7 +148,7 @@ void CWGPURenderAPI::ReloadShaderPackage(int id)
 		if (!KeyValues::Parse(file, shaderInfoKvs))
 		{
 			Msg("No ShaderInfo in file %s\n", packageName.ToCString());
-			return;
+			return 0;
 		}
 	}
 
@@ -162,7 +156,7 @@ void CWGPURenderAPI::ReloadShaderPackage(int id)
 	if (!CString::SubString(packageName.ToCString(), shaderInfoKvs.GetName()))
 	{
 		ASSERT_FAIL("Shader package '%s' file name doesn't match it's name '%s' in desc", packageName.ToCString(), shaderInfoKvs.GetName());
-		return;
+		return 0;
 	}
 
 	// re-initialize shader info
@@ -171,7 +165,7 @@ void CWGPURenderAPI::ReloadShaderPackage(int id)
 	int filesFound = 0;
 	if (!ShaderInfo::ParseShaderInfo(shaderInfo, shaderPackFile, shaderInfoKvs, filesFound))
 	{
-		return;
+		return 0;
 	}
 
 	if (wgpu_preloadShaders.GetBool())
@@ -181,6 +175,7 @@ void CWGPURenderAPI::ReloadShaderPackage(int id)
 	}
 
 	DevMsg(DEVMSG_RENDER, "Loaded %d shader modules from %s package\n", filesFound, shaderInfoKvs.GetName());
+	return filesFound;
 }
 
 void CWGPURenderAPI::PrintAPIInfo() const

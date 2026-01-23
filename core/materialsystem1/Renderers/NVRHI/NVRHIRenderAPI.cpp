@@ -153,10 +153,7 @@ int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 {
 	IPackFileReaderPtr shaderPackFile = g_fileSystem->OpenPackage(filename, SP_MOD | SP_DATA);
 	if (!shaderPackFile)
-	{
-		MsgError("Cannot open shader package '%s'\n", filename);
 		return 0;
-	}
 
 	KVSection shaderInfoKvs;
 	{
@@ -205,9 +202,53 @@ int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 	return shaderNameId;
 }
 
-void CNVRHIRenderAPI::ReloadShaderPackage(int id)
+int CNVRHIRenderAPI::ReloadShaderPackage(int id)
 {
-	ASSERT_FAIL("Not implemented yet");
+	auto it = m_shaderCache.find(id);
+	if (it.atEnd())
+		return 0;
+
+	ShaderInfo& shaderInfo = *it;
+	EqString packageName = shaderInfo.shaderPackFile->GetName();
+
+	IPackFileReaderPtr shaderPackFile = g_fileSystem->OpenPackage(packageName, SP_MOD | SP_DATA);
+	if (!shaderPackFile)
+		return 0;
+
+	KVSection shaderInfoKvs;
+	{
+		IFileStreamPtr file = shaderPackFile->Open("ShaderInfo", FS_OPEN_READ);
+		if (!KeyValues::Parse(file, shaderInfoKvs))
+		{
+			Msg("No ShaderInfo in file %s\n", packageName.ToCString());
+			return 0;
+		}
+	}
+
+	DevMsg(DEVMSG_RENDER, "Reloading shader package %s\n", shaderInfoKvs.GetName());
+	if (!CString::SubString(packageName.ToCString(), shaderInfoKvs.GetName()))
+	{
+		ASSERT_FAIL("Shader package '%s' file name doesn't match it's name '%s' in desc", packageName.ToCString(), shaderInfoKvs.GetName());
+		return 0;
+	}
+
+	// re-initialize shader info
+	shaderInfo = {};
+
+	int filesFound = 0;
+	if (!ShaderInfo::ParseShaderInfo(shaderInfo, shaderPackFile, shaderInfoKvs, filesFound))
+	{
+		return 0;
+	}
+
+	if (nvrhi_preloadShaders.GetBool())
+	{
+		for (int i = 0; i < shaderInfo.modules.numElem(); ++i)
+			GetOrLoadShaderModule(shaderInfo, i, nullptr);
+	}
+
+	DevMsg(DEVMSG_RENDER, "Loaded %d shader modules from %s package\n", filesFound, shaderInfoKvs.GetName());
+	return filesFound;
 }
 
 void CNVRHIRenderAPI::PrintAPIInfo() const
