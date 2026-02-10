@@ -16,6 +16,10 @@ usage "SDL2"
 		libdirs { 
 			"./lib/%{cfg.platform}",
 		}
+	filter "system:Windows"
+		postbuildcommands {
+			"{COPYFILE} %[%{!_WORKING_DIR}/src_dependency/SDL2/lib/%{!cfg.platform}/SDL2.dll] %[%{!cfg.targetdir}/SDL2.dll]"
+		}
 
 usage "SDL2_main"
 	links {
