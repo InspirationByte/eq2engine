@@ -29,7 +29,7 @@ project "jolt"
 	}
 	
 	defines {
-		--"JPH_DOUBLE_PRECISION",
+		--"JPH_DOUBLE_PRECISION",				-- All positions will be stored as doubles
 		--"JPH_DEBUG_RENDERER",					-- Enable the debug renderer
 		--"JPH_EXTERNAL_PROFILE",				-- Enable the profiler
 		--"JPH_PROFILE_ENABLED",
