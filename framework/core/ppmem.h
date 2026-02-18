@@ -12,12 +12,15 @@ IEXPORTS void	PPMemInfo( bool saveStatFile );
 IEXPORTS size_t	PPMemGetUsage();
 
 IEXPORTS void*	PPDAlloc( size_t size, const PPSourceLine& sl );
+IEXPORTS void*	PPDAlignedAlloc( size_t size, size_t alignment, const PPSourceLine& sl );
 IEXPORTS void*	PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl );
 IEXPORTS void	PPDCheck( void* ptr );
 
 IEXPORTS void	PPFree( void* ptr );
+IEXPORTS void	PPAlignedFree( void* ptr );
 
 #define	PPAlloc(size)						PPDAlloc(size, PP_SL)
+#define	PPAlignedAlloc(size, alignment)		PPDAlignedAlloc(size, alignment, PP_SL)
 #define	PPAllocStructArray(type, count)		reinterpret_cast<type*>(PPDAlloc(count*sizeof(type), PP_SL))
 #define	PPReAlloc(ptr, size)				PPDReAlloc(ptr, size, PP_SL)
 
