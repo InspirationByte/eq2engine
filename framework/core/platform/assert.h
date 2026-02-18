@@ -48,18 +48,18 @@ enum EEqAssertType {
 
 IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* expression, const char* statement, ...);
 
-#define _ASSERT_BODY(expression, msgFmt, ...) { \
+#define _ASSERT_BODY(sl, expression, msgFmt, ...) { \
 		static bool _ignoreAssert = false; \
-		const int _assertResult = _InternalAssertMsg(_ASSERT_PP_SL, _ignoreAssert, expression, msgFmt, ##__VA_ARGS__ ); \
+		const int _assertResult = _InternalAssertMsg(sl, _ignoreAssert, expression, msgFmt, ##__VA_ARGS__ ); \
 		if (_assertResult == _EQASSERT_BREAK) { _DEBUG_BREAK; } \
 		else if (_assertResult == _EQASSERT_IGNORE_ALWAYS) { _ignoreAssert = true; } \
 	}
 
 #define	ASSERT_MSG(x, msgFmt, ...) \
-	_SEMICOLON_REQ( if (!(x)) _ASSERT_BODY(#x, msgFmt, ##__VA_ARGS__ ) )
+	_SEMICOLON_REQ( if (!(x)) _ASSERT_BODY(_ASSERT_PP_SL, #x, msgFmt, ##__VA_ARGS__ ) )
 
 #define	ASSERT(x)					ASSERT_MSG(x, nullptr)
-#define ASSERT_FAIL(msgFmt, ...)	_ASSERT_BODY(nullptr, "%s: " msgFmt, __func__, ##__VA_ARGS__ )
+#define ASSERT_FAIL(msgFmt, ...)	_ASSERT_BODY(_ASSERT_PP_SL, nullptr, "%s: " msgFmt, __func__, ##__VA_ARGS__ )
 
 #endif // _RETAIL || _PROFILE
 
