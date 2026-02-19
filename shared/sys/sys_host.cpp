@@ -150,7 +150,7 @@ void ScreenshotSaveJob::Execute()
 		MsgError("Failed to save screenshot\n");
 }
 
-static void Sys_SaveScreenshot()
+static void sysHostSaveScreenshot()
 {
 	if (!requestScreenshotName.Length())
 		return;
@@ -272,7 +272,7 @@ void CGameHost::SetFullscreenMode(bool screenSize)
 		int adjustedTall = 600;
 		bool fullscreen = false;
 		int screen = 0;
-		Sys_GetWindowConfig(fullscreen, screen, adjustedWide, adjustedTall);
+		sysHostGetWindowProperties(fullscreen, screen, adjustedWide, adjustedTall);
 
 		OnWindowResize(adjustedWide, adjustedTall);
 
@@ -294,7 +294,7 @@ void CGameHost::SetWindowedMode()
 	int adjustedTall = 600;
 	bool fullscreen = false;
 	int screen = 0;
-	Sys_GetWindowConfig(fullscreen, screen, adjustedWide, adjustedTall);
+	sysHostGetWindowProperties(fullscreen, screen, adjustedWide, adjustedTall);
 
 	OnWindowResize(adjustedWide, adjustedTall);
 	if (!g_matSystem->IsInitialized() || g_matSystem->SetWindowed(true))
@@ -319,7 +319,7 @@ void CGameHost::ApplyVideoMode()
 	int adjustedTall = 600;
 	bool fullscreen = false;
 	int screen = 0;
-	Sys_GetWindowConfig(fullscreen, screen, adjustedWide, adjustedTall);
+	sysHostGetWindowProperties(fullscreen, screen, adjustedWide, adjustedTall);
 
 	if(fullscreen)
 		SetFullscreenMode(false);
@@ -472,7 +472,7 @@ bool CGameHost::InitSystems()
 	if (!eqAppStateMng::InitAppStates())
 		return false;
 
-	m_window = Sys_CreateWindow();
+	m_window = sysHostCreateWindow();
 	ApplyVideoMode();
 
 	g_cmdLine->ExecuteCommandLine();
@@ -1008,7 +1008,7 @@ void CGameHost::BeginScene()
 void CGameHost::EndScene()
 {
 	// save screenshots without ImGui/Console visible
-	Sys_SaveScreenshot();
+	sysHostSaveScreenshot();
 
 	g_consoleInput->EndFrame(m_winSize.x, m_winSize.y, GetFrameTime());
 	g_matSystem->EndFrame();

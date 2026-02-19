@@ -40,7 +40,7 @@
 DECLARE_CVAR_G(__cheats, QUOTE(CHEATS_DEFAULT_VALUE), "Wireframe", CV_PROTECTED | CV_INVISIBLE);
 
 // To not use GTK or java messages, we just using SDL for it. Neat. Noice.
-static int EQSDLMessageBoxCallback(const char* messageStr, const char* titleStr, EMessageBoxType type)
+static int sysSDLMessageBoxCallback(const char* messageStr, const char* titleStr, EMessageBoxType type)
 {
 	switch(type)
 	{
@@ -102,7 +102,7 @@ static int EQSDLMessageBoxCallback(const char* messageStr, const char* titleStr,
 	return 0;
 }
 
-static void Sys_InitConfiguration()
+static void sysInitUserCfg()
 {
 	const int userCfgIdx = g_cmdLine->Find("-user_cfg");
 	if (userCfgIdx != -1)
@@ -116,12 +116,16 @@ static void Sys_InitConfiguration()
 	g_consoleCommands->ClearCommandBuffer();
 	g_consoleCommands->ParseFileToCommandBuffer(DEFAULT_CONFIG_PATH);
 	g_consoleCommands->ExecuteCommandBuffer();
+
+	// in case of game FS is packed
+	// create configuration directory
+	g_fileSystem->MakeDir("cfg", SP_MOD);
 }
 
 // engine entry point after Core init
-int Sys_Main()
+static int sysMain()
 {
-	SetMessageBoxCallback(EQSDLMessageBoxCallback);
+	SetMessageBoxCallback(sysSDLMessageBoxCallback);
 
 	// init file system
 	if (!g_fileSystem->Init(false))
@@ -130,19 +134,15 @@ int Sys_Main()
 		return -2;
 	}
 
-	Sys_InitConfiguration();
+	sysInitUserCfg();
 
 	g_localizer->Init();
-
-	// in case of game FS is packed
-	// create configuration directory
-	g_fileSystem->MakeDir("cfg", SP_MOD);
 	g_localizer->AddToken("GAME_VERSION", EqWString::Format(L"v%d (%ls %ls)", BUILD_NUMBER_ENGINE, L"" COMPILE_DATE, L"" COMPILE_TIME).ToCString());
 	g_localizer->AddToken("BUILD_NUMBER", EqWString::Format(L"v%d", BUILD_NUMBER_ENGINE));
 	g_localizer->AddToken("COMPILE_DATE", EqWString::Format(L"%ls", L"" COMPILE_DATE));
 	g_localizer->AddToken("COMPILE_TIME", EqWString::Format(L"%ls", L"" COMPILE_TIME));
 
-	if (!Host_Init())
+	if (!sysHostInit())
 	{
 		// shutdown
 		g_fileSystem->Shutdown();
@@ -150,11 +150,11 @@ int Sys_Main()
 		return -3;
 	}
 
-	Host_GameLoop();
+	sysHostGameLoop();
 
 	CEqConsoleInput::SpewClear();
 
-	Host_Terminate();
+	sysHostTerminate();
 
 	// shutdown
 	g_localizer->Shutdown();
@@ -164,7 +164,7 @@ int Sys_Main()
 	return 0;
 }
 
-static EqString Sys_GetExecutablePath()
+static EqString sysGetExecutablePath()
 {
 #ifdef PLAT_LINUX
 	char exePath[PATH_MAX];
@@ -207,21 +207,21 @@ static EqString sysPathGetApplicationName(EqStringRef exePath)
 #include <android/asset_manager_jni.h>
 #include <vector>
 
-struct JNI_t
+struct SysJNIData
 {
-	JNIEnv* env;
-	AAssetManager* assetManager;
-	EqString packageName;
-	EqString obbPath;
-} g_jni;
+	JNIEnv* 		env;
+	AAssetManager*	assetManager;
+	EqString 		packageName;
+	EqString		obbPath;
+} g_sysJNI;
 
 // init Java Native Interface glue parts required to do some operations
-void Sys_Android_InitJNI()
+static void sysAndroidInitJNI()
 {
-	SetMessageBoxCallback(EQSDLMessageBoxCallback);
+	SetMessageBoxCallback(sysSDLMessageBoxCallback);
 
 	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	g_jni.env = env;
+	g_sysJNI.env = env;
 	jclass class_activity = env->FindClass("android/app/Activity");
 	jclass class_resources = env->FindClass("android/content/res/Resources");
 	jmethodID method_get_resources = env->GetMethodID(class_activity, "getResources", "()Landroid/content/res/Resources;");
@@ -231,20 +231,20 @@ void Sys_Android_InitJNI()
 	jobject raw_resources = env->CallObjectMethod(raw_activity, method_get_resources);
 	jobject raw_asset_manager = env->CallObjectMethod(raw_resources, method_get_assets);
 
-	g_jni.assetManager = AAssetManager_fromJava(env, raw_asset_manager);
+	g_sysJNI.assetManager = AAssetManager_fromJava(env, raw_asset_manager);
 
 	{
 		jmethodID jMethod_id_pn = env->GetMethodID(class_activity, "getPackageName", "()Ljava/lang/String;");
 		jstring packageNameJstr = (jstring)env->CallObjectMethod(raw_activity, jMethod_id_pn);
 
 		const char* packageNameUtfStr = env->GetStringUTFChars(packageNameJstr, 0);
-		g_jni.packageName = packageNameUtfStr;
+		g_sysJNI.packageName = packageNameUtfStr;
 		env->ReleaseStringUTFChars(packageNameJstr, packageNameUtfStr);
 	}
 }
 
 // init base path to extract
-bool Sys_Android_InitCore(int argc, char** argv)
+static bool sysAndroidInitE2Core(int argc, char** argv)
 {
 	// 1. Extract E2.CONFIG file
 	// preconfigure game base path
@@ -265,7 +265,7 @@ bool Sys_Android_InitCore(int argc, char** argv)
 		MsgInfo("[FS] Using internal storage: %s\n", bestStoragePath);
 	}
 
-	AAssetDir* assetDir = AAssetManager_openDir(g_jni.assetManager, "");
+	AAssetDir* assetDir = AAssetManager_openDir(g_sysJNI.assetManager, "");
 
 	const char* filename;
 	std::vector<char> buffer;
@@ -277,7 +277,7 @@ bool Sys_Android_InitCore(int argc, char** argv)
 		if (!CString::CompareCaseIns(filename, "E2.CONFIG") ||
 			!CString::CompareCaseIns(filename, "e2Base.epk"))
 		{
-			AAsset* asset = AAssetManager_open(g_jni.assetManager, filename, AASSET_MODE_STREAMING);
+			AAsset* asset = AAssetManager_open(g_sysJNI.assetManager, filename, AASSET_MODE_STREAMING);
 
 			//holds size of searched file
 			off64_t length = AAsset_getLength64(asset);
@@ -330,8 +330,8 @@ bool Sys_Android_InitCore(int argc, char** argv)
 		}
 	}
 
-	EqString dataPath("/data/" + g_jni.packageName + "/files");
-	EqString obbPath("/obb/" + g_jni.packageName);
+	EqString dataPath("/data/" + g_sysJNI.packageName + "/files");
+	EqString obbPath("/obb/" + g_sysJNI.packageName);
 
 	EqString storageBase(_Es(bestStoragePath).Left(strlen(bestStoragePath) - dataPath.Length()));
 
@@ -341,7 +341,7 @@ bool Sys_Android_InitCore(int argc, char** argv)
 	// first we let eqconfig to be found
 	g_fileSystem->SetBasePath(storagePath.ToCString());
 
-	g_jni.obbPath = storageObbPath;
+	g_sysJNI.obbPath = storageObbPath;
 
 	CoreAppInitParameters appInitParams;
 	appInitParams.appName = "Game";
@@ -358,7 +358,7 @@ bool Sys_Android_InitCore(int argc, char** argv)
 	return result;
 }
 
-void Sys_Android_MountFileSystem()
+static void sysAndroidMountFileSystem()
 {
 	// mount OBB file if available in config
 	KVSection* filesystemKvs = g_eqCore->GetConfig()->FindSection("Filesystem");
@@ -366,7 +366,7 @@ void Sys_Android_MountFileSystem()
 
 	if (obbPackageName)
 	{
-		const EqString packageFullPath = fnmPathCombine(g_jni.obbPath, KV_GetValueString(obbPackageName));
+		const EqString packageFullPath = fnmPathCombine(g_sysJNI.obbPath, KV_GetValueString(obbPackageName));
 		g_fileSystem->AddPackage(packageFullPath, SP_MOD);
 	}
 }
@@ -395,7 +395,7 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 
 	CEqConsoleInput::SpewInit();
 
-	EqString appName = sysPathGetApplicationName(Sys_GetExecutablePath());
+	EqString appName = sysPathGetApplicationName(sysGetExecutablePath());
 
 	CoreAppInitParameters appInitParams;
 	appInitParams.appName = appName;
@@ -406,11 +406,11 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 		return -1;
 
 	// NOTE: this is only needed for Live++ on Windows
-	g_eqCore->OnModuleLoaded(Sys_GetExecutablePath());
+	g_eqCore->OnModuleLoaded(sysGetExecutablePath());
 
-	const int status = Sys_Main();
+	const int status = sysMain();
 
-	g_eqCore->OnModuleUnloaded(Sys_GetExecutablePath());
+	g_eqCore->OnModuleUnloaded(sysGetExecutablePath());
 
 	return status;
 }
@@ -423,15 +423,15 @@ int main(int argc, char** argv)
 	CEqConsoleInput::SpewInit();
 
 #if defined(PLAT_ANDROID)
-	Sys_Android_InitJNI(); // initialize JNI
+	sysAndroidInitJNI(); 
 
-	if (!Sys_Android_InitCore(argc, argv))
+	if (!sysAndroidInitE2Core(argc, argv))
 		return -1;
 
 	// mount OBB filesystem
-	Sys_Android_MountFileSystem();
+	sysAndroidMountFileSystem();
 #else
-	EqString appName = sysPathGetApplicationName(Sys_GetExecutablePath());
+	EqString appName = sysPathGetApplicationName(sysGetExecutablePath());
 
 	CoreAppInitParameters appInitParams;
 	appInitParams.appName = appName;
@@ -441,7 +441,7 @@ int main(int argc, char** argv)
 		return -1;
 #endif // PLAT_ANDROID
 
-	const int status = Sys_Main();
+	const int status = sysMain();
 	return status;
 }
 

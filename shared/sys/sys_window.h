@@ -7,10 +7,10 @@
 
 #pragma once
 
-EQWNDHANDLE Sys_CreateWindow();
+EQWNDHANDLE sysHostCreateWindow();
 
-void Sys_GetWindowConfig(bool& fullscreen, int& screen, int& wide, int& tall);
+void sysHostGetWindowProperties(bool& fullscreen, int& screen, int& wide, int& tall);
 
-bool Host_Init();
-void Host_GameLoop();
-void Host_Terminate();
+bool sysHostInit();
+void sysHostGameLoop();
+void sysHostTerminate();
