@@ -327,6 +327,7 @@ void* PPInternalAlignedMalloc(size_t size, size_t alignment)
 
 #endif // _WIN32
 
+#ifndef PPMEM_DISABLED
 static void* PPInitAllocInternal(PPAllocInfo* alloc, size_t size, const PPSourceLine& sl)
 {
 	if(!alloc)
@@ -358,6 +359,7 @@ static void* PPInitAllocInternal(PPAllocInfo* alloc, size_t size, const PPSource
 
 	return actualPtr;
 }
+#endif // !PPMEM_DISABLED
 
 // allocated debuggable memory block
 void* PPDAlloc(size_t size, const PPSourceLine& sl)
