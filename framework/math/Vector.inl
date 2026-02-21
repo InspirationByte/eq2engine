@@ -65,6 +65,7 @@ template <class T>
 template <class T2>
 inline void TVec2D<T>::operator /= (const T2 s)
 {
+	// NOTE: we're not doing `x * (1.0 / s)` because of integers
 	x /= s;
 	y /= s;
 }
@@ -251,6 +252,7 @@ template <class T>
 template <class T2>
 inline void TVec3D<T>::operator /= (const T2 s)
 {
+	// NOTE: we're not doing `x * (1.0 / s)` because of integers
 	x /= s;
 	y /= s;
 	z /= s;
@@ -457,6 +459,7 @@ template <class T>
 template <class T2>
 inline void TVec4D<T>::operator /= (const T2 s)
 {
+	// NOTE: we're not doing `x * (1.0 / s)` because of integers
 	x /= s;
 	y /= s;
 	z /= s;
@@ -849,51 +852,68 @@ inline TVec4D<T> clamp(const TVec4D<T> &v, const TVec4D<T> &c0, const TVec4D<T> 
 }
 
 template <typename T>
-inline T normalize(const T v)
+inline TVec2D<T> normalize(const TVec2D<T> &v)
 {
-	T invLen = T(1.0) / sqrtf(v * v);
+	T invLen = T(1.0) / sqrtf(dot(v, v));
 	return v * invLen;
 }
 
 template <typename T>
-inline TVec2D<T> normalize(const TVec2D<T> &v)
+inline T normalizeSelf(TVec2D<T> &v)
 {
-	T invLen = T(1.0) / sqrtf(v.x * v.x + v.y * v.y);
-	return v * invLen;
+	T len = sqrtf(dot(v, v));
+	v *= T(1.0) / len;
+	return len;
 }
 
 template <typename T>
 inline TVec3D<T> normalize(const TVec3D<T> &v)
 {
-	T invLen = T(1.0) / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+	T invLen = T(1.0) / sqrtf(dot(v, v));
 	return v * invLen;
+}
+
+template <typename T>
+inline T normalizeSelf(TVec3D<T> &v)
+{
+	T len = sqrtf(dot(v, v));
+	v *= T(1.0) / len;
+	return len;
 }
 
 template <typename T>
 inline TVec4D<T> normalize(const TVec4D<T> &v)
 {
-	T invLen = T(1.0) / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
+	T invLen = T(1.0) / sqrtf(dot(v, v));
 	return v * invLen;
+}
+
+template <typename T>
+inline T normalizeSelf(TVec4D<T> &v)
+{
+	T len = sqrtf(dot(v, v));
+	v *= T(1.0) / len;
+	return len;
 }
 
 template <typename T>
 inline TVec2D<T> fastNormalize(const TVec2D<T> &v)
 {
-	T invLen = rsqrtf(v.x * v.x + v.y * v.y);
+	T invLen = rsqrtf(dot(v, v));
 	return v * invLen;
 }
 
 template <typename T>
 inline TVec3D<T> fastNormalize(const TVec3D<T> &v)
 {
-	T invLen = rsqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+	T invLen = rsqrtf(dot(v, v));
 	return v * invLen;
 }
 
 template <typename T>
 inline TVec4D<T> fastNormalize(const TVec4D<T> &v)
 {
-	T invLen = rsqrtf(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
+	T invLen = rsqrtf(dot(v, v));
 	return v * invLen;
 }
 
