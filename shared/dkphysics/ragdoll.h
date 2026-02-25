@@ -11,7 +11,7 @@ class CEqStudioGeom;
 class IPhysicsObject;
 class IPhysicsJoint;
 struct StudioJoint;
-enum EPhysicsActivationState : int;
+enum EPhysActivationState : int;
 
 class CPhysRagdollData
 {

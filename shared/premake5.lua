@@ -232,7 +232,7 @@ if ENABLE_TOOLS then
 		uses {
 			"public", "shared",
 			"studioLib", "animatingLib", 
-			"bullet2"
+			"jolt"
 		}
 		files {
 			"dkphysics/**",

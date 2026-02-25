@@ -74,7 +74,7 @@ CPhysRagdollData::CPhysRagdollData(CEqStudioGeom* pModel)
 	m_partObjs.setNum(numParts);
 	for (int i = 0; i < numParts; i++)
 	{
-		IPhysicsObject* physObj = physics->CreateObject(&physModel, i);
+		IPhysicsObject* physObj = physics->CreateStudioObject(physModel, i);
 		const int bodyPartId = physModel.objects[i].desc.bodyPartId;
 		physObj->SetUserData(reinterpret_cast<void*>(bodyPartId));
 		m_partObjs[i] = physObj;

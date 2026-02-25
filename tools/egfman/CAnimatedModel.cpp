@@ -81,7 +81,7 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 	else
 	{
 		if(physData.objects.numElem())
-			m_physObj = physics->CreateObject(&physData, 0);
+			m_physObj = physics->CreateStudioObject(physData, 0);
 	}
 }
 

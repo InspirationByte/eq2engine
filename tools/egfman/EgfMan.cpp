@@ -33,7 +33,7 @@
 
 #include "math/Utility.h"
 
-#include "dkphysics/DkBulletPhysics.h"
+#include "dkphysics/DkPhysicsWorld.h"
 #include "physics/PhysicsCollisionGroup.h"
 #include "physics/BulletShapeCache.h"
 
@@ -251,10 +251,8 @@ static void InitPhysicsScene()
 	// create physics scene and add infinite plane
 	physics->CreateScene();
 	
-	physmodelcreateinfo_t info;
-	SetDefaultPhysModelInfoParams(&info);
-
-	dkCollideData_t collData;
+	physObjectInfo_t info;
+	physShapeInfo_t collData;
 
 	collData.pMaterial = nullptr; // null groups means default material
 	collData.surfaceprops = "default";
@@ -337,7 +335,7 @@ static void InitPhysicsScene()
 	info.mass = 0.0f;
 	info.data = &collData;
 
-	IPhysicsObject* pObj = physics->CreateStaticObject(&info, COLLISION_GROUP_WORLD);
+	IPhysicsObject* pObj = physics->CreateStaticObject(info, COLLISION_GROUP_WORLD);
 }
 
 static void InitMatSystem(wxWindow* window)
@@ -1037,8 +1035,8 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 	
 			if(g_model.IsPhysicsEnabled() && g_dragObj == nullptr)
 			{
-				internaltrace_t tr;
-				physics->InternalTraceLine(rayStart, rayStart+rayDir * 1000.0f, COLLISION_GROUP_ALL, &tr);
+				physCast_t tr;
+				physics->CastLine(rayStart, rayStart+rayDir * 1000.0f, COLLISION_GROUP_ALL, &tr);
 				if(tr.hitObj)
 				{
 					g_dragObj = tr.hitObj;
