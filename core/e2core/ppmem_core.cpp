@@ -36,13 +36,12 @@ struct PPAllocInfo
 {
 	PPMemState*		state{nullptr};
 
-	int64			size;		// TODO: aligned bit flag
+	int64			size : 48;
+	int64			alignment : 16;
 	PPSourceLine	sl;
 
 	uint			id;
 	uint			checkMark;
-
-
 };
 
 // allocation map
@@ -328,36 +327,39 @@ void* PPInternalAlignedMalloc(size_t size, size_t alignment)
 #endif // _WIN32
 
 #ifndef PPMEM_DISABLED
-static void* PPInitAllocInternal(PPAllocInfo* alloc, size_t size, const PPSourceLine& sl)
+static void* PPInitAllocInternal(void* alloc, size_t size, size_t alignment, const PPSourceLine& sl)
 {
-	if(!alloc)
+	if (!alloc)
 	{
 		ASSERT_FAIL("alloc: no mem left");
 		return nullptr;
 	}
 
+	void* userPtr = reinterpret_cast<ubyte*>(alloc) + max(sizeof(PPAllocInfo), alignment);
+	PPAllocInfo* allocInfo = reinterpret_cast<PPAllocInfo*>(userPtr) - 1;
+
 	PPMemState& st = PPGetState();
 
 	// actual pointer address
-	void* actualPtr = alloc + 1;
 	{
-		alloc->sl = sl;
-		alloc->size = size;
-		alloc->id = Atomic::Increment(st.allocIdCounter);
-		alloc->state = &st;
+		allocInfo->sl = sl;
+		allocInfo->size = size;
+		allocInfo->alignment = alignment;
+		allocInfo->id = Atomic::Increment(st.allocIdCounter);
+		allocInfo->state = &st;
 
-		alloc->checkMark = PPMEM_CHECKMARK;
-		uint* tailCheckMark = (uint*)((ubyte*)actualPtr + size);
+		allocInfo->checkMark = PPMEM_CHECKMARK;
+		uint* tailCheckMark = (uint*)((ubyte*)userPtr + size);
 		for (int i = 0; i < PPMEM_EXTRA_MARKS; ++i)
 			*tailCheckMark++ = PPMEM_CHECKMARK;
 	}
 
-	st.OnAlloc(alloc->size, sl);
+	st.OnAlloc(allocInfo->size, sl);
 
-	if( ppmem_breakOnAlloc.GetInt() != -1 && alloc->id == (uint)ppmem_breakOnAlloc.GetInt())
-		ASSERT_FAIL("PPDAlloc: Break on allocation id=%d", alloc->id);
+	if( ppmem_breakOnAlloc.GetInt() != -1 && allocInfo->id == (uint)ppmem_breakOnAlloc.GetInt())
+		ASSERT_FAIL("PPDAlloc: Break on allocation id=%d", allocInfo->id);
 
-	return actualPtr;
+	return userPtr;
 }
 #endif // !PPMEM_DISABLED
 
@@ -377,10 +379,8 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 		return mem;
 	}
 
-	// allocate more to store extra information of this
-	PPAllocInfo* alloc = (PPAllocInfo*)PPInternalMalloc(sizeof(PPAllocInfo) + size + sizeof(uint) * PPMEM_EXTRA_MARKS);
-
-	return PPInitAllocInternal(alloc, size, sl);
+	void* alloc = PPInternalMalloc(sizeof(PPAllocInfo) + size + sizeof(uint) * PPMEM_EXTRA_MARKS);
+	return PPInitAllocInternal(alloc, size, 0, sl);
 #endif // PPMEM_DISABLED
 }
 
@@ -394,15 +394,15 @@ void* PPDAlignedAlloc(size_t size, size_t alignment, const PPSourceLine& sl)
 
 	if (sl.data == 0) 
 	{
-		void* mem = PPInternalMalloc(size);
+		void* mem = PPInternalAlignedMalloc(size, alignment);
 		ASSERT_MSG(mem, "alloc: no mem left");
 		return mem;
 	}
 
-	// allocate more to store extra information of this
-	PPAllocInfo* alloc = (PPAllocInfo*)PPInternalAlignedMalloc(sizeof(PPAllocInfo) + size + sizeof(uint) * PPMEM_EXTRA_MARKS, alignment);
+	const size_t alignedAllocInfoSize = max(sizeof(PPAllocInfo), alignment);
 
-	return PPInitAllocInternal(alloc, size, sl);
+	void* alloc = PPInternalAlignedMalloc(alignedAllocInfoSize + size + sizeof(uint) * PPMEM_EXTRA_MARKS, alignment);
+	return PPInitAllocInternal(alloc, size, alignment, sl);
 #endif // PPMEM_DISABLED
 }
 
@@ -432,6 +432,8 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 		return PPDAlloc(size, sl);
 	}
 
+	ASSERT_MSG(r_alloc->alignment == 0, "ReAlloc used on aligned allocation - not supported yet");
+
 	PPMemState& r_st = *r_alloc->state;
 	{
 		// actual pointer address
@@ -443,7 +445,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 		ASSERT_MSG(diff == 0, "buffer overflow by %d bytes of %s:%d, investigate with ASAN", diff, r_alloc->sl.GetFileName(), r_alloc->sl.GetLine());
 	}
 
-	// decrement alloc counters
+	// decrement allocInfo counters
 	// as realloc might change the pointer
 	r_st.OnFree(r_alloc->size, r_alloc->sl);
 
@@ -453,19 +455,19 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 	PPMemState& st = PPGetState();
 
 	// actual pointer address
-	void* actualPtr = alloc + 1;
+	void* newUserPtr = alloc + 1;
 	{
 		alloc->id = Atomic::Increment(st.allocIdCounter);
 		alloc->state = &st;
 		alloc->size = size;
-		uint* tailCheckMark = (uint*)((ubyte*)actualPtr + size);
+		uint* tailCheckMark = (uint*)((ubyte*)newUserPtr + size);
 		for(int i = 0; i < PPMEM_EXTRA_MARKS; ++i)
 			*tailCheckMark++ = PPMEM_CHECKMARK;
 	}
 
 	st.OnAlloc(alloc->size, sl);
 
-	return actualPtr;
+	return newUserPtr;
 #endif // PPMEM_DISABLED
 }
 
@@ -485,7 +487,7 @@ IEXPORTS void PPDCheck(void* ptr)
 	ASSERT_MSG(diff == 0, "buffer overflow by %d bytes of %s:%d, investigate with ASAN", diff, alloc->sl.GetFileName(), alloc->sl.GetLine());
 
 	// try restoring memory region so app will try to crash if somehow it uses it
-	//alloc->checkMark = PPMEM_CHECKMARK;
+	//allocInfo->checkMark = PPMEM_CHECKMARK;
 	//for (int i = 0; i < PPMEM_EXTRA_MARKS; ++i)
 	//	*tailCheckMark++ = PPMEM_CHECKMARK;
 #endif
@@ -522,17 +524,20 @@ void PPFree(void* ptr)
 	if(ptr == nullptr)
 		return;
 
-	PPAllocInfo* alloc = (PPAllocInfo*)ptr - 1;
-	if(alloc->checkMark != PPMEM_CHECKMARK)
+	PPAllocInfo* allocInfo = reinterpret_cast<PPAllocInfo*>(ptr) - 1;
+	if(allocInfo->checkMark != PPMEM_CHECKMARK)
 	{
 		PPInternalFree(ptr);
 		return;
 	}
 
-	if(!PPGetStateList().isEmpty())
-		PPFreeAllocInternal(alloc);
+	ASSERT_MSG(allocInfo->alignment == 0, "Misuse of Free on aligned allocation");
+	void* alloc = reinterpret_cast<ubyte*>(ptr) - max(sizeof(PPAllocInfo), size_t(allocInfo->alignment));
 
-	PPInternalFree((void*)alloc);
+	if(!PPGetStateList().isEmpty())
+		PPFreeAllocInternal(allocInfo);
+
+	PPInternalFree(allocInfo);
 #endif // PPMEM_DISABLED
 }
 
@@ -545,16 +550,19 @@ void PPAlignedFree(void* ptr)
 	if(ptr == nullptr)
 		return;
 
-	PPAllocInfo* alloc = (PPAllocInfo*)ptr - 1;
-	if(alloc->checkMark != PPMEM_CHECKMARK)
+	PPAllocInfo* allocInfo = (PPAllocInfo*)ptr - 1;
+	if(allocInfo->checkMark != PPMEM_CHECKMARK)
 	{
 		PPInternalAlignedFree(ptr);
 		return;
 	}
 
-	if(!PPGetStateList().isEmpty())
-		PPFreeAllocInternal(alloc);
+	ASSERT_MSG(allocInfo->alignment != 0, "Misuse of Free on unaligned allocation");
 
-	PPInternalAlignedFree((void*)alloc);
+	void* alloc = reinterpret_cast<ubyte*>(ptr) - max(sizeof(PPAllocInfo), size_t(allocInfo->alignment));
+	if(!PPGetStateList().isEmpty())
+		PPFreeAllocInternal(allocInfo);
+
+	PPInternalAlignedFree(alloc);
 #endif // PPMEM_DISABLED
 }
