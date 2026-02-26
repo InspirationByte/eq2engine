@@ -39,4 +39,4 @@ public:
 	void			Cleanup_Invalidate() {}
 };
 
-INTERFACE_SINGLETON(IStudioShapeCache, StudioShapeCache, g_studioShapeCache)
+INTERFACE_SINGLETON(IStudioShapeCache, g_studioShapeCache)

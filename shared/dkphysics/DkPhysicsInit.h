@@ -9,5 +9,5 @@ class TempAllocator;
 JPH::JobSystem* GetJoltJobSystem();
 JPH::TempAllocator* GetJoltTempAlloc();
 
-void dkphysicsInit();
-void dkphysicsShutdown();
+void dkPhysicsLibInit();
+void dkPhysicsLibShutdown();

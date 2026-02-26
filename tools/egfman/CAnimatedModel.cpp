@@ -41,7 +41,7 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 	m_bPhysicsEnable = false;
 
 	if(m_physObj)
-		physics->DestroyPhysicsObject(m_physObj);
+		g_physics->DestroyPhysicsObject(m_physObj);
 
 	m_physObj = nullptr;
 
@@ -81,7 +81,7 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 	else
 	{
 		if(physData.objects.numElem())
-			m_physObj = physics->CreateStudioObject(physData, 0);
+			m_physObj = g_physics->CreateStudioObject(physData, 0);
 	}
 }
 

@@ -16,6 +16,7 @@ namespace JPH {
 class PhysicsSystem;
 class Body;
 class BodyCreationSettings;
+class Shape;
 using ShapeRefC = RefConst<Shape>;
 };
 

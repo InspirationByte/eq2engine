@@ -33,4 +33,4 @@ public:
 	virtual int					GetArgumentsOf(int paramIndex, const char** values, int maxValues) const = 0;
 };
 
-INTERFACE_SINGLETON(ICommandLine, CCommandLine, g_cmdLine )
+INTERFACE_SINGLETON(ICommandLine, g_cmdLine )

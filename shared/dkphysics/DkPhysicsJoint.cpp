@@ -5,10 +5,11 @@
 // Description: Equilibrium physics joints system
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <Jolt/Jolt.h>
+#include "core/core_common.h"
+
+#include "DkJoltPCH.h"
 #include <Jolt/Physics/Constraints/TwoBodyConstraint.h>
 
-#include "core/core_common.h"
 #include "DkJoltConvert.h"
 #include "DkPhysicsObject.h"
 #include "DkPhysicsJoint.h"

@@ -5,10 +5,11 @@
 // Description: Equilibrium physics objects
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <Jolt/Jolt.h>
+#include "core/core_common.h"
+
+#include "DkJoltPCH.h"
 #include <Jolt/Physics/PhysicsSystem.h>
 
-#include "core/core_common.h"
 #include "DkJoltConvert.h"
 #include "DkPhysicsObject.h"
 

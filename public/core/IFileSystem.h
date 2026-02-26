@@ -109,7 +109,7 @@ protected:
 	virtual int			FindGetDirIndex(FSFindData* findData) const = 0;
 };
 
-INTERFACE_SINGLETON( IFileSystem, CFileSystem, g_fileSystem )
+INTERFACE_SINGLETON(IFileSystem, g_fileSystem)
 
 //-----------------------------------------------------------------------------------------
 // Filesystem find helper class

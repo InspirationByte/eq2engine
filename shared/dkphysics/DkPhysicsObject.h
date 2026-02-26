@@ -8,8 +8,12 @@
 #pragma once
 #include "dkphysics/IPhysicsObject.h"
 
-#define MAX_CONTACT_EVENTS 4 // per single object
-using PhysEventArray = FixedArray<physContactEvt_t, MAX_CONTACT_EVENTS>;
+namespace JPH {
+class PhysicsSystem;
+class BodyInterface;
+}
+
+using PhysEventArray = FixedArray<physContactEvt_t, 4>;
 
 class IMaterial;
 

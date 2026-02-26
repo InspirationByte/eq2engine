@@ -22,8 +22,6 @@ ConCommandBase::~ConCommandBase()
 
 //-----------------------------------------------------------
 
-// registering and unregistering commands must be done more internally without singletons
-IEXPORTS IConsoleCommands* GetCConsoleCommands( void );
 
 bool ConCommandBase::HasVariants() const
 {
@@ -36,10 +34,12 @@ void ConCommandBase::GetVariants(Array<EqString>& list, const char* query) const
 		( *m_fnVariantsList )(this, list, query);
 }
 
+IEXPORTS IConsoleCommands* GetIConsoleCommandsImpl();
+
 // static
 void ConCommandBase::Register( ConCommandBase* pBase )
 {
-    GetCConsoleCommands()->RegisterCommand( pBase );
+	GetIConsoleCommandsImpl()->RegisterCommand( pBase );
 }
 
 // static
@@ -47,5 +47,5 @@ void ConCommandBase::Unregister( ConCommandBase* pBase )
 {
 	if (!pBase->m_bIsRegistered)
 		return;
-	GetCConsoleCommands()->UnregisterCommand(pBase);
+	GetIConsoleCommandsImpl()->UnregisterCommand(pBase);
 }

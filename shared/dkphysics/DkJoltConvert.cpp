@@ -1,5 +1,6 @@
-#include <Jolt/Jolt.h>
 #include "core/core_common.h"
+
+#include "DkJoltPCH.h"
 #include "DkJoltConvert.h"
 
 namespace Convert
@@ -8,10 +9,10 @@ JPH::Float3 ToFloat3(const Vector3D& v) { return JPH::Float3(v.x, v.y, v.z); }
 Vector3D 	FromFloat3(const JPH::Float3& v) { return Vector3D(v[0], v[1], v[2]); }
 
 JPH::Vec3 	ToVec3(const Vector3D& v) { return JPH::Vec3(v.x, v.y, v.z); }
-Vector3D 	FromVec3(const JPH::Vec3& v) { return Vector3D(v.mValue[0], v.mValue[1], v.mValue[2]); }
+Vector3D 	FromVec3(const JPH::Vec3& v) { return Vector3D(v[0], v[1], v[2]); }
 
 JPH::Vec4 	ToVec4(const Vector4D& v) { return JPH::Vec4(v.x, v.y, v.z, v.w); }
-Vector4D 	FromVec4(const JPH::Vec4& v) { return Vector4D(v.mValue[0], v.mValue[1], v.mValue[2], v.mValue[3]); }
+Vector4D 	FromVec4(const JPH::Vec4& v) { return Vector4D(v[0], v[1], v[2], v[3]); }
 
 JPH::Quat 	ToQuat(const Quaternion& v) { return JPH::Quat(v.x, v.y, v.z, v.w); }
 Quaternion 	FromQuat(const JPH::Quat& v) { return Quaternion(v.mValue[3], v.mValue[0], v.mValue[1], v.mValue[2]); }

@@ -5,8 +5,14 @@
 // Description: Equilibrium physics powered by Jolt
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "core/IDkCore.h"
+#include "core/ConVar.h"
+#include "core/IFileSystem.h"
+#include "utils/KeyValues.h"
+
 // Jolt headers
-#include <Jolt/Jolt.h>
+#include "DkJoltPCH.h"
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/ShapeCast.h>
@@ -23,18 +29,11 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 
-#include "core/core_common.h"
-#include "core/IDkCore.h"
-#include "core/ConVar.h"
-#include "core/IFileSystem.h"
-#include "utils/KeyValues.h"
-
 #include "DkJoltConvert.h"
 #include "DkPhysicsInit.h"
 #include "DkPhysicsWorld.h"
 #include "DkPhysicsObject.h"
 #include "DkPhysicsJoint.h"
-#include "DkPhysicsRope.h"
 
 #include "materialsystem1/IMaterial.h"
 #include "materialsystem1/IMaterialVar.h"
@@ -246,6 +245,8 @@ public:
 	}
 };
 
+jphDkObjectLayerPairFilter jphDkObjectLayerPairFilter::Instance;
+
 class jphDkObjectVsBroadPhaseLayerFilter : public JPH::ObjectVsBroadPhaseLayerFilter
 {
 public:
@@ -265,6 +266,8 @@ public:
 		}
 	}
 };
+
+jphDkObjectVsBroadPhaseLayerFilter jphDkObjectVsBroadPhaseLayerFilter::Instance;
 
 class jphDkBPLayerInterface final : public JPH::BroadPhaseLayerInterface
 {
@@ -309,6 +312,8 @@ private:
 	JPH::BroadPhaseLayer	m_objectToBroadPhase[Layers::NUM_LAYERS];
 };
 
+jphDkBPLayerInterface jphDkBPLayerInterface::Instance;
+
 class jphDkContactListener : public JPH::ContactListener
 {
 public:
@@ -332,6 +337,8 @@ public:
 	}
 };
 
+jphDkContactListener jphDkContactListener::Instance;
+
 class jphDkBodyActivationListener : public JPH::BodyActivationListener
 {
 public:
@@ -346,6 +353,8 @@ public:
 	}
 };
 
+jphDkBodyActivationListener jphDkBodyActivationListener::Instance;
+
 // Initialize physics
 bool DkPhysics::Init(int nSceneSize)
 {
@@ -355,6 +364,9 @@ bool DkPhysics::Init(int nSceneSize)
 		MsgError("Error! Physics surface definition file 'scripts/SurfaceParams.def' not found\n");
 		return false;
 	}
+
+	physSurfaceInfo_t& physMaterial = m_materials.append();
+	physMaterial.name = "default";
 
 	for(const KVSection& sec : surfParamsKvs.Keys())
 	{
@@ -607,7 +619,7 @@ static JPH::ShapeRefC jphCreateMeshShape(const physObjectInfo_t& info)
 	{
 		JPH::Array<JPH::Vec3> jphVertList;
 		jphVertList.reserve(shapeInfo.numVertices);
-		void* vertPtr = shapeInfo.vertices + shapeInfo.vertexPosOffset;
+		ubyte* vertPtr = reinterpret_cast<ubyte*>(shapeInfo.vertices) + shapeInfo.vertexPosOffset;
 		for(int i = 0; i < shapeInfo.numVertices; ++i)
 		{
 			const JPH::Vec3 vertFlt = Convert::ToVec3(*reinterpret_cast<const Vector3D*>(vertPtr + shapeInfo.vertexSize));
@@ -624,14 +636,14 @@ static JPH::ShapeRefC jphCreateMeshShape(const physObjectInfo_t& info)
 	JPH::IndexedTriangleList jphTriList;
 	jphVertList.reserve(shapeInfo.numVertices);
 
-	void* vertPtr = shapeInfo.vertices + shapeInfo.vertexPosOffset;
+	ubyte* vertPtr = reinterpret_cast<ubyte*>(shapeInfo.vertices) + shapeInfo.vertexPosOffset;
 	for(int i = 0; i < shapeInfo.numVertices; ++i)
 	{
-		const JPH::Float3& vertFlt = *reinterpret_cast<JPH::Float3*>(vertPtr + shapeInfo.vertexSize);
+		const JPH::Float3& vertFlt = *reinterpret_cast<JPH::Float3*>(vertPtr + shapeInfo.vertexSize * i);
 		jphVertList.push_back(vertFlt);
 	}
 
-	jphTriList.reserve(shapeInfo.numIndices * 3);
+	jphTriList.reserve(shapeInfo.numIndices / 3);
 	for(int i = 0; i < shapeInfo.numIndices; i += 3)
 	{
 		JPH::IndexedTriangle jphTri(shapeInfo.indices[i], shapeInfo.indices[i+1], shapeInfo.indices[i+2]);
@@ -815,7 +827,7 @@ IPhysicsJoint* DkPhysics::CreateJoint(	IPhysicsObject* pObjectA, IPhysicsObject*
 	JPH::BodyLockWrite jphBodyLockA(m_jphPhysSys->GetBodyLockInterface(), pObjA->m_jphObjId);
 	JPH::BodyLockWrite jphBodyLockB(m_jphPhysSys->GetBodyLockInterface(), pObjB->m_jphObjId);
 	if (!jphBodyLockA.Succeeded() || !jphBodyLockB.Succeeded())
-		return;
+		return nullptr;
 	
 	JPH::SixDOFConstraintSettings jph6DOFSettings;
 	jph6DOFSettings.mPosition1 = Convert::ToVec3(transformA.getTranslationComponent());

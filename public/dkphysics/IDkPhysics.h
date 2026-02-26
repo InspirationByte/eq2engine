@@ -91,7 +91,7 @@ struct physShapeInfo_t // TODO: remove me
 	int 			vertexSize; // vertex stride size
 
 	uint*			indices;
-	uint			numIndices;
+	int				numIndices;
 
 	IMaterial*		pMaterial;
 	char*			surfaceprops;
@@ -158,4 +158,4 @@ public:
 	virtual void							DestroyPhysicsObjects() = 0;
 };
 
-extern IPhysics* physics;
+INTERFACE_SINGLETON(IPhysics, g_physics)

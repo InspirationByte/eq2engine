@@ -1,11 +1,12 @@
-#include <Jolt/Jolt.h>
+#include "core/core_common.h"
+
+#include "DkJoltPCH.h"
 #include <Jolt/RegisterTypes.h>
 #include <Jolt/Physics/PhysicsSettings.h>
 #include <Jolt/Core/Factory.h>
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Core/JobSystemThreadPool.h>
 
-#include "core/core_common.h"
 #include "core/IDkCore.h"
 #include "core/ConVar.h"
 #include "DkPhysicsWorld.h"
@@ -47,7 +48,7 @@ static void *jphRealloc(void *inBlock, size_t inOldSize, size_t inNewSize)
 
 static void jphFree(void *inBlock)
 {
-	free(inBlock);
+	PPFree(inBlock);
 }
 
 static void *jphAlignedAlloc(size_t inSize, size_t inAlignment)
@@ -65,9 +66,9 @@ static DkPhysics s_dkPhysics;
 JPH::JobSystem* GetJoltJobSystem() { return s_jphJobThreadPool; }
 JPH::TempAllocator* GetJoltTempAlloc() { return s_jphTempAlloc; }
 
-void dkphysicsInit()
+void dkPhysicsLibInit()
 {
-	GetCDkCore()->RegisterInterface(&s_dkPhysics);
+	GetIDkCoreImpl()->RegisterInterface(&s_dkPhysics);
 
 	using namespace JPH;
 #ifdef JPH_ENABLE_ASSERTS
@@ -81,14 +82,15 @@ void dkphysicsInit()
 	AlignedAllocate = jphAlignedAlloc;
 	AlignedFree = jphAlignedFree;
 #endif
-	RegisterTypes();
 
 	Factory::sInstance = new Factory();
+	RegisterTypes();
+
 	s_jphJobThreadPool = new JobSystemThreadPool(cMaxPhysicsJobs, cMaxPhysicsBarriers, ph_jobThreads.GetInt());
 	s_jphTempAlloc = new TempAllocatorImpl(ph_tempMemAllocMB.GetInt() * 1024 * 1024);
 }
 
-void dkphysicsShutdown()
+void dkPhysicsLibShutdown()
 {
 	using namespace JPH;
 
@@ -101,5 +103,5 @@ void dkphysicsShutdown()
 #endif
 	UnregisterTypes();
 
-	GetCDkCore()->UnregisterInterface<DkPhysics>();
+	GetIDkCoreImpl()->UnregisterInterface<DkPhysics>();
 }
