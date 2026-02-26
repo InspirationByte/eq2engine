@@ -10,6 +10,7 @@
 #include "core/IDkCore.h"
 #include "core/ConVar.h"
 #include "DkPhysicsWorld.h"
+#include "DkJoltShapeCache.h"
 
 DECLARE_CVAR(ph_jobThreads, "2", "Physics job threads", CV_ARCHIVE);
 DECLARE_CVAR(ph_tempMemAllocMB, "10", "Temp allocator memory", CV_CHEAT);
@@ -18,6 +19,7 @@ DECLARE_CVAR(ph_tempMemAllocMB, "10", "Temp allocator memory", CV_CHEAT);
 
 static JPH::JobSystemThreadPool* s_jphJobThreadPool = nullptr;
 static JPH::TempAllocatorImpl* s_jphTempAlloc = nullptr;
+static CDkJoltStudioShapeCache s_joltShapeCache;
 
 static bool jphAssertFailedImpl(const char *inExpression, const char *inMessage, const char *inFile, uint inLine)
 {
@@ -69,6 +71,7 @@ JPH::TempAllocator* GetJoltTempAlloc() { return s_jphTempAlloc; }
 void dkPhysicsLibInit()
 {
 	GetIDkCoreImpl()->RegisterInterface(&s_dkPhysics);
+	GetIDkCoreImpl()->RegisterInterface(&s_joltShapeCache);
 
 	using namespace JPH;
 #ifdef JPH_ENABLE_ASSERTS
@@ -104,4 +107,5 @@ void dkPhysicsLibShutdown()
 	UnregisterTypes();
 
 	GetIDkCoreImpl()->UnregisterInterface<DkPhysics>();
+	GetIDkCoreImpl()->UnregisterInterface<IStudioShapeCache>();
 }

@@ -10,7 +10,6 @@
 #include "DkJoltPCH.h"
 #include <Jolt/Physics/PhysicsSystem.h>
 
-#include "DkJoltConvert.h"
 #include "DkPhysicsObject.h"
 
 #include "render/IDebugOverlay.h"
@@ -203,7 +202,6 @@ const char* DkPhysicsObject::GetName() const
 
 void DkPhysicsObject::SetCollisionResponseEnabled(bool bEnabled)
 {
-	ASSERT_FAIL("Unimplemented");
 }
 
 // returns object static state

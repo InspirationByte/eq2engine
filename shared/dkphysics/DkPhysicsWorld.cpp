@@ -29,7 +29,6 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 
-#include "DkJoltConvert.h"
 #include "DkPhysicsInit.h"
 #include "DkPhysicsWorld.h"
 #include "DkPhysicsObject.h"
@@ -575,9 +574,19 @@ void DkPhysics::CastShape(const Vector3D &tracestart, const Vector3D &traceend, 
 
 void DkPhysics::DestroyPhysicsObject(IPhysicsObject *pObject)
 {
-	Threading::CScopedMutex m(m_Mutex);
-	if(m_objects.fastRemove(static_cast<DkPhysicsObject*>(pObject)))
-		delete pObject;
+	DkPhysicsObject* physObj = static_cast<DkPhysicsObject*>(pObject);
+	{
+		Threading::CScopedMutex m(m_Mutex);
+		if (!m_objects.fastRemove(static_cast<DkPhysicsObject*>(pObject)))
+			return;
+	}
+
+	JPH::BodyID jphBodyId = physObj->m_jphObjId;
+	delete physObj;
+
+	JPH::BodyInterface& jphBodyIface = m_jphPhysSys->GetBodyInterface();
+	jphBodyIface.RemoveBody(jphBodyId);
+	jphBodyIface.DestroyBody(jphBodyId);
 }
 
 void DkPhysics::DestroyPhysicsJoint(IPhysicsJoint *pJoint)
@@ -804,7 +813,6 @@ IPhysicsObject* DkPhysics::CreateStudioObject(const StudioPhysData& data, int nO
 	DkPhysicsObject* physObj = PPNew DkPhysicsObject(*m_jphPhysSys, jphBodyId);
 	physObj->m_physMaterial = material;
 	physObj->SetFriction(material->friction);
-	physObj->SetDamping(material->dampening, material->dampening);
 	jphBodyIface.SetUserData(jphBodyId, reinterpret_cast<JPH::uint64>(physObj));
 
 	{
