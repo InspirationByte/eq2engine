@@ -13,20 +13,20 @@ static int TestsAssertHandler(PPSourceLine sl, const char* expression, const cha
 TestAppWrapper::~TestAppWrapper()
 {
 	if (m_enableCore)
-		GetCDkCore()->Shutdown();
+		GetIDkCoreImpl()->Shutdown();
 
 	SetAssertHandler(m_oldAssertHandler);
 }
 
 TestAppWrapper::TestAppWrapper(bool enableCore, const char* name, int argc, char** argv)
 	: m_enableCore(enableCore)
-{
+{	
 	if(m_enableCore)
 	{
 		CoreAppInitParameters coreParams;
 		coreParams.appName = name;
 		coreParams.commandLine = ArrayCRef(argv, argc);
-		GetCDkCore()->Init(coreParams);
+		GetIDkCoreImpl()->Init(coreParams);
 	}
 
 	Install_SpewFunction();
