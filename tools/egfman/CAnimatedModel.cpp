@@ -281,7 +281,7 @@ void CAnimatedModel::RenderPhysModel(IGPURenderPassRecorder* rendPassRecorder)
 				const int visualMatrixIdx = m_pRagdoll->GetBoneIdx(i);
 				const Matrix4x4 boneFrame = m_pRagdoll->GetJointTransformA(i);
 
-				g_matSystem->SetMatrix(MATRIXMODE_WORLD, worldPosMatrix*transpose(!boneFrame * m_boneTransforms[visualMatrixIdx]));
+				g_matSystem->SetMatrix(MATRIXMODE_WORLD, worldPosMatrix * transpose(!boneFrame * m_boneTransforms[visualMatrixIdx]));
 			}
 
 			meshBuilder.Begin(PRIM_TRIANGLES);

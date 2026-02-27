@@ -19,11 +19,21 @@ Quaternion 	FromQuat(const JPH::Quat& v) { return Quaternion(v.mValue[3], v.mVal
 
 JPH::Mat44 	ToMat44(const Matrix4x4& m)
 {
+	return JPH::Mat44(ToVec4(m.r1), ToVec4(m.r2), ToVec4(m.r3), ToVec4(m.r4));
+}
+
+Matrix4x4 	FromMat44(const JPH::Mat44& m)
+{
+	return Matrix4x4(FromVec4(m.GetColumn4(0)), FromVec4(m.GetColumn4(1)), FromVec4(m.GetColumn4(2)), FromVec4(m.GetColumn4(3)));
+}
+
+JPH::Mat44 	ToMat44Transposed(const Matrix4x4& m)
+{
 	Matrix4x4 tm = transpose(m);
 	return JPH::Mat44(ToVec4(tm.r1), ToVec4(tm.r2), ToVec4(tm.r3), ToVec4(tm.r4));
 }
 
-Matrix4x4 	FromMat44(const JPH::Mat44& m)
+Matrix4x4 	FromMat44Transposed(const JPH::Mat44& m)
 {
 	JPH::Mat44 tm = m.Transposed();
 	return Matrix4x4(FromVec4(tm.GetColumn4(0)), FromVec4(tm.GetColumn4(1)), FromVec4(tm.GetColumn4(2)), FromVec4(tm.GetColumn4(3)));

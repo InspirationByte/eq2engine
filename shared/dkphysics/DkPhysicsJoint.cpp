@@ -32,13 +32,11 @@ IPhysicsObject* DkPhysicsJoint::GetPhysicsObjectB() const
 
 Matrix4x4 DkPhysicsJoint::GetGlobalTransformA() const
 {
-	ASSERT_FAIL("Unimplemented");
 	return identity4;
 }
 
 Matrix4x4 DkPhysicsJoint::GetGlobalTransformB() const
 {
-	ASSERT_FAIL("Unimplemented");
 	return identity4;
 }
 
@@ -54,22 +52,18 @@ Matrix4x4 DkPhysicsJoint::GetFrameTransformB() const
 
 void DkPhysicsJoint::SetLinearLowerLimit(const Vector3D& linearLower)
 {
-	ASSERT_FAIL("Unimplemented");
 }
 
 void DkPhysicsJoint::SetLinearUpperLimit(const Vector3D& linearUpper)
 {
-	ASSERT_FAIL("Unimplemented");
 }
 
 void DkPhysicsJoint::SetAngularLowerLimit(const Vector3D& angularLower)
 {
-	ASSERT_FAIL("Unimplemented");
 }
 
 void DkPhysicsJoint::SetAngularUpperLimit(const Vector3D& angularUpper)
 {
-	ASSERT_FAIL("Unimplemented");
 }
 
 Vector3D DkPhysicsJoint::GetLinearLowerLimit() const

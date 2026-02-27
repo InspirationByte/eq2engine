@@ -270,13 +270,14 @@ void DkPhysicsObject::GetBoundingBox(Vector3D &mins, Vector3D &maxs) const
 
 Matrix4x4 DkPhysicsObject::GetTransformMatrix() const
 {
-	return Convert::FromMat44(GetJPHBodyIface().GetWorldTransform(m_jphObjId));
+	return Convert::FromMat44Transposed(GetJPHBodyIface().GetWorldTransform(m_jphObjId));
 }
 
 // set transformation of object
 void DkPhysicsObject::SetTransformFromMatrix(const Matrix4x4 &matrix)
 {
-	const Quaternion rot(matrix.getRotationComponent());
+	Quaternion rot(matrix.getRotationComponent());
+	renormalize(rot);
 	GetJPHBodyIface().SetPositionAndRotation(m_jphObjId, Convert::ToVec3(matrix.getTranslationComponent()), Convert::ToQuat(rot), JPH::EActivation::DontActivate);
 }
 

@@ -524,7 +524,7 @@ void DkPhysics::InternalCastShape(const Vector3D &tracestart, const Vector3D &tr
 	trace->origin = tracestart;
 	trace->traceEnd = traceend;
 
-	JPH::Mat44 jphShapeRotation = transform ? Convert::ToMat44(*transform) : JPH::Mat44::sIdentity();
+	JPH::Mat44 jphShapeRotation = transform ? Convert::ToMat44Transposed(*transform) : JPH::Mat44::sIdentity();
 	JPH::RShapeCast jphShapeCast = JPH::RShapeCast::sFromWorldTransform(shape, JPH::Vec3::sOne(), JPH::RMat44::sTranslation(jphRay.mOrigin) * jphShapeRotation, jphRay.mDirection);
 
 	// TODO: groupmask to layer filters
@@ -577,7 +577,7 @@ void DkPhysics::DestroyPhysicsObject(IPhysicsObject *pObject)
 	DkPhysicsObject* physObj = static_cast<DkPhysicsObject*>(pObject);
 	{
 		Threading::CScopedMutex m(m_Mutex);
-		if (!m_objects.fastRemove(static_cast<DkPhysicsObject*>(pObject)))
+		if (!m_objects.fastRemove(physObj))
 			return;
 	}
 
@@ -591,9 +591,14 @@ void DkPhysics::DestroyPhysicsObject(IPhysicsObject *pObject)
 
 void DkPhysics::DestroyPhysicsJoint(IPhysicsJoint *pJoint)
 {
-	Threading::CScopedMutex m(m_Mutex);
-	if(m_joints.fastRemove(static_cast<DkPhysicsJoint*>(pJoint)))
-		delete pJoint;
+	DkPhysicsJoint* physJoint = static_cast<DkPhysicsJoint*>(pJoint);
+	{
+		Threading::CScopedMutex m(m_Mutex);
+		if (!m_joints.fastRemove(physJoint))
+			return;
+	}
+	m_jphPhysSys->RemoveConstraint(physJoint->m_jphContraint);
+	delete physJoint;
 }
 
 void DkPhysics::DestroyPhysicsObjects()
@@ -832,8 +837,8 @@ IPhysicsJoint* DkPhysics::CreateJoint(	IPhysicsObject* pObjectA, IPhysicsObject*
 	if(!pObjA || !pObjB)
 		return nullptr;
 
-	JPH::BodyLockWrite jphBodyLockA(m_jphPhysSys->GetBodyLockInterface(), pObjA->m_jphObjId);
-	JPH::BodyLockWrite jphBodyLockB(m_jphPhysSys->GetBodyLockInterface(), pObjB->m_jphObjId);
+	JPH::BodyLockWrite jphBodyLockA(m_jphPhysSys->GetBodyLockInterfaceNoLock(), pObjA->m_jphObjId);
+	JPH::BodyLockWrite jphBodyLockB(m_jphPhysSys->GetBodyLockInterfaceNoLock(), pObjB->m_jphObjId);
 	if (!jphBodyLockA.Succeeded() || !jphBodyLockB.Succeeded())
 		return nullptr;
 	
@@ -847,6 +852,8 @@ IPhysicsJoint* DkPhysics::CreateJoint(	IPhysicsObject* pObjectA, IPhysicsObject*
 	jph6DOFSettings.mAxisY2 = Convert::ToVec3(transformB.rows[1].xyz());
 
 	JPH::TwoBodyConstraint* jphConstraint = jph6DOFSettings.Create(jphBodyLockA.GetBody(), jphBodyLockB.GetBody());
+	m_jphPhysSys->AddConstraint(jphConstraint);
+
 	DkPhysicsJoint* physJoint = PPNew DkPhysicsJoint(jphConstraint, pObjA, pObjB);
 
 	// TODO: collision group, GroupFilterTable for bDisableCollisionBetweenBodies
