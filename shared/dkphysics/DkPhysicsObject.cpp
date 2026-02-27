@@ -180,19 +180,28 @@ float DkPhysicsObject::GetDampingAngular() const
 
 float DkPhysicsObject::GetInvMass() const
 {
-	ASSERT_FAIL("Unimplemented");
-	return 0;
+	JPH::BodyLockRead jphLock(m_jphPhysSys.GetBodyLockInterface(), m_jphObjId);
+	if (!jphLock.Succeeded())
+		return 0.0f;
+
+	return jphLock.GetBody().GetMotionProperties()->GetInverseMass();
 }
 
 float DkPhysicsObject::GetMass() const
 {
-	ASSERT_FAIL("Unimplemented");
-	return 0;
+	const float invMass = GetInvMass();
+	if (invMass <= 0.0f)
+		return 0.0f;
+	return 1.0f / invMass;
 }
 
 void DkPhysicsObject::SetMass(float fMass)
 {
-	ASSERT_FAIL("Unimplemented");
+	JPH::BodyLockWrite jphLock(m_jphPhysSys.GetBodyLockInterface(), m_jphObjId);
+	if (jphLock.Succeeded())
+		return;
+
+	return jphLock.GetBody().GetMotionProperties()->SetInverseMass(1.0f / fMass);
 }
 
 const char* DkPhysicsObject::GetName() const

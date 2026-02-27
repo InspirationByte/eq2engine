@@ -1202,10 +1202,10 @@ void CEGFViewFrame::ReDraw()
 		debugoverlay->SetMatrices(g_mProjMat, g_mViewMat);
 
 		// Update things
-		if (g_model.IsPhysicsEnabled() && g_dragObj)
+		if (g_model.IsPhysicsEnabled() && g_dragObj && g_dragObj->IsDynamic())
 		{
 			const Vector3D worldDragPoint = transformPointTransposed(g_dragObjLocalPoint, g_dragObj->GetTransformMatrix());
-			const Vector3D dragForce = (g_dragTargetPoint - worldDragPoint) * g_dragObj->GetMass() * 0.025f;
+			const Vector3D dragForce = (g_dragTargetPoint - worldDragPoint) * g_dragObj->GetMass();
 
 			DbgSphere().Position(worldDragPoint).Fill(true).Radius(0.05f);
 			DbgLine().Start(worldDragPoint).End(g_dragTargetPoint);

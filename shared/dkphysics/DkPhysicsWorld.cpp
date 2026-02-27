@@ -507,6 +507,7 @@ void DkPhysics::CastLine(const Vector3D &tracestart, const Vector3D &traceend, i
 	DkPhysicsObject* hitObj = reinterpret_cast<DkPhysicsObject*>(jphHitBody.GetUserData());
 	trace->normal = Convert::FromVec3(jphHitNormal);
 	trace->traceEnd = Convert::FromVec3(jphHitPosition) + trace->normal * F_EPS;
+	trace->hitObj = hitObj;
 	trace->hitMaterial = hitObj->m_pRMaterial;
 	trace->fraction = jphRayHit.mFraction;
 }
@@ -550,6 +551,7 @@ void DkPhysics::InternalCastShape(const Vector3D &tracestart, const Vector3D &tr
 	DkPhysicsObject* hitObj = reinterpret_cast<DkPhysicsObject*>(jphHitBody.GetUserData());
 	trace->normal = Convert::FromVec3(jphHitNormal);
 	trace->traceEnd = Convert::FromVec3(jphHitPosition) + trace->normal * F_EPS;
+	trace->hitObj = hitObj;
 	trace->hitMaterial = hitObj->m_pRMaterial;
 	trace->fraction = jphCollector.mHit.mFraction;
 }
