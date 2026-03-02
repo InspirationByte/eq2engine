@@ -74,19 +74,14 @@ bool CDkJoltStudioShapeCache::IsInitialized() const
 // checks the shape is initialized for the cache
 bool CDkJoltStudioShapeCache::IsShapeCachePresent( StudioPhyShapeData& shapeInfo )
 {
-	using namespace Threading;
-	CScopedMutex m(s_shapeCacheMutex);
-	if (arrayFindIndex(m_collisionShapes, reinterpret_cast<JPH::Shape*>(shapeInfo.cacheRef)) != -1)
-		return true;
-
-	return false;
+	Threading::CScopedMutex m(s_shapeCacheMutex);
+	const int idx = arrayFindIndex(m_collisionShapes, reinterpret_cast<JPH::Shape*>(shapeInfo.cacheRef));
+	return idx >= 0;
 }
 
 // initializes whole studio shape model with all objects
 void CDkJoltStudioShapeCache::InitStudioCache(StudioPhysData& studioData)
 {
-	using namespace Threading;
-
 	for (StudioPhyShapeData& shapeData : studioData.shapes)
 	{
 		const physgeominfo_t& shapeInfo = shapeData.desc;
@@ -97,7 +92,8 @@ void CDkJoltStudioShapeCache::InitStudioCache(StudioPhysData& studioData)
 			static_cast<EPhysShapeType>(shapeInfo.type));
 
 		{
-			CScopedMutex m(s_shapeCacheMutex);
+			Threading::CScopedMutex m(s_shapeCacheMutex);
+			shape->AddRef();
 			m_collisionShapes.append(shape);
 			shapeData.cacheRef = shape;
 		}
@@ -112,15 +108,14 @@ void CDkJoltStudioShapeCache::InitStudioCache(StudioPhysData& studioData)
 
 void CDkJoltStudioShapeCache::DestroyStudioCache(StudioPhysData& studioData)
 {
-	using namespace Threading;
-
 	for(StudioPhyShapeData& shapeData : studioData.shapes)
 	{
-		CScopedMutex m(s_shapeCacheMutex);
+		Threading::CScopedMutex m(s_shapeCacheMutex);
 		const int shapeIdx = arrayFindIndex(m_collisionShapes, reinterpret_cast<JPH::Shape*>(shapeData.cacheRef));
 		if (shapeIdx == -1)
 			continue;
 
+		m_collisionShapes[shapeIdx]->Release();
 		m_collisionShapes.fastRemoveIndex(shapeIdx);
 	}
 }
@@ -128,8 +123,9 @@ void CDkJoltStudioShapeCache::DestroyStudioCache(StudioPhysData& studioData)
 // does all shape cleanup
 void CDkJoltStudioShapeCache::Cleanup_Invalidate()
 {
-	using namespace Threading;
+	Threading::CScopedMutex m(s_shapeCacheMutex);
 
-	CScopedMutex m(s_shapeCacheMutex);
+	for(JPH::Shape* jphShape : m_collisionShapes)
+		jphShape->Release();
 	m_collisionShapes.clear(true);
 }

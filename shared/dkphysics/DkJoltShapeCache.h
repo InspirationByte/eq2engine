@@ -29,5 +29,5 @@ public:
 protected:
 
 	// cached shapes
-	Array<JPH::ShapeRefC>	m_collisionShapes{ PP_SL };
+	Array<JPH::Shape*>		m_collisionShapes{ PP_SL };
 };

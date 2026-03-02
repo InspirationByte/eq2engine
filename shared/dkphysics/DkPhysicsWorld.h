@@ -95,7 +95,7 @@ private:
 	Array<DkPhysicsObject*>			m_objects{ PP_SL };
 	Array<DkPhysicsJoint*>			m_joints{ PP_SL };
 
-	Array<JPH::ShapeRefC>			m_collisionShapes{ PP_SL };
+	Array<JPH::Shape*>				m_collisionShapes{ PP_SL };
 	Array<physSurfaceInfo_t>		m_materials{ PP_SL };
 
 	Threading::CEqMutex				m_Mutex;

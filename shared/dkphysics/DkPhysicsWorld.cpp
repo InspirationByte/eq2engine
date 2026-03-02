@@ -430,6 +430,9 @@ bool DkPhysics::CreateScene()
 void DkPhysics::DestroyScene()
 {
 	DestroyPhysicsObjects();
+
+	for(JPH::Shape* jphShape : m_collisionShapes)
+		jphShape->Release();
 	m_collisionShapes.clear();
 
 	SAFE_DELETE(m_jphPhysSys);
@@ -614,7 +617,7 @@ void DkPhysics::DestroyPhysicsObjects()
 		DestroyPhysicsObject(m_objects.front());
 }
 
-static JPH::ShapeRefC jphCreatePrimitiveShape(const physPrimitiveInfo_t& priminfo)
+static JPH::Ref<JPH::Shape> jphCreatePrimitiveShape(const physPrimitiveInfo_t& priminfo)
 {
 	if(priminfo.primType == PHYSPRIM_BOX)
 		return new JPH::BoxShape(JPH::Vec3(priminfo.boxInfo.boxSizeX, priminfo.boxInfo.boxSizeY, priminfo.boxInfo.boxSizeZ));
@@ -673,7 +676,10 @@ static JPH::ShapeRefC jphCreateMeshShape(const physObjectInfo_t& info)
 
 int DkPhysics::AddPrimitiveShape(const physPrimitiveInfo_t &info)
 {
-	JPH::ShapeRefC shape = jphCreatePrimitiveShape(info);
+	JPH::Ref<JPH::Shape> shape = jphCreatePrimitiveShape(info);
+	if(!shape)
+		return -1;
+	shape->AddRef();
 	return m_collisionShapes.append(shape);
 }
 
