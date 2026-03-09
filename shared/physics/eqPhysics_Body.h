@@ -72,8 +72,6 @@ public:
 	CEqRigidBody();
 	~CEqRigidBody();
 
-	void				ClearContacts();
-
 	bool				IsDynamic() const {return true;}
 
 	void				SetMass(float mass, float inertiaScale = 1.0f);
@@ -146,6 +144,7 @@ public:
 	float				ComputeImpulseDenominator(const FVector3D& pos, const Vector3D& normal) const;
 
 protected:
+	void				ClearContacts() override;
 	void				ComputeInertia(float scale);
 	void				UpdateInertiaTensor();		///< updates inertia tensor
 	void				AccumulateForces(float time);	///< accumulates forces

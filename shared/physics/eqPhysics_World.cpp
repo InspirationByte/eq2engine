@@ -464,7 +464,7 @@ void CEqPhysicsWorld::AddBody( CEqRigidBody* body, bool moveable )
 
 	CHECK_ALREADY_IN_LIST(m_dynObjects, body);
 
-	body->m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
+	body->m_flags |= COLLOBJ_BOUNDBOX_DIRTY;
 
 	m_dynObjects.append(body);
 

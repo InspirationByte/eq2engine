@@ -353,7 +353,7 @@ void CEqRigidBody::AccumulateForces(float time)
 	m_totalTorque = vec3_zero;
 	m_totalForce = vec3_zero;
 
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
+	m_flags |= COLLOBJ_BOUNDBOX_DIRTY;
 
 	UpdateInertiaTensor();
 }
@@ -610,7 +610,6 @@ void CEqRigidBody::CopyValues(CEqRigidBody* dest, const CEqRigidBody* src)
 {
 	// TODO: state structure
 
-	dest->m_cachedTransform = src->m_cachedTransform;
 	dest->m_orientation = src->m_orientation;
 	dest->m_center = src->m_center;
 	dest->m_position = src->m_position;

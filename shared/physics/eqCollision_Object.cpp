@@ -46,10 +46,11 @@ void CEqCollisionObject::Destroy()
 	}
 
 	m_shape = nullptr;
+	m_numShapes = 0;
+
 	m_mesh = nullptr;
 	m_broadphaseUnit = nullptr;
 	m_shapeOwning = 0;
-	m_numShapes = 0;
 }
 
 void CEqCollisionObject::ClearContacts()
@@ -272,7 +273,7 @@ const Transform3D CEqCollisionObject::GetTransform() const
 void CEqCollisionObject::SetPosition(const FVector3D& position)
 {
 	m_position = position;
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
+	m_flags |= COLLOBJ_BOUNDBOX_DIRTY;
 
 	UpdateBoundingBoxTransform();
 }
@@ -280,7 +281,7 @@ void CEqCollisionObject::SetPosition(const FVector3D& position)
 void CEqCollisionObject::SetOrientation(const Quaternion& orient)
 {
 	m_orientation = orient;
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
+	m_flags |= COLLOBJ_BOUNDBOX_DIRTY;
 
 	UpdateBoundingBoxTransform();
 }
@@ -289,7 +290,7 @@ void CEqCollisionObject::SetTransform(const Transform3D& trs)
 {
 	m_position = trs.t;
 	m_orientation = trs.r;
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
+	m_flags |= COLLOBJ_BOUNDBOX_DIRTY;
 	UpdateBoundingBoxTransform();
 }
 
@@ -323,19 +324,6 @@ bool CEqCollisionObject::CheckCanCollideWith( CEqCollisionObject* object ) const
 	}
 
 	return false;
-}
-
-void CEqCollisionObject::ConstructRenderMatrix( Matrix4x4& outMatrix )
-{
-	if(m_flags & COLLOBJ_TRANSFORM_DIRTY)
-	{
-		Matrix4x4 transform = Matrix4x4(m_orientation);
-		transform.setTranslationTransposed(Vector3D(m_position));
-		m_cachedTransform = transform;
-		m_flags &= ~COLLOBJ_TRANSFORM_DIRTY;
-	}
-
-	outMatrix = m_cachedTransform;
 }
 
 void CEqCollisionObject::SetDebugName(const char* name)
