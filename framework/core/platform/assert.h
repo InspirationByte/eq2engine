@@ -9,6 +9,10 @@
 #include "core/InterfaceManager.h"
 #include "core/ppsourceline.h"
 
+#if !defined(_RETAIL) && !defined(_PROFILE)
+#define USE_ASSERTS
+#endif
+
 #ifndef _WIN32
 
 #include <signal.h>
@@ -35,14 +39,7 @@ enum EEqAssertType {
 	_EQASSERT_SKIP			= 0,	// only when debugger is not present
 };
 
-
-#if defined(_RETAIL) || defined(_PROFILE)
-
-#define	ASSERT_MSG(x, msgFmt, ...)	_SEMICOLON_REQ({})
-#define	ASSERT(x)					_SEMICOLON_REQ({})
-#define ASSERT_FAIL(msgFmt, ...)	_SEMICOLON_REQ({})
-
-#else
+#ifdef USE_ASSERTS
 
 #define _ASSERT_PP_SL PPSourceLine::Make(__FILE__, __LINE__)
 
@@ -61,7 +58,13 @@ IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* exp
 #define	ASSERT(x)					ASSERT_MSG(x, nullptr)
 #define ASSERT_FAIL(msgFmt, ...)	_ASSERT_BODY(_ASSERT_PP_SL, nullptr, "%s: " msgFmt, __func__, ##__VA_ARGS__ )
 
-#endif // _RETAIL || _PROFILE
+#else
+
+#define	ASSERT_MSG(x, msgFmt, ...)	_SEMICOLON_REQ({})
+#define	ASSERT(x)					_SEMICOLON_REQ({})
+#define ASSERT_FAIL(msgFmt, ...)	_SEMICOLON_REQ({})
+
+#endif // USE_ASSERTS
 
 #define assert_sizeof( type, size )						static_assert( sizeof( type ) == size, "type '" #type "' size " #size " - size mismatch" )
 #define assert_sizeof_8_byte_multiple( type )			static_assert( ( sizeof( type ) &  7 ) == 0, "type '" #type "' size is not multiple of 8 bytes" )

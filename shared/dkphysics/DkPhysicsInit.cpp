@@ -23,11 +23,15 @@ static CDkJoltStudioShapeCache s_joltShapeCache;
 
 static bool jphAssertFailedImpl(const char *inExpression, const char *inMessage, const char *inFile, uint inLine)
 {
+#ifdef USE_ASSERTS
 	static bool physIgnoreAsserts = false;
 	const int assertResult = _InternalAssertMsg(PPSourceLine::Make(inFile, inLine), physIgnoreAsserts, inExpression, inMessage);
 	if (assertResult == _EQASSERT_IGNORE_ALWAYS)
 		physIgnoreAsserts = true;
 	return assertResult == _EQASSERT_BREAK;
+#else
+	return false;
+#endif // USE_ASSERTS
 };
 
 static void jphTraceImpl(const char *inFMT, ...)
