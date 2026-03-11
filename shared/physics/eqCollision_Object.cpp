@@ -69,10 +69,10 @@ void CEqCollisionObject::InitAABB()
 	btVector3 mins,maxs;
 	m_shape->getAabb(btTransform::getIdentity(), mins, maxs);
 
-	ConvertBulletToDKVectors(m_aabb.minPoint, mins);
-	ConvertBulletToDKVectors(m_aabb.maxPoint, maxs);
+	ConvertBulletToDKVectors(m_localAABB.minPoint, mins);
+	ConvertBulletToDKVectors(m_localAABB.maxPoint, maxs);
 
-	m_aabb_transformed = m_aabb;
+	m_worldAABB = m_localAABB;
 }
 
 bool CEqCollisionObject::Initialize(const StudioPhysData& physData, int objIdx)
@@ -89,7 +89,7 @@ bool CEqCollisionObject::Initialize(const StudioPhyObjData& physObject)
 	m_shapeList = (btCollisionShape**)physObject.shapeCacheRefs;
 
 	ASSERT_MSG(GetSurfaceParamId != nullptr, "Must set up CEqCollisionObject::GetSurfaceParamId callback for your physics engine");
-	m_surfParam = GetSurfaceParamId(physObject.desc.surfaceprops);
+	m_surfParamId = GetSurfaceParamId(physObject.desc.surfaceprops);
 
 	// setup default shape
 	if (m_numShapes > 1)
@@ -301,9 +301,8 @@ void CEqCollisionObject::UpdateBoundingBoxTransform()
 	m_flags &= ~COLLOBJ_BOUNDBOX_DIRTY;
 	m_flags |= COLLOBJ_BROADPHASE_DIRTY;
 
-	BoundingBox srcBox = m_aabb;
+	BoundingBox srcBox = m_localAABB;
 	BoundingBox finalBox;
-
 	for(int i = 0; i < BoundingBox::VertexCount; i++)
 		finalBox.AddVertex(rotateVector(srcBox.GetVertex(i), m_orientation));
 
@@ -312,18 +311,7 @@ void CEqCollisionObject::UpdateBoundingBoxTransform()
 	finalBox.minPoint += offset;
 	finalBox.maxPoint += offset;
 
-	m_aabb_transformed = finalBox;
-}
-
-// logical check, pre-broadphase
-bool CEqCollisionObject::CheckCanCollideWith( CEqCollisionObject* object ) const
-{
-	if((GetContents() & object->GetCollideMask()) || (GetCollideMask() & object->GetContents()))
-	{
-		return true;
-	}
-
-	return false;
+	m_worldAABB = finalBox;
 }
 
 void CEqCollisionObject::SetDebugName(const char* name)

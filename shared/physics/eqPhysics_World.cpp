@@ -609,17 +609,25 @@ bool CEqPhysicsWorld::RemoveController( IEqPhysController* controller )
 
 //-----------------------------------------------------------------------------------------------
 
+static bool collObjCheckCollisionMask( CEqCollisionObject* objA, CEqCollisionObject* objB )
+{
+	if((objA->GetContents() & objB->GetCollideMask()) || (objA->GetCollideMask() & objB->GetContents()))
+		return true;
+
+	return false;
+}
+
 void CEqPhysicsWorld::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt)
 {
 	using namespace EqBulletUtils;
 
 	// apply filters
-	if(!bodyA->CheckCanCollideWith(bodyB))
+	if(!collObjCheckCollisionMask(bodyA, bodyB))
 		return;
 
 	// test radius between bodies
-	const float lenA = lengthSqr(bodyA->m_aabb.GetSize());
-	const float lenB = lengthSqr(bodyB->m_aabb.GetSize());
+	const float lenA = lengthSqr(bodyA->GetLocalAABB().GetSize());
+	const float lenB = lengthSqr(bodyB->GetLocalAABB().GetSize());
 
 	const FVector3D centerOffset = (bodyA->GetPosition()-bodyB->GetPosition());
 
@@ -746,10 +754,10 @@ void CEqPhysicsWorld::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj,
 	if(staticObj == nullptr || bodyB == nullptr)
 		return;
 
-	if(!staticObj->CheckCanCollideWith(bodyB))
+	if(!collObjCheckCollisionMask(staticObj, bodyB))
 		return;
 
-	if( !staticObj->m_aabb_transformed.Intersects(bodyB->m_aabb_transformed))
+	if( !staticObj->GetWorldAABB().Intersects(bodyB->GetWorldAABB()))
 		return;
 
 	Vector3D center = (staticObj->GetPosition()-bodyB->GetPosition());
@@ -922,7 +930,7 @@ void CEqPhysicsWorld::SetupCollisionObjectBroadphase( CEqCollisionObject* collOb
 	if (collObj->m_broadphaseUnit)
 	{
 		Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
-		m_broadphase->SetAabb(collObj->m_broadphaseUnit, collObj->m_aabb_transformed);
+		m_broadphase->SetAabb(collObj->m_broadphaseUnit, collObj->GetWorldAABB());
 	}
 	else
 	{
@@ -930,7 +938,7 @@ void CEqPhysicsWorld::SetupCollisionObjectBroadphase( CEqCollisionObject* collOb
 			return;
 
 		Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
-		collObj->m_broadphaseUnit = m_broadphase->CreateUnit(collObj->m_aabb_transformed, collObj);
+		collObj->m_broadphaseUnit = m_broadphase->CreateUnit(collObj->GetWorldAABB(), collObj);
 	}
 
 	collObj->m_flags &= ~COLLOBJ_BROADPHASE_DIRTY;
@@ -958,7 +966,7 @@ void CEqPhysicsWorld::DetectCollisionsSingle(CEqRigidBody* body)
 		return;
 
 	body->UpdateBoundingBoxTransform();
-	const BoundingBox aabb = body->m_aabb_transformed;
+	const BoundingBox aabb = body->GetWorldAABB();
 
 	const bool disabledCollisionChecks = (body->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK);
 	int objectTypeTesting = EQPHYS_FILTER_FLAG_STATICOBJECTS | EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
@@ -1313,7 +1321,7 @@ bool CEqPhysicsWorld::TestLineCollision(
 			return;
 		skipObjects.insert(collObj);
 
-		if (!rayBox.Intersects(collObj->m_aabb_transformed))
+		if (!rayBox.Intersects(collObj->GetWorldAABB()))
 			return;
 
 		eqCollisionInfo tempColl;
@@ -1411,7 +1419,7 @@ bool CEqPhysicsWorld::TestConvexSweepCollision(
 			return;
 		skipObjects.insert(collObj);
 
-		if (!rayBox.Intersects(collObj->m_aabb_transformed))
+		if (!rayBox.Intersects(collObj->GetWorldAABB()))
 			return;
 
 		eqCollisionInfo tempColl;
@@ -1474,7 +1482,7 @@ public:
 			}
 
 			if(m_surfMaterialId == -1)
-				m_surfMaterialId = obj->m_surfParam;
+				m_surfMaterialId = obj->GetSurfParamId();
 		}
 
 		return hitFraction;
@@ -1631,7 +1639,7 @@ public:
 			}
 
 			if(m_surfMaterialId == -1)
-				m_surfMaterialId = obj->m_surfParam;
+				m_surfMaterialId = obj->GetSurfParamId();
 		}
 
 		return hitFraction;
@@ -1730,7 +1738,7 @@ void CEqPhysicsWorld::DebugDrawBodies(int mode)
 				bodyCol = ColorRGBA(0.2, 1, 0.1f, 0.8f);
 
 			debugoverlay->OrientedBox3D(
-				body->m_aabb.minPoint, body->m_aabb.maxPoint, body->GetPosition(), body->GetOrientation(), bodyCol);
+				body->GetLocalAABB().minPoint, body->GetLocalAABB().maxPoint, body->GetPosition(), body->GetOrientation(), bodyCol);
 		}
 
 		//if (mode >= 2)
@@ -1741,7 +1749,7 @@ void CEqPhysicsWorld::DebugDrawBodies(int mode)
 			for (CEqCollisionObject* obj: m_staticObjects)
 			{
 				debugoverlay->OrientedBox3D(
-					obj->m_aabb.minPoint, obj->m_aabb.maxPoint, obj->GetPosition(), obj->GetOrientation(), ColorRGBA(1, 1, 0.2, 0.8f));
+					obj->GetLocalAABB().minPoint, obj->GetLocalAABB().maxPoint, obj->GetPosition(), obj->GetOrientation(), ColorRGBA(1, 1, 0.2, 0.8f));
 			}
 		}
 	}
@@ -1758,7 +1766,7 @@ void CEqPhysicsWorld::DebugDrawBodies(int mode)
 			if (body->IsFrozen())
 				bodyCol = ColorRGBA(0.2, 1, 0.1f, 1.0f);
 
-			debugoverlay->Box3D(body->m_aabb_transformed.minPoint, body->m_aabb_transformed.maxPoint, bodyCol, 0.0f);
+			debugoverlay->Box3D(body->GetWorldAABB().minPoint, body->GetWorldAABB().maxPoint, bodyCol, 0.0f);
 		}
 	}
 #endif // ENABLE_DEBUG_DRAWING
