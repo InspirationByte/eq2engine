@@ -47,7 +47,7 @@ DECLARE_CVAR_F(ph_margin);
 DECLARE_CVAR(ph_showContacts, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(ph_erp, "0.15", "Collision correction", CV_CHEAT);
 DECLARE_CVAR(ph_carVsCarErp, "0.15", "Car versus car erp", CV_CHEAT);
-DECLARE_CVAR(ph_useJobs, "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(ph_useJobs, "1", nullptr, CV_CHEAT);
 
 CEqCollisionObject* eqContactPair::GetOppositeTo(CEqCollisionObject* obj) const
 {
