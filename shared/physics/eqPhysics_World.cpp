@@ -21,7 +21,6 @@
 
 #include "core/core_common.h"
 #include "core/ConVar.h"
-#include "core/IEqParallelJobs.h"
 #include "utils/KeyValues.h"
 
 #include "render/IDebugOverlay.h"
@@ -48,6 +47,7 @@ DECLARE_CVAR_F(ph_margin);
 DECLARE_CVAR(ph_showContacts, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(ph_erp, "0.15", "Collision correction", CV_CHEAT);
 DECLARE_CVAR(ph_carVsCarErp, "0.15", "Car versus car erp", CV_CHEAT);
+DECLARE_CVAR(ph_useJobs, "0", nullptr, CV_CHEAT);
 
 CEqCollisionObject* eqContactPair::GetOppositeTo(CEqCollisionObject* obj) const
 {
@@ -295,13 +295,103 @@ struct CEqBroadphaseRayCallback : btBroadphaseRayCallback
 
 //------------------------------------------------------------------------------------------------------------
 
-CEqPhysicsWorld::CEqPhysicsWorld()
+class CEqPhysicsWorld::PreSimulateJob : public BatchedJob<CEqRigidBody*>
+{
+public:
+	PreSimulateJob(BatchItemList& batchItems)
+		: BatchedJob("PreSimulateJob")
+		, m_batchItems(batchItems)
+	{
+	}
+
+	void 			SetDeltaTime(float dt) { m_dt = dt; }
+
+private:
+	BatchItems		GetJobItems() override { return m_batchItems; }
+	void			Process(CEqRigidBody* jobItem) override;
+
+	BatchItemList& 	m_batchItems;
+	float			m_dt{ 0.0f };
+};
+
+void CEqPhysicsWorld::PreSimulateJob::Process(CEqRigidBody* body)
+{
+	IEqPhysCallback* callbacks = body->m_callbacks;
+	if (callbacks)
+		callbacks->PreSimulate(m_dt);
+}
+
+class CEqPhysicsWorld::CollisionDetectionJob : public BatchedJob<CEqRigidBody*>
+{
+public:
+	CollisionDetectionJob(CEqPhysicsWorld& thisWorld)
+		: BatchedJob("CollisionDetectionJob")
+		, m_thisWorld(thisWorld)
+	{
+	}
+private:
+	BatchItems		GetJobItems() override { return m_thisWorld.m_simMovingMoveables; }
+	void			Process(CEqRigidBody* body) override { m_thisWorld.DetectCollisionsSingle(body); }
+
+	CEqPhysicsWorld&	m_thisWorld;
+};
+
+//------------------------------------------------------------------------------------------------------------
+
+class EqBtTLSDispatcher : public btCollisionDispatcher
+{
+public:
+	EqBtTLSDispatcher(btCollisionConfiguration* collisionConfiguration) :
+		btCollisionDispatcher(collisionConfiguration)
+	{
+	}
+
+	btPersistentManifold* 	getNewManifold(const btCollisionObject* b0, const btCollisionObject* b1) override;
+	void 					releaseManifold(btPersistentManifold* manifold) override;
+
+private:
+	using ManifoldPool = MemoryPool<btPersistentManifold>;
+
+	ManifoldPool& 			GetTlsPool();
+};
+
+EqBtTLSDispatcher::ManifoldPool& EqBtTLSDispatcher::GetTlsPool()
+{
+	static thread_local ManifoldPool s_tlsManifoldAlloc(PP_SL);
+	return s_tlsManifoldAlloc;
+}
+
+//------------------------------------------------------------------------------------------------------------
+
+CEqPhysicsWorld::CEqPhysicsWorld(CEqJobManager& jobMng)
+	: m_jobMng(jobMng)
 {
 }
 
 CEqPhysicsWorld::~CEqPhysicsWorld()
 {
+}
 
+btPersistentManifold* EqBtTLSDispatcher::getNewManifold(const btCollisionObject* body0, const btCollisionObject* body1)
+{
+	//optional relative contact breaking threshold, turned on by default (use setDispatcherFlags to switch off feature for improved performance)
+	const btScalar contactBreakingThreshold = (m_dispatcherFlags & btCollisionDispatcher::CD_USE_RELATIVE_CONTACT_BREAKING_THRESHOLD)
+		? btMin(body0->getCollisionShape()->getContactBreakingThreshold(gContactBreakingThreshold), body1->getCollisionShape()->getContactBreakingThreshold(gContactBreakingThreshold))
+		: gContactBreakingThreshold;
+
+	const btScalar contactProcessingThreshold = btMin(body0->getContactProcessingThreshold(), body1->getContactProcessingThreshold());
+
+	btPersistentManifold* manifold = new (GetTlsPool().allocate()) btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold);
+	manifold->m_index1a = -1;
+
+	return manifold;
+}
+
+void EqBtTLSDispatcher::releaseManifold(btPersistentManifold* manifold)
+{
+	clearManifold(manifold);
+	manifold->~btPersistentManifold();
+	GetTlsPool().deallocate(manifold);
 }
 
 void CEqPhysicsWorld::InitWorld()
@@ -310,20 +400,18 @@ void CEqPhysicsWorld::InitWorld()
 
 	// collision configuration contains default setup for memory, collision setup
 	m_collConfig = PPNew btDefaultCollisionConfiguration();
-
-	// use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
-	m_collDispatcher = PPNew btCollisionDispatcher( m_collConfig );
+	m_collDispatcher = PPNew EqBtTLSDispatcher( m_collConfig );
 
 	// still required for raycasts
 	m_collisionWorld = PPNew btCollisionWorld(m_collDispatcher, nullptr, m_collConfig);
 
 	m_dispatchInfo = PPNew btDispatcherInfo();
-	m_dispatchInfo->m_enableSatConvex = true;
-	m_dispatchInfo->m_useContinuous = true;
-	m_dispatchInfo->m_stepCount = 1;
-	//m_dispatchInfo->m_enableSPU = false;
-	//m_dispatchInfo->m_useEpa = false;
-	//m_dispatchInfo->m_useConvexConservativeDistanceUtil = false;
+
+	if(ph_useJobs.GetBool())
+	{
+		m_preSimJob = PPNew PreSimulateJob(m_moveable);
+		m_collDetJob = PPNew CollisionDetectionJob(*this);		
+	}
 }
 
 void CEqPhysicsWorld::InitGrid(const BoundingBox& worldBBox)
@@ -371,6 +459,9 @@ void CEqPhysicsWorld::DestroyWorld()
 	SAFE_DELETE(m_collDispatcher);
 	SAFE_DELETE(m_collConfig);
 	SAFE_DELETE(m_dispatchInfo);
+
+	SAFE_DELETE(m_preSimJob);
+	SAFE_DELETE(m_collDetJob);
 }
 
 void CEqPhysicsWorld::AddSurfaceParamFromKV(const char* name, const KVSection& kvSection)
@@ -955,18 +1046,10 @@ void CEqPhysicsWorld::IntegrateSingle(CEqRigidBody* body)
 
 void CEqPhysicsWorld::DetectCollisionsSingle(CEqRigidBody* body)
 {
-	using namespace EqBulletUtils;
-
-	// don't refresh frozen object, other will wake up us (or user)
-	if (body->IsFrozen())
-		return;
-
-	// skip collision detection on iteration
-	if (!body->IsCanIntegrate())
+	if (body->IsFrozen() || !body->IsCanIntegrate())
 		return;
 
 	body->UpdateBoundingBoxTransform();
-	const BoundingBox aabb = body->GetWorldAABB();
 
 	const bool disabledCollisionChecks = (body->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK);
 	int objectTypeTesting = EQPHYS_FILTER_FLAG_STATICOBJECTS | EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
@@ -991,7 +1074,7 @@ void CEqPhysicsWorld::DetectCollisionsSingle(CEqRigidBody* body)
 
 	{
 		Threading::CScopedReadLocker m(s_eqPhysDynamicRWLock);
-		m_broadphase->BoxTest(aabb, broadphaseCb, objectTypeTesting);
+		m_broadphase->BoxTest(body->GetWorldAABB(), broadphaseCb, objectTypeTesting);
 	}
 }
 
@@ -1182,35 +1265,38 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 		}
 	}
 	
-	static Array<CEqRigidBody*> simMovingMoveables{ PP_SL };
-	simMovingMoveables.clear();
-	simMovingMoveables.reserve(m_moveable.numElem());
+	m_simMovingMoveables.clear();
+	m_simMovingMoveables.reserve(m_moveable.numElem());
 
+	if(m_preSimJob)
+	{
+		m_preSimJob->InitSignal();
+		m_preSimJob->InitJob();
+		m_preSimJob->SetDeltaTime(m_fDt);
+		m_preSimJob->StartJobs(m_jobMng);
+		m_preSimJob->GetSignal()->Wait();
+	}
+	else
 	{
 		PROF_EVENT("Moving Bodies PreSim");
 		for (CEqRigidBody* body : m_moveable)
 		{
-			// execute pre-simulation callbacks
 			IEqPhysCallback* callbacks = body->m_callbacks;
 			if (callbacks)
 				callbacks->PreSimulate(m_fDt);
-
-			// clear contact pairs and results
-			body->ClearContacts();
 		}
 	}
 
 	{
 		PROF_EVENT("Moving Bodies Integrate");
 
-		// move all bodies
 		for (CEqRigidBody* body : m_moveable)
 		{
-			// apply velocities
+			body->ClearContacts();
 			IntegrateSingle(body);
 
 			if (!body->IsFrozen())
-				simMovingMoveables.append(body);
+				m_simMovingMoveables.append(body);
 		}
 	}
 
@@ -1219,32 +1305,35 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 	if(preIntegrFunc)
 		preIntegrFunc(m_fDt, iteration);
 
+	if(m_collDetJob)
+	{
+		m_collDetJob->InitSignal();
+		m_collDetJob->InitJob();
+		m_collDetJob->StartJobs(m_jobMng);
+		m_collDetJob->GetSignal()->Wait();
+	}
+	else
 	{
 		PROF_EVENT("Moving Bodies CollDet");
-
-		// calculate collisions
-		for (CEqRigidBody* body : simMovingMoveables)
+		for (CEqRigidBody* body : m_simMovingMoveables)
 			DetectCollisionsSingle(body);
 	}
 
 	{
 		PROF_EVENT("Moving Bodies Update");
-		// solve positions
-		for (CEqRigidBody* body : simMovingMoveables)
+		for (CEqRigidBody* body : m_simMovingMoveables)
 			body->Update(m_fDt);
 	}
 	
 	{
 		PROF_EVENT("Moving Bodies Process Contact Pairs");
-
-		// process generated contact pairs
-		for (CEqRigidBody* body : simMovingMoveables)
+		for (CEqRigidBody* body : m_simMovingMoveables)
 		{
 			for (eqContactPair& pair : body->m_contactPairs)
 				ProcessContactPair(pair);
 
 			IEqPhysCallback* callbacks = body->m_callbacks;
-			if (callbacks) // execute post simulation callbacks
+			if (callbacks)
 				callbacks->PostSimulate(m_fDt);
 		}
 	}

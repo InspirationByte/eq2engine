@@ -30,6 +30,7 @@ TODO:
 
 #pragma once
 #include "eqPhysics_Defs.h"
+#include "core/IEqParallelJobs.h"
 
 struct btDispatcherInfo;
 class btCollisionWorld;
@@ -63,7 +64,7 @@ class CEqPhysicsWorld
 	};
 
 public:
-	CEqPhysicsWorld();
+	CEqPhysicsWorld(CEqJobManager& jobMng);
 	~CEqPhysicsWorld();
 
 	void							InitWorld();										///< initializes world
@@ -168,6 +169,12 @@ protected:
 
 protected:
 
+	class PreSimulateJob;
+	class CollisionDetectionJob;
+
+	CEqJobManager&					m_jobMng;
+	PreSimulateJob*					m_preSimJob{ nullptr };
+	CollisionDetectionJob*			m_collDetJob{ nullptr };
 	Array<eqPhysSurfParam>			m_physSurfaceParams{ PP_SL };
 
 	Array<CEqRigidBody*>			m_moveable{ PP_SL };
@@ -177,6 +184,8 @@ protected:
 
 	Array<IEqPhysicsConstraint*>	m_constraints{ PP_SL };
 	Array<IEqPhysController*>		m_controllers{ PP_SL };
+
+	Array<CEqRigidBody*>			m_simMovingMoveables{ PP_SL };
 	
 	CEqPhysicsBroadphase*			m_broadphase{ nullptr };
 
