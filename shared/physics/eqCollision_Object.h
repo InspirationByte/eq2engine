@@ -123,7 +123,6 @@ public:
 
 	void					UpdateBoundingBoxTransform();
 
-	void					SetLocalAABB(const BoundingBox& aabb) { m_localAABB = aabb; }
 	const BoundingBox&		GetLocalAABB() const { return m_localAABB; }
 	const BoundingBox&		GetWorldAABB() const { return m_worldAABB; }
 
