@@ -607,7 +607,6 @@ void CEqAudioSystemAL::EndUpdate()
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
 		CEqAudioSourceAL* src = m_sources[i].Ptr();
-
 		if (src->m_forceStop)
 		{
 			src->Release();
@@ -630,8 +629,8 @@ void CEqAudioSystemAL::EndUpdate()
 
 	alcProcessContext(m_ctx);
 
-	for (int i = 0; i < m_mixerChannels.numElem(); ++i)
-		m_mixerChannels[i].updateFlags = 0;
+	for (MixerChannel& mixChan : m_mixerChannels)
+		mixChan.updateFlags = 0;
 
 #ifdef ENABLE_DEBUG_DRAWING
 	if (snd_debug.GetBool())

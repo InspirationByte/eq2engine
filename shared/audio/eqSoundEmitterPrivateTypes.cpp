@@ -284,8 +284,6 @@ void SoundEmitterData::UpdateNodes()
 	if (!script)
 		return;
 
-	PROF_EVENT("Emitter Data Nodes Eval");
-
 	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
 	const Array<SoundSplineDesc>& splineDescs = script->splineDescs;
 
@@ -437,8 +435,6 @@ void SoundEmitterData::UpdateNodes()
 
 void SoundEmitterData::CalcFinalParameters(float volumeScale, IEqAudioSource::Params& outParams)
 {
-	PROF_EVENT("Emitter Calc Final Params");
-
 	// update pitch and volume individually
 	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_VOLUME)
 	{
