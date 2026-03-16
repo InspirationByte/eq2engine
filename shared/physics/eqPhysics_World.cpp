@@ -348,18 +348,7 @@ public:
 
 	btPersistentManifold* 	getNewManifold(const btCollisionObject* b0, const btCollisionObject* b1) override;
 	void 					releaseManifold(btPersistentManifold* manifold) override;
-
-private:
-	using ManifoldPool = MemoryPool<btPersistentManifold>;
-
-	ManifoldPool& 			GetTlsPool();
 };
-
-EqBtTLSDispatcher::ManifoldPool& EqBtTLSDispatcher::GetTlsPool()
-{
-	static thread_local ManifoldPool s_tlsManifoldAlloc(PP_SL);
-	return s_tlsManifoldAlloc;
-}
 
 //------------------------------------------------------------------------------------------------------------
 
@@ -381,17 +370,15 @@ btPersistentManifold* EqBtTLSDispatcher::getNewManifold(const btCollisionObject*
 
 	const btScalar contactProcessingThreshold = btMin(body0->getContactProcessingThreshold(), body1->getContactProcessingThreshold());
 
-	btPersistentManifold* manifold = new (GetTlsPool().allocate()) btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold);
-	manifold->m_index1a = -1;
+	static thread_local btPersistentManifold s_manifold;
+	s_manifold = btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold);
 
-	return manifold;
+	return &s_manifold;
 }
 
 void EqBtTLSDispatcher::releaseManifold(btPersistentManifold* manifold)
 {
 	clearManifold(manifold);
-	manifold->~btPersistentManifold();
-	GetTlsPool().deallocate(manifold);
 }
 
 void CEqPhysicsWorld::InitWorld()
@@ -1245,7 +1232,6 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 
 	{
 		PROF_EVENT("Constraints PreApply");
-		// prepare all the constraints
 		for (IEqPhysicsConstraint* constr : m_constraints)
 		{
 			if (!constr->IsEnabled())
@@ -1256,7 +1242,6 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 
 	{
 		PROF_EVENT("Controllers Update");
-		// update the controllers
 		for (IEqPhysController* contr : m_controllers)
 		{
 			if (!contr->IsEnabled())
@@ -1289,7 +1274,6 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 
 	{
 		PROF_EVENT("Moving Bodies Integrate");
-
 		for (CEqRigidBody* body : m_moveable)
 		{
 			body->ClearContacts();
@@ -1340,8 +1324,6 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 
 	{
 		PROF_EVENT("Constraits apply");
-
-		// update all constraints
 		for (IEqPhysicsConstraint* constr : m_constraints)
 		{
 			if (!constr->IsEnabled())
