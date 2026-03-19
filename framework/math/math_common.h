@@ -127,10 +127,9 @@ inline bool fsimilar( double a, double b, double cmp = F_EPS )
 	return fabs(a-b) < cmp;
 }
 
-// Note: returns true for 0
-inline bool isPowerOf2(const int x)
+constexpr bool isPowerOf2(int v)
 {
-	return (x & (x - 1)) == 0;
+    return v && ((v & (v - 1)) == 0);
 }
 
 inline uint nextPowerOf2(uint v)
