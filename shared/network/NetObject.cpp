@@ -1,38 +1,29 @@
 #include "core/core_common.h"
 #include "NetObject.h"
-#include "Buffer.h"
 
-void PackNetworkVariables(void* objectPtr, const NetPropertyMap* map, Networking::Buffer* buffer, Array<uint>& changeList)
+void PackNetworkVariables(const void* objectPtr, const NetPropertyMap* map, IFileStream& stream, ArrayCRef<uint> changeList)
 {
 #ifndef EDITOR
 	if (!map->props.numElem())
 		return;
 
-	int numWrittenProps = 0;
-	CMemoryStream& stream = buffer->GetData();
-
 	const int startPos = stream.Tell();
-	stream.Write(&numWrittenProps, 1, sizeof(numWrittenProps));
 
+	int numWrittenProps = 0;
+	stream.Write(&numWrittenProps, 1, sizeof(numWrittenProps));
 	for (const NetProperty& prop : map->props)
 	{
 		if (changeList.numElem() && arrayFindIndex(changeList, prop.offset) == -1)
 			continue;
 
-		// write offset
+		++numWrittenProps;
 		stream.Write(&prop.nameHash, 1, sizeof(int));
 
-		uintptr_t varPtr = ((uintptr_t)objectPtr) + prop.offset;
+		const void* varPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(objectPtr) + prop.offset);
 		if (prop.type == NETPROP_NETPROP)
-		{
-			static Array<uint> _empty(PP_SL);
-			PackNetworkVariables((void*)varPtr, prop.nestedMap, buffer, _empty);
-		}
+			PackNetworkVariables(varPtr, prop.nestedMap, stream, ArrayCRef<uint>(nullptr));
 		else
-		{
-			stream.Write((void*)varPtr, 1, prop.size);
-		}
-		numWrittenProps++;
+			stream.Write(varPtr, 1, prop.size);
 	}
 
 	const int lastPos = stream.Tell();
@@ -43,17 +34,19 @@ void PackNetworkVariables(void* objectPtr, const NetPropertyMap* map, Networking
 #endif
 }
 
-void UnpackNetworkVariables(void* objectPtr, const NetPropertyMap* map, Networking::Buffer* buffer)
+void UnpackNetworkVariables(void* objectPtr, const NetPropertyMap* map, IFileStream& stream)
 {
 #ifndef EDITOR
 	if (!map->props.numElem())
 		return;
 
-	const int numWrittenProps = buffer->ReadInt();
+	int numWrittenProps = 0;
+	stream.ReadObj(numWrittenProps);
 	for (int i = 0; i < numWrittenProps; i++)
 	{
 		const NetProperty* found = nullptr;
-		const int nameHash = buffer->ReadInt();
+		int nameHash = 0;
+		stream.ReadObj(nameHash);
 		for (int j = 0; j < map->props.numElem(); j++)
 		{
 			if (map->props[j].nameHash == nameHash)
@@ -69,17 +62,11 @@ void UnpackNetworkVariables(void* objectPtr, const NetPropertyMap* map, Networki
 			continue;
 		}
 
-		uintptr_t varPtr = ((uintptr_t)objectPtr + found->offset);
+		void* varPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(objectPtr) + found->offset);
 		if (found->type == NETPROP_NETPROP)
-		{
-			UnpackNetworkVariables((void*)varPtr, found->nestedMap, buffer);
-		}
+			UnpackNetworkVariables(varPtr, found->nestedMap, stream);
 		else
-		{
-			void* stackBuf = stackalloc(found->size);
-			buffer->ReadData(stackBuf, found->size);
-			memcpy((void*)varPtr, stackBuf, found->size);
-		}
+			stream.Read(varPtr, found->size, 1);
 	}
 #endif
 }

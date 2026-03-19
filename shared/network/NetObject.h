@@ -298,5 +298,7 @@ struct NetPropType<T, true> : NetPropType<std::underlying_type_t<T>, false> {};
 #define NETWORK_CHANGELIST(name)			m_changeList_##name
 #define DECLARE_NETWORK_CHANGELIST(name)	Array<uint>	NETWORK_CHANGELIST(name){ PP_SL }
 
-void PackNetworkVariables(void* objectPtr, const NetPropertyMap* map, Networking::Buffer* buffer, Array<uint>& changeList);
-void UnpackNetworkVariables(void* objectPtr, const NetPropertyMap* map, Networking::Buffer* buffer);
+class IFileStream;
+
+void PackNetworkVariables(const void* objectPtr, const NetPropertyMap* map, IFileStream& stream, ArrayCRef<uint> changeList);
+void UnpackNetworkVariables(void* objectPtr, const NetPropertyMap* map, IFileStream& stream);
