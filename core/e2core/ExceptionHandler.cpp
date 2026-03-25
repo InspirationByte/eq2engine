@@ -31,15 +31,6 @@ static void DoCoreExceptionCallbacks()
 #pragma warning(disable:4477)
 #pragma warning(disable:4313)
 
-typedef struct _MODULEINFO {
-	LPVOID lpBaseOfDll;  
-	DWORD SizeOfImage; 
-	LPVOID EntryPoint;
-} MODULEINFO, *LPMODULEINFO;
-
-using ENUMPROCESSMODULESFUNC = BOOL (APIENTRY *)(HANDLE hProcess, HMODULE* lphModule, DWORD cb, LPDWORD lpcbNeeded);
-using GETMODULEINFORMATIONPROC = BOOL (APIENTRY *)(HANDLE hProcess, HMODULE hModule, LPMODULEINFO lpmodinfo, DWORD cb);
-
 struct exception_codes {
 	DWORD		exCode;
 	const char*	exName;
@@ -145,7 +136,7 @@ static bool CreateMiniDump( EXCEPTION_POINTERS* pep, char* dumpPath, int dumpPat
 	HANDLE dumpFileFd = CreateFileA(dumpPath, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
 	if (!dumpFileFd || dumpFileFd == INVALID_HANDLE_VALUE)
 	{
-		MsgError("Unable to create crash dump");
+		MsgError("Unable to create crash dump\n");
 		return false;
 	}
 
@@ -160,66 +151,94 @@ static bool CreateMiniDump( EXCEPTION_POINTERS* pep, char* dumpPath, int dumpPat
 	if (!result)
 		MsgError("%s write error\n", fullCrashDumps ? "Crash dump" : "Mini dump");
 	else
-		MsgInfo("%s saved to:\n%s\n", fullCrashDumps ? "Crash dump" : "Mini dump", dumpPath);
+		MsgInfo("%s saved to: %s\n", fullCrashDumps ? "Crash dump" : "Mini dump", dumpPath);
 
 	return result;
 }
 
-static void PrintCurrentProcessModules()
+static void PrintStackTrace()
 {
-	HMODULE PsapiLib = LoadLibraryA("psapi.dll");
-	if (!PsapiLib)
+	MsgInfo("\nCrash call stack:\n");
+
+	CONTEXT context;
+	RtlCaptureContext(&context);
+
+	STACKFRAME64 stack;
+	DWORD machine_type;
+#ifdef _M_IX86
+	machine_type = IMAGE_FILE_MACHINE_I386;
+	stack.AddrPC.Offset = context.Eip;
+	stack.AddrFrame.Offset = context.Ebp;
+	stack.AddrStack.Offset = context.Esp;
+#elif _M_X64
+	machine_type = IMAGE_FILE_MACHINE_AMD64;
+	stack.AddrPC.Offset = context.Rip;
+	stack.AddrFrame.Offset = context.Rsp;
+	stack.AddrStack.Offset = context.Rsp;
+#elif _M_ARM64
+	machine_type = IMAGE_FILE_MACHINE_ARM64;
+	stack.AddrPC.Offset = context.Pc;
+	stack.AddrFrame.Offset = context.Fp;
+	stack.AddrStack.Offset = context.Sp;
+#else
+#error "Unsupported platform"
+#endif
+
+	stack.AddrPC.Mode = AddrModeFlat;
+	stack.AddrFrame.Mode = AddrModeFlat;
+	stack.AddrStack.Mode = AddrModeFlat;
+
+	HANDLE process = GetCurrentProcess();
+	HANDLE thread = GetCurrentThread();
+
+	SymInitialize(process, NULL, TRUE);
+	SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);
+
+	DWORD frameNum = 0;
+    while (StackWalk64(
+        machine_type,
+        process,
+        thread,
+        &stack,
+        &context,
+        NULL,
+        SymFunctionTableAccess64,
+        SymGetModuleBase64,
+        NULL)) 
 	{
-		MsgError("Can't load psapi.dll, modules listing unavailable\n");
-		return;
-	}
+        if (stack.AddrPC.Offset == 0)
+            break;
 
-	defer{
-		FreeLibrary(PsapiLib);
-	};
+        DWORD64 symAddr  = stack.AddrPC.Offset;
+        char symBuffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)] = {0};
+        SYMBOL_INFO* symbol  = (SYMBOL_INFO *)symBuffer;
+        symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+        symbol->MaxNameLen   = MAX_SYM_NAME;
 
-	ENUMPROCESSMODULESFUNC EnumProcessModules = (ENUMPROCESSMODULESFUNC)GetProcAddress(PsapiLib, "EnumProcessModules");
-	GETMODULEINFORMATIONPROC GetModuleInformation = (GETMODULEINFORMATIONPROC)GetProcAddress(PsapiLib, "GetModuleInformation");
-	if (!EnumProcessModules || !GetModuleInformation)
-	{
-		MsgError("Can't import functions from psapi.dll!\n");
-		return;
-	}
+        // Get line information
+        IMAGEHLP_LINE64 line = {0};
+        line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+        DWORD lineDisp = 0;
+        BOOL hasLine = SymGetLineFromAddr64(process, symAddr, &lineDisp, &line);
 
-	DWORD needBytes;
-	HMODULE hModules[1024];
-	if (!EnumProcessModules(GetCurrentProcess(), hModules, sizeof(hModules), &needBytes))
-	{
-		MsgError("EnumProcessModules failed!\n");
-		return;
-	}
+        char funcName[MAX_SYM_NAME] = "<unknown>";
+		DWORD64 displacement = 0;
+        if (SymFromAddr(process, symAddr, &displacement, symbol))
+            strncpy(funcName, symbol->Name, MAX_SYM_NAME - 1);
+		funcName[MAX_SYM_NAME - 1] = '\0';
 
-	if (needBytes > sizeof(hModules))
-	{
-		MsgError("Module limit exceeded (1024), can't print\n");
-		return;
-	}
+        // Format line information
+        char lineInfo[256] = "<unknown>";
+        if (hasLine)
+			CString::PrintF(lineInfo, sizeof(lineInfo), "%s:%lu", line.FileName, line.LineNumber);
 
-	MsgError("\nModules listing:\n");
+        // Print with better alignment using format specifiers
+        Msg("0x%016llX %-60.60s %s\n", symAddr, funcName, lineInfo);
 
-	const int numModules = needBytes / sizeof(HMODULE);
-	for (int i = 0; i < numModules; i++)
-	{
-		char modName[MAX_PATH];
-		if (GetModuleFileNameA(hModules[i], modName, MAX_PATH))
-		{
-			modName[MAX_PATH - 1] = 0;
-			MsgError("%s : ", modName);
-		}
-		else
-			MsgError("<error> : ");
+        frameNum++;
+    }
 
-		MODULEINFO modInfo;
-		if (GetModuleInformation(GetCurrentProcess(), hModules[i], &modInfo, sizeof(modInfo)))
-			MsgError("Base address: %p, Image size: %p\n", modInfo.lpBaseOfDll, modInfo.SizeOfImage);
-		else
-			MsgError("<error>\n");
-	}
+    SymCleanup(process);
 }
 
 static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
@@ -232,13 +251,29 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 	//	return EXCEPTION_EXECUTE_HANDLER;
 	//}
 
+	MsgError("\n==========================================================\n");
+
 	const char* pName;
 	const char* pDescription;
 	GetExceptionStrings(pRecord->ExceptionCode, &pName, &pDescription);
+	MsgError("Exception: %s\n%s\n", pName, pDescription);
+
+	if (pRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
+	{
+		if (pRecord->ExceptionInformation[0])
+			MsgError("- the thread attempted to write to an inaccessible address %p\n", pRecord->ExceptionInformation[1]);
+		else
+			MsgError("- the thread attempted to read the inaccessible data at %p\n", pRecord->ExceptionInformation[1]);
+	}
+
+	MsgError("\n");
 
 	char dumpPath[2048];
 	const bool miniDumpCreated = CreateMiniDump(ExceptionInfo, dumpPath, sizeof(dumpPath));
+
 	DoCoreExceptionCallbacks();
+
+	PrintStackTrace();
 
 	if (!g_eqCore->GetDebugSettings().crashOnAssert)
 	{
@@ -260,19 +295,6 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 				pRecord->ExceptionAddress);
 		}
 	}
-
-	if (pRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
-	{
-		if (pRecord->ExceptionInformation[0])
-			MsgError("Info: the thread attempted to write to an inaccessible address %p\n", pRecord->ExceptionInformation[1]);
-		else
-			MsgError("Info: the thread attempted to read the inaccessible data at %p\n", pRecord->ExceptionInformation[1]);
-	}
-
-	MsgError("\nDescription: %s\n", pDescription);
-
-	// show modules list
-	PrintCurrentProcessModules();
 
 	MsgError("==========================================================\n\n");
 
@@ -361,8 +383,8 @@ static void SignalExtended(int signum, siginfo_t* info, void* arg)
 {
 	signal(SIGSEGV, SignalBasic);
 
-	// Trace
 	MsgError("\nCaught Segfault at %p\n", info->si_addr);
+
 	DoCoreExceptionCallbacks();
 
 	PrintStackTrace();
@@ -405,10 +427,8 @@ static void OnSTDExceptionThrown()
 		exceptionText = "unknown exception";
 	}
 
-	// Print exception text
 	MsgError("\nUnexpected Exception: %s\n", exceptionText);
 
-	// Trace
 	DoCoreExceptionCallbacks();
 
 	PrintStackTrace();
