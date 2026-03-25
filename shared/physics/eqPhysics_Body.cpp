@@ -353,7 +353,7 @@ void CEqRigidBody::AccumulateForces(float time)
 	m_totalTorque = vec3_zero;
 	m_totalForce = vec3_zero;
 
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
+	m_flags |= COLLOBJ_BOUNDBOX_DIRTY;
 
 	UpdateInertiaTensor();
 }
@@ -610,7 +610,6 @@ void CEqRigidBody::CopyValues(CEqRigidBody* dest, const CEqRigidBody* src)
 {
 	// TODO: state structure
 
-	dest->m_cachedTransform = src->m_cachedTransform;
 	dest->m_orientation = src->m_orientation;
 	dest->m_center = src->m_center;
 	dest->m_position = src->m_position;
@@ -669,8 +668,8 @@ float CEqRigidBody::ApplyImpulseResponseTo(eqContactPair& pair, float errorCorre
 		contactVelocity -= static_cast<CEqRigidBody*>(bodyA)->GetVelocityAtLocalPoint(contactRelativePosA);;
 	}
 
-	const bool forceFrozenA = (bodyA->m_flags & BODY_FORCE_FREEZE);
-	const bool forceFrozenB = (bodyB->m_flags & BODY_FORCE_FREEZE);
+	const bool forceFrozenA = (bodyA->GetFlags() & BODY_FORCE_FREEZE);
+	const bool forceFrozenB = (bodyB->GetFlags() & BODY_FORCE_FREEZE);
 
 	float denominator = 0.0f;
 
@@ -729,21 +728,24 @@ float CEqRigidBody::ApplyImpulseResponseTo(eqContactPair& pair, float errorCorre
 
 	const int pairFlag = pair.flags;
 
+	const int bodyAFlags = bodyA->GetFlags();
+	const int bodyBFlags = bodyB->GetFlags();
+
 	// apply now
 	if( bodyADynamic && 
 		!(pairFlag & COLLPAIRFLAG_OBJECTA_NO_RESPONSE) && 
-		!((bodyA->m_flags & BODY_INFINITEMASS) && (bodyB->m_flags & BODY_MOVEABLE)) &&
-		!(bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE) &&
-		!(bodyA->m_flags & BODY_FORCE_FREEZE))
+		!((bodyAFlags & BODY_INFINITEMASS) && (bodyBFlags & BODY_MOVEABLE)) &&
+		!(bodyBFlags & COLLOBJ_DISABLE_RESPONSE) &&
+		!(bodyAFlags & BODY_FORCE_FREEZE))
 	{
 		static_cast<CEqRigidBody*>(bodyA)->ApplyImpulse(contactRelativePosA, impulseVector - frictionImpulse);
 		static_cast<CEqRigidBody*>(bodyA)->TryWake();
 	}
 
 	if( !(pairFlag & COLLPAIRFLAG_OBJECTB_NO_RESPONSE) && 
-		!((bodyB->m_flags & BODY_INFINITEMASS) && (bodyA->m_flags & BODY_MOVEABLE)) &&
-		!(bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE) &&
-		!(bodyB->m_flags & BODY_FORCE_FREEZE))
+		!((bodyBFlags & BODY_INFINITEMASS) && (bodyAFlags & BODY_MOVEABLE)) &&
+		!(bodyAFlags & COLLOBJ_DISABLE_RESPONSE) &&
+		!(bodyBFlags & BODY_FORCE_FREEZE))
 	{
 		bodyB->ApplyImpulse(contactRelativePosB, -impulseVector + frictionImpulse);
 		bodyB->TryWake();

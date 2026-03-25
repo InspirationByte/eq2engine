@@ -546,30 +546,42 @@ TVec4D<T>	clamp(const TVec4D<T> &v, const T2 c0, const T2 c1);
 template <typename T>
 TVec4D<T>	clamp(const TVec4D<T> &v, const TVec4D<T> &c0, const TVec4D<T> &c1);
 
-// OpenGL-like function
+// OpenGL-like function, returns vec copy
 #define		saturate(x) clamp(x, 0.0f, 1.0f)
 
-// normalizes vector2
+// normalizes vector2, returns copy
 template <typename T>
 TVec2D<T>	normalize(const TVec2D<T> &v);
 
-// normalizes vector3
+// normalizes vector2, returning length
+template <typename T>
+T			normalizeSelf(TVec2D<T> &v);
+
+// normalizes vector3, returns vec copy
 template <typename T>
 TVec3D<T>	normalize(const TVec3D<T> &v);
 
-// normalizes vector4
+// normalizes vector3, returning length
+template <typename T>
+T			normalizeSelf(TVec3D<T> &v);
+
+// normalizes vector4, returns vec copy
 template <typename T>
 TVec4D<T>	normalize(const TVec4D<T> &v);
 
-// normalizes vector2 (fast)
+// normalizes vector4, returning length
+template <typename T>
+T			normalizeSelf(TVec4D<T> &v);
+
+// normalizes vector2, returns vec copy (fast)
 template <typename T>
 TVec2D<T>	fastNormalize(const TVec2D<T> &v);
 
-// normalizes vector3 (fast)
+// normalizes vector3, returns vec copy (fast)
 template <typename T>
 TVec3D<T>	fastNormalize(const TVec3D<T> &v);
 
-// normalizes vector4 (fast)
+// normalizes vector4, returns vec copy (fast)
 template <typename T>
 TVec4D<T>	fastNormalize(const TVec4D<T> &v);
 

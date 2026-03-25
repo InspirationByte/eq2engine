@@ -52,4 +52,4 @@ public:
 	virtual	bool		IsCPUHasSSE42() const = 0;
 };
 
-INTERFACE_SINGLETON( IEqCPUCaps, CEqCPUCaps, g_cpuCaps )
+INTERFACE_SINGLETON(IEqCPUCaps, g_cpuCaps)

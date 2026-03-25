@@ -54,46 +54,48 @@ public:
 //-----------------------------------------------------------------------------------------------------------------
 
 
-#define ENTRYPOINT_INTERFACE_SINGLETON( abstractclass, classname, localname ) \
-	IEXPORTS abstractclass* Get##classname();								  \
-	static abstractclass* localname = Get##classname();		// this thing is designed to fool the LLVM/GCC because it's fucking mystery
+#define ENTRYPOINT_INTERFACE_SINGLETON( AbstractClass, localname )  \
+	IEXPORTS AbstractClass* Get##AbstractClass##Impl();				\
+	static AbstractClass* localname = Get##AbstractClass##Impl();		// this thing is designed to fool the LLVM/GCC because it's fucking mystery
 
 #ifdef CORE_INTERFACE_EXPORT
 
 // dll export version
-#define INTERFACE_SINGLETON(abstractclass, classname, localname)	\
-	IEXPORTS abstractclass* Get##classname();									\
-	class CDkCoreInterface_##classname {		\
-	public:										\
-		abstractclass*	GetInstancePtr()	{ return Get##classname(); } \
-		abstractclass*	operator->()		{ return GetInstancePtr(); }			\
-		operator		abstractclass*()	{ return GetInstancePtr(); }			\
-	};																				\
-	static CDkCoreInterface_##classname localname;
+#define INTERFACE_SINGLETON(AbstractClass, localname)	\
+	IEXPORTS AbstractClass* Get##AbstractClass##Impl(); \
+	class CDkCoreIface_##AbstractClass { \
+	public: \
+		AbstractClass*	GetInstancePtr()	{ return Get##AbstractClass##Impl(); } \
+		AbstractClass*	operator->()		{ return GetInstancePtr(); } \
+		operator		AbstractClass*()	{ return GetInstancePtr(); } \
+	}; \
+	static CDkCoreIface_##AbstractClass localname;
 
-#define EXPORTED_INTERFACE( abstractclass, classname )	\
-	IEXPORTS abstractclass *Get##classname( void ) {    \
-		static classname s_##classname;					\
-		return ( abstractclass * )&s_##classname;		\
+#define EXPORTED_INTERFACE( AbstractClass, ImplClass )	\
+	IEXPORTS AbstractClass* Get##AbstractClass##Impl( void ) {    \
+		static ImplClass s_##ImplClass;					\
+		return ( AbstractClass * )&s_##ImplClass;		\
 	}													\
-	abstractclass* _inteface##classname = Get##classname();
+	AbstractClass* _iface_##AbstractClass = Get##AbstractClass##Impl();
 
 #else
 
 // dll import version
-#define INTERFACE_SINGLETON(abstractclass, classname, localname)	\
-	IEXPORTS void* _GetDkCoreInterface(const char* pszName);						\
-	class _##classname##SingletonInstantiator {	\
-	public:										\
-		_##classname##SingletonInstantiator()	{ instance = (abstractclass*)_GetDkCoreInterface(abstractclass::CoreInterfaceName()); }	\
-		abstractclass* instance;				\
-	};											\
-	class CDkCoreInterface_##classname {		\
-	public:										\
-		abstractclass*	GetInstancePtr()	{ static _##classname##SingletonInstantiator i; return i.instance; } \
-		abstractclass*	operator->()		{ return GetInstancePtr(); }			\
-		operator		abstractclass*()	{ return GetInstancePtr(); }			\
-	};																				\
-	static CDkCoreInterface_##classname localname;
+#define INTERFACE_SINGLETON(AbstractClass, localname) \
+	IEXPORTS void* _GetDkCoreInterface(const char* pszName); \
+	class _##AbstractClass##SingletonInstantiator {	\
+	public: \
+		_##AbstractClass##SingletonInstantiator() { \
+			instance = (AbstractClass*)_GetDkCoreInterface(AbstractClass::CoreInterfaceName()); \
+		} \
+		AbstractClass* instance; \
+	}; \
+	class CDkCoreIface_##AbstractClass { \
+	public: \
+		AbstractClass*	GetInstancePtr()	{ static _##AbstractClass##SingletonInstantiator i; return i.instance; } \
+		AbstractClass*	operator->()		{ return GetInstancePtr(); } \
+		operator		AbstractClass*()	{ return GetInstancePtr(); } \
+	}; \
+	static CDkCoreIface_##AbstractClass localname;
 
 #endif // CORE_INTERFACE_EXPORT

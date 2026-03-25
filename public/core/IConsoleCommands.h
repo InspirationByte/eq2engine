@@ -48,4 +48,4 @@ public:
 	virtual bool					ExecuteCommandBuffer(CommandFilterFn filterFn = nullptr, bool quiet = false, Array<EqString>* failedCmds = nullptr) = 0;
 };
 
-INTERFACE_SINGLETON(IConsoleCommands, CConsoleCommands, g_consoleCommands)
+INTERFACE_SINGLETON(IConsoleCommands, g_consoleCommands)

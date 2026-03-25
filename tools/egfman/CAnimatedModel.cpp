@@ -41,7 +41,7 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 	m_bPhysicsEnable = false;
 
 	if(m_physObj)
-		physics->DestroyPhysicsObject(m_physObj);
+		g_physics->DestroyPhysicsObject(m_physObj);
 
 	m_physObj = nullptr;
 
@@ -81,7 +81,7 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 	else
 	{
 		if(physData.objects.numElem())
-			m_physObj = physics->CreateObject(&physData, 0);
+			m_physObj = g_physics->CreateStudioObject(physData, 0);
 	}
 }
 
@@ -281,7 +281,7 @@ void CAnimatedModel::RenderPhysModel(IGPURenderPassRecorder* rendPassRecorder)
 				const int visualMatrixIdx = m_pRagdoll->GetBoneIdx(i);
 				const Matrix4x4 boneFrame = m_pRagdoll->GetJointTransformA(i);
 
-				g_matSystem->SetMatrix(MATRIXMODE_WORLD, worldPosMatrix*transpose(!boneFrame * m_boneTransforms[visualMatrixIdx]));
+				g_matSystem->SetMatrix(MATRIXMODE_WORLD, worldPosMatrix * transpose(!boneFrame * m_boneTransforms[visualMatrixIdx]));
 			}
 
 			meshBuilder.Begin(PRIM_TRIANGLES);

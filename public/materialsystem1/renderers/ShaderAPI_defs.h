@@ -737,19 +737,20 @@ FLUENT_END_TYPE
 
 enum EBufferUsage : int
 {
-	BUFFERUSAGE_UNIFORM		= (1 << 0),
-	BUFFERUSAGE_VERTEX		= (1 << 1),
-	BUFFERUSAGE_INDEX		= (1 << 2),
-	BUFFERUSAGE_INDIRECT	= (1 << 3),
-	BUFFERUSAGE_STORAGE		= (1 << 4),
+	BUFFERUSAGE_COPY_SRC	= (1 << 0),	// used as Copy source
+	BUFFERUSAGE_COPY_DST	= (1 << 1),	// used as Copy destination (also allows Update/WriteBuffer)
 
-	BUFFERUSAGE_READ		= (1 << 5),	// allows buffer to be mapped for read
-	BUFFERUSAGE_WRITE		= (1 << 6),	// allows buffer to be mapped for write
-	BUFFERUSAGE_COPY_SRC	= (1 << 7),	// buffer can be used as Copy source
-	BUFFERUSAGE_COPY_DST	= (1 << 8),	// buffer can be used as Copy destination (also allows Update/WriteBuffer)
-	
-	BUFFERUSAGE_TRANSIENT	= (1 << 9),	// buffer is using pre-allocated GPU heap. It's fast but it's also may be limited in size
-	BUFFERUSAGE_UPLOAD		= (1 << 10),// buffer is using pre-allocated heap similar to transient but optimized for uploading data to GPU
+	BUFFERUSAGE_READ		= (1 << 2),	// allows locking for Read
+	BUFFERUSAGE_WRITE		= (1 << 3),	// allows locking for Write
+
+	BUFFERUSAGE_VERTEX		= (1 << 4), // vertex stream (including instance data)
+	BUFFERUSAGE_INDEX		= (1 << 5), // index for input assembler
+
+	BUFFERUSAGE_INDIRECT	= (1 << 6),	// indirect draw command argument
+	BUFFERUSAGE_UNIFORM		= (1 << 7), // constant/uniform data
+	BUFFERUSAGE_STORAGE		= (1 << 8), // buffer with unordered access to data
+
+	BUFFERUSAGE_TRANSIENT	= (1 << 9),	// use pre-allocated GPU heap. It's fastest but it's also limited in size
 };
 
 struct BufferInfo

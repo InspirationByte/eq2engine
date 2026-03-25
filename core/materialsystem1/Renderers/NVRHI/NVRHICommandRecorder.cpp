@@ -23,24 +23,23 @@ void CNVRHICommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, in
 	ASSERT_MSG(bufferImpl->GetUsageFlags() & BUFFERUSAGE_COPY_DST, "buffer must have BUFFERUSAGE_COPY_DST usage bit");
 	ASSERT_MSG(offset >= 0 && offset + writeDataSize <= bufferImpl->GetSize(), "Offset and/or Size outside buffer range");
 
+	nvrhi::IBuffer* rhiBuffer = bufferImpl->GetNVRHIBufferHandle();
 	if (bufferImpl->IsNeedsTrackingState())
 	{
-		const nvrhi::ResourceStates rhiResStates = bufferImpl->GetNVRHIResourceStates();
+		const nvrhi::ResourceStates rhiResStates = bufferImpl->GetNVRHIResourceStates(bufferImpl->GetUsageFlags());
 		nvrhi::ResourceStates rhiTrackingState = nvrhi::ResourceStates::Common;
-		//if(static_cast<int>(rhiResStates) & static_cast<int>(nvrhi::ResourceStates::VertexBuffer | nvrhi::ResourceStates::IndexBuffer | nvrhi::ResourceStates::IndirectArgument))
-		//	rhiTrackingState = nvrhi::ResourceStates::CopyDest;
 
 		//MsgInfo("NVRHI: tracked write to buffer %s with %lld bytes (%s cmd)\n", bufferImpl->GetDbgName(), writeDataSize, m_dbgName.ToCString());
-		m_rhiCommandList->beginTrackingBufferState(bufferImpl->GetNVRHIBufferHandle(), rhiTrackingState);
-		m_rhiCommandList->writeBuffer(bufferImpl->GetNVRHIBufferHandle(), data, writeDataSize, offset);
-		m_rhiCommandList->setPermanentBufferState(bufferImpl->GetNVRHIBufferHandle(), rhiResStates);
+		m_rhiCommandList->beginTrackingBufferState(rhiBuffer, rhiTrackingState);
+		m_rhiCommandList->writeBuffer(rhiBuffer, data, writeDataSize, offset);
+		m_rhiCommandList->setPermanentBufferState(rhiBuffer, rhiResStates);
 
 		bufferImpl->OnUpdated();
 	}
 	else
 	{
 		//MsgInfo("NVRHI: un-tracked write to buffer %s with %lld bytes (%s cmd)\n", bufferImpl->GetDbgName(), writeDataSize, m_dbgName.ToCString());
-		m_rhiCommandList->writeBuffer(bufferImpl->GetNVRHIBufferHandle(), data, writeDataSize, offset);
+		m_rhiCommandList->writeBuffer(rhiBuffer, data, writeDataSize, offset);
 	}
 
 	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();

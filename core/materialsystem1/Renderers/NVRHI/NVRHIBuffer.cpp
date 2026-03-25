@@ -136,18 +136,18 @@ void CNVRHIBuffer::OnUpdated()
 		m_needsTrackingState = false; 
 }
 
-nvrhi::ResourceStates CNVRHIBuffer::GetNVRHIResourceStates() const
+nvrhi::ResourceStates CNVRHIBuffer::GetNVRHIResourceStates(int usageFlags)
 {
 	// TODO: figure out resource states, D3D12 validation fails with RESOURCE_MANIPULATION ERROR #526: RESOURCE_BARRIER_INVALID_COMBINATION
-	const int bufferUsageFlags = m_usageFlags;
+
 	nvrhi::ResourceStates resStates = nvrhi::ResourceStates::Unknown;
-	if (bufferUsageFlags & BUFFERUSAGE_COPY_DST) resStates = resStates | nvrhi::ResourceStates::CopyDest;
-	if (bufferUsageFlags & BUFFERUSAGE_COPY_SRC) resStates = resStates | nvrhi::ResourceStates::CopySource;
-	if (bufferUsageFlags & BUFFERUSAGE_VERTEX)	resStates = resStates | nvrhi::ResourceStates::VertexBuffer;
-	if (bufferUsageFlags & BUFFERUSAGE_INDEX)	resStates = resStates | nvrhi::ResourceStates::IndexBuffer;
-	if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)resStates = resStates | nvrhi::ResourceStates::IndirectArgument;
-	if (bufferUsageFlags & BUFFERUSAGE_UNIFORM)	resStates = resStates | nvrhi::ResourceStates::ConstantBuffer;
-	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)
+	if (usageFlags & BUFFERUSAGE_COPY_DST) resStates = resStates | nvrhi::ResourceStates::CopyDest;
+	if (usageFlags & BUFFERUSAGE_COPY_SRC) resStates = resStates | nvrhi::ResourceStates::CopySource;
+	if (usageFlags & BUFFERUSAGE_VERTEX) resStates = resStates | nvrhi::ResourceStates::VertexBuffer;
+	if (usageFlags & BUFFERUSAGE_INDEX)	resStates = resStates | nvrhi::ResourceStates::IndexBuffer;
+	if (usageFlags & BUFFERUSAGE_INDIRECT) resStates = resStates | nvrhi::ResourceStates::IndirectArgument;
+	if (usageFlags & BUFFERUSAGE_UNIFORM) resStates = resStates | nvrhi::ResourceStates::ConstantBuffer;
+	if (usageFlags & BUFFERUSAGE_STORAGE)
 	{
 		resStates = resStates | nvrhi::ResourceStates::UnorderedAccess;// | nvrhi::ResourceStates::ShaderResource;
 	}
@@ -175,10 +175,13 @@ void CNVRHIBuffer::Update(const void* data, int64 size, int64 offset)
 
 	if (m_needsTrackingState)
 	{
+		const nvrhi::ResourceStates rhiResStates = GetNVRHIResourceStates(m_usageFlags);
+		nvrhi::ResourceStates rhiTrackingState = nvrhi::ResourceStates::Common;
+
 		//MsgInfo("NVRHI: tracked update buffer %s with %lld bytes (CNVRHIBuffer::Update)\n", GetDbgName(), writeDataSize);
-		writeCmd->beginTrackingBufferState(m_rhiBuffer, nvrhi::ResourceStates::Common);
+		writeCmd->beginTrackingBufferState(m_rhiBuffer, rhiTrackingState);
 		writeCmd->writeBuffer(m_rhiBuffer, data, writeDataSize, offset);
-		writeCmd->setPermanentBufferState(m_rhiBuffer, GetNVRHIResourceStates());
+		writeCmd->setPermanentBufferState(m_rhiBuffer, rhiResStates);
 		OnUpdated();
 	}
 	else
@@ -198,6 +201,8 @@ void CNVRHIBuffer::Update(const void* data, int64 size, int64 offset)
 
 Future<BufferMapData> CNVRHIBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 {
+	ASSERT_MSG(m_usageFlags & (BUFFERUSAGE_READ | BUFFERUSAGE_WRITE), "Buffer must have READ or WRITE usage flags");
+
 	if (m_isLocked)
 		return Future<BufferMapData>::Failure(-1, "Buffer is already locked");
 

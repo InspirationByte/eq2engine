@@ -47,9 +47,8 @@ enum ECollisionObjectFlags
 	// special flags
 
 	COLLOBJ_IS_PROCESSING			= (1 << 28),
-	COLLOBJ_TRANSFORM_DIRTY			= (1 << 29),
-	COLLOBJ_BOUNDBOX_DIRTY			= (1 << 30),
-	COLLOBJ_BROADPHASE_DIRTY		= (1 << 31),
+	COLLOBJ_BOUNDBOX_DIRTY			= (1 << 29),
+	COLLOBJ_BROADPHASE_DIRTY		= (1 << 30),
 };
 
 class CEqCollisionObject
@@ -60,6 +59,8 @@ class CEqCollisionObject
 public:
 	using GetSurfaceParamIdFunc = int(*)(const char*);
 	using CollisionPairList = FixedArray<eqCollisionPairData, PHYSICS_COLLISION_LIST_MAX>;
+	using CollisionPairListRef = ArrayCRef<eqCollisionPairData>;
+	using CollisionShapeCRefs = ArrayCRef<btCollisionShape*>;
 
 	static GetSurfaceParamIdFunc GetSurfaceParamId;
 
@@ -67,91 +68,86 @@ public:
 	virtual ~CEqCollisionObject();
 
 	// objects that will be created
-	bool						Initialize(const StudioPhysData& physData, int objIdx);				///< Studio data with physics object id
-	bool						Initialize(const StudioPhyObjData& physObject);						///< Studio physics object
-	bool						Initialize(CEqBulletIndexedMesh* mesh, bool internalEdges);			///< Triangle mesh shape TODO: different container
-	bool						Initialize(const FVector3D& boxMins, const FVector3D& boxMaxs);		///< bounding box
-	bool						Initialize(float radius);											///< sphere
-	bool						Initialize(float radius, float height);								///< cylinder
+	bool					Initialize(const StudioPhysData& physData, int objIdx);				///< Studio data with physics object id
+	bool					Initialize(const StudioPhyObjData& physObject);						///< Studio physics object
+	bool					Initialize(CEqBulletIndexedMesh* mesh, bool internalEdges);			///< Triangle mesh shape TODO: different container
+	bool					Initialize(const FVector3D& boxMins, const FVector3D& boxMaxs);		///< bounding box
+	bool					Initialize(float radius);											///< sphere
+	bool					Initialize(float radius, float height);								///< cylinder
 
-	void						Destroy();															///< destroys the collision model
+	void					Destroy();															///< destroys the collision model
 
-	virtual void				ClearContacts();
+	btCollisionShape*		GetCompoundBulletShape() const { return m_shape; }					///< returns bullet physics shape (compound variant if multiple)
+	CollisionShapeCRefs		GetBulletCollisionShapes() const;								///< returns bullet physics shape
+	CEqBulletIndexedMesh*	GetMesh() const { return m_mesh; }									///< returns indexed shape
 
-	btCollisionObject*			GetBulletObject() const { return m_collObject; }					///< returns bullet physics collision object
-	eqPhysBroadphaseUnit*		GetBBroadphaseUnit() const { return m_broadphaseUnit; }
-	btCollisionShape*			GetCompoundBulletShape() const { return m_shape; }					///< returns bullet physics shape (compound variant if multiple)
-	ArrayCRef<btCollisionShape*>	GetBulletCollisionShapes() const;								///< returns bullet physics shape
-	CEqBulletIndexedMesh*		GetMesh() const { return m_mesh; }									///< returns indexed shape
+	const Vector3D&			GetShapeCenter() const { return m_center; }
 
-	const Vector3D&				GetShapeCenter() const { return m_center; }
+	void					SetUserData(void* ptr) { m_userData = ptr; }						///< sets user data (usually it's a pointer to game object)
+	void*					GetUserData() const { return m_userData; }							///< returns user data
 
-	void						SetUserData(void* ptr) { m_userData = ptr; }						///< sets user data (usually it's a pointer to game object)
-	void*						GetUserData() const { return m_userData; }							///< returns user data
+	const FVector3D&		GetPosition() const { return m_position; }							///< returns body position
+	const Quaternion&		GetOrientation() const { return m_orientation; }					///< returns body Quaternion orientation
+	const Transform3D		GetTransform() const;
 
-	const FVector3D&			GetPosition() const { return m_position; }							///< returns body position
-	const Quaternion&			GetOrientation() const { return m_orientation; }					///< returns body Quaternion orientation
-	const Transform3D			GetTransform() const;
+	virtual void			SetPosition(const FVector3D& position);								///< sets new position
+	virtual void			SetOrientation(const Quaternion& orient);							///< sets new orientation and updates inertia tensor
+	virtual void			SetTransform(const Transform3D& trs);
 
-	virtual void				SetPosition(const FVector3D& position);								///< sets new position
-	virtual void				SetOrientation(const Quaternion& orient);							///< sets new orientation and updates inertia tensor
-	virtual void				SetTransform(const Transform3D& trs);
+	virtual bool			IsDynamic() const { return false; }									///< is dynamic?
 
-	virtual bool				IsDynamic() const { return false; }									///< is dynamic?
+	float					GetFriction() const { return m_friction; }
+	float					GetRestitution() const { return m_restitution; }
+	float					GetErp() const { return m_erp; }
 
-	float						GetFriction() const { return m_friction; }
-	float						GetRestitution() const { return m_restitution; }
-	float						GetErp() const { return m_erp; }
+	void					SetFriction(float value) { m_friction = value; }
+	void					SetRestitution(float value) { m_restitution = value; }
+	void					SetErp(float value) { m_erp = value; }
+	
+	int						GetFlags() const { return m_flags; }
+	void					SetFlags(int value) { m_flags = value; }
+	void					AddFlags(int value) { m_flags |= value; }
+	void					RemoveFlags(int value) { m_flags &= ~value; }
 
-	void						SetFriction(float value) { m_friction = value; }
-	void						SetRestitution(float value) { m_restitution = value; }
-	void						SetErp(float value) { m_erp = value; }
-
-
-	//--------------------
-
-	void						SetContents(int contents) { m_contents = contents; }				///< sets this object collision contents accessory
-	void						SetCollideMask(int maskContents) { m_collMask = maskContents; }		///< sets what collision object contents can collide with this
-
-	int							GetContents() const { return m_contents; }
-	int							GetCollideMask() const { return m_collMask; }
-
-	bool						CheckCanCollideWith( CEqCollisionObject* object ) const;					///< just checks possibility of collision, pre-broadphase
+	int						GetSurfParamId() const { return m_surfParamId; }
 
 	//--------------------
 
-	void						UpdateBoundingBoxTransform();
-	virtual void				ConstructRenderMatrix( Matrix4x4& outMatrix );						///< constructs render matrix
-	void						SetDebugName(const char* name);
+	void					SetContents(int contents) { m_contents = contents; }				///< sets this object collision contents accessory
+	void					SetCollideMask(int maskContents) { m_collMask = maskContents; }		///< sets what collision object contents can collide with this
 
-	// broadphase linked list requirement
-	CEqCollisionObject*		next{ nullptr };
-	CEqCollisionObject*		prev{ nullptr };
+	int						GetContents() const { return m_contents; }
+	int						GetCollideMask() const { return m_collMask; }
 
 	//--------------------
-	CollisionPairList		m_collisionList;
 
-	BoundingBox				m_aabb;							///< local shape bounding box
-	BoundingBox				m_aabb_transformed;				///< transformed bounding box, does not updated in dynamic objects
+	void					UpdateBoundingBoxTransform();
 
-	int						m_surfParam{ 0 };					///< surface parameters if no CEqBulletIndexedMesh defined
-	int						m_flags{ COLLOBJ_TRANSFORM_DIRTY };	///< collision object flags, ECollisionObjectFlags and EBodyFlags
+	const BoundingBox&		GetLocalAABB() const { return m_localAABB; }
+	const BoundingBox&		GetWorldAABB() const { return m_worldAABB; }
 
-	float					m_erp{ 0.0f };
+	CollisionPairListRef	GetCollisionList() const { return m_collisionList; }
+
+	void					SetDebugName(const char* name);
 
 	//--------------------------------------------------------------------------------
 protected:
+	virtual void			ClearContacts();
 	void					InitAABB();
+
+	CollisionPairList		m_collisionList;
 
 #ifdef _DEBUG
 	EqString				m_debugName;
 #endif // _DEBUG
 
-	Matrix4x4				m_cachedTransform{ identity4 };
 	Quaternion				m_orientation{ qidentity };		// floating point Quaternions are ok
 	Vector3D				m_center{ vec3_zero };
 	FVector3D				m_position{ 0.0f };				// fixed point positions are ideal
-	
+
+	BoundingBox				m_localAABB;			///< local shape bounding box
+	BoundingBox				m_worldAABB;			///< transformed bounding box, does not updated in dynamic objects
+
 	IEqPhysCallback*		m_callbacks{ nullptr };
 	void*					m_userData{ nullptr };
 
@@ -164,12 +160,16 @@ protected:
 	btCollisionShape*		m_shape{ nullptr };
 	btCollisionShape**		m_shapeList{ nullptr };
 	int						m_numShapes{ 0 };			// > 1 indicates it's a compound
+	int						m_surfParamId{ 0 };		///< surface parameters if no CEqBulletIndexedMesh defined
 
-	int						m_contents{ (int)0xffffffff };
-	int						m_collMask{ (int)0xffffffff };
+	int						m_flags{ 0 };			///< collision object flags, ECollisionObjectFlags and EBodyFlags
+
+	int						m_contents{ (int)COM_UINT_MAX };
+	int						m_collMask{ (int)COM_UINT_MAX };
 
 	float					m_restitution{ 0.1f };
 	float					m_friction{ 0.1f };
+	float					m_erp{ 0.0f };
 
 	enum EShapeOwning : uint8
 	{

@@ -8,7 +8,7 @@
 #include "core/core_common.h"
 #include "eqPhysics_HingeJoint.h"
 #include "eqPhysics_Body.h"
-#include "eqPhysics.h"
+#include "eqPhysics_World.h"
 
 enum EHingeFlags
 {

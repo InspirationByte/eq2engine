@@ -28,4 +28,4 @@ public:
 	virtual const char*			GetTextureSRCPath() const = 0;
 };
 
-INTERFACE_SINGLETON(ITextureLoader, CTextureLoader, g_texLoader)
+INTERFACE_SINGLETON(ITextureLoader, g_texLoader)

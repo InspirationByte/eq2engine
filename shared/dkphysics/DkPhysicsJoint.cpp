@@ -5,143 +5,91 @@
 // Description: Equilibrium physics joints system
 //////////////////////////////////////////////////////////////////////////////////
 
-#define __BT_SKIP_UINT64_H	// for SDL2
-#include <btBulletDynamicsCommon.h>
-
 #include "core/core_common.h"
+
+#include "DkJoltPCH.h"
+#include <Jolt/Physics/Constraints/TwoBodyConstraint.h>
+
+#include "DkPhysicsObject.h"
 #include "DkPhysicsJoint.h"
-#include "physics/BulletConvert.h"
 
-using namespace EqBulletUtils;
-
-extern btDynamicsWorld *g_pPhysicsWorld;
-
-DkPhysicsJoint::DkPhysicsJoint()
+DkPhysicsJoint::DkPhysicsJoint(JPH::TwoBodyConstraint* jphConstraint, DkPhysicsObject* objA, DkPhysicsObject* objB)
+	: m_jphContraint(jphConstraint)
+	, m_objA(objA)
+	, m_objB(objB)
 {
-	m_pObjectA = nullptr;
-	m_pObjectB = nullptr;
-
-	m_pJointPointer = nullptr;
 }
 
-DkPhysicsJoint::~DkPhysicsJoint()
+IPhysicsObject* DkPhysicsJoint::GetPhysicsObjectA() const
 {
-	if(m_pJointPointer)
-	{
-		g_pPhysicsWorld->removeConstraint(m_pJointPointer);
-		delete m_pJointPointer;
-	}
+	return m_objA;
 }
 
-IPhysicsObject* DkPhysicsJoint::GetPhysicsObjectA()
+IPhysicsObject* DkPhysicsJoint::GetPhysicsObjectB() const
 {
-	return m_pObjectA;
+	return m_objB;
 }
 
-IPhysicsObject* DkPhysicsJoint::GetPhysicsObjectB()
+Matrix4x4 DkPhysicsJoint::GetGlobalTransformA() const
 {
-	return m_pObjectB;
+	return identity4;
 }
 
-Matrix4x4 DkPhysicsJoint::GetGlobalTransformA()
+Matrix4x4 DkPhysicsJoint::GetGlobalTransformB() const
 {
-	Matrix4x4 out;
-	ConvertMatrix4ToEq(out, m_pJointPointer->getCalculatedTransformA());
-	return out;
+	return identity4;
 }
 
-Matrix4x4 DkPhysicsJoint::GetGlobalTransformB()
+Matrix4x4 DkPhysicsJoint::GetFrameTransformA() const
 {
-	Matrix4x4 out;
-	ConvertMatrix4ToEq(out, m_pJointPointer->getCalculatedTransformB());
-	return out;
+	return Convert::FromMat44(m_jphContraint->GetConstraintToBody1Matrix());
 }
 
-Matrix4x4 DkPhysicsJoint::GetFrameTransformA()
+Matrix4x4 DkPhysicsJoint::GetFrameTransformB() const
 {
-	Matrix4x4 out;
-	ConvertMatrix4ToEq(out, m_pJointPointer->getFrameOffsetA());
-	return out;
+	return Convert::FromMat44(m_jphContraint->GetConstraintToBody2Matrix());
 }
-
-Matrix4x4 DkPhysicsJoint::GetFrameTransformB()
-{
-	Matrix4x4 out;
-	ConvertMatrix4ToEq(out, m_pJointPointer->getFrameOffsetB());
-	return out;
-}
-
-// setters
 
 void DkPhysicsJoint::SetLinearLowerLimit(const Vector3D& linearLower)
 {
-	btVector3 vec;
-	ConvertPositionToBullet(vec, linearLower);
-	m_pJointPointer->setLinearLowerLimit(vec);
 }
 
 void DkPhysicsJoint::SetLinearUpperLimit(const Vector3D& linearUpper)
 {
-	btVector3 vec;
-	ConvertPositionToBullet(vec, linearUpper);
-	m_pJointPointer->setLinearUpperLimit(vec);
 }
 
 void DkPhysicsJoint::SetAngularLowerLimit(const Vector3D& angularLower)
 {
-	btVector3 vec;
-	ConvertDKToBulletVectors(vec, angularLower);
-	m_pJointPointer->setAngularLowerLimit(vec);
 }
 
 void DkPhysicsJoint::SetAngularUpperLimit(const Vector3D& angularUpper)
 {
-	btVector3 vec;
-	ConvertDKToBulletVectors(vec, angularUpper);
-	m_pJointPointer->setAngularUpperLimit(vec);
 }
 
-Vector3D DkPhysicsJoint::GetLinearLowerLimit()
+Vector3D DkPhysicsJoint::GetLinearLowerLimit() const
 {
-	btVector3 linearLower;
-	m_pJointPointer->getLinearLowerLimit(linearLower);
-
-	Vector3D out;
-	ConvertBulletToDKVectors(out, linearLower);
-	return out;
+	ASSERT_FAIL("Unimplemented");
+	return vec3_unit;
 }
 
-Vector3D DkPhysicsJoint::GetLinearUpperLimit()
+Vector3D DkPhysicsJoint::GetLinearUpperLimit() const
 {
-	btVector3 linearUpper;
-	m_pJointPointer->getLinearUpperLimit(linearUpper);
-
-	Vector3D out;
-	ConvertBulletToDKVectors(out, linearUpper);
-	return out;
+	ASSERT_FAIL("Unimplemented");
+	return vec3_unit;
 }
 
-Vector3D DkPhysicsJoint::GetAngularLowerLimit()
+Vector3D DkPhysicsJoint::GetAngularLowerLimit() const
 {
-	btVector3 angularLower;
-	m_pJointPointer->getAngularLowerLimit(angularLower);
-
-	Vector3D out;
-	ConvertBulletToDKVectors(out, angularLower);
-	return out;
+	ASSERT_FAIL("Unimplemented");
+	return vec3_unit;
 }
 
-Vector3D DkPhysicsJoint::GetAngularUpperLimit()
+Vector3D DkPhysicsJoint::GetAngularUpperLimit() const
 {
-	btVector3 angularUpper;
-	m_pJointPointer->getAngularUpperLimit(angularUpper);
-
-	Vector3D out;
-	ConvertBulletToDKVectors(out, angularUpper);
-	return out;
+	ASSERT_FAIL("Unimplemented");
+	return vec3_unit;
 }
 
 void DkPhysicsJoint::UpdateTransform()
 {
-	m_pJointPointer->calculateTransforms();
 }

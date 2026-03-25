@@ -79,14 +79,10 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlag
 		mask &= ~UPDATE_CHANNEL;
 	}
 
-	CEqAudioSystemAL::MixerChannel mixChannel;
-
-	const int channel = m_channel;
-	if (m_owner->m_mixerChannels.inRange(channel))
-		mixChannel = m_owner->m_mixerChannels[channel];
+	ArrayCRef<CEqAudioSystemAL::MixerChannel> channels = m_owner->m_mixerChannels;
+	CEqAudioSystemAL::MixerChannel mixChannel = channels.inRange(m_channel) ? channels[m_channel] : CEqAudioSystemAL::MixerChannel{};
 
 	mask |= mixChannel.updateFlags;
-
 	if (mask == 0)
 		return;
 
@@ -254,26 +250,28 @@ void CEqAudioSourceAL::SetSamplePlaybackPosition(int sourceIdx, float seconds)
 {
 	if (sourceIdx == -1)
 	{
-		for (int i = 0; i < m_streams.numElem(); ++i)
+		for (SourceStream& stream : m_streams)
 		{
-			const ISoundSource::Format& fmt = m_streams[i].sample->GetFormat();
-			m_streams[i].curPos = WrapAroundSampleOffset(seconds * fmt.frequency, m_streams[i].sample, m_looping);
+			const ISoundSource::Format& fmt = stream.sample->GetFormat();
+			stream.curPos = WrapAroundSampleOffset(seconds * fmt.frequency, stream.sample, m_looping);
 		}
 		return;
 	}
 
 	if (!m_streams.inRange(sourceIdx))
 		return;
-	const ISoundSource::Format& fmt = m_streams[sourceIdx].sample->GetFormat();
-	m_streams[sourceIdx].curPos = WrapAroundSampleOffset(seconds * fmt.frequency, m_streams[sourceIdx].sample, m_looping);
+	SourceStream& stream = m_streams[sourceIdx];
+	const ISoundSource::Format& fmt = stream.sample->GetFormat();
+	stream.curPos = WrapAroundSampleOffset(seconds * fmt.frequency, stream.sample, m_looping);
 }
 
 float CEqAudioSourceAL::GetSamplePlaybackPosition(int sourceIdx) const
 {
 	if (m_streams.inRange(sourceIdx))
 	{
-		const ISoundSource::Format& fmt = m_streams[sourceIdx].sample->GetFormat();
-		return m_streams[sourceIdx].curPos / fmt.frequency;
+		const SourceStream& stream = m_streams[sourceIdx];
+		const ISoundSource::Format& fmt = stream.sample->GetFormat();
+		return stream.curPos / fmt.frequency;
 	}
 	return 0.0f;
 }
@@ -328,16 +326,10 @@ int	CEqAudioSourceAL::GetSampleCount() const
 void CEqAudioSourceAL::GetParams(Params& params) const
 {
 	const ALuint thisSource = m_source;
-
-	int sourceState;
-	int tempValue;
-
 	if (thisSource == AL_NONE)
 		return;
 
 	params.channel = m_channel;
-
-	const bool isStreaming = IsStreamed();
 
 	// get current state of alSource
 	alGetSourcefv(thisSource, AL_POSITION, params.position);
@@ -349,7 +341,8 @@ void CEqAudioSourceAL::GetParams(Params& params) const
 	alGetSourcef(thisSource, AL_AIR_ABSORPTION_FACTOR, &params.airAbsorption);
 
 	params.looping = m_looping;
-
+	
+	int tempValue;
 	alGetSourcei(thisSource, AL_SOURCE_RELATIVE, &tempValue);
 	params.relative = (tempValue == AL_TRUE);
 
@@ -359,13 +352,14 @@ void CEqAudioSourceAL::GetParams(Params& params) const
 		GetAlExt().alGetFilterf(m_filter, AL_BANDPASS_GAINLF, &params.bandPass.y);
 	}
 
-	if (isStreaming)
+	if (IsStreamed())
 	{
 		// continuous; use channel state
 		params.state = m_state;
 	}
 	else
 	{
+		int sourceState;
 		alGetSourcei(thisSource, AL_SOURCE_STATE, &sourceState);
 
 		// use AL state
@@ -562,7 +556,7 @@ bool CEqAudioSourceAL::DoUpdate()
 	return true;
 }
 
-static ALsizei AL_APIENTRY SoundSourceSampleDataCallback(void* userPtr, void* data, ALsizei size)
+static ALsizei AL_APIENTRY eqAlSoundSourceSampleDataCallback(void* userPtr, void* data, ALsizei size)
 {
 	CEqAudioSourceAL* audioSrc = reinterpret_cast<CEqAudioSourceAL*>(userPtr);
 	return audioSrc->GetSampleBuffer(data, size);
@@ -702,7 +696,7 @@ void CEqAudioSourceAL::SetupSamples(ArrayCRef<const ISoundSource*> samples)
 
 		// set the callback on AL buffer
 		// alBufferData will reset this to NULL for us
-		GetAlExt().alBufferCallbackSOFT(m_buffers[0], alFormat, fmt.frequency, SoundSourceSampleDataCallback, this);
+		GetAlExt().alBufferCallbackSOFT(m_buffers[0], alFormat, fmt.frequency, eqAlSoundSourceSampleDataCallback, this);
 		alSourcei(m_source, AL_BUFFER, m_buffers[0]);
 		return;
 	}

@@ -72,6 +72,7 @@ inline void SinCos( double radians, double *sine, double *cosine )
 // It computes a fast 1 / sqrtf(v) approximation
 inline float rsqrtf( float v )
 {
+	// TODO: __mm_rsqrt_ss as it's faster on new machines
 	float v_half = v * 0.5f;
     int i = *(int *) &v;
     i = 0x5f3759df - (i >> 1);
@@ -126,10 +127,9 @@ inline bool fsimilar( double a, double b, double cmp = F_EPS )
 	return fabs(a-b) < cmp;
 }
 
-// Note: returns true for 0
-inline bool isPowerOf2(const int x)
+constexpr bool isPowerOf2(int v)
 {
-	return (x & (x - 1)) == 0;
+    return v && ((v & (v - 1)) == 0);
 }
 
 inline uint nextPowerOf2(uint v)

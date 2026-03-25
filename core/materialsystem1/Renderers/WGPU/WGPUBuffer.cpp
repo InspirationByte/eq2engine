@@ -95,6 +95,8 @@ void CWGPUBuffer::Update(const void* data, int64 size, int64 offset)
 
 Future<BufferMapData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 {
+	ASSERT_MSG(m_usageFlags & (BUFFERUSAGE_READ | BUFFERUSAGE_WRITE), "Buffer must have READ or WRITE usage flags");
+	
 	struct LockContext
 	{
 		Promise<BufferMapData> promise;

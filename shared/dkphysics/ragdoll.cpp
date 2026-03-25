@@ -20,13 +20,13 @@ CPhysRagdollData::~CPhysRagdollData()
 	for (int i = 0; i < m_physJoints.numElem(); i++)
 	{
 		if (m_physJoints[i])
-			physics->DestroyPhysicsJoint(m_physJoints[i]);
+			g_physics->DestroyPhysicsJoint(m_physJoints[i]);
 	}
 
 	for (int i = 0; i < m_partObjs.numElem(); i++)
 	{
 		if (m_partObjs[i])
-			physics->DestroyPhysicsObject(m_partObjs[i]);
+			g_physics->DestroyPhysicsObject(m_partObjs[i]);
 	}
 }
 
@@ -74,7 +74,7 @@ CPhysRagdollData::CPhysRagdollData(CEqStudioGeom* pModel)
 	m_partObjs.setNum(numParts);
 	for (int i = 0; i < numParts; i++)
 	{
-		IPhysicsObject* physObj = physics->CreateObject(&physModel, i);
+		IPhysicsObject* physObj = g_physics->CreateStudioObject(physModel, i);
 		const int bodyPartId = physModel.objects[i].desc.bodyPartId;
 		physObj->SetUserData(reinterpret_cast<void*>(bodyPartId));
 		m_partObjs[i] = physObj;
@@ -102,7 +102,7 @@ CPhysRagdollData::CPhysRagdollData(CEqStudioGeom* pModel)
 		localTrsB.setTranslation(linkPosB);
 
 		// create constraints
-		IPhysicsJoint* physJoint = physics->CreateJoint(m_partObjs[objIdxA], m_partObjs[objIdxB], localTrsA, localTrsB, true);
+		IPhysicsJoint* physJoint = g_physics->CreateJoint(m_partObjs[objIdxA], m_partObjs[objIdxB], localTrsA, localTrsB, true);
 		physJoint->SetAngularLowerLimit(physModel.joints[i].minLimit);
 		physJoint->SetAngularUpperLimit(physModel.joints[i].maxLimit);
 		physJoint->SetLinearLowerLimit(Vector3D(-RAGDOLL_DEFAULT_LINEAR_LIMIT));

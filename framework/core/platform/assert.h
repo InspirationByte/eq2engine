@@ -9,6 +9,10 @@
 #include "core/InterfaceManager.h"
 #include "core/ppsourceline.h"
 
+#if !defined(_RETAIL) && !defined(_PROFILE)
+#define USE_ASSERTS
+#endif
+
 #ifndef _WIN32
 
 #include <signal.h>
@@ -35,33 +39,32 @@ enum EEqAssertType {
 	_EQASSERT_SKIP			= 0,	// only when debugger is not present
 };
 
-
-#if defined(_RETAIL) || defined(_PROFILE)
-
-#define	ASSERT_MSG(x, msgFmt, ...)	_SEMICOLON_REQ({})
-#define	ASSERT(x)					_SEMICOLON_REQ({})
-#define ASSERT_FAIL(msgFmt, ...)	_SEMICOLON_REQ({})
-
-#else
+#ifdef USE_ASSERTS
 
 #define _ASSERT_PP_SL PPSourceLine::Make(__FILE__, __LINE__)
 
 IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* expression, const char* statement, ...);
 
-#define _ASSERT_BODY(expression, msgFmt, ...) { \
+#define _ASSERT_BODY(sl, expression, msgFmt, ...) { \
 		static bool _ignoreAssert = false; \
-		const int _assertResult = _InternalAssertMsg(_ASSERT_PP_SL, _ignoreAssert, expression, msgFmt, ##__VA_ARGS__ ); \
+		const int _assertResult = _InternalAssertMsg(sl, _ignoreAssert, expression, msgFmt, ##__VA_ARGS__ ); \
 		if (_assertResult == _EQASSERT_BREAK) { _DEBUG_BREAK; } \
 		else if (_assertResult == _EQASSERT_IGNORE_ALWAYS) { _ignoreAssert = true; } \
 	}
 
 #define	ASSERT_MSG(x, msgFmt, ...) \
-	_SEMICOLON_REQ( if (!(x)) _ASSERT_BODY(#x, msgFmt, ##__VA_ARGS__ ) )
+	_SEMICOLON_REQ( if (!(x)) _ASSERT_BODY(_ASSERT_PP_SL, #x, msgFmt, ##__VA_ARGS__ ) )
 
 #define	ASSERT(x)					ASSERT_MSG(x, nullptr)
-#define ASSERT_FAIL(msgFmt, ...)	_ASSERT_BODY(nullptr, "%s: " msgFmt, __func__, ##__VA_ARGS__ )
+#define ASSERT_FAIL(msgFmt, ...)	_ASSERT_BODY(_ASSERT_PP_SL, nullptr, "%s: " msgFmt, __func__, ##__VA_ARGS__ )
 
-#endif // _RETAIL || _PROFILE
+#else
+
+#define	ASSERT_MSG(x, msgFmt, ...)	_SEMICOLON_REQ({})
+#define	ASSERT(x)					_SEMICOLON_REQ({})
+#define ASSERT_FAIL(msgFmt, ...)	_SEMICOLON_REQ({})
+
+#endif // USE_ASSERTS
 
 #define assert_sizeof( type, size )						static_assert( sizeof( type ) == size, "type '" #type "' size " #size " - size mismatch" )
 #define assert_sizeof_8_byte_multiple( type )			static_assert( ( sizeof( type ) &  7 ) == 0, "type '" #type "' size is not multiple of 8 bytes" )

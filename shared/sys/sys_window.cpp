@@ -21,7 +21,7 @@ DECLARE_CVAR(vid_fullscreen, "0", "Enable fullscreen mode on startup", CV_ARCHIV
 
 #define DEFAULT_WINDOW_TITLE "Initializing..."
 
-void Sys_GetWindowConfig(bool& fullscreen, int& screen, int& wide, int& tall)
+void sysHostGetWindowProperties(bool& fullscreen, int& screen, int& wide, int& tall)
 {
 	const char* str = vid_mode.GetString();
 
@@ -35,7 +35,7 @@ void Sys_GetWindowConfig(bool& fullscreen, int& screen, int& wide, int& tall)
 	fullscreen = vid_fullscreen.GetBool();
 }
 
-EQWNDHANDLE Sys_CreateWindow()
+EQWNDHANDLE sysHostCreateWindow()
 {
 	EQWNDHANDLE handle = nullptr;
 
@@ -46,7 +46,7 @@ EQWNDHANDLE Sys_CreateWindow()
 	int adjustedTall = 600;
 	int screen = 0;
 	bool fullscreen = false;
-	Sys_GetWindowConfig(fullscreen, screen, adjustedWide, adjustedTall);
+	sysHostGetWindowProperties(fullscreen, screen, adjustedWide, adjustedTall);
 
 	int sdlFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
 #ifndef PLAT_WIN
@@ -86,7 +86,7 @@ bool s_bProcessInput = true;
 
 void InputCommands_SDL(SDL_Event* event);
 
-void Host_HandleSDLEvents(SDL_Event* event)
+static void sysHostHandleSDLEvents(SDL_Event* event)
 {
 	switch (event->type)
 	{
@@ -134,7 +134,7 @@ void Host_HandleSDLEvents(SDL_Event* event)
 //
 // Initializes engine system
 //
-bool Host_Init()
+bool sysHostInit()
 {
 	SDL_SetHint(SDL_HINT_VIDEO_EXTERNAL_CONTEXT, "1");
 #ifdef SDL_HINT_WINDOWS_DPI_AWARENESS
@@ -161,7 +161,7 @@ bool Host_Init()
 //
 // Runs game engine loop
 //
-void Host_GameLoop()
+void sysHostGameLoop()
 {
 	SDL_Event event;
 
@@ -169,7 +169,7 @@ void Host_GameLoop()
 	do
 	{
 		while(SDL_PollEvent(&event))
-			Host_HandleSDLEvents( &event );
+			sysHostHandleSDLEvents( &event );
 
 		if (!s_bActive)
 		{
@@ -204,7 +204,7 @@ void Host_GameLoop()
 //
 // Shutdowns all system in order
 //
-void Host_Terminate()
+void sysHostTerminate()
 {
 	CEqGameControllerSDL::Shutdown();
 

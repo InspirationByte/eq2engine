@@ -47,7 +47,7 @@ public:
 
 //--------------------------------------------------------------
 
-INTERFACE_SINGLETON( ILocalize, CLocalize, g_localizer )
+INTERFACE_SINGLETON(ILocalize, g_localizer)
 
 #define DKLOC_CONCAT(x) L ## x
 #define DKLOC(tok, def) g_localizer->GetTokenString( tok, DKLOC_CONCAT(def) )

@@ -75,4 +75,4 @@ public:
 	virtual void					OnModuleUnloaded(const char* pszName) = 0;
 };
 
-ENTRYPOINT_INTERFACE_SINGLETON(IDkCore, CDkCore, g_eqCore)
+ENTRYPOINT_INTERFACE_SINGLETON(IDkCore, g_eqCore)

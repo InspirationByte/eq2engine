@@ -134,9 +134,9 @@ protected:
 // Use this macro when you want to embed a structure inside your entity and have CNetworkVars in it.
 
 template< class T >
-static inline void DispatchNetworkStateChanged(T* pObj, void *pVar)
+static inline void DispatchNetworkStateChanged(T* pObj, size_t memberOfs)
 {
-	pObj->OnNetworkStateChanged(pVar);
+	pObj->OnNetworkStateChanged(memberOfs);
 }
 
 // Internal macros used in definitions of network vars.
@@ -145,7 +145,7 @@ static inline void DispatchNetworkStateChanged(T* pObj, void *pVar)
 	using NetworkVar_##name##Cntr = ThisClass ; \
 	struct NetworkVar_##name { \
 		static inline void OnNetworkStateChanged( void* ptr ) { \
-			DispatchNetworkStateChanged((NetworkVar_##name##Cntr*)(((uintptr_t)ptr) - offsetOf(NetworkVar_##name##Cntr,name)), (void*)(uintptr_t)offsetOf(NetworkVar_##name##Cntr,name)); \
+			DispatchNetworkStateChanged((NetworkVar_##name##Cntr*)(((uintptr_t)ptr) - offsetOf(NetworkVar_##name##Cntr,name)), (size_t)offsetOf(NetworkVar_##name##Cntr,name)); \
 		} \
 	}; \
 	base< type, NetworkVar_##name > name
@@ -154,7 +154,7 @@ static inline void DispatchNetworkStateChanged(T* pObj, void *pVar)
 	NETWORK_VAR_DECL( type, name, CNetworkVarBase )
 
 #define DECLARE_EMBEDDED_NETWORKVAR() \
-	void OnNetworkStateChanged( void* ptr ) {}
+	void OnNetworkStateChanged( size_t memberOfs ) {}
 
 #define CNetworkVarEmbedded( type, name ) \
 	friend class NetworkVar_##name; \
@@ -163,7 +163,7 @@ static inline void DispatchNetworkStateChanged(T* pObj, void *pVar)
 		template< class T > NetworkVar_##name& operator=( const T &val ) { *((type*)this) = val; return *this; } \
 		void CopyFrom( const type &src ) { *((type *)this) = src; OnNetworkStateChanged(this); } \
 		void OnNetworkStateChanged( void* ptr ) { \
-			DispatchNetworkStateChanged(((NetworkVar_##name##Cntr*)(((char*)this) - offsetOf(NetworkVar_##name##Cntr,name))), (void*)(uintptr_t)offsetOf(NetworkVar_##name##Cntr,name)); \
+			DispatchNetworkStateChanged(((NetworkVar_##name##Cntr*)(((char*)this) - offsetOf(NetworkVar_##name##Cntr,name))), (size_t)offsetOf(NetworkVar_##name##Cntr,name)); \
 		} \
 	}; \
 	NetworkVar_##name name; 
@@ -298,5 +298,7 @@ struct NetPropType<T, true> : NetPropType<std::underlying_type_t<T>, false> {};
 #define NETWORK_CHANGELIST(name)			m_changeList_##name
 #define DECLARE_NETWORK_CHANGELIST(name)	Array<uint>	NETWORK_CHANGELIST(name){ PP_SL }
 
-void PackNetworkVariables(void* objectPtr, const NetPropertyMap* map, Networking::Buffer* buffer, Array<uint>& changeList);
-void UnpackNetworkVariables(void* objectPtr, const NetPropertyMap* map, Networking::Buffer* buffer);
+class IFileStream;
+
+void PackNetworkVariables(const void* objectPtr, const NetPropertyMap* map, IFileStream& stream, ArrayCRef<uint> changeList);
+void UnpackNetworkVariables(void* objectPtr, const NetPropertyMap* map, IFileStream& stream);

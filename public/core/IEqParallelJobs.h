@@ -34,4 +34,4 @@ public:
 	virtual CEqJobManager*	GetJobMng() const = 0;
 };
 
-INTERFACE_SINGLETON(IEqParallelJobManager, CEqParallelJobManager, g_parallelJobs)
+INTERFACE_SINGLETON(IEqParallelJobManager, g_parallelJobs)

@@ -333,8 +333,6 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 	// start the real sound
 	if (!isVirtual && emit->virtualParams.state != IEqAudioSource::STOPPED && !soundSource)
 	{
-		PROF_EVENT("Emitter Switch Source - Create");
-
 		FixedArray<const ISoundSource*, 16> samples;
 		bool hasLoop = script->loop;
 		if (script->randomSample || emit->sampleId != -1)
@@ -425,8 +423,6 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 	
 	if (soundSource)
 	{
-		PROF_EVENT("Emitter Switch Source - Destroy");
-
 #ifdef ENABLE_DEBUG_DRAWING
 		if (snd_scriptsound_debug.GetBool() && (!m_dbgFilterSound || m_dbgFilterSound == script))
 		{
@@ -473,8 +469,6 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 {
 	if (!emitter)
 		return 0;
-
-	PROF_EVENT("Emitter Update Callback");
 
 	const SoundScriptDesc* script = emitter->script;
 	CSoundingObject* soundingObj = emitter->soundingObj;
@@ -550,7 +544,6 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 
 	// update samples volume if they were
 	{
-		PROF_EVENT("Emitter Update Sample Volume");
 		for (int i = 0; i < soundSource->GetSampleCount(); ++i)
 		{
 			const float playbackPos = emitter->samplePos[i];
@@ -571,7 +564,6 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 
 	if (!params.relative)
 	{
-		PROF_EVENT("Emitter Update SwitchSourceState");
 		const Vector3D listenerPos = g_audioSystem->GetListenerPosition();
 
 		const float distToSoundSqr = lengthSqr(params.position - listenerPos);

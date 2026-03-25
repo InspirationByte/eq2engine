@@ -6,51 +6,45 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include <Jolt/Core/Core.h>
+#include <Jolt/Physics/Constraints/TwoBodyConstraint.h>
+
 #include "dkphysics/IPhysicsJoint.h"
 
-class btGeneric6DofConstraint;
+class DkPhysicsObject;
 
 class DkPhysicsJoint : public IPhysicsJoint
 {
 	friend class DkPhysics;
-	friend class CPhysicsObject;
-
+	friend class DkPhysicsObject;
 public:
+	~DkPhysicsJoint() = default;
 
-	DkPhysicsJoint();
-	~DkPhysicsJoint();
+	DkPhysicsJoint(JPH::TwoBodyConstraint* jphConstraint, DkPhysicsObject* objA, DkPhysicsObject* objB);
 
-	IPhysicsObject* GetPhysicsObjectA(); // returns pointer to first physics object
-	IPhysicsObject* GetPhysicsObjectB(); // returns pointer to second physics object
+	IPhysicsObject* GetPhysicsObjectA() const;
+	IPhysicsObject* GetPhysicsObjectB() const;
 
-	Matrix4x4		GetGlobalTransformA(); // returns global transform of object a
-	Matrix4x4		GetGlobalTransformB() ; // returns global transform of object b
+	Matrix4x4		GetGlobalTransformA() const;
+	Matrix4x4		GetGlobalTransformB() const;
 
-	Matrix4x4		GetFrameTransformA(); // returns local transform of object a
-	Matrix4x4		GetFrameTransformB() ; // returns local transform of object b
+	Matrix4x4		GetFrameTransformA() const;
+	Matrix4x4		GetFrameTransformB() const;
 
-	// setters
+	void			SetLinearLowerLimit(const Vector3D& linearLower);
+	void			SetLinearUpperLimit(const Vector3D& linearUpper);
+	void			SetAngularLowerLimit(const Vector3D& angularLower);
+    void			SetAngularUpperLimit(const Vector3D& angularUpper);
 
-	void			SetLinearLowerLimit(const Vector3D& linearLower); // sets lower linear limit (in radians)
+	Vector3D		GetLinearLowerLimit() const;
+	Vector3D		GetLinearUpperLimit() const;
+	Vector3D		GetAngularLowerLimit() const;
+    Vector3D		GetAngularUpperLimit() const;
 
-	void			SetLinearUpperLimit(const Vector3D& linearUpper); // sets upper linear limit (in radians)
-
-	void			SetAngularLowerLimit(const Vector3D& angularLower); // sets lower angular limit (in radians)
-
-    void			SetAngularUpperLimit(const Vector3D& angularUpper); // sets upper angular limit (in radians)
-
-	// getters
-
-	Vector3D		GetLinearLowerLimit(); // sets lower linear limit (in radians)
-	Vector3D		GetLinearUpperLimit(); // returns upper linear limit (in radians)
-	Vector3D		GetAngularLowerLimit(); // returns lower angular limit (in radians)
-    Vector3D		GetAngularUpperLimit(); // returns upper angular limit (in radians)
-
-	void			UpdateTransform(); // updates transform of joints
+	void			UpdateTransform();
 protected:
 
-	IPhysicsObject*				m_pObjectA;
-	IPhysicsObject*				m_pObjectB;
-
-	btGeneric6DofConstraint*	m_pJointPointer;
+	DkPhysicsObject*	m_objA{ nullptr };
+	DkPhysicsObject*	m_objB{ nullptr };
+	JPH::Ref<JPH::TwoBodyConstraint>	m_jphContraint;
 };

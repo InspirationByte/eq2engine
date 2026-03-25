@@ -16,6 +16,8 @@ class CNVRHIBuffer : public IGPUBuffer
 {
 public:
 	DECLARE_RENDER_RESOURCE(CNVRHIBuffer);
+	
+	static nvrhi::ResourceStates	GetNVRHIResourceStates(int usageFlags);
 
 	~CNVRHIBuffer();
 	CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* label);
@@ -27,7 +29,6 @@ public:
 	void					Unlock();
 
 	nvrhi::IBuffer*			GetNVRHIBufferHandle() const { return m_rhiBuffer; }
-	nvrhi::ResourceStates	GetNVRHIResourceStates() const;
 
 	bool					IsNeedsTrackingState() const { return m_needsTrackingState; }
 	void					OnUpdated();
