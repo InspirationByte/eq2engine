@@ -13,6 +13,9 @@ public:
 
     template<typename FUNC>
 	void	ForEach(FUNC fn) const;
+
+    int     GetThreadCount() const { return m_threadCnt; }
+    int     GetItemCount() const { return m_storage.size(); }
 protected:
 	void	DeleteStorageItem(int id);
 
