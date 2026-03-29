@@ -22,14 +22,22 @@ public:
 	void	SortKeys(int dataTypeId, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr keys, int keysCount, IGPUBufferPtr values);
 
 protected:
-	void	RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr keys, int keysCount, IGPUBufferPtr values);
+	struct PipelineData
+	{
+		PipelineData() = default;
+		PipelineData(IGPUComputePipelinePtr pipeline) : pipeline(pipeline) {}
+
+		Array<IGPUBindGroupPtr> bindings{ PP_SL };
+		IGPUComputePipelinePtr	pipeline;
+	};
+	void	RunSortPipeline(PipelineData& pipelineData, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr keys, int keysCount, IGPUBufferPtr values);
 
 	Array<IGPUBufferPtr>	m_blocks{ PP_SL };
 	IGPUComputePipelinePtr	m_initPipeline;
 	IGPUBufferPtr			m_paramsBuffer;
 	IGPUBufferPtr			m_tmpParamsBuffer;
 
-	Map<int, IGPUComputePipelinePtr> m_sortPipelines{ PP_SL };
+	Map<int, PipelineData>	m_sortPipelines{ PP_SL };
 };
 
 using ComputeSortShaderPtr = CRefPtr<ComputeSortShader>;
