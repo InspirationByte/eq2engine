@@ -139,28 +139,25 @@ void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInf
 			if (!shaderModule.usedBindings[i])
 				continue;
 
-			if (BitArrayImpl::isTrue(usedShaderBindings, 2048, bindingIds[i]))
+			const int bindingIdx = bindingIds[i];
+			if (BitArrayImpl::isTrue(usedShaderBindings, 2048, bindingIdx))
 				continue;
 
-			const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIds[i]];
+			const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIdx];
 			if (binding.descriptorSetIdx != bindGroupDesc.groupIdx)
 				continue;
 
 			++bindingsToResolve;
 
 			const int entryIdx = arrayFindIndexF(bindGroupDesc.entries, [&](const BindGroupDesc::Entry& bindGroupEntry) {
-				// check if name id is used
-				if (bindGroupEntry.binding > bindingIds.numElem())
-					return bindGroupEntry.binding == binding.nameId;
-
-				return bindGroupDesc.groupIdx == binding.descriptorSetIdx && bindGroupEntry.binding == binding.index;
+				return bindGroupEntry.binding == binding.nameId;
 			});
 
 			if (entryIdx == -1)
 				continue;
 
-			BitArrayImpl::setTrue(usedShaderBindings, 2048, bindingIds[i]);
-			usedShaderBindingIdxs.append(std::make_pair(bindingIds[i], entryIdx));
+			BitArrayImpl::setTrue(usedShaderBindings, 2048, bindingIdx);
+			usedShaderBindingIdxs.append(std::make_pair(bindingIdx, entryIdx));
 		}
 	}
 

@@ -175,12 +175,8 @@ void FillWGPUBindGroupEntries(const BindGroupDesc& bindGroupDesc, const ShaderIn
 			++bindingsToResolve;
 
 			const int entryIdx = arrayFindIndexF(bindGroupDesc.entries, [&](const BindGroupDesc::Entry& bindGroupEntry) {
-				// check if name id is used
-				if (bindGroupEntry.binding > bindingIds.numElem())
-					return bindGroupEntry.binding == binding.nameId;
-
-				return bindGroupDesc.groupIdx == binding.descriptorSetIdx && bindGroupEntry.binding == binding.index;
-				});
+				return bindGroupEntry.binding == binding.nameId;
+			});
 
 			if (entryIdx == -1)
 				continue;
