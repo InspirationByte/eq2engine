@@ -123,8 +123,9 @@ void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInf
 {
 	int bindingsToResolve = 0;
 
-	static thread_local Map<int, int> usedShaderBindingIdxs{ PP_SL };
-	usedShaderBindingIdxs.clear();
+	using BindingToEntry = std::pair<short, short>;
+	FixedArray<BindingToEntry, 128> usedShaderBindingIdxs;
+	uint usedShaderBindings[bitArray2Dword(2048)] {0};
 
 	for (const int moduleIdx : shaderModuleIdxs)
 	{
@@ -138,7 +139,7 @@ void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInf
 			if (!shaderModule.usedBindings[i])
 				continue;
 
-			if (usedShaderBindingIdxs.find(bindingIds[i]))
+			if (BitArrayImpl::isTrue(usedShaderBindings, 2048, bindingIds[i]))
 				continue;
 
 			const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIds[i]];
@@ -158,18 +159,19 @@ void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInf
 			if (entryIdx == -1)
 				continue;
 
-			usedShaderBindingIdxs.insert(bindingIds[i], entryIdx);
+			BitArrayImpl::setTrue(usedShaderBindings, 2048, bindingIds[i]);
+			usedShaderBindingIdxs.append(std::make_pair(bindingIds[i], entryIdx));
 		}
 	}
 
-	for (auto bindingIt = usedShaderBindingIdxs.begin(); bindingIt; ++bindingIt)
+	for (BindingToEntry bindingEntry : usedShaderBindingIdxs)
 	{
-		const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIt.key()];
-		nvrhiFillBindingDesc(bindGroupDesc.entries[bindingIt.value()], binding, rhiBindingSetDesc);
+		const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingEntry.first];
+		nvrhiFillBindingDesc(bindGroupDesc.entries[bindingEntry.second], binding, rhiBindingSetDesc);
 	}
 
 	ASSERT_MSG(bindGroupDesc.entries.numElem() >= bindingsToResolve, "Bad binding entry count: %d, expected %d", bindGroupDesc.entries.numElem(), bindingsToResolve);
-	ASSERT_MSG(usedShaderBindingIdxs.size() == bindingsToResolve, "Incorrect binding ids, resolved: %d, expected %d", usedShaderBindingIdxs.size(), bindingsToResolve);
+	ASSERT_MSG(usedShaderBindingIdxs.numElem() == bindingsToResolve, "Incorrect binding ids, resolved: %d, expected %d", usedShaderBindingIdxs.numElem(), bindingsToResolve);
 }
 
 void CNVRHIBindingLayout::FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, nvrhi::BindingSetDesc& rhiBindingSetDesc) const
@@ -267,15 +269,17 @@ static void nvrhiAddBindingToLayout(nvrhi::BindingLayoutDesc& layoutDesc, const 
 
 void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const IGPUBindingLayout* bindingLayout, ArrayCRef<int> shaderModuleIdxs, nvrhi::ShaderType rhiShaderType, NVRHIBindingLayoutList& rhiBindingLayouts)
 {
-	static thread_local Set<uint> usedShaderBindingIdxs{ PP_SL };
-	usedShaderBindingIdxs.clear();
+	uint usedShaderBindings[bitArray2Dword(2048)] {0};
+	FixedArray<short, 128> usedShaderBindingIdxs;
 
 	static thread_local Map<int, int> bindingNamesToIdx{ PP_SL };
 	bindingNamesToIdx.clear();
 
+#ifdef USE_ASSERTS
 	// used ranges and registers
 	static thread_local Set<uint> usedRegisters{ PP_SL };
 	usedRegisters.clear();
+#endif
 
 	// create shader binding layouts
 	int maxBindGroupIdx = -1;
@@ -293,14 +297,15 @@ void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const IGPUBindingLa
 					continue;
 
 				const int bindingIdx = bindingIds[i];
-				if (usedShaderBindingIdxs.find(bindingIdx))
+				if (BitArrayImpl::isTrue(usedShaderBindings, 2048, bindingIdx))
 					continue;
 
 				const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIdx];
 				maxBindGroupIdx = max(maxBindGroupIdx, binding.descriptorSetIdx);
 
-				// TODO: check differently on vulkan?
-				if (usedRegisters.find(binding.rangeType | (binding.registerIdx << 8)))
+#ifdef USE_ASSERTS
+				const int registerId = binding.rangeType | (binding.registerIdx << 2);
+				if (usedRegisters.find(registerId))
 				{
 #ifdef DEBUG_SHADER_BINDINGS
 					ASSERT_FAIL("Pipeline %s has binding %s registers overlapping between Vertex & Fragment stages, please merge shader bindings in one file\n", shaderInfo.shaderName.ToCString(), binding.name.ToCString());
@@ -309,9 +314,11 @@ void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const IGPUBindingLa
 #endif
 					break;
 				}
+				usedRegisters.insert(registerId);
+#endif
 
-				usedRegisters.insert(binding.rangeType | (binding.registerIdx << 8));
-				usedShaderBindingIdxs.insert(bindingIdx);
+				BitArrayImpl::setTrue(usedShaderBindings, 2048, bindingIdx);
+				usedShaderBindingIdxs.append(bindingIdx);
 				bindingNamesToIdx.insert(binding.nameId, bindingIdx);
 			}
 		}
@@ -354,9 +361,9 @@ void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const IGPUBindingLa
 		}
 		else
 		{
-			for (auto bindingIt = usedShaderBindingIdxs.begin(); bindingIt; ++bindingIt)
+			for (short bindingIdx : usedShaderBindingIdxs)
 			{
-				const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIt.key()];
+				const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIdx];
 				nvrhiAddBindingToLayout(rhiBindingLayoutDescList[binding.descriptorSetIdx], binding);
 			}
 		}
@@ -380,11 +387,9 @@ void nvrhiFillBindingSets(const ShaderInfo& shaderInfo, ArrayCRef<int> shaderMod
 			continue;
 
 		auto bindingSetIt = bindGroupImpl->m_rhiBindingSets.begin();
-
 		if (bindGroupImpl->m_bindingLayout)
 		{
 			bindingSetIt = bindGroupImpl->m_rhiBindingSets.find(pipelineId);
-
 			if (!bindingSetIt)
 			{
 				const BindGroupDesc& bindGroupDesc = bindGroupImpl->m_bindGroupDesc;
