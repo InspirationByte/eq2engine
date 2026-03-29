@@ -13,7 +13,7 @@ public:
 		BLUR_BOTH = (BLUR_VERTICAL | BLUR_HORIZONTAL)
 	};
 
-	ComputeBlurShader(int iterations = 4, int filterSize = 2, int blurFlags = BLUR_BOTH);
+	ComputeBlurShader(int iterations = 4, int filterSize = 3, int blurFlags = BLUR_BOTH);
 
 	void	SetSourceTexture(ITexture* source) { m_srcTexture = source; }
 	void	SetDestinationTexture(ITexture* dest);

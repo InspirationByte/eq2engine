@@ -9,6 +9,8 @@ ComputeBlurShader::ComputeBlurShader(int iterations, int filterSize, int blurFla
 	, m_filterSize(filterSize)
 	, m_blurFlags(blurFlags)
 {
+	ASSERT_MSG(m_filterSize >= 3, "Blur shader produces artifacts on filterSize <= 2. Must be at least 3.");
+
 	m_pipeline = g_renderAPI->CreateComputePipeline(
 		Builder<ComputePipelineDesc>()
 		.ShaderName("ComputeBlur")
