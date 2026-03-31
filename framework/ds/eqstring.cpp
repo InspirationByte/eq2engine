@@ -152,7 +152,7 @@ EqTStrRef<CH> EqTStr<CH>::FormatV(const CH* pszFormat, va_list argptr)
 		return nullptr;
 
 	EqTStr<CH>& newString = EqTStrRef<CH>::GetTempString(nullptr, 0);
-	newString.Resize(CString::Length(pszFormat) + 128, false);
+	newString.ExtendAlloc(CString::Length(pszFormat) + 128, false);
 
 	va_list varg;
 	va_copy(varg, argptr);

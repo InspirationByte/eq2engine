@@ -116,7 +116,7 @@ public:
 		int				m_firstTask{ 0 };
 	};
 
-	BatchedJob(const char* name) : SyncJob(name) { InitSignal(); }
+	BatchedJob(const char* name);
 	void StartJobs(CEqJobManager& jobMng);
 
 private:
@@ -125,6 +125,7 @@ private:
 	virtual void Process(ITEM jobItem) = 0;
 
 	Array<Worker>	m_workerJobs{ PP_SL };
+	EqString		m_batchJobName;
 };
 
 //----------------------------------------------------------
@@ -167,6 +168,14 @@ private:
 // TODO: hpp
 
 template<typename ITEM>
+BatchedJob<ITEM>::BatchedJob(const char* name)
+	: SyncJob(name)
+	, m_batchJobName(m_jobName + "Worker")
+{ 
+	InitSignal();
+}
+
+template<typename ITEM>
 void BatchedJob<ITEM>::StartJobs(CEqJobManager& jobMng)
 {
 	BatchItems batchJobItems = GetJobItems();
@@ -176,9 +185,8 @@ void BatchedJob<ITEM>::StartJobs(CEqJobManager& jobMng)
 		return;
 	}
 
-	const EqString batchJobName = m_jobName + "Worker";
 	const int tasksPerBatch = batchJobItems.numElem() / jobMng.GetJobThreadsCount();
-	m_workerJobs.assureSizeEmplace(jobMng.GetJobThreadsCount(), batchJobName, *this);
+	m_workerJobs.assureSizeEmplace(jobMng.GetJobThreadsCount(), m_batchJobName, *this);
 
 	int numBatchs = 0;
 	for (Worker& workerJob : m_workerJobs)

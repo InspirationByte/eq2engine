@@ -562,8 +562,9 @@ IGPUBufferPtr CNVRHIRenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int bu
 IGPUBindingLayoutPtr CNVRHIRenderAPI::CreateBindingLayout(const BindingLayoutDesc& layoutDesc) const
 {
 	CRefPtr<CNVRHIBindingLayout> pipelineLayout = CNVRHIBindingLayout::Create();
+#ifdef RENDER_DEBUG_RESOURCE_NAMES
 	pipelineLayout->m_dbgName = layoutDesc.name;
-
+#endif
 	// make name to index map
 	int bindGroupIdx = 0;
 	for (const BindGroupLayoutDesc& bindGroupDesc : layoutDesc.bindGroups)
@@ -599,7 +600,9 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(const BindGroupDesc& bindG
 	}
 
 	CRefPtr<CNVRHIBindGroup> bindGroup = CNVRHIBindGroup::Create();
+#ifdef RENDER_DEBUG_RESOURCE_NAMES
 	bindGroup->m_dbgName = bindGroupDesc.name;
+#endif
 	bindGroup->m_rhiBindingSets.insert(0, std::move(rhiBindSet));
 
 	return IGPUBindGroupPtr(bindGroup);
@@ -617,7 +620,9 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateSharedBindGroup(const IGPUBindingLayout*
 
 	CRefPtr<CNVRHIBindGroup> bindGroup = CNVRHIBindGroup::Create();
 	bindGroup->m_bindingLayout.Assign(bindingLayoutImpl);
+#ifdef RENDER_DEBUG_RESOURCE_NAMES
 	bindGroup->m_dbgName = bindGroupDesc.name;
+#endif
 	bindGroup->MakeResourceRefs(bindGroupDesc);
 
 	return IGPUBindGroupPtr(bindGroup);
@@ -1108,7 +1113,9 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	renderPipeline->m_shaderInfo = &shaderInfo;
 	renderPipeline->m_rhiFramebufferinfo = rhiFramebufferInfo;
 	renderPipeline->m_rhiPipelineDesc = rhiGraphicsPipelineDesc;
+#ifdef RENDER_DEBUG_RESOURCE_NAMES
 	renderPipeline->m_dbgName = std::move(pipelineName);
+#endif
 	renderPipeline->m_vertexShaderModuleIdx = vertexShaderModuleIdx;
 	renderPipeline->m_fragmentShaderModuleIdx = fragmentShaderModuleIdx;
 	renderPipeline->m_pipelineId = ShaderInfo::PackShaderModuleId(queryStrHash, vertexLayoutIdx, 0, StringId24(pipelineDesc.vertex.shaderEntryPoint));
@@ -1196,7 +1203,9 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		CRefPtr<CNVRHIComputePipeline> computePipeline = CNVRHIComputePipeline::Create();
 		computePipeline->m_shaderInfo = &shaderInfo;
 		computePipeline->m_rhiComputePipeline = rhiComputePipeline;
+#ifdef RENDER_DEBUG_RESOURCE_NAMES
 		computePipeline->m_dbgName = std::move(pipelineName);
+#endif
 		computePipeline->m_computeShaderModuleIdx = computeShaderModuleIdx;
 		computePipeline->m_pipelineId = ShaderInfo::PackShaderModuleId(queryStrHash, layoutIdx, 0, StringId24(pipelineDesc.shaderEntryPoint));
 
@@ -1219,7 +1228,9 @@ IGPUCommandRecorderPtr CNVRHIRenderAPI::CreateCommandRecorder(const char* name, 
 	rhiCommandList->open();
 
 	CRefPtr<CNVRHICommandRecorder> commandRecorder = CNVRHICommandRecorder::Create();
+#ifdef RENDER_DEBUG_RESOURCE_NAMES
 	commandRecorder->m_dbgName = name;
+#endif
 	commandRecorder->m_rhiCommandList = rhiCommandList;
 	commandRecorder->m_userData = userData;
 	commandRecorder->m_cmdListIdx = cmdListIdx;

@@ -1,6 +1,7 @@
 #include <nvrhi/nvrhi.h>
 #include "core/core_common.h"
 
+#include "NVRHIBackend.h"
 #include "NVRHIBuffer.h"
 #include "NVRHIStates.h"
 #include "NVRHICommandRecorder.h"
@@ -185,7 +186,9 @@ IGPUCommandBufferPtr CNVRHICommandRecorder::End()
 	// simply transfer command list
 	CRefPtr<CNVRHICommandBuffer> commandBuffer = CNVRHICommandBuffer::Create();
 	commandBuffer->m_rhiCommandList = m_rhiCommandList;
+#ifdef RENDER_DEBUG_RESOURCE_NAMES
 	commandBuffer->m_dbgName = std::move(m_dbgName);
+#endif
 	commandBuffer->m_cmdListIdx = m_cmdListIdx;
 	m_rhiCommandList = nullptr;
 	m_cmdListIdx = -1;

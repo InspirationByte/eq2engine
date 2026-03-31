@@ -22,7 +22,9 @@ CNVRHIBuffer::~CNVRHIBuffer()
 
 CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* label)
 {
+#ifdef RENDER_DEBUG_RESOURCE_NAMES
 	m_dbgName = label;
+#endif
 
 	const int64 sizeInBytes = bufferInfo.elementSize * bufferInfo.elementCapacity;
 	const int64 writeDataSize = ALIGN(bufferInfo.dataSize, 4);

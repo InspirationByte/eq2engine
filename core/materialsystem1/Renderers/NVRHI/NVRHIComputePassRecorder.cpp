@@ -10,7 +10,9 @@ CNVRHIComputePassRecorder::CNVRHIComputePassRecorder(nvrhi::ICommandList* cmdLis
 	: m_rhiCommandList(cmdList)
 	, m_userData(userData)
 	, m_cmdListIdx(cmdListIdx)
+#ifdef RENDER_DEBUG_RESOURCE_NAMES
 	, m_dbgName(label)
+#endif
 {
 }
 

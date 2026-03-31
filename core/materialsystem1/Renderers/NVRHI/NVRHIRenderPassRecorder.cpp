@@ -1,6 +1,7 @@
 #include <nvrhi/nvrhi.h>
 #include "core/core_common.h"
 
+#include "NVRHIBackend.h"
 #include "NVRHIBuffer.h"
 #include "NVRHIStates.h"
 #include "NVRHIRenderPassRecorder.h"
@@ -349,7 +350,9 @@ void CNVRHIRenderPassRecorder::InternalBeginRenderPass(const RenderPassDesc& ren
 	m_depthReadOnly = renderPassDesc.depthReadOnly;
 	m_stencilReadOnly = renderPassDesc.stencilReadOnly;
 	m_renderTargetDims = renderTargetDims;
+#ifdef RENDER_DEBUG_RESOURCE_NAMES
 	m_dbgName = renderPassDesc.name;
+#endif
 
 	const AARectangle defaultViewportRectangle(vec2_zero, Vector2D(renderTargetDims));
 	SetViewport(defaultViewportRectangle, 0.0f, 1.0f);
@@ -394,7 +397,9 @@ IGPUCommandBufferPtr CNVRHIRenderPassRecorder::End()
 
 	CRefPtr<CNVRHICommandBuffer> commandBuffer = CNVRHICommandBuffer::Create();
 	commandBuffer->m_rhiCommandList = m_rhiCommandList;
+#ifdef RENDER_DEBUG_RESOURCE_NAMES
 	commandBuffer->m_dbgName = std::move(m_dbgName);
+#endif
 	commandBuffer->m_cmdListIdx = m_cmdListIdx;
 
 	m_rhiCommandList = nullptr;

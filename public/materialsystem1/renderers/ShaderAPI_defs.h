@@ -10,6 +10,11 @@
 #include "IGPUBuffer.h" // for GPUBufferView
 #include "ITexture.h"	// for TextureView
 
+#if !defined(_RETAIL) && !defined(_PROFILE)
+#define RENDER_DEBUG_RESOURCE_NAMES
+#define RENDER_DEBUG_MARKERS
+#endif
+
 enum ERHIWindowType : int
 {
 	RHI_WINDOW_HANDLE_UNKNOWN = -1,
@@ -901,7 +906,9 @@ struct RenderPassDesc
 FLUENT_BEGIN_TYPE(RenderPassDesc)
 	ThisType& Name(const char* str)
 	{
+#ifdef RENDER_DEBUG_RESOURCE_NAMES
 		ref.name = str;
+#endif
 		ref.nameHash = StringId24(str);
 		return *this; 
 	}

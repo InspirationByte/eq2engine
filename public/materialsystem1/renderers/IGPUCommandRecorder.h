@@ -9,10 +9,6 @@
 
 #include "ShaderAPI_defs.h"
 
-#if !defined(_RETAIL) && !defined(_PROFILE) 
-#define RENDER_DEBUG_MARKERS
-#endif
-
 class IGPUBuffer;
 
 class IGPURenderPipeline;
