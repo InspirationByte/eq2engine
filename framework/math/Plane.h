@@ -188,6 +188,9 @@ struct TPlane
 		return true;
 	}
 
+	TVec4D<T>&			AsVector4D() { return *(Vector4D*)this; }
+	const TVec4D<T>&	AsVector4D() const { return *(Vector4D*)this; }
+
 	TVec3D<T>	normal;
 	T			offset;
 };
