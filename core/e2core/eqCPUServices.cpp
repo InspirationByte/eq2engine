@@ -234,12 +234,12 @@ void CEqCPUCaps::Init()
 	m_cpuCount = sysInfo.dwNumberOfProcessors;
 
 #elif defined(PLAT_LINUX) || defined(PLAT_ANDROID)
-	//m_cpuCount = sysconf(_SC_NPROCESSORS_CONF);
+
 	m_cpuCount = sysconf(_SC_NPROCESSORS_ONLN);
 
 #elif defined(__APPLE__)
 
-	// TODO: Fix ...
+	// TODO:
 	m_cpuCount = 1;	// sysconf(_SC_NPROCESSORS_ONLN);
 
 #endif
@@ -250,14 +250,12 @@ void CEqCPUCaps::Init()
 	if (m_cpuCount < 1)
 		m_cpuCount = 1;
 
-	uint32 maxi, maxei, a, b, c, d;
-
 	m_cpuVendor[12]   = '\0';
 	m_cpuBrandName[0] = '\0';
 
 #ifndef PLAT_ANDROID
+	uint32 maxi, maxei, a, b, c, d;
 	cpuid(0, maxi, ((uint32 *) m_cpuVendor)[0], ((uint32 *) m_cpuVendor)[2], ((uint32 *) m_cpuVendor)[1]);
-
 	if (maxi >= 1)
 	{
 		cpuid(1, a, b, c, d);

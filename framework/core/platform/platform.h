@@ -34,7 +34,10 @@
 #  ifndef WINVER
 #     define WINVER 0x0600
 #  endif
+
 typedef void* HANDLE;
+typedef unsigned long DWORD;
+
 #elif defined(PLAT_LINUX) || defined(PLAT_ANDROID)
 #  include <stdio.h>
 

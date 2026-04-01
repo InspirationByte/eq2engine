@@ -40,6 +40,7 @@ struct EQWIN32_SRWLOCK
 using SignalHandle_t = HANDLE;
 using MutexHandle_t = EQWIN32_CRITICAL_SECTION;
 using ReadWriteLockHandle_t = EQWIN32_SRWLOCK;
+using TlsHandle_t = DWORD;
 #else
 struct SignalHandle_t
 {
@@ -51,10 +52,12 @@ struct SignalHandle_t
 };
 using MutexHandle_t = pthread_mutex_t;
 using ReadWriteLockHandle_t = pthread_rwlock_t;
+using TlsHandle_t = pthread_key_t;
 #endif // _WIN32
 
-static constexpr const int WAIT_INFINITE = -1;
-static constexpr const int DEFAULT_THREAD_STACK_SIZE = 3072 * 1024;
+static constexpr TlsHandle_t INVALID_TLS_HANDLE = static_cast<TlsHandle_t>(-1u);
+static constexpr int WAIT_INFINITE = -1;
+static constexpr int DEFAULT_THREAD_STACK_SIZE = 3072 * 1024;
 
 void			YieldCurrentThread();
 uintptr_t		GetCurrentThreadID();
@@ -63,6 +66,10 @@ void			SetCurrentThreadAffinity(uintptr_t affinityMask);
 void			GetCurrentProcessAffinity(uintptr_t& processAffinityMask, uintptr_t& systemAffinityMask);
 void			SetCurrentProcessAffinity(uintptr_t processAffinityMask);
 
+bool			TLSAlloc(TlsHandle_t& handle);
+void			TLSFree(TlsHandle_t handle);
+void 			TLSSet(TlsHandle_t handle, void* value);
+void* 			TLSGet(TlsHandle_t handle);
 
 // for profiler needs
 void			GetThreadName(uintptr_t threadID, char* name, int maxLength);

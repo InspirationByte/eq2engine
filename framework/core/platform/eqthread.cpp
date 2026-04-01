@@ -152,7 +152,7 @@ uintptr_t ThreadCreate( threadfunc_t fnThread, void* pThreadParams, ThreadPriori
 									&threadId);
 	if ( handle == 0 )
 	{
-		MsgError( "CreateThread error: %i", GetLastError() );
+		ASSERT_FAIL( "CreateThread failed: %i", GetLastError() );
 		return (uintptr_t)0;
 	}
 
@@ -225,6 +225,36 @@ void YieldCurrentThread()
 {
 	// FIXME: Sleep(1)
 	SwitchToThread();
+}
+
+bool TLSAlloc(TlsHandle_t& handle)
+{
+    handle = (TlsHandle_t)TlsAlloc();
+    if (handle == TLS_OUT_OF_INDEXES)
+    {
+        handle = INVALID_TLS_HANDLE;
+        return false;
+    }
+	return true;
+}
+
+void TLSFree(TlsHandle_t handle)
+{
+    if(handle == INVALID_TLS_HANDLE)
+		return;
+    TlsFree(handle);
+}
+
+void TLSSet(TlsHandle_t handle, void* value)
+{
+    ASSERT_MSG(handle != INVALID_TLS_HANDLE, "TLS handle is not valid");
+    TlsSetValue(handle, value);
+}
+
+void* TLSGet(TlsHandle_t handle)
+{
+    ASSERT_MSG(handle != INVALID_TLS_HANDLE, "TLS handle is not valid");
+    return TlsGetValue(handle);
 }
 
 //----------------------------------------------------------
@@ -374,14 +404,14 @@ uintptr_t ThreadCreate( threadfunc_t fnThread, void* pThreadParams, ThreadPriori
 
 	if( pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_JOINABLE ) != 0 )
 	{
-		ASSERT_FAIL( "ERROR: pthread_attr_setdetachstate %s failed\n", pszThreadName );
+		ASSERT_FAIL( "pthread_attr_setdetachstate %s failed\n", pszThreadName );
 		return ( uintptr_t )0;
 	}
 
 	pthread_t handle;
-	if( pthread_create( ( pthread_t* )&handle, &attr, ( pthread_function_t )fnThread, pThreadParams ) != 0 )
+	if( pthread_create( &handle, &attr, reinterpret_cast<pthread_function_t>(fnThread), pThreadParams ) != 0 )
 	{
-		ASSERT_FAIL( "ERROR: pthread_create %s failed\n", pszThreadName );
+		ASSERT_FAIL( "pthread_create %s failed\n", pszThreadName );
 		return ( uintptr_t )0;
 	}
 	
@@ -404,15 +434,58 @@ void SetCurrentThreadName(const char* name)
 
 void SetCurrentThreadAffinity(uintptr_t affinityMask)
 {
+	cpu_set_t cpuSet;
+	CPU_ZERO(&cpuSet);
+    for (int i = 0; i < sizeof(uintptr_t) * 8; i++) 
+	{
+        if (affinityMask & (1ull << i))
+		{
+            CPU_SET(i, &cpuSet);
+        }
+    }
+	pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
+}
+
+static uintptr_t CpuSetToMask(const cpu_set_t& cpuset)
+{
+    uintptr_t mask = 0;
+    for (int i = 0; i < sizeof(uintptr_t) * 8; i++)
+	{
+        if (CPU_ISSET(i, &cpuset))
+            mask |= (1ull << i);
+    }
+    return mask;
 }
 
 void GetCurrentProcessAffinity(uintptr_t& processAffinityMask, uintptr_t& systemAffinityMask)
 {
+	cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+
+    if (sched_getaffinity(0, sizeof(cpu_set_t), &cpuset) == 0)
+        processAffinityMask = CpuSetToMask(cpuset);
+    else
+        processAffinityMask = 0;
+
+    const long numCores = sysconf(_SC_NPROCESSORS_ONLN);
+    systemAffinityMask = 0;
+    for (int i = 0; i < numCores && i < sizeof(uintptr_t) * 8; i++)
+        systemAffinityMask |= (1ull << i);
 }
 
 void SetCurrentProcessAffinity(uintptr_t processAffinityMask)
 {
-	// TODO: sched_setaffinity
+    cpu_set_t cpuSet;
+    CPU_ZERO(&cpuSet);
+    for (int i = 0; i < sizeof(uintptr_t) * 8; i++)
+	{
+        if (processAffinityMask & (1ull << i))
+		{
+            CPU_SET(i, &cpuSet);
+        }
+    }
+
+    sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet);
 }
 
 uintptr_t ThreadGetID(uintptr_t threadHandle)
@@ -430,13 +503,13 @@ void ThreadDestroy( uintptr_t threadHandle )
 #if 0 //!defined(__ANDROID__)
 	if( pthread_cancel( ( pthread_t )threadHandle ) != 0 )
 	{
-		ASSERT_FAIL( "ERROR: pthread_cancel %s failed\n", name );
+		ASSERT_FAIL( "pthread_cancel %s failed\n", name );
 	}
 #endif
 
 	if( pthread_join( ( pthread_t )threadHandle, nullptr) != 0 )
 	{
-		ASSERT_FAIL( "ERROR: pthread_join %s failed\n", name );
+		ASSERT_FAIL( "pthread_join %s failed\n", name );
 	}
 }
 
@@ -444,6 +517,36 @@ void YieldCurrentThread()
 {
 	sched_yield();
 }
+
+bool TLSAlloc(TlsHandle_t& handle)
+{
+    if (pthread_key_create(&handle, nullptr) != 0)
+    {
+        handle = INVALID_TLS_HANDLE;
+        return false;
+    }
+	return true;
+}
+
+void TLSFree(TlsHandle_t handle)
+{
+    if(handle == INVALID_TLS_HANDLE)
+		return;
+    pthread_key_delete(handle);
+}
+
+void TLSSet(TlsHandle_t handle, void* value)
+{
+    ASSERT_MSG(handle != INVALID_TLS_HANDLE, "TLS handle is not valid");
+    pthread_setspecific(handle, value);
+}
+
+void* TLSGet(TlsHandle_t handle)
+{
+    ASSERT_MSG(handle != INVALID_TLS_HANDLE, "TLS handle is not valid");
+    return pthread_getspecific(handle);
+}
+
 
 //----------------------------------------------------------
 // Signal
