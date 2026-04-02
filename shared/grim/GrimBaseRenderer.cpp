@@ -564,7 +564,8 @@ void GRIMBaseRenderer::DestroyArchetypeData(GRIMArchetype slot)
 		int index : 24;
 		int what : 8;
 	};
-	Array<ItemInfo> delItems(PP_SL);
+	static thread_local Array<ItemInfo> delItems(PP_SL);
+	delItems.clear();
 	delItems.reserve(64);
 
 	const GPULodList lodList = m_drawLodsList[slot];
@@ -923,7 +924,7 @@ void GRIMBaseRenderer::UpdateInstanceBounds_Software(IntermediateState& intermed
 	//		instanceIds				: buffer<int[]>
 	//		drawInstanceBounds		: buffer<GPUInstanceBound[]>
 
-	Array<int> instanceIds(PP_SL);
+	static thread_local Array<int> instanceIds(PP_SL);
 	instanceIds.setNum(instanceCount);
 
 	drawInstanceBounds.setNum(m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS);
@@ -1010,6 +1011,11 @@ void GRIMBaseRenderer::UpdateIndirectInstances_Software(IntermediateState& inter
 	// Notes:
 	//		instanceInfos must be sorted by archetype id prior to executing
 
+	//static thread_local Array<GPUDrawIndexedIndirectCmd> drawCommands(PP_SL);
+	//drawCommands.setNum(m_drawInfos.numSlots());
+
+	//memset(drawCommands.ptr(), 0, drawCommands.numElem() * sizeof(drawCommands[0]));
+
 	for (const GPUInstanceBound& bound : drawInstanceBounds)
 	{
 		if (bound.archIdx == -1)
@@ -1041,11 +1047,13 @@ void GRIMBaseRenderer::UpdateIndirectInstances_Software(IntermediateState& inter
 			m_dbgStatsDrawnInstances += drawCmd.instanceCount;
 #endif
 
-			ASSERT(m_drawInfos(drawBatch.cmdIdx));
+			ASSERT_MSG(m_drawInfos(drawBatch.cmdIdx), "Draw archetype might not be present");
 
+			//drawCommands[drawBatch.cmdIdx] = drawCmd;
 			cmdRecorder->WriteBuffer(drawInvocationsBuffer, &drawCmd, sizeof(drawCmd), sizeof(GPUDrawIndexedIndirectCmd) * drawBatch.cmdIdx);
 		}
 	}
+	//cmdRecorder->WriteBuffer(drawInvocationsBuffer, drawCommands.ptr(), drawCommands.numElem() * sizeof(drawCommands[0]), 0);
 }
 
 static float memBytesToKB(size_t byteCnt)
@@ -1181,7 +1189,7 @@ bool GRIMBaseRenderer::IsSync() const
 
 void GRIMBaseRenderer::DbgValidate() const
 {
-#if !defined(_RETAIL) && !defined(_PROFILE)
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
 	if(!grim_dbgValidate.GetBool())
 		return;
 
@@ -1246,14 +1254,15 @@ void GRIMBaseRenderer::DbgValidate() const
 			ASSERT_FAIL("Invalid instance %d - Archetype %d hasn't been created yet (IsSync = %d)", i, archetypeId, IsSync());
 		}
 	}
-#endif // !_RETAIL
+#endif // GRIM_INSTANCES_DEBUG_ENABLED
 }
+
 
 void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContext& renderPassCtx)
 {
 	if (renderState.drawInvocationsBuffer == nullptr || renderState.instanceIdsBuffer == nullptr)
 		return;
-
+	
 	PROF_EVENT_F();
 
 	// last chance to wait for draw
@@ -1271,7 +1280,9 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 
 	const bool validationOn = g_renderAPI->IsDeviceValidationActive();
 
-	Map<uint64, int> drawInfosByMaterial(PP_SL);
+	thread_local Map<uint64, int> drawInfosByMaterial(PP_SL);
+	drawInfosByMaterial.clear();
+
 	for (int i = 0; i < m_drawInfos.numSlots(); ++i)
 	{
 		if (!m_drawInfos(i))
