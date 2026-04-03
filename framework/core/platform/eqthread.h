@@ -307,4 +307,78 @@ private:
 	void			operator = ( const CEqThread& s ) {}
 };
 
+//----------------------------------------------------------------------------------------
+// Thread-local storage with persistent objects. Supporting iterating objects and cleanup.
+// Each object returned by Get() is unique to it's thread. When threads are done objects 
+// will remain until Clear() is called. Designed to work with job manager.
+//----------------------------------------------------------------------------------------
+
+template<class T>
+class CEqTLS
+{
+public:
+	~CEqTLS()
+	{
+		TLSFree(m_tlsHandle);
+		m_tlsHandle = INVALID_TLS_HANDLE;
+	
+		Clear();
+	}
+
+	CEqTLS(PPSourceLine sl) : m_storage(sl)
+	{
+		const bool ok = TLSAlloc(m_tlsHandle);
+		ASSERT_MSG(ok, "Unable to alloc TLS handle!");
+	}
+	
+	void			Clear();
+	T&				Get();
+
+	// unsafe
+    ArrayCRef<T*>	GetAll() const { return m_storage; }
+
+    template<typename FUNC>
+	void			ForEach(FUNC fn) const;
+
+protected:
+
+	mutable CEqReadWriteLock	m_rwLock;
+	Array<T*>		m_storage{ PP_SL };
+	TlsHandle_t		m_tlsHandle{ INVALID_TLS_HANDLE };
+};
+
+template<class T>
+void CEqTLS<T>::Clear()
+{
+	Threading::CScopedWriteLocker lock(m_rwLock);
+	for(T* ptr : m_storage)
+		delete ptr;
+	m_storage.clear();
+}
+
+template<class T>
+T& CEqTLS<T>::Get()
+{
+	T* ptr = reinterpret_cast<T*>(TLSGet(m_tlsHandle));
+	if(!ptr)
+	{
+		ptr = PPNew T();
+		TLSSet(m_tlsHandle, ptr);
+		{		
+			Threading::CScopedWriteLocker lock(m_rwLock);
+			m_storage.append(ptr);
+		}
+	}
+	return *ptr;
+}
+
+template<class T>
+template<typename FUNC>
+void CEqTLS<T>::ForEach(FUNC fn) const
+{
+	Threading::CScopedReadLocker lock(m_rwLock);
+    for(T* ptr : m_storage)
+        fn(*ptr);
+}
+
 };
