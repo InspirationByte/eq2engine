@@ -319,16 +319,11 @@ class CEqTLS
 public:
 	~CEqTLS()
 	{
-		TLSFree(m_tlsHandle);
-		m_tlsHandle = INVALID_TLS_HANDLE;
-	
 		Clear();
 	}
 
 	CEqTLS(PPSourceLine sl) : m_storage(sl)
 	{
-		const bool ok = TLSAlloc(m_tlsHandle);
-		ASSERT_MSG(ok, "Unable to alloc TLS handle!");
 	}
 	
 	void			Clear();
@@ -350,6 +345,9 @@ protected:
 template<class T>
 void CEqTLS<T>::Clear()
 {
+	TLSFree(m_tlsHandle);
+	m_tlsHandle = INVALID_TLS_HANDLE;
+
 	Threading::CScopedWriteLocker lock(m_rwLock);
 	for(T* ptr : m_storage)
 		delete ptr;
@@ -359,6 +357,12 @@ void CEqTLS<T>::Clear()
 template<class T>
 T& CEqTLS<T>::Get()
 {
+	if(m_tlsHandle == INVALID_TLS_HANDLE)
+	{
+		const bool ok = TLSAlloc(m_tlsHandle);
+		ASSERT_MSG(ok, "Unable to alloc TLS handle!");
+	}
+
 	T* ptr = reinterpret_cast<T*>(TLSGet(m_tlsHandle));
 	if(!ptr)
 	{
