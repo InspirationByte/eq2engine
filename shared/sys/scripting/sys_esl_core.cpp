@@ -196,47 +196,47 @@ static EqString GetMsgStrArgs(const esl::ScriptState& state)
 
 static void WMsg(const esl::ScriptState& state)
 {
-	Msg(GetMsgStrArgs(state).ToCString());
+	Msg("[Lua] %s", GetMsgStrArgs(state).ToCString());
 }
 
 static void WMsgInfo(const esl::ScriptState& state)
 {
-	MsgInfo(GetMsgStrArgs(state).ToCString());
+	MsgInfo("[Lua] %s", GetMsgStrArgs(state).ToCString());
 }
 
 static void WMsgWarning(const esl::ScriptState& state)
 {
-	MsgWarning(GetMsgStrArgs(state).ToCString());
+	MsgWarning("[Lua] %s", GetMsgStrArgs(state).ToCString());
 }
 
 static void WMsgError(const esl::ScriptState& state)
 {
-	MsgError(GetMsgStrArgs(state).ToCString());
+	MsgError("[Lua] %s", GetMsgStrArgs(state).ToCString());
 }
 
 static void WMsgAccept(const esl::ScriptState& state)
 {
-	MsgAccept(GetMsgStrArgs(state).ToCString());
+	MsgAccept("[Lua] %s", GetMsgStrArgs(state).ToCString());
 }
 
 static void WMsgBox(const esl::ScriptState& state)
 {
-	InfoMsg(GetMsgStrArgs(state).ToCString());
+	InfoMsg("Lua - %s", GetMsgStrArgs(state).ToCString());
 }
 
 static void WMsgBoxWarning(const esl::ScriptState& state)
 {
-	WarningMsg(GetMsgStrArgs(state).ToCString());
+	WarningMsg("Lua - %s", GetMsgStrArgs(state).ToCString());
 }
 
 static void WMsgBoxError(const esl::ScriptState& state)
 {
-	ErrorMsg(GetMsgStrArgs(state).ToCString());
+	ErrorMsg("Lua - %s", GetMsgStrArgs(state).ToCString());
 }
 
 static void WMsgBoxAbort(const esl::ScriptState& state)
 {
-	CrashMsg(GetMsgStrArgs(state).ToCString());
+	CrashMsg("Lua - %s", GetMsgStrArgs(state).ToCString());
 }
 
 //---------------------------------------------------------------------------------------
