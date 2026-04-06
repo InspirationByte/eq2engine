@@ -171,8 +171,7 @@ void ComputeSortShader::RunSortPipeline(PipelineData& pipelineData, IGPUCommandR
 	if(changedParamsBuffer)
 	{
 		// recreate parameter bindings
-		pipelineData.bindings.clear();
-		pipelineData.bindings.reserve(paramsDataCount);
+		pipelineData.bindings.setNum(paramsDataCount);
 		for (int i = 0; i < paramsDataCount; ++i)
 		{
 			IGPUBindGroupPtr paramsBindGroup = g_renderAPI->CreateBindGroup(pipelineData.pipeline, Builder<BindGroupDesc>()
@@ -180,7 +179,7 @@ void ComputeSortShader::RunSortPipeline(PipelineData& pipelineData, IGPUCommandR
 				.Buffer(StringIdConst24("params"), paramsBuffer, alignedParamSize * i, sizeof(ParamsData))
 				.End()
 			);
-			pipelineData.bindings.append(paramsBindGroup);
+			pipelineData.bindings[i] = paramsBindGroup;
 		}
 	}
 
