@@ -161,6 +161,8 @@ void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInf
 		}
 	}
 
+	ASSERT(rhiBindingSetDesc.bindings.empty());
+	rhiBindingSetDesc.bindings.reserve(usedShaderBindingIdxs.numElem());
 	for (BindingToEntry bindingEntry : usedShaderBindingIdxs)
 	{
 		const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingEntry.first];
@@ -174,6 +176,9 @@ void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInf
 void CNVRHIBindingLayout::FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, nvrhi::BindingSetDesc& rhiBindingSetDesc) const
 {
 #if 1
+	ASSERT(rhiBindingSetDesc.bindings.empty());
+	rhiBindingSetDesc.bindings.reserve(bindGroupDesc.entries.numElem());
+
 	const BindGroupLayoutOrder& layoutOrder = m_layoutOrder[bindGroupDesc.groupIdx];
 	for (const CNVRHIBindingLayout::EntryId entryId : layoutOrder)
 	{
