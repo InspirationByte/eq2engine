@@ -30,6 +30,10 @@ protected:
 		Array<IGPUBindGroupPtr> bindings{ PP_SL };
 		IGPUComputePipelinePtr	pipeline;
 	};
+
+	struct ParamsData;
+
+	void	InitParamBuffer(PipelineData& pipelineData, IGPUCommandRecorder* cmdRecorder, int keysCount);
 	void	RunSortPipeline(PipelineData& pipelineData, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr keys, int keysCount, IGPUBufferPtr values);
 
 	Array<IGPUBufferPtr>	m_blocks{ PP_SL };

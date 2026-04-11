@@ -90,25 +90,19 @@ void ComputeSortShader::SortKeys(int dataTypeId, IGPUCommandRecorder* cmdRecorde
 	RunSortPipeline(*it, cmdRecorder, keys, keysCount, values);
 }
 
-void ComputeSortShader::RunSortPipeline(PipelineData& pipelineData, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr keys, int keysCount, IGPUBufferPtr values)
+struct ComputeSortShader::ParamsData
 {
-	if (keysCount <= 0)
-		return;
+	uint stride = 0;
+	uint strideTrailingZeros = 0;
+	uint innerReminder = 0;
+	uint innerLastIdx = 0;
+};
 
+void ComputeSortShader::InitParamBuffer(PipelineData& pipelineData, IGPUCommandRecorder* cmdRecorder, int keysCount)
+{
 	const ShaderAPICapabilities& rhiCaps = g_renderAPI->GetCaps();
 
-	uint N = 1;
-	while (N < keysCount)
-		N *= 2;
-
-	struct ParamsData
-	{
-		uint stride = 0;
-		uint strideTrailingZeros = 0;
-		uint innerReminder = 0;
-		uint innerLastIdx = 0;
-	};
-
+	const uint N = 1u << (32 - leadingZeroCnt(keysCount - 1));
 	const uint L = (N >= 2) ? (32 - leadingZeroCnt(N)) - 1 : 0;
 	const int paramsDataCount = static_cast<size_t>(L) * (L + 1) / 2;
 	const int alignedParamSize = max(sizeof(ParamsData), rhiCaps.minStorageBufferOffsetAlignment);
@@ -153,6 +147,33 @@ void ComputeSortShader::RunSortPipeline(PipelineData& pipelineData, IGPUCommandR
 			cmdRecorder->WriteBuffer(paramsBuffer, &paramsDataList[i], sizeof(ParamsData), alignedParamSize * i);
 	}
 
+	if(changedParamsBuffer)
+	{
+		static Threading::CEqMutex bindingsMutex;
+
+		Threading::CScopedMutex m(bindingsMutex);
+
+		// recreate parameter bindings
+		pipelineData.bindings.setNum(paramsDataCount);
+		for (int i = 0; i < paramsDataCount; ++i)
+		{
+			IGPUBindGroupPtr paramsBindGroup = g_renderAPI->CreateBindGroup(pipelineData.pipeline, Builder<BindGroupDesc>()
+				.GroupIndex(1)
+				.Buffer(StringIdConst24("params"), paramsBuffer, alignedParamSize * i, sizeof(ParamsData))
+				.End()
+			);
+			pipelineData.bindings[i] = paramsBindGroup;
+		}
+	}
+}
+
+void ComputeSortShader::RunSortPipeline(PipelineData& pipelineData, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr keys, int keysCount, IGPUBufferPtr values)
+{
+	if (keysCount <= 0)
+		return;
+
+	InitParamBuffer(pipelineData, cmdRecorder, keysCount);
+
 	IGPUBindGroupPtr sortDataGroup = g_renderAPI->CreateBindGroup(pipelineData.pipeline, Builder<BindGroupDesc>()
 		.GroupIndex(0)
 		.Buffer(StringIdConst24("keyData"), keys)
@@ -166,22 +187,7 @@ void ComputeSortShader::RunSortPipeline(PipelineData& pipelineData, IGPUCommandR
 
 	constexpr int SORT_TILE_SIZE = 256;
 	const uint x = (keysCount + SORT_TILE_SIZE - 1) - (keysCount - 1) % SORT_TILE_SIZE;
-	ASSERT(x% SORT_TILE_SIZE == 0);
-
-	if(changedParamsBuffer)
-	{
-		// recreate parameter bindings
-		pipelineData.bindings.setNum(paramsDataCount);
-		for (int i = 0; i < paramsDataCount; ++i)
-		{
-			IGPUBindGroupPtr paramsBindGroup = g_renderAPI->CreateBindGroup(pipelineData.pipeline, Builder<BindGroupDesc>()
-				.GroupIndex(1)
-				.Buffer(StringIdConst24("params"), paramsBuffer, alignedParamSize * i, sizeof(ParamsData))
-				.End()
-			);
-			pipelineData.bindings[i] = paramsBindGroup;
-		}
-	}
+	ASSERT(x % SORT_TILE_SIZE == 0);
 
 	const uint workgroupCountX = x / SORT_TILE_SIZE;
 	for (int i = 0; i < pipelineData.bindings.numElem(); ++i)
