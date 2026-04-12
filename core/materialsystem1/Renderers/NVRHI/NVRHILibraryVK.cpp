@@ -782,7 +782,7 @@ bool CNVRHIRenderLibVK::CreateDevice()
 	for (const char* ext : m_enabledExtensions.layers)
 		vkLayerNames.append(ext);
 
-	auto deviceDesc = vk::DeviceCreateInfo()
+	auto vkDeviceDesc = vk::DeviceCreateInfo()
 		.setPQueueCreateInfos(queueDesc.ptr())
 		.setQueueCreateInfoCount( queueDesc.numElem() )
 		.setPEnabledFeatures( &deviceFeatures )
@@ -792,7 +792,7 @@ bool CNVRHIRenderLibVK::CreateDevice()
 		.setPpEnabledLayerNames(vkLayerNames.ptr() )
 		.setPNext( &vulkan12features );
 
-	const vk::Result res = m_vkPhysicalDevice.createDevice( &deviceDesc, nullptr, &m_vkDevice );
+	const vk::Result res = m_vkPhysicalDevice.createDevice( &vkDeviceDesc, nullptr, &m_vkDevice );
 	if( res != vk::Result::eSuccess )
 	{
 		MsgError( "Failed to create a Vulkan physical device, error code = %s\n", nvrhi::vulkan::resultToString( ( VkResult )res ) );
@@ -879,10 +879,11 @@ void CNVRHIRenderLibVK::ExitAPI()
 	g_consoleCommands->UnregisterCommand(&vulkan_fastSync);
 }
 
-void CNVRHIRenderLibVK::BeginFrame(ISwapChain* swapChain)
+void CNVRHIRenderLibVK::BeginFrame(ISwapChain* swapChain, bool enableVSync)
 {
 	CNVRHIRenderAPI::Instance.m_deviceLost = false;
 	m_currentSwapChain.Assign(swapChain ? static_cast<CNVRHISwapChainVK*>(swapChain) : m_defaultSwapChain);
+	m_currentSwapChain->SetVSync(enableVSync);
 
 	// must obtain valid texture view upon Present
 	g_renderWorker.WaitForExecute(__func__, [this]() {
@@ -985,11 +986,6 @@ ISwapChainPtr CNVRHIRenderLibVK::CreateSwapChain(const RenderWindowInfo& windowI
 	}
 
 	return ISwapChainPtr(swapChain);
-}
-
-void CNVRHIRenderLibVK::SetVSync(bool enable)
-{
-	m_defaultSwapChain->SetVSync(enable);
 }
 
 void CNVRHIRenderLibVK::SetBackbufferSize(const int w, const int h)

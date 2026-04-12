@@ -122,10 +122,11 @@ void CNVRHIRenderLibDXGIBase::ExitAPI()
 	m_dxgiAdapter = nullptr;
 }
 
-void CNVRHIRenderLibDXGIBase::BeginFrame(ISwapChain* swapChain)
+void CNVRHIRenderLibDXGIBase::BeginFrame(ISwapChain* swapChain, bool enableVSync)
 {
 	CNVRHIRenderAPI::Instance.m_deviceLost = false;
 	m_currentSwapChain.Assign(swapChain ? static_cast<CNVRHISwapChainDXGI*>(swapChain) : m_defaultSwapChain);
+	m_currentSwapChain->SetVSync(enableVSync);
 
 	// must obtain valid texture view upon Present
 	g_renderWorker.WaitForExecute(__func__, [this]() {
@@ -190,11 +191,6 @@ ISwapChainPtr CNVRHIRenderLibDXGIBase::CreateSwapChain(const RenderWindowInfo& w
 
 	CRefPtr<CNVRHISwapChainDXGI> swapChain = CRefPtr_new(CNVRHISwapChainDXGI, windowInfo, swapChainTexture);
 	return ISwapChainPtr(swapChain);
-}
-
-void CNVRHIRenderLibDXGIBase::SetVSync(bool enable)
-{
-	m_defaultSwapChain->SetVSync(enable);
 }
 
 void CNVRHIRenderLibDXGIBase::SetBackbufferSize(const int w, const int h)

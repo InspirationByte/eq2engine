@@ -387,12 +387,13 @@ void CWGPURenderLib::ExitAPI()
 	m_deviceQueue = nullptr;
 }
 
-void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
+void CWGPURenderLib::BeginFrame(ISwapChain* swapChain, bool enableVSync)
 {
 	m_endFrameWait.Wait();
 
 	CWGPURenderAPI::Instance.m_deviceLost = false;
 	m_currentSwapChain.Assign(swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_defaultSwapChain);
+	m_currentSwapChain->SetVSync(enableVSync);
 
 	// must obtain valid texture view upon Present
 	g_renderWorker.WaitForExecute(__func__, [this]() {
@@ -435,11 +436,6 @@ ISwapChainPtr CWGPURenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo
 	ASSERT_MSG(justCreated, "%s texture already has been created", texName.ToCString());
 
 	return ISwapChainPtr(CRefPtr_new(CWGPUSwapChain, this, windowInfo, swapChainTexture));
-}
-
-void CWGPURenderLib::SetVSync(bool enable)
-{
-	m_defaultSwapChain->SetVSync(enable);
 }
 
 void CWGPURenderLib::SetBackbufferSize(const int w, const int h)

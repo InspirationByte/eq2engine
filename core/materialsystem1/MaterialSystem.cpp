@@ -1172,8 +1172,7 @@ bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 		}
 	}
 
-	m_renderLibrary->SetVSync(r_vSync.GetBool());
-	m_renderLibrary->BeginFrame(swapChain);
+	m_renderLibrary->BeginFrame(swapChain, r_vSync.GetBool());
 	const bool deviceState = m_shaderAPI->IsDeviceActive();
 
 	// reset viewport and scissor

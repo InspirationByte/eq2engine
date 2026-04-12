@@ -29,13 +29,12 @@ public:
 	virtual bool	InitAPI(const ShaderAPIParams& params);
 	virtual void	ExitAPI();
 
-	virtual void	BeginFrame(ISwapChain* swapChain = nullptr);
+	virtual void	BeginFrame(ISwapChain* swapChain, bool enableVSync);
 	virtual void	EndFrame();
 
 	IShaderAPI*		GetRenderer() const;
 	ITexturePtr		GetCurrentBackbuffer() const;
 
-	void			SetVSync(bool enable);
 	void			SetBackbufferSize(int w, int h);
 	void			SetFocused(bool inFocus) {}
 

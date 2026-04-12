@@ -69,7 +69,7 @@ void CEmptyRenderLib::ExitAPI()
 	m_currentSwapChain = nullptr;
 }
 
-void CEmptyRenderLib::BeginFrame(ISwapChain* swapChain)
+void CEmptyRenderLib::BeginFrame(ISwapChain* swapChain, bool enableVSync)
 {
 	m_currentSwapChain.Assign(swapChain ? swapChain : m_defaultSwapChain);
 }
