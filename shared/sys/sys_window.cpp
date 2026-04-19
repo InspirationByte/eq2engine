@@ -137,6 +137,9 @@ static void sysHostHandleSDLEvents(SDL_Event* event)
 bool sysHostInit()
 {
 	SDL_SetHint(SDL_HINT_VIDEO_EXTERNAL_CONTEXT, "1");
+#ifdef SDL_HINT_VIDEO_WAYLAND_ALLOW_LIBDECOR
+	SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_ALLOW_LIBDECOR, "0");
+#endif
 #ifdef SDL_HINT_WINDOWS_DPI_AWARENESS
 	SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitor");
 #endif
