@@ -57,6 +57,7 @@ public:
 	void				SetSequenceByName(const char* name, int slot = 0);	// sets new sequence by it's name
 
 	const AnimSequence* GetSequenceById(int sequenceId) const;
+	const AnimSequenceTimer&	GetSequenceTimer(int slot = 0) const { return m_sequenceTimers[slot]; }
 
 	bool				IsSequencePlaying(int slot = 0) const;
 	void				PlaySequence(int slot = 0);							// plays/resumes animation
