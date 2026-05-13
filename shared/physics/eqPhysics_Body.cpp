@@ -526,7 +526,7 @@ Vector3D CEqRigidBody::GetVelocityAtWorldPoint(const FVector3D& point) const
 
 float CEqRigidBody::ComputeImpulseDenominator(const FVector3D& pos, const Vector3D& normal) const
 {
-	Vector3D r0 = pos+m_centerOfMassTrans;
+	Vector3D r0 = pos + m_centerOfMassTrans;
 	Vector3D c0 = cross(r0, normal);
 
 	Vector3D vec = cross(m_invInertiaTensor*c0, r0);
@@ -538,22 +538,27 @@ float CEqRigidBody::ComputeImpulseDenominator(const FVector3D& pos, const Vector
 
 void CEqRigidBody::SetLinearVelocity(const Vector3D& velocity)
 {
+	ASSERT(vecIsValid(velocity));
+
 	// set linear momentum, BUT multiplied by it's mass
 	m_linearVelocity = velocity;
 }
 
 void CEqRigidBody::SetAngularVelocity(const Vector3D& velocity)
 {
+	ASSERT(vecIsValid(velocity));
 	m_angularVelocity = velocity;
 }
 
 void CEqRigidBody::SetLinearFactor(const Vector3D& fac)
 {
+	ASSERT(vecIsValid(fac));
 	m_linearFactor = fac;
 }
 
 void CEqRigidBody::SetAngularFactor(const Vector3D& fac)
 {
+	ASSERT(vecIsValid(fac));
 	m_angularFactor = fac;
 }
 

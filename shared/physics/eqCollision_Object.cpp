@@ -280,6 +280,8 @@ void CEqCollisionObject::SetPosition(const FVector3D& position)
 
 void CEqCollisionObject::SetOrientation(const Quaternion& orient)
 {
+	ASSERT(orient.isValid());
+
 	m_orientation = orient;
 	m_flags |= COLLOBJ_BOUNDBOX_DIRTY;
 
@@ -288,6 +290,8 @@ void CEqCollisionObject::SetOrientation(const Quaternion& orient)
 
 void CEqCollisionObject::SetTransform(const Transform3D& trs)
 {
+	ASSERT(trs.isValid());
+	
 	m_position = trs.t;
 	m_orientation = trs.r;
 	m_flags |= COLLOBJ_BOUNDBOX_DIRTY;
