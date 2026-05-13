@@ -1015,7 +1015,7 @@ inline TVec2D<T> balance(const TVec2D<T> &v)
 {
 	TVec2D<T> tmp(v);
 
-	T invLen = 1.0f / sqrtf(v.x*v.x + v.y*v.y);
+	T invLen = 1.0f / sqrtf(dot(v, v));
 
 	tmp *= invLen;
 
@@ -1029,7 +1029,7 @@ inline TVec3D<T> balance(const TVec3D<T> &v)
 {
 	TVec3D<T> tmp(v);
 
-	T invLen = 1.0f / sqrtf(v.x*v.x + v.y*v.y + v.z*v.z);
+	T invLen = 1.0f / sqrtf(dot(v, v));
 
 	tmp *= invLen;
 
@@ -1044,7 +1044,7 @@ inline TVec4D<T> balance(const TVec4D<T> &v)
 {
 	TVec4D<T> tmp(v);
 
-	T invLen = 1.0f / sqrtf(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w);
+	T invLen = 1.0f / sqrtf(dot(v, v));
 
 	tmp *= invLen;
 

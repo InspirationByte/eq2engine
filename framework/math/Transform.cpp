@@ -6,6 +6,15 @@ Transform3D::Transform3D(const Vector3D& origin, const Quaternion& orientation, 
 	, r(orientation)
 	, s(scale)
 {
+	ASSERT(isValid());
+}
+
+Transform3D::Transform3D(const Vector3D& origin, const Vector3D& eulerAnglesXYZ, const Vector3D& scale)
+	: t(origin)
+	, r(rotateXYZ(eulerAnglesXYZ.x, eulerAnglesXYZ.y, eulerAnglesXYZ.z))
+	, s(scale)
+{
+	ASSERT(isValid());
 }
 
 Transform3D::Transform3D(const Matrix4x4& matrix)
@@ -25,13 +34,13 @@ Transform3D::Transform3D(const Matrix4x4& matrix)
 	rotMatrix.rows[1] *= invScaleY;
 	rotMatrix.rows[2] *= invScaleZ;
 	r = rotMatrix;
+
+	ASSERT(isValid());
 }
 
-Transform3D::Transform3D(const Vector3D& origin, const Vector3D& eulerAnglesXYZ, const Vector3D& scale)
-	: t(origin)
-	, r(rotateXYZ(eulerAnglesXYZ.x, eulerAnglesXYZ.y, eulerAnglesXYZ.z))
-	, s(scale)
+bool Transform3D::isValid() const
 {
+	return r.isValid() && vecIsValid(t) && vecIsValid(s);
 }
 
 Vector3D Transform3D::forward() const

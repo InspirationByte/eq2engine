@@ -12,6 +12,8 @@ struct Transform3D
 	Transform3D(const Vector3D& origin, const Vector3D& eulerAnglesXYZ = vec3_zero, const Vector3D& scale = Vector3D(1.0f));
 	Transform3D(const Matrix4x4& matrix);
 
+	bool			isValid() const;
+
 	Vector3D		forward() const;
 	Vector3D		right() const;
 	Vector3D		up() const;
