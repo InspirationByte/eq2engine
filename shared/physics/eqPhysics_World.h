@@ -81,6 +81,8 @@ public:
 	void							AddToMoveableList( CEqRigidBody* body );			///< adds object to moveable list
 	void							RemoveFromMoveableList( CEqRigidBody* body );
 
+	void							SetupCollisionObjectBroadphase(CEqCollisionObject* body);
+
 	void							AddBody( CEqRigidBody* body, bool moveable = true );	///< adds to processing
 	bool							RemoveBody( CEqRigidBody* body );				///< removes body from world, not deleting
 
@@ -151,9 +153,6 @@ public:
 	void							SetDebugRaycast(bool enable) {m_debugRaycast = enable;}
 
 protected:
-
-
-	void							SetupCollisionObjectBroadphase(CEqCollisionObject* body);
 
 	///< Integrates single body without collision detection
 	void							IntegrateSingle(CEqRigidBody* body);
