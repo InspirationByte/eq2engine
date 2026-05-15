@@ -90,11 +90,12 @@ enum ETextureFormat : uint16
 	FORMAT_D32F     	= 50,
 
 	// Compressed formats
-	FORMAT_DXT1     	= 51, // or S3TC
-	FORMAT_DXT3     	= 52,
-	FORMAT_DXT5     	= 53,
-	FORMAT_ATI1N    	= 54,
-	FORMAT_ATI2N    	= 55,
+	FORMAT_DXT1     	= 51, // BC1 one-bit alpha / no alpha
+	FORMAT_DXT3     	= 52, // BC2 explicit non-premultiplied alpha
+	FORMAT_DXT5     	= 53, // BC3 interpolated non-premultiplied alpha
+	FORMAT_ATI1N    	= 54, // BC4
+	FORMAT_ATI2N    	= 55, // BC5
+	
 	FORMAT_ETC1			= 56, // RGB
 	FORMAT_ETC2			= 57, // RGB
 	FORMAT_ETC2A1		= 58, // RGBA - with 1 bit alpha
