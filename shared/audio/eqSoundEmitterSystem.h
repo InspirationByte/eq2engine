@@ -47,6 +47,7 @@ public:
 	void				GetAllSoundsList(Array<SoundScriptDesc*>& list) const;
 	static const char*	GetScriptName(SoundScriptDesc* desc);
 
+	void				DbgPrintInfo() const;
 private:
 	struct ScriptBank
 	{

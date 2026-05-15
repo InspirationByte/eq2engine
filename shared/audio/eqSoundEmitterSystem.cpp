@@ -54,6 +54,10 @@ DECLARE_CMD_VARIANTS(snd_test_scriptsound, "Test the scripted sound", cmd_vars_s
 
 DECLARE_CVAR(snd_scriptsound_debug, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(snd_scriptsound_showWarnings, "0", nullptr, 0);
+DECLARE_CMD(snd_scriptsound_info, "Print script sound info", 0)
+{
+	g_sounds->DbgPrintInfo();
+}
 
 //----------------------------------------------------------------------------
 //
@@ -68,6 +72,26 @@ CSoundEmitterSystem::CSoundEmitterSystem()
 
 CSoundEmitterSystem::~CSoundEmitterSystem()
 {
+}
+
+void CSoundEmitterSystem::DbgPrintInfo() const
+{
+	MsgInfo("Channel types:\n");
+	for(const ChannelDef& chan : m_channelTypes)
+		MsgInfo(" %d: %s (max %d)\n", chan.id, chan.name, chan.limit);
+
+	MsgInfo("Banks:\n");
+	for(const ScriptBank& bank : m_allSounds)
+	{
+		int totalSamples = 0;
+		int cachedSamples = 0;
+		for(const SoundScriptDesc& desc : bank.sounds)
+		{
+			totalSamples += desc.soundFileNames.numElem();
+			cachedSamples += desc.samples.numElem();
+		}
+		MsgInfo(" %s: %d sounds (%d/%d cached samples)\n", bank.name.ToCString(), bank.sounds.size(), cachedSamples, totalSamples);
+	}
 }
 
 void CSoundEmitterSystem::Init(float defaultMaxDistance, ArrayCRef<ChannelDef> channelDefs)
