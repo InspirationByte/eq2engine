@@ -238,18 +238,18 @@ void CMaterial::InitShader(IShaderAPI* renderAPI)
 	if(m_shader)
 		return;
 
-	PROF_EVENT_F();
+	PROF_EVENT(EqString::Format("InitShader %s", m_szShaderName));
 
-	const MatSysShaderFactory* shaderFactory = g_matSystem->GetShaderFactory(m_szShaderName.GetData(), m_instanceFormatId);
+	const MatSysShaderFactory* shaderFactory = g_matSystem->GetShaderFactory(m_szShaderName, m_instanceFormatId);
 	if (!shaderFactory)
 	{
-		MsgError("Invalid shader '%s' specified for material %s!\n", m_szShaderName.GetData(), m_szMaterialName.GetData());
+		MsgError("Invalid shader '%s' specified for material %s!\n", m_szShaderName.ToCString(), m_szMaterialName.ToCString());
 		shaderFactory = g_matSystem->GetShaderFactory("Error", m_instanceFormatId);
 	}
 
 	if(shaderFactory && arrayFindIndex(shaderFactory->vertexLayoutIds, m_instanceFormatId) == -1)
 	{
-		MsgError("Vertex instance format is unsupported by shader '%s' specified for material '%s'\n", shaderFactory->shaderName, m_szMaterialName.GetData());
+		MsgError("Vertex instance format is unsupported by shader '%s' specified for material '%s'\n", shaderFactory->shaderName, m_szMaterialName.ToCString());
 		shaderFactory = g_matSystem->GetShaderFactory("Error", m_instanceFormatId);
 	}
 	ASSERT_MSG(shaderFactory, "Error shader is not registered or overrides hasn't been set up");
