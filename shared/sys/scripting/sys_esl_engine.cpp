@@ -362,7 +362,7 @@ struct LuaInputBinding
 
 	static void CommandHandler(void* userData, const Vector3D& value)
 	{
-		const int nameHash = reinterpret_cast<int>(userData);
+		const int nameHash = reinterpret_cast<intptr_t>(userData);
 		auto it = s_bindings.find(nameHash);
 		ASSERT_MSG(!it.atEnd(), "LuaInputBinding CommandHandler ref is invalid");
 
@@ -429,7 +429,7 @@ struct LuaInputVectorAction
 
 	static void CommandHandler(void* userData, const Vector3D& value)
 	{
-		const int nameHash = reinterpret_cast<int>(userData);
+		const int nameHash = reinterpret_cast<intptr_t>(userData);
 		auto it = s_actions.find(nameHash);
 		ASSERT_MSG(!it.atEnd(), "LuaInputAxisAction CommandHandler ref is invalid");
 

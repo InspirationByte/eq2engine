@@ -24,6 +24,9 @@ property "e2_ws_settings"
 	filter "system:Windows"
 		implibdir "build/lib/%{cfg.platform}/%{cfg.buildcfg}"
 
+	filter "system:Linux"
+		toolset "clang"
+
 property "e2_ws_configurations"
     filter "configurations:Debug"
         defines { 

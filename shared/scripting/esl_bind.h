@@ -344,15 +344,15 @@ NOTE on weak pointers:
 // Begin binding of members
 #define EQSCRIPT_TYPE_BEGIN(Class) \
 	namespace esl { \
-	template struct ScriptClass<Class>; \
-	template<> TypeInfoGetter ScriptClass<Class>::baseClassTypeInfoGetter = BaseScriptClass<Class>::GetTypeInfo; \
 	namespace runtime { \
 		template<> PushGet<Class>::PushFunc		PushGet<Class>::Push	= &PushGetImpl<Class>::PushObject; \
 		template<> PushGet<Class>::GetFunc		PushGet<Class>::Get		= &PushGetImpl<Class>::GetObject; \
 		template<> PushGet<Class>::GetThisFunc	PushGet<Class>::GetThis = &PushGetImpl<Class>::GetThis; \
 	} \
-	namespace bindings { \
-		template<> ArrayCRef<Member> ClassBinder<Class>::GetMembers() { \
+	template<> TypeInfoGetter ScriptClass<Class>::baseClassTypeInfoGetter = BaseScriptClass<Class>::GetTypeInfo; \
+	template<> ArrayCRef<Member> bindings::ClassBinder<Class>::GetMembers(); \
+	template struct ScriptClass<Class>; \
+	template<> ArrayCRef<Member> bindings::ClassBinder<Class>::GetMembers() { \
 		BaseClassStorage::Add<BindClass>(); \
 		static Member members[] = { MakeDestructor(), \
 
@@ -361,4 +361,4 @@ NOTE on weak pointers:
 		}; \
 		return members; \
 	} \
-	} /* bindings */ } // esl
+	} // esl
