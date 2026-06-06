@@ -80,6 +80,7 @@ namespace crc32_detail {
 
 namespace CType
 {
+// stringref.h must be included
 constexpr int ASCIILower_Cexpr(int c);
 }
 

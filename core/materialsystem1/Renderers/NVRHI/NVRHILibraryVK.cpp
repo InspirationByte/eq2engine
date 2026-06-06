@@ -289,7 +289,7 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 
 			DevMsg(DEVMSG_RENDER, "Enabled Vulkan layers:\n");
 			for (const auto& layer : m_enabledExtensions.layers)
-				DevMsg(DEVMSG_RENDER, "    %s\n", layer);
+				DevMsg(DEVMSG_RENDER, "    %s\n", layer.ToCString());
 		}
 
 		for (const char* ext : m_enabledExtensions.instance)
@@ -299,7 +299,7 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 			vkLayerNames.append(ext);
 
 		auto applicationInfo = vk::ApplicationInfo()
-			.setApiVersion(VK_MAKE_VERSION(1, 2, 0))
+			.setApiVersion(VK_MAKE_VERSION(1, 3, 0))
 			.setPApplicationName(g_eqCore->GetApplicationName())
 			.setPEngineName("eq2");
 
@@ -954,7 +954,7 @@ ISwapChainPtr CNVRHIRenderLibVK::CreateSwapChain(const RenderWindowInfo& windowI
 		// Support generic SDL platform for linux and macOS
 		if(windowInfo.parent && windowInfo.parent->windowType == RHI_WINDOW_HANDLE_SDL)
 		{
-			swapChain->m_vkWindowSurface = (vk::SurfaceKHR)windowInfo.parent->get(RenderWindowInfo::SURFACE, m_vkInstance);
+			swapChain->m_vkWindowSurface = vk::SurfaceKHR((VkSurfaceKHR)windowInfo.parent->get(RenderWindowInfo::SURFACE, m_vkInstance));
 			if(swapChain->m_vkWindowSurface)
 			{
 				surfaceCreateRes = VkResult::VK_SUCCESS;

@@ -22,6 +22,12 @@ enum EDPKFileFlags : int
 	DPKFILE_FLAG_ENCRYPTED			= (1 << 1),
 };
 
+enum EDPKCompressionType : uint8
+{
+	DPKCOMP_LZ4 = 0,
+	DPKCOMP_ZXC = 1,
+};
+
 static bool DPK_IsBlockFile(int flags)
 {
 	return flags & (DPKFILE_FLAG_COMPRESSED | DPKFILE_FLAG_ENCRYPTED);
@@ -63,6 +69,6 @@ struct dpkfileinfo_s
 	uint32	crc;
 
 	short	numBlocks;			// number of blocks
-	short	flags;
+	short	flags;				// EDPKFileFlags
 };
 ALIGNED_TYPE(dpkfileinfo_s, 2) dpkfileinfo_t;

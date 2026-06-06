@@ -310,7 +310,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 		{
 
 			auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
-			ASSERT_MSG(exIt.atEnd(), "%s-%s%s module already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), queryStr, kindStr.ToCString(), exIt.value());
+			ASSERT_MSG(exIt.atEnd(), "%s-%s%s module already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), queryStr.ToCString(), kindStr.ToCString(), exIt.value());
 
 			shaderInfo.modulesMap.insert(shaderModuleId, moduleIndex);
 			shaderInfo.shaderKinds |= kind;
@@ -344,7 +344,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 		auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
 		if (!exIt.atEnd())
 		{
-			ASSERT_FAIL("%s %s-%s module reference already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), kindStr, queryStr, exIt.value());
+			ASSERT_FAIL("%s %s-%s module reference already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), kindStr.ToCString(), queryStr.ToCString(), exIt.value());
 		}
 
 		shaderInfo.modulesMap.insert(shaderModuleId, refBlobIdx);

@@ -153,6 +153,7 @@ property "gcc_clang"
 		}
 		disablewarnings {
 			-- disable warnings which are emitted by my stupid (and not so) code
+			"unknown-warning-option",
 			"narrowing",
 			"c++11-narrowing",
 			"writable-strings",
@@ -164,9 +165,17 @@ property "gcc_clang"
 			"format-security",
 			"unused-parameter",
 			"sign-compare",
-			"ignored-attributes",	-- annyoing, don't re-enable
-			"write-strings",		-- TODO: fix this
-			"subobject-linkage"		-- TODO: fix this
+			"ignored-attributes",				-- annyoing, don't re-enable
+			"write-strings",					-- TODO: fix this
+			"subobject-linkage",				-- TODO: fix this
+			-- clang
+			"implicit-enum-enum-cast",			-- TODO: fix this with 'enum class'
+			"inconsistent-missing-override",	-- TODO: fix this
+			"dynamic-class-memaccess", 			-- \
+			"nontrivial-memcall",				-- annoying, we know about memmove & memcpy and how to use them
+			"undefined-var-template",			-- TODO: fix this
+			"null-dereference",					-- a lot of this comming from ESL
+			"comment", "switch",				-- annoying, don't re-enable
 		}
 
 property "unitybuild"

@@ -13,7 +13,6 @@ public:
 		: m_buffer(new Cell [bufferSize])
 		, m_buffer_mask(bufferSize - 1)
 	{
-		typedef char assert_nothrow [__has_nothrow_assign(T) || __has_trivial_assign(T) || !__is_class(T) ? 1 : -1];
 		ASSERT((bufferSize >= 2) && ((bufferSize & (bufferSize - 1)) == 0));
 
 		for (uint64 i = 0; i != bufferSize; i += 1)

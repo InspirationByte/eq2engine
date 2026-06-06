@@ -545,7 +545,7 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 		DbgSphere()
 			.Position(params.position).Radius(params.referenceDistance)
 			.Color(color_white)
-			.Name(EqString::Format("strt emit %x", emitter))
+			.Name(EqString::Format("strt emit %x", emitter.Ptr()))
 			.Time(10.0f);
 
 		EqString inputParams;
@@ -562,7 +562,7 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 			.Distance(50.0f)
 			.Text("update %s\nv=%.2f\np=%.2f\n\n%s", script->name.ToCString(), params.volume[0], params.pitch, inputParams.ToCString())
 			.Time(10.0f)
-			.Name(EqString::Format("strt emit %x", emitter));
+			.Name(EqString::Format("strt emit %x", emitter.Ptr()));
 	}
 #endif
 
