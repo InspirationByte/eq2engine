@@ -27,6 +27,17 @@
 #define PRINTF_FMT_CHECK(fmt, ...)				(void)sizeof(printf(fmt, ##__VA_ARGS__)),
 #endif // __GNUC__
 
+#if defined(__GNUC__) && defined(__clang__)
+#define PRAGMA_OPTIMIZE_OFF		_Pragma("clang optimize off")
+#define PRAGMA_OPTIMIZE_ON		_Pragma("clang optimize on")
+#elif defined(_MSC_VER)
+#define PRAGMA_OPTIMIZE_OFF		__pragma(optimize("", off))
+#define PRAGMA_OPTIMIZE_ON		__pragma(optimize("", on))
+#else
+#define PRAGMA_OPTIMIZE_OFF
+#define PRAGMA_OPTIMIZE_ON
+#endif
+
 #ifdef PLAT_ANDROID
 
 typedef __builtin_va_list	va_list;
