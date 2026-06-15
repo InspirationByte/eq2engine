@@ -1226,6 +1226,12 @@ bool KeyValues::Tokenizer(const char* buffer, int bufferSize, const char* fileNa
 			break;
 	}
 
+	if (sectionDepth > 0)
+	{
+		MsgError("'%s' (%d): EOF unexpected (missing '%c')\n", (fileName ? fileName : "buffer"), lastModeStartLine, KV_SECTION_END);
+		tokenFuncWrap("s-", --sectionDepth);
+	}
+
 	switch (mode)
 	{
 		case MODE_SKIP_COMMENT_MULTILINE:
