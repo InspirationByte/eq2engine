@@ -669,14 +669,16 @@ const IMaterialPtr& CEqStudioGeom::GetMaterial(int materialIdx, int skinIdx) con
 	ASSERT_MSG(skinIdx >= 0, "Invalid skin idx %d for %s", skinIdx, GetName());
 	ASSERT_MSG(skinIdx < GetSkinCount(), "Invalid skin idx %d for %s", skinIdx, GetName());
 
+	skinIdx = clamp(skinIdx, 0, max(0, GetSkinCount() - 1));
 	return m_materials[m_materialCount * skinIdx + materialIdx];
 }
 
 ArrayCRef<IMaterialPtr>	CEqStudioGeom::GetMaterials(int skinIdx) const
 {
-	ASSERT(skinIdx >= 0);
-	ASSERT(skinIdx < GetSkinCount());
+	ASSERT_MSG(skinIdx >= 0, "Invalid skin idx %d for %s", skinIdx, GetName());
+	ASSERT_MSG(skinIdx < GetSkinCount(), "Invalid skin idx %d for %s", skinIdx, GetName());
 
+	skinIdx = clamp(skinIdx, 0, max(0, GetSkinCount() - 1));
 	return ArrayCRef(&m_materials[m_materialCount * skinIdx], m_materialCount);
 }
 
@@ -700,45 +702,52 @@ bool CEqStudioGeom::LoadSkinDescFile()
 
 	const int firstMaterial = m_materials.numElem();
 
-	for (const KVSection& skinSec : kvs.Keys(nullptr, KV_FLAG_SECTION))
+	FixedArray<EqStringRef, MAX_STUDIOMATERIALS> materialSearchPaths;
+	for (const KVSection& searchPathSec : kvs.Keys("materialPath"))
 	{
-		FixedArray<EqStringRef, MAX_STUDIOMATERIALS> materialSearchPaths;
+		EqStringRef searchPath;
+		if (!searchPathSec.GetValues(searchPath))
+			continue;
+		materialSearchPaths.append(searchPath);
+	}
+
+	int loadedSkins = 0;
+	for (const KVSection& skinSec : kvs.Keys(nullptr))
+	{
+		if (!CString::CompareCaseIns(skinSec.GetName(), "materialPath"))
+			continue;
+
 		FixedArray<EqStringRef, MAX_STUDIOMATERIALS> materialNames;
 		materialNames.reserve(m_materialCount);
 
-		for (const KVSection& searchPathSec : skinSec.Keys("materialPath"))
+		if (!skinSec.ValueCount())
 		{
-			EqStringRef searchPath;
-			if (!searchPathSec.GetValues(searchPath))
-				continue;
-			materialSearchPaths.append(searchPath);
+			MsgError("materialGroup: must have material names as values!\n");
+			MsgError("	usage: \"<skin name>\" \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");
+			return false;
 		}
 
-		for (const KVSection& keyBase : skinSec.Keys("materialGroup"))
+		if (skinSec.ValueCount() != m_materialCount)
 		{
-			if (!keyBase.ValueCount())
-			{
-				MsgError("materialGroup: must have material names as values!\n");
-				MsgError("	usage: materialGroup \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");
-				return false;
-			}
-
-			if (keyBase.ValueCount() != m_materialCount)
-			{
-				MsgError("materialGroup: must have same material count specified (%d)!\n", m_materials.numElem());
-				MsgError("	usage: materialGroup \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");
-				return false;
-			}
-
-			for (EqStringRef strValues : keyBase.Values<EqStringRef>())
-				materialNames.append(strValues);
+			MsgError("materialGroup: must have same material count specified (%d)!\n", m_materialCount);
+			MsgError("	usage: \"<skin name>\" \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");
+			return false;
 		}
+
+		for (EqStringRef strValues : skinSec.Values<EqStringRef>())
+			materialNames.append(strValues);
 
 		const int nameHash = StringId24(skinSec.GetName(), true);
 		m_skinNameIds.insert(nameHash, GetSkinCount());
 
 		// add skin materials
 		LoadMaterials(materialNames, materialSearchPaths);
+		++loadedSkins;
+	}
+
+	if (!loadedSkins)
+	{
+		MsgWarning("Warning! '%s' has skin desc file with no skins defined\n", m_name.ToCString());
 	}
 
 	return true;
