@@ -818,5 +818,9 @@ bool eslSysCoreInit(const esl::ScriptState& state)
 		localizeTable.Set("AddToken", EQSCRIPT_CFUNC(S_Localize_AddToken));
 		state.SetGlobal("localize", localizeTable);
 	}
+
+	state.SetGlobal("StringId24", EQSCRIPT_CFUNC(StringId24));
+	state.SetGlobal("StringId", EQSCRIPT_CFUNC(StringId));
+
 	return true;
 }

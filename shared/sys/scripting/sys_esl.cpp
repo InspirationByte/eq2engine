@@ -17,6 +17,7 @@
 #include "sys_esl_movie.h"
 #include "sys_esl_animating.h"
 #include "sys_esl_engine.h"
+#include "sys_esl_matsystem.h"
 #include "sys_esl_equi.h"
 
 namespace eslSys
@@ -421,6 +422,7 @@ bool eslSysInit(const esl::ScriptState& state)
 	ESL_SYS_INIT(eslSysInputInit);
 	ESL_SYS_INIT(eslSysSoundEmitterSystemInit);
 	ESL_SYS_INIT(eslSysStateManagerInit);
+	ESL_SYS_INIT(eslSysMaterialSystemInit);
 	ESL_SYS_INIT(eslSysHostInit);
 	ESL_SYS_INIT(eslSysEquiInit);
 	ESL_SYS_INIT(eslSysMoviePlayerInit);
