@@ -82,7 +82,7 @@ workspace(WORKSPACE_NAME)
 	vscode_launch_environment {
 		LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}/%{cfg.targetdir}:${workspaceRoot}/../build/bin64linux"
 	}
-	vscode_launch_visualizerFile "${workspaceRoot}/public/types.natvis"
+	vscode_launch_visualizerFile "${workspaceRoot}/eq2engine/framework/types.natvis"
 
 PUBLIC_DIR = ENGINE_DIR.."/public"
 FRAMEWORK_DIR = ENGINE_DIR.."/framework"
