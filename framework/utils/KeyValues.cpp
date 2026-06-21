@@ -1007,10 +1007,13 @@ KVKeyIterator KVKeyIterator::Init::end() const
 // KEYVALUES API Functions
 //---------------------------------------------------------------------------------------------------------
 
-bool KeyValues::ParseText(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName, int nStartLine)
+bool KeyValues::ParseText(const char* pszBuffer, VSSize bufferSize, KVSection& outSection, const char* pszFileName, int nStartLine)
 {
 	if (bufferSize < 0)
 		bufferSize = strlen(pszBuffer);
+
+	if (bufferSize == 0)
+		return true;
 	
 	int version = 2;
 	if(pszBuffer[0] == '$')
@@ -1035,7 +1038,7 @@ bool KeyValues::ParseText(const char* pszBuffer, int bufferSize, KVSection& outS
 	return result;
 }
 
-bool KeyValues::Tokenizer(const char* buffer, int bufferSize, const char* fileName, int startLine, const KVTokenFunc tokenFunc)
+bool KeyValues::Tokenizer(const char* buffer, VSSize bufferSize, const char* fileName, int startLine, const KVTokenFunc tokenFunc)
 {
 	enum EParserMode
 	{
@@ -1247,8 +1250,11 @@ bool KeyValues::Tokenizer(const char* buffer, int bufferSize, const char* fileNa
 //
 // Parses the KeyValues section string buffer to the 'pParseTo'
 //
-bool KeyValues::ParseTextV2(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName, int startLine)
+bool KeyValues::ParseTextV2(const char* pszBuffer, VSSize bufferSize, KVSection& outSection, const char* pszFileName, int startLine)
 {
+	if (bufferSize == 0)
+		return true;
+
 	FixedArray<KVSection*, KV_MAX_SECTION_DEPTH> sectionStack;
 
 	// add root section to the stack
@@ -1379,8 +1385,11 @@ bool KeyValues::ParseTextV2(const char* pszBuffer, int bufferSize, KVSection& ou
 //
 // Parses the V3 format of KeyValues into pParseTo
 //
-bool KeyValues::ParseTextV3(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName, int startLine)
+bool KeyValues::ParseTextV3(const char* pszBuffer, VSSize bufferSize, KVSection& outSection, const char* pszFileName, int startLine)
 {
+	if (bufferSize == 0)
+		return true;
+
 	FixedArray<KVSection*, KV_MAX_SECTION_DEPTH> sectionStack;
 
 	// add root section to the stack
@@ -1609,7 +1618,7 @@ bool KeyValues::Parse(IFileStream* stream, KVSection& outSection)
 		memBuffer.Seek(0, FS_SEEK_SET);
 	}
 
-	int fileSize = memBuffer.GetSize();
+	VSSize fileSize = memBuffer.GetSize();
 	const char* _bufferStart = (const char*)memBuffer.GetBasePointer();
 	ushort byteordermark = *((ushort*)_bufferStart);
 
@@ -1637,6 +1646,10 @@ bool KeyValues::Parse(IFileStream* stream, KVSection& outSection)
 			outSection.unicode = true;
 		}
 	}
+
+	// file is empty or read BOM and
+	if (fileSize <= 0)
+		return true;
 
 	// load as stream
 	bool result = false;

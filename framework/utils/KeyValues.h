@@ -430,10 +430,10 @@ public:
 	//		t  <string>	- text token
 	//		u			- unquoted text token character
 	//
-	static bool	Tokenizer(const char* buffer, int bufferSize, const char* fileName, int startLine, const KVTokenFunc tokenFunc);
+	static bool	Tokenizer(const char* buffer, VSSize bufferSize, const char* fileName, int startLine, const KVTokenFunc tokenFunc);
 
 	static bool	Parse(IFileStream* stream, KVSection& outSection);
-	static bool	ParseText(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName = nullptr, int startLine = 1);
+	static bool	ParseText(const char* pszBuffer, VSSize bufferSize, KVSection& outSection, const char* pszFileName = nullptr, int startLine = 1);
 	static bool	ParseBinary(IFileStream* stream, KVSection& outSection);
 
 	template<typename T>
@@ -443,8 +443,8 @@ public:
 	static void	WriteBinary(IFileStream* outStream, const KVSection& base);
 
 protected:
-	static bool ParseTextV2(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName, int startLine);
-	static bool ParseTextV3(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName, int startLine);
+	static bool ParseTextV2(const char* pszBuffer, VSSize bufferSize, KVSection& outSection, const char* pszFileName, int startLine);
+	static bool ParseTextV3(const char* pszBuffer, VSSize bufferSize, KVSection& outSection, const char* pszFileName, int startLine);
 	static void ReadBinaryValue(IFileStream* stream, KVSection& addTo);
 
 	static EKVPairType ResolvePairType(const char* name);
