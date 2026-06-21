@@ -55,7 +55,7 @@ using ReadWriteLockHandle_t = pthread_rwlock_t;
 using TlsHandle_t = pthread_key_t;
 #endif // _WIN32
 
-static constexpr TlsHandle_t INVALID_TLS_HANDLE = static_cast<TlsHandle_t>(-1u);
+static constexpr TlsHandle_t INVALID_TLS_HANDLE = static_cast<TlsHandle_t>(COM_UINT_MAX);
 static constexpr int WAIT_INFINITE = -1;
 static constexpr int DEFAULT_THREAD_STACK_SIZE = 3072 * 1024;
 
