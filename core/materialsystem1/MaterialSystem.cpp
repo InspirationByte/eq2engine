@@ -384,13 +384,14 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 	}
 
 #endif // PLAT_ANDROID
-	LoadShaderPackages();
 
 	m_renderLibrary->SetBackbufferSize(m_backbufferSize.x, m_backbufferSize.y);
 	g_renderAPI = m_shaderAPI;
 
 	// initialize some resources
+	LoadShaderPackages();
 	REGISTER_INTERNAL_SHADERS();
+
 	CreateWhiteTexture();
 	CreateErrorTexture();
 	CreateDefaultDepthTexture();

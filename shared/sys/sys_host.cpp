@@ -543,29 +543,25 @@ bool CGameHost::InitSystems()
 		g_renderAPI = g_matSystem->GetShaderAPI();
 	}
 
-	REGISTER_INTERNAL_SHADERS();
-
 	if( !g_fontCache->Init() )
 		return false;
 
-	g_fullScreenEdgeAA->Init();
+	m_defaultFont = g_fontCache->GetFont("default", 0);
 	debugoverlay->Init();
 	equi::Manager->Init();
 	g_inputCommandBinder->Init();
 	g_consoleInput->Initialize(m_window);
 
-	m_defaultFont = g_fontCache->GetFont("default",0);
+	REGISTER_INTERNAL_SHADERS();
+	g_fullScreenEdgeAA->Init();
 
-	if (m_window)
-	{
 #ifdef _RETAIL
-		SDL_SetWindowTitle(m_window, m_windowTitle);
+	SDL_SetWindowTitle(m_window, m_windowTitle);
 #else
-		SDL_SetWindowTitle(m_window, EqString::Format(
-			"%s | %s | " COMPILE_CONFIGURATION " (" COMPILE_PLATFORM ") | build %d (" COMPILE_DATE ")", 
-			m_windowTitle.ToCString(), g_renderAPI->GetRendererName(), BUILD_NUMBER_ENGINE));
+	SDL_SetWindowTitle(m_window, EqString::Format(
+		"%s | %s | " COMPILE_CONFIGURATION " (" COMPILE_PLATFORM ") | build %d (" COMPILE_DATE ")", 
+		m_windowTitle.ToCString(), g_renderAPI->GetRendererName(), BUILD_NUMBER_ENGINE));
 #endif
-	}
 
 	return true;
 }
