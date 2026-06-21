@@ -22,6 +22,8 @@ namespace equi
 		void				DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override;
 
 		void				SetValue(float value)				{ m_value = value; }
+		float				GetValue() const					{ return m_value; }
+
 		void				SetColor(const ColorRGBA& color)	{ m_color = color; }
 		const ColorRGBA&	GetColor() const					{ return m_color; }
 

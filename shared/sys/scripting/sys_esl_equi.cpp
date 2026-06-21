@@ -189,6 +189,22 @@ static void S_IUIControl_ForEachChild(equi::IUIControl& control, const esl::LuaF
 EQSCRIPT_TYPE_BEGIN(equi::IUIControl)
 	EQSCRIPT_BIND_FUNC( InitFromKeyValues )
 
+	EQSCRIPT_BIND_VAR_EX_GET_SET(name, GetName, SetName)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(label, GetLabel, SetLabel)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(visible, IsVisible, SetVisible)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(selfVisible, IsSelfVisible, SetSelfVisible)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(clipChilds, SetClipsChilds, SetClipsChilds)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(clipTransform, HasClipTransform, SetClipTransform)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(enabled, IsEnabled, Enable)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(size, GetSize, SetSize)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(position, GetPosition, SetPosition)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(anchors, GetAnchors, SetAnchors)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(alignment, GetAlignment, SetAlignment)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(scaling, GetScaling, SetScaling)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(rectangle, GetRectangle, SetRectangle)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(fontScale, GetFontScale, SetFontScale)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(textAlignment, GetTextAlignment, SetTextAlignment)
+
 	EQSCRIPT_BIND_FUNC( GetName )
 	EQSCRIPT_BIND_FUNC( SetName )
 
@@ -220,8 +236,8 @@ EQSCRIPT_TYPE_BEGIN(equi::IUIControl)
 	EQSCRIPT_BIND_FUNC( GetSize )
 	EQSCRIPT_BIND_FUNC( GetPosition )
 
-	EQSCRIPT_BIND_FUNC( SetAchors )
-	EQSCRIPT_BIND_FUNC( GetAchors ) 
+	EQSCRIPT_BIND_FUNC( SetAnchors )
+	EQSCRIPT_BIND_FUNC( GetAnchors ) 
 
 	EQSCRIPT_BIND_FUNC( SetAlignment )
 	EQSCRIPT_BIND_FUNC( GetAlignment )
@@ -271,6 +287,10 @@ EQSCRIPT_TYPE_BEGIN(equi::IUIControl)
 EQSCRIPT_TYPE_END
 
 EQSCRIPT_TYPE_BEGIN(equi::Panel)
+
+	EQSCRIPT_BIND_VAR_EX_GET_SET(color, GetColor, SetColor)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(selectionColor, GetSelectionColor, SetSelectionColor)
+
 	EQSCRIPT_BIND_FUNC( SetColor )
 	EQSCRIPT_BIND_FUNC( GetColor )
 
@@ -284,6 +304,9 @@ EQSCRIPT_TYPE_BEGIN(equi::Container)
 EQSCRIPT_TYPE_END
 
 EQSCRIPT_TYPE_BEGIN(equi::Image)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(color, GetColor, SetColor)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(uvRegion, GetUVRegion, SetUVRegion)
+
 	EQSCRIPT_BIND_FUNC(SetMaterial)
 	EQSCRIPT_BIND_FUNC(SetAtlasImage)
 
@@ -298,7 +321,12 @@ EQSCRIPT_TYPE_BEGIN(equi::Image)
 EQSCRIPT_TYPE_END
 
 EQSCRIPT_TYPE_BEGIN(equi::ProgressBar)
+
+	EQSCRIPT_BIND_VAR_EX_GET_SET(value, GetValue, SetValue)
+	EQSCRIPT_BIND_VAR_EX_GET_SET(color, GetColor, SetColor)
+
 	EQSCRIPT_BIND_FUNC(SetValue)
+	EQSCRIPT_BIND_FUNC(GetValue)
 
 	EQSCRIPT_BIND_FUNC(SetColor)
 	EQSCRIPT_BIND_FUNC(GetColor)

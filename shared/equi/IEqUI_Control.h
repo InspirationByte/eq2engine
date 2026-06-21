@@ -130,8 +130,8 @@ public:
 	const IVector2D&			GetSize() const;
 	const IVector2D&			GetPosition() const;
 
-	void						SetAchors(int anchor)				{ m_anchors = anchor; }
-	int							GetAchors() const					{ return m_anchors; }
+	void						SetAnchors(int anchor)				{ m_anchors = anchor; }
+	int							GetAnchors() const					{ return m_anchors; }
 
 	void						SetAlignment(int alignmentFlags)	{ m_alignment = alignmentFlags; }
 	int							GetAlignment() const				{ return m_alignment; }
