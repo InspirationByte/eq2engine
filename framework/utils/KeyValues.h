@@ -289,6 +289,7 @@ struct KVSection
 
 	// searches for section and returns default empty if none found
 	const KVSection&	Get(const char* pszName, int nFlags = 0) const;
+	const KVSection&	GetOrDefault(const char* pszName, const KVSection& defaultSec, int nFlags = 0) const;
 
 	// searches for section
 	KVSection*			FindSection(const char* pszName, int nFlags = 0) const;

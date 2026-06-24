@@ -768,9 +768,14 @@ KVSection& KVSection::AddKey(const char* name, KVSection* pair)
 const KVSection& KVSection::Get(const char* pszName, int nFlags) const
 {
 	static KVSection emptySec{};
+	return GetOrDefault(pszName, emptySec, nFlags);
+}
+
+const KVSection& KVSection::GetOrDefault(const char* pszName, const KVSection& defaultSec, int nFlags) const
+{
 	KVSection* section = FindSection(pszName, nFlags);
 	if (!section)
-		return emptySec;
+		return defaultSec;
 	return *section;
 }
 
