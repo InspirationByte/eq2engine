@@ -240,7 +240,7 @@ bool CNVRHITexture::Lock(LockInOutData& data)
 	data.lockData = (ubyte*)PPAlloc(lockByteCount);
 	data.lockPitch = lockPitch;
 	data.lockByteCount = lockByteCount;
-
+	
 	if (!(data.flags & TEXLOCK_DISCARD) && (m_flags & TEXFLAG_COPY_SRC))
 	{
 		nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
@@ -249,8 +249,10 @@ bool CNVRHITexture::Lock(LockInOutData& data)
 		auto rhiTextureDesc = nvrhi::TextureDesc()
 			.setMipLevels(1)
 			.setSampleCount(1)
-			.setArraySize(1)
-			.setFormat(GetNVRHITextureFormat(m_format));
+			.setArraySize(data.lockSize.arraySize)
+			.setFormat(GetNVRHITextureFormat(m_format))
+			.setInitialState(nvrhi::ResourceStates::CopyDest)
+			.setKeepInitialState(true);
 
 		if (IsCompressedFormat(m_format))
 		{
@@ -284,10 +286,10 @@ bool CNVRHITexture::Lock(LockInOutData& data)
 
 		// Need Staging texture to read into CPU memory
 		rhiTextureDesc.debugName = m_name.ToCString();
-		nvrhi::StagingTextureHandle rhiStagingTexture = rhiDevice->createStagingTexture(rhiTextureDesc, nvrhi::CpuAccessMode::Write);
+		nvrhi::StagingTextureHandle rhiStagingTexture = rhiDevice->createStagingTexture(rhiTextureDesc, nvrhi::CpuAccessMode::Read);
 		if (!rhiStagingTexture)
 		{
-			ErrorMsg("Failed to create staging texture when locking %s\n", m_name.ToCString());
+			ASSERT_FAIL("Failed to create staging texture for %s\n", m_name.ToCString());
 			PPFree(data.lockData);
 			data.lockData = nullptr;
 			return false;
