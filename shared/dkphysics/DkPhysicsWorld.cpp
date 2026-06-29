@@ -388,7 +388,7 @@ bool DkPhysics::Init(int nSceneSize)
 		sec.Get("friction").GetValues(physMaterial.friction);
 		sec.Get("damping").GetValues(physMaterial.dampening);
 		sec.Get("density").GetValues(physMaterial.density);
-		physMaterial.surfaceword = *KV_GetValueString(sec.FindSection("surfaceWord"), 0, "C");
+		physMaterial.surfaceword = *KV_GetValueString(sec.FindSection("word"), 0, "C");
 
 		sec.Get("footsteps").GetValues(physMaterial.footStepSound);
 		sec.Get("bulletImpact").GetValues(physMaterial.bulletImpactSound);

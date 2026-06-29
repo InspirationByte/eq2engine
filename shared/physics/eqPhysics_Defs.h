@@ -62,8 +62,9 @@ struct eqPhysSurfParam
 	float		friction{ PHYSICS_DEFAULT_FRICTION };
 	float		restitution{ PHYSICS_DEFAULT_RESTITUTION };
 
-	float		tirefriction{ PHYSICS_DEFAULT_TIRE_FRICTION };
-	float		tirefriction_traction{ PHYSICS_DEFAULT_TIRE_TRACTION };
+	float		tireFriction{ PHYSICS_DEFAULT_TIRE_FRICTION };
+	float		tireTraction{ PHYSICS_DEFAULT_TIRE_TRACTION };
 
 	char		word{ 'C' };
+	char		_zero{ 0 };
 };

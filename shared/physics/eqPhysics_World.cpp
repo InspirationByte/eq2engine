@@ -468,9 +468,9 @@ void CEqPhysicsWorld::AddSurfaceParamFromKV(const char* name, const KVSection& k
 	kvSection.Get("contents").GetValues(surfParam.contents);
 	kvSection.Get("friction").GetValues(surfParam.friction);
 	kvSection.Get("restitution").GetValues(surfParam.restitution);
-	kvSection.Get("tirefriction").GetValues(surfParam.tirefriction);
-	kvSection.Get("tirefriction_traction").GetValues(surfParam.tirefriction_traction);
-	surfParam.word = *KV_GetValueString(kvSection.FindSection("surfaceword"), 0, "C");
+	kvSection.Get("tireFriction").GetValues(surfParam.tireFriction);
+	kvSection.Get("tireTraction").GetValues(surfParam.tireTraction);
+	surfParam.word = *KV_GetValueString(kvSection.FindSection("word"), 0, "C");
 }
 
 const int CEqPhysicsWorld::FindSurfaceParamID(const char* name) const
