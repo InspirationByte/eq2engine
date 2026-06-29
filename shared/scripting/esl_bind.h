@@ -124,6 +124,12 @@ void ScriptState::SetGlobal(const char* name, const T& value) const
 }
 
 template<typename T>
+void ScriptState::SetGlobal(const char* name, T& value) const
+{
+	runtime::SetGlobal(m_state, name, value);
+}
+
+template<typename T>
 decltype(auto) ScriptState::GetGlobal(const char* name) const
 {
 	return runtime::GetGlobal<T>(m_state, name);

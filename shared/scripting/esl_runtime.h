@@ -11,7 +11,7 @@ template<typename T>
 struct PushGet
 {
 	using PushFunc = void(*)(lua_State* L, const BaseType<T>& obj, int flags);
-	using GetFunc = BaseType<T>* (*)(lua_State* L, int index, bool toCpp, const runtime::BaseClassInfo& upcastBaseInfo);
+	using GetFunc = BaseType<T>* (*)(lua_State* L, int index, bool toCpp, bool& isConst, const runtime::BaseClassInfo& upcastBaseInfo);
 	using GetThisFunc = ThisGetterFunc;
 
 	static PushFunc Push;

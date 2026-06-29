@@ -55,7 +55,10 @@ template <typename R, typename C, typename... Args>
 struct IsConstMemberFunc<R(C::*)(Args...) const> : std::true_type {};
 
 template<typename T>
-using BaseType = typename std::remove_cv<typename std::remove_pointer<typename std::remove_reference<T>::type>::type>::type;
+using BaseTypeWithCv = typename std::remove_pointer<typename std::remove_reference<T>::type>::type;
+
+template<typename T>
+using BaseType = typename std::remove_cv<BaseTypeWithCv<T>>::type;
 
 template<typename T>
 using BasePtrType = typename std::remove_cv<typename std::remove_pointer<T>::type>::type;
@@ -382,6 +385,9 @@ public:
 	void			SetGlobal(const char* name, const T& value) const;
 
 	template<typename T>
+	void			SetGlobal(const char* name, T& value) const;
+
+	template<typename T>
 	decltype(auto)	GetGlobal(const char* name) const;
 
 	// creates table and
@@ -490,9 +496,13 @@ static void				PushValue(lua_State* L, const T& value);
 template<typename T, bool SilentTypeCheck, bool AllowUpcasting = true>
 static decltype(auto)	GetValue(lua_State* L, int index);
 
-// Pushes user object or fundamental value to global table (_G) by name
+// Pushes const user object or fundamental value to global table (_G) by name
 template<typename T>
 static void				SetGlobal(lua_State* L, const char* fieldName, const T& value);
+
+// Pushes user object or fundamental value to global table (_G) by name
+template<typename T>
+static void				SetGlobal(lua_State* L, const char* fieldName, T& value);
 
 // Returns a T value from global table (_G) by name. Allows to specify pointer/reference in T type
 template<typename T>

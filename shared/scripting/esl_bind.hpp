@@ -233,8 +233,10 @@ struct PushGetImpl
 		luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
 	}
 
-	static T* GetObject(lua_State* L, int index, bool toCpp, const bindings::BaseClassStorage::Info& upcastBaseInfo)
+	static T* GetObject(lua_State* L, int index, bool toCpp, bool& isConst, const bindings::BaseClassStorage::Info& upcastBaseInfo)
 	{
+		isConst = false;
+
 		static_assert(std::is_fundamental_v<BaseUType> == false, "GetObject used for fundamental type");
 		ASSERT(upcastBaseInfo.offset == 0);
 
@@ -249,6 +251,8 @@ struct PushGetImpl
 			BoxUD* ud = static_cast<BoxUD*>(objPtr);
 			if (!ud)
 				return static_cast<BaseUType*>(nullptr);
+
+			isConst = (ud->flags & UD_FLAG_CONST);
 
 			if constexpr (PushType<BaseUType>::value == WEAK_REF)
 			{
@@ -266,8 +270,10 @@ struct PushGetImpl
 		}
 	}
 
-	static void* GetThis(lua_State* L, bool& isConstRef)
+	static void* GetThis(lua_State* L, bool& isConst)
 	{
+		isConst = false;
+
 		static_assert(std::is_fundamental_v<BaseUType> == false, "ThisGetter used for fundamental type");
 
 		void* objPtr = lua_touserdata(L, 1);
@@ -282,6 +288,8 @@ struct PushGetImpl
 			if (!ud)
 				return nullptr;
 
+			isConst = (ud->flags & UD_FLAG_CONST);
+
 			if constexpr (PushType<BaseUType>::value == WEAK_REF)
 			{
 				WeakRefObject<void>::WeakHandle* weakHandle = reinterpret_cast<WeakRefObject<void>::WeakHandle*>(ud->weakRefHandle);
@@ -289,7 +297,6 @@ struct PushGetImpl
 					return nullptr;
 			}
 
-			isConstRef = (ud->flags & UD_FLAG_CONST);
 			return ud->objPtr;
 		}
 	}
@@ -314,6 +321,7 @@ static void PushValue(lua_State* L, const T& value)
 		   std::is_same_v<T, long>
 		|| std::is_same_v<T, int>
 		|| std::is_same_v<T, uint>
+		|| std::is_same_v<T, char>
 		|| std::is_same_v<T, int8>
 		|| std::is_same_v<T, uint8>
 		|| std::is_same_v<T, int16>
@@ -379,18 +387,20 @@ static void PushValue(lua_State* L, const T& value)
 	}
 	else
 	{
+		static_assert(std::is_integral_v<BaseType<T>> == false, "PushValue<Class> cannot be used on integral types");
+
 		using UT = BaseType<StripWeakPtrT<T>>;
 
-		constexpr int retTraitFlag = HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0;
+		constexpr int retTraitFlag = (HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0) | (std::is_const_v<BaseTypeWithCv<WT>> ? UD_FLAG_CONST : 0);
 		if constexpr (std::is_pointer_v<T>)
 		{
 			if (value != nullptr)
-				PushGet<UT>::Push(L, *value, (std::is_const_v<T> ? UD_FLAG_CONST : 0) | retTraitFlag);
+				PushGet<UT>::Push(L, *value, retTraitFlag);
 			else
 				lua_pushnil(L);
 		}
 		else
-			PushGet<UT>::Push(L, value, (std::is_const_v<T> ? UD_FLAG_CONST : 0) | retTraitFlag);
+			PushGet<UT>::Push(L, value, retTraitFlag);
 	}
 }
 
@@ -402,7 +412,7 @@ struct ObjPtrGetter
 	static_assert(std::is_trivial<RT>::value == false, "ObjPtrGetter cannot be used on trivial types");
 
 	template<bool SilentTypeCheck, bool AllowUpcasting>
-	static Result Get(lua_State* L, int index, int argType, bool toCpp)
+	static Result Get(lua_State* L, int index, int argType, bool toCpp, bool& isConst)
 	{
 		if (argType != LUA_TUSERDATA)
 		{
@@ -438,7 +448,7 @@ struct ObjPtrGetter
 
 		if (isValidUdType)
 		{
-			OBJPTR objPtr(PushGet<RT>::Get(L, index, toCpp, baseInfo));
+			OBJPTR objPtr(PushGet<RT>::Get(L, index, toCpp, isConst, baseInfo));
 			return Result{ {}, true, {}, std::move(objPtr) };
 		}
 
@@ -492,6 +502,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		   std::is_same_v<T, long>
 		|| std::is_same_v<T, int>
 		|| std::is_same_v<T, uint>
+		|| std::is_same_v<T, char>
 		|| std::is_same_v<T, int8>
 		|| std::is_same_v<T, uint8>
 		|| std::is_same_v<T, int16>
@@ -621,15 +632,17 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		using RT = StripRefPtrT<BaseType<T>>;
 		using REFPTR = CRefPtr<RT>;
 
-		return ObjPtrGetter<RT, REFPTR>::template Get<SilentTypeCheck, AllowUpcasting>(L, index, argType, false);
+		bool isConst; // TODO: support!
+		return ObjPtrGetter<RT, REFPTR>::template Get<SilentTypeCheck, AllowUpcasting>(L, index, argType, false, isConst);
 	}
 	else if constexpr (binder::IsWeakPtr<T>::value)
 	{
 		using RT = StripWeakPtrT<BaseType<T>>;
 		using WEAKPTR = CWeakPtr<RT>;
-
 		constexpr bool toCpp = HasToCppParamTrait<T>::value;
-		return ObjPtrGetter<RT, WEAKPTR>::template Get<SilentTypeCheck, AllowUpcasting>(L, index, argType, toCpp);
+
+		bool isConst; // TODO: support!
+		return ObjPtrGetter<RT, WEAKPTR>::template Get<SilentTypeCheck, AllowUpcasting>(L, index, argType, toCpp, isConst);
 	}
 	else
 	{
@@ -679,7 +692,15 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		if (isValidUdType)
 		{
 			constexpr bool toCpp = HasToCppParamTrait<T>::value;
-			BaseType<UT>* objPtr = static_cast<BaseType<UT>*>(PushGet<BaseType<UT>>::Get(L, index, toCpp, baseInfo));
+
+			bool isConst;
+			BaseType<UT>* objPtr = static_cast<BaseType<UT>*>(PushGet<BaseType<UT>>::Get(L, index, toCpp, isConst, baseInfo));
+
+			if constexpr (!std::is_const_v<BaseTypeWithCv<UT>>)
+			{
+				if(isConst)
+					return EmitArgError(EqString::Format("got const %s for non-const argument", LuaBaseTypeAlias<T>::value));
+			}
 
 			if constexpr (std::is_reference_v<UT>)
 			{
@@ -714,6 +735,13 @@ static decltype(auto) GetGlobal(lua_State* L, const char* fieldName)
 
 template<typename T>
 static void SetGlobal(lua_State* L, const char* fieldName, const T& value)
+{
+	runtime::PushValue<T, const T>(L, value);
+	lua_setglobal(L, fieldName);
+}
+
+template<typename T>
+static void SetGlobal(lua_State* L, const char* fieldName, T& value)
 {
 	runtime::PushValue(L, value);
 	lua_setglobal(L, fieldName);
@@ -934,6 +962,7 @@ struct MemberFunctionBinder<FuncPtr, Traits> : public esl::ScriptBind
 	int Func(lua_State* L) { return MemberFunction<FuncPtr, T, Traits, R, Args...>::FuncImpl(static_cast<T*>(this->thisPtr), L); }
 	static auto GetFuncArgsSignature() { return runtime::ArgsSignature<Args...>::Get(); }
 	static int GetFuncArgsCount() { return sizeof...(Args); }
+	static bool IsConst() { return false; }
 };
 
 // Const binder, only has const below
@@ -943,6 +972,7 @@ struct MemberFunctionBinder<FuncPtr, Traits> : public esl::ScriptBind
 	int Func(lua_State* L) { return MemberFunction<FuncPtr, T, Traits, R, Args...>::FuncImpl(static_cast<T*>(this->thisPtr), L); }
 	static auto GetFuncArgsSignature() { return runtime::ArgsSignature<Args...>::Get(); }
 	static int GetFuncArgsCount() { return sizeof...(Args); }
+	static bool IsConst() { return true; }
 };
 
 template<auto FuncPtr>
@@ -1218,8 +1248,8 @@ Member ClassBinder<T>::MakeFunction(const char* name)
 	m.name = name;
 	m.signature = binder::MemberFunctionBinder<F, Traits>::GetFuncArgsSignature();
 	m.numArgs = binder::MemberFunctionBinder<F, Traits>::GetFuncArgsCount();
+	m.isConst = binder::MemberFunctionBinder<F, Traits>::IsConst();
 	m.func = binder::BindMemberFunction<F, Traits>();
-	m.isConst = false;
 	return m;
 }
 

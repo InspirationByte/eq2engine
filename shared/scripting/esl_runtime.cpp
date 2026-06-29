@@ -286,15 +286,15 @@ static int UserTypeCallMemberFunc(lua_State* L)
 	const char* className = lua_tostring(L, lua_upvalueindex(2));
 	esl::Member* mem = static_cast<esl::Member*>(lua_touserdata(L, lua_upvalueindex(3)));
 
-	bool isConstRef = false;
-	void* thisPtr = thisGetter(L, isConstRef);
+	bool isConstThis = false;
+	void* thisPtr = thisGetter(L, isConstThis);
 	if (!thisPtr)
 	{
 		luaL_error(L, "Error calling %s::%s - self is nil", className, mem->name);
 		return -1;
 	}
 
-	if (!mem->isConst && isConstRef)
+	if (!mem->isConst && isConstThis)
 	{
 		luaL_error(L, "Error calling %s::%s - cannot call non-const method on const reference", className, mem->name);
 		return -1;

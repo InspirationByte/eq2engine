@@ -47,16 +47,17 @@ int VectorOperatorsFunc(lua_State* L)
 	constexpr int opIdxA = 1;
 	constexpr int opIdxB = 2;
 
+	bool isConst;
 	if constexpr (OpType == esl::binder::OP_unm)
 	{
 		// NOTE: not performing additional type checking
-		esl::runtime::New<T>(L, -*esl::runtime::PushGet<T>::Get(L, opIdxA, false, {}));
+		esl::runtime::New<T>(L, -*esl::runtime::PushGet<T>::Get(L, opIdxA, false, isConst, {}));
 		return 1;
 	}
 	else if constexpr (OpType == esl::binder::OP_not)
 	{
 		// NOTE: not performing additional type checking
-		lua_pushboolean(L, !*esl::runtime::PushGet<T>::Get(L, opIdxA, false, {}));
+		lua_pushboolean(L, !*esl::runtime::PushGet<T>::Get(L, opIdxA, false, isConst, {}));
 		return 1;
 	}
 	else

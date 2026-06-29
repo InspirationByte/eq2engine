@@ -1280,6 +1280,163 @@ TEST(EQSCRIPT_TESTS, ShouldNotGrowStack)
 	}
 }
 
+struct ConstTest
+{
+	int testValue = 42;
+
+	mutable bool constFuncCalled = false;
+	bool nonConstFuncCalled = false;
+
+	void ConstFunc() const
+	{
+		constFuncCalled = true;
+	}
+
+	void NonConstFunc()
+	{
+		nonConstFuncCalled = true;
+	}
+
+	const ConstTest& GetConstThis() const 
+	{
+		return *this;
+	}
+
+	ConstTest& GetNonConstThis() const
+	{
+		return *const_cast<ConstTest*>(this);
+	}
+};
+
+EQSCRIPT_BIND_TYPE_NO_PARENT(ConstTest, "ConstTest", BY_REF)
+EQSCRIPT_TYPE_BEGIN(ConstTest)
+	EQSCRIPT_BIND_VAR(testValue)
+
+	EQSCRIPT_BIND_FUNC(NonConstFunc)
+	EQSCRIPT_BIND_FUNC(ConstFunc)
+	EQSCRIPT_BIND_FUNC(GetConstThis)
+	EQSCRIPT_BIND_FUNC(GetNonConstThis)
+EQSCRIPT_TYPE_END
+
+TEST(EQSCRIPT_TESTS, ShouldFailCallingNonConstMembers)
+{
+	LuaStateTest stateTest;
+	esl::ScriptState state(stateTest);
+
+	state.RegisterClass<ConstTest>();
+
+	ConstTest testNonConst;
+	{
+		state.SetGlobal("testNonConst", testNonConst);
+
+		LUA_GTEST_CHUNK("testNonConst:NonConstFunc()");
+		LUA_GTEST_CHUNK("testNonConst:ConstFunc()");
+		ASSERT_EQ(testNonConst.nonConstFuncCalled, true);
+		ASSERT_EQ(testNonConst.constFuncCalled, true);
+	}
+	{
+		LUA_GTEST_CHUNK_FAIL("testConst:GetConstThis():NonConstFunc()");
+	}
+	{
+		const ConstTest testConst;
+		state.SetGlobal("testConst", testConst);
+
+		LUA_GTEST_CHUNK_FAIL("testConst:NonConstFunc()");
+		LUA_GTEST_CHUNK("testConst:ConstFunc()");
+		ASSERT_EQ(testConst.nonConstFuncCalled, false);
+		ASSERT_EQ(testConst.constFuncCalled, true);
+
+		LUA_GTEST_CHUNK("testConst:GetNonConstThis():NonConstFunc()");
+		ASSERT_EQ(testConst.nonConstFuncCalled, true);
+	}
+}
+
+static ConstTest returnTestConst;
+static const ConstTest& TestFuncReturnConstRef()
+{
+	return returnTestConst;
+}
+
+static const ConstTest* TestFuncReturnConstPtr()
+{
+	return &returnTestConst;
+}
+
+static void TestFuncWithNonConstPtr(ConstTest* ptr)
+{
+	ASSERT_FAIL("Should not be called");
+}
+
+static void TestFuncWithNonConstRef(ConstTest& ptr)
+{
+	ASSERT_FAIL("Should not be called");
+}
+
+TEST(EQSCRIPT_TESTS, ShouldFailToModifyConstVars)
+{
+	LuaStateTest stateTest;
+	esl::ScriptState state(stateTest);
+
+	state.RegisterClass<ConstTest>();
+
+	state.SetGlobal("funcReturnConstRef", EQSCRIPT_CFUNC(TestFuncReturnConstRef));
+	state.SetGlobal("funcReturnConstPtr", EQSCRIPT_CFUNC(TestFuncReturnConstPtr));
+	state.SetGlobal("funcWithNonConstRef", EQSCRIPT_CFUNC(TestFuncWithNonConstPtr));
+	state.SetGlobal("funcWithNonConstPtr", EQSCRIPT_CFUNC(TestFuncWithNonConstRef));
+	state.RunChunk("constRef = funcReturnConstRef()");
+	state.RunChunk("constPtr = funcReturnConstPtr()");
+
+	{
+		LUA_GTEST_CHUNK_FAIL("constRef.testValue = 333") << " - reference";
+		LUA_GTEST_CHUNK_FAIL("constPtr.testValue = 666") << " - pointer";
+	}
+	{
+		LUA_GTEST_CHUNK_FAIL("funcWithNonConstRef(constRef)") << " - reference";
+		LUA_GTEST_CHUNK_FAIL("funcWithNonConstRef(constPtr)") << " - pointer";
+
+		LUA_GTEST_CHUNK_FAIL("funcWithNonConstPtr(constRef)") << " - reference";
+		LUA_GTEST_CHUNK_FAIL("funcWithNonConstPtr(constPtr)") << " - pointer";
+	}
+}
+
+static int testFuncCalled = 0;
+static void TestFuncWithConstPtr(const ConstTest* ptr)
+{
+	// should call
+	++testFuncCalled;
+}
+
+static void TestFuncWithConstRef(const ConstTest& ptr)
+{
+	// should call
+	++testFuncCalled;
+}
+
+TEST(EQSCRIPT_TESTS, PassingConstValuesToFunctions)
+{
+	LuaStateTest stateTest;
+	esl::ScriptState state(stateTest);
+
+	state.RegisterClass<ConstTest>();
+
+	state.SetGlobal("funcReturnConstRef", EQSCRIPT_CFUNC(TestFuncReturnConstRef));
+	state.SetGlobal("funcReturnConstPtr", EQSCRIPT_CFUNC(TestFuncReturnConstPtr));
+	state.SetGlobal("funcWithConstRef", EQSCRIPT_CFUNC(TestFuncWithConstPtr));
+	state.SetGlobal("funcWithConstPtr", EQSCRIPT_CFUNC(TestFuncWithConstRef));
+	state.RunChunk("constRef = funcReturnConstRef()");
+	state.RunChunk("constPtr = funcReturnConstPtr()");
+
+	testFuncCalled = 0;
+	{
+		LUA_GTEST_CHUNK("funcWithConstRef(constRef)") << " - reference";
+		LUA_GTEST_CHUNK("funcWithConstRef(constPtr)") << " - pointer";
+
+		LUA_GTEST_CHUNK("funcWithConstPtr(constRef)") << " - reference";
+		LUA_GTEST_CHUNK("funcWithConstPtr(constPtr)") << " - pointer";
+	}
+	ASSERT(testFuncCalled == 4);
+}
+
 struct BindTest
 {
 	int value;
