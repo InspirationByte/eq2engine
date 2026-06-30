@@ -1311,10 +1311,11 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 		if (!material)
 			continue;
 
-		if(m_drawSettings.waitForMaterials)
+		if(m_drawSettings.waitForMaterials || drawInfo.material->GetState() == MATERIAL_LOAD_NEED_LOAD)
 		{
 			g_matSystem->QueueLoading(drawInfo.material);
-			material->WaitForLoading();
+			if (m_drawSettings.waitForMaterials)
+				material->WaitForLoading();
 		}
 
 #ifdef GRIM_INSTANCES_DEBUG_ENABLED
