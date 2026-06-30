@@ -1412,7 +1412,15 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 	renderPassCtx.recorder->DbgPopGroup();
 
 #ifdef GRIM_INSTANCES_DEBUG_ENABLED
-	m_dbgLastVisibleArchetypes = renderState.visibleArchetypes;
+	{
+		CScopedMutex m(s_grimRendererMutex);
+		m_dbgLastVisibleArchetypes.reset();
+		m_dbgLastVisibleArchetypes.resize(renderState.visibleArchetypes.numBits());
+		
+		const int listSize = bitArray2Dword(renderState.visibleArchetypes.numBits());
+		for(int i = 0; i < listSize; ++i)
+			m_dbgLastVisibleArchetypes.ptr()[i] |= renderState.visibleArchetypes.ptr()[i];
+	}
 	m_dbgStatsDrawCalls = numDrawCalls;
 	m_dbgStatsDrawInfos = drawInfosByMaterial.size();
 #endif
