@@ -296,24 +296,28 @@ wchar_t* UpperCase(wchar_t* str)
 int Compare(const char* strA, const char* strB)
 {
 	ASSERT(strA && strB);
+	if(strA == strB) return 0;	// what if?
 	return strcmp(strA, strB);
 }
 
 int Compare(const wchar_t* strA, const wchar_t* strB)
 {
 	ASSERT(strA && strB);
+	if(strA == strB) return 0;	// what if?
 	return wcscmp(strA, strB);
 }
 
 int CompareCaseIns(const char* strA, const char* strB)
 {
 	ASSERT(strA && strB);
+	if(strA == strB) return 0;	// what if?
 	return stricmp(strA, strB);
 }
 
 int CompareCaseIns(const wchar_t* strA, const wchar_t* strB)
 {
 	ASSERT(strA && strB);
+	if(strA == strB) return 0;	// what if?
 	return x_wcsicmp(strA, strB);
 }
 
