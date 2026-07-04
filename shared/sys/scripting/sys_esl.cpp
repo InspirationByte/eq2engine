@@ -159,10 +159,15 @@ const char* GetLastLuaError()
 	return lastError;
 }
 
-static int DebugRuntimeError(lua_State* L)
+static bool IsLuaDebuggerPresent()
 {
 	const char* vsCodeDebuggerOn = getenv("LOCAL_LUA_DEBUGGER_VSCODE");
-	if (vsCodeDebuggerOn && !CString::Compare(vsCodeDebuggerOn, "1"))
+	return vsCodeDebuggerOn && !CString::Compare(vsCodeDebuggerOn, "1");
+}
+
+static int DbgRuntimeError(lua_State* L)
+{
+	if (IsLuaDebuggerPresent())
 	{
 		esl::ScriptState state(L);
 		EqStringRef errorMessage = *state.GetValue<EqStringRef>(1);
@@ -174,14 +179,28 @@ static int DebugRuntimeError(lua_State* L)
 	return 0;
 }
 
+static int DbgAssertHandler(PPSourceLine sl, const char* expression, const char* message, bool skipOnly)
+{
+	if(!Platform_IsDebuggerPresent() && IsLuaDebuggerPresent())
+	{
+		// try assert in Lua
+		esl::ScriptState state(g_luaState.GetInstancePtr());
+		auto assertFunc = *state.GetGlobal<esl::LuaFunctionRef>("assert");
+		using AssertFunc = esl::runtime::FunctionCall<void, bool, EqStringRef>;
+
+		EqStringRef errorMessage = EqString::Format("C++ assert: %s %s", expression, message);
+		AssertFunc::Invoke(assertFunc, false, errorMessage);
+	}
+	return DefaultAssertHandler(sl, expression, message, skipOnly);
+}
+
 static void OpenDebugger(lua_State* L)
 {
 #ifndef _RETAIL
 	esl::ScriptState state(L);
 
 	// init lua debugger right here
-	const char* vsCodeDebuggerOn = getenv("LOCAL_LUA_DEBUGGER_VSCODE");
-	if (vsCodeDebuggerOn && !CString::Compare(vsCodeDebuggerOn, "1"))
+	if (IsLuaDebuggerPresent())
 	{
 		// we need OS env
 		{
@@ -199,7 +218,8 @@ static void OpenDebugger(lua_State* L)
 		state.RunChunk("require('lldebugger').start()");
 		MsgWarning("--- Lua Local Debugger path: %s ---\n", debuggerFilePath);
 
-		esl::runtime::SetErrorHandler(DebugRuntimeError);
+		esl::runtime::SetErrorHandler(DbgRuntimeError);
+		SetAssertHandler(DbgAssertHandler);
 	}
 
 #endif // !_RETAIL
@@ -241,8 +261,7 @@ static void OnUnhandledExceptionCallback(lua_State* L)
 	Msg("\n");
 
 #ifndef _RETAIL
-	const char* vsCodeDebuggerOn = getenv("LOCAL_LUA_DEBUGGER_VSCODE");
-	if (anythingPrinted && vsCodeDebuggerOn && !CString::Compare(vsCodeDebuggerOn, "1"))
+	if (anythingPrinted && IsLuaDebuggerPresent())
 	{
 		esl::ScriptState state(L);
 		state.RunChunk("assert(false, 'Unhandled exception in native code')");

@@ -43,6 +43,7 @@ enum EEqAssertType {
 
 #define _ASSERT_PP_SL PPSourceLine::Make(__FILE__, __LINE__)
 
+IEXPORTS int DefaultAssertHandler(PPSourceLine sl, const char* expression, const char* message, bool skipOnly);
 IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* expression, const char* statement, ...);
 
 #define _ASSERT_BODY(sl, expression, msgFmt, ...) { \

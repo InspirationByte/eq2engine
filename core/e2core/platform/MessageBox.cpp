@@ -245,7 +245,7 @@ static void AssertLogMsg(ESpewType _dummy, const char* fmt, ...)
 	}
 }
 
-static int DefaultAssertHandler(PPSourceLine sl, const char* expression, const char* message, bool skipOnly)
+int DefaultAssertHandler(PPSourceLine sl, const char* expression, const char* message, bool skipOnly)
 {
 	const bool eqCoreInit = g_eqCore ? g_eqCore->IsInitialized() : false;
 
