@@ -28,7 +28,8 @@ static int instGranulatedCapacity(int capacity)
 void GRIMBaseInstanceAllocator::Construct()
 {
 	// alloc default (zero) instance
-	m_instances.append();
+	m_instances.setNum(1);
+	m_syncInstances.resize(1);
 	m_updated.insert(0);
 
 	for (GRIMBaseComponentPool* pool : m_componentPools)
@@ -161,6 +162,8 @@ void GRIMBaseInstanceAllocator::DbgInvalidateAllData()
 			pool->SetUpdated(i);
 	}
 	m_buffersUpdated = 0;
+
+	ASSERT_MSG(m_syncInstances.numBits() > 0, "Corrupt syncInstances");
 }
 
 GPUBufferView GRIMBaseInstanceAllocator::GetSingleInstanceIndexBuffer() const
@@ -203,6 +206,8 @@ GRIMInstanceRef	GRIMBaseInstanceAllocator::AllocInstance(GRIMArchetype archetype
 
 	if (m_instances.numElem() + 1 > m_syncInstances.numBits())
 		m_syncInstances.resize(m_instances.numElem() + 1);
+
+	ASSERT_MSG(m_syncInstances.numBits() > 0, "Corrupt syncInstances");
 
 	Instance& inst = m_instances[instanceRef];
 	inst.archetype = archetypeId;
@@ -310,6 +315,7 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 
 	{
 		CScopedWriteLocker m(m_rwLock);
+				ASSERT_MSG(m_syncInstances.numBits() > 0, "Corrupt syncInstances");
 		const int oldBufferElems = m_rootBuffer ? m_rootBuffer->GetSize() / sizeof(InstRoot) : 0;
 
 		// update instance root buffer
@@ -395,6 +401,7 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 					m_instSyncGroupMask.append(instanceIdx);
 
 				inst.updateFlags = 0;
+				ASSERT_MSG(m_syncInstances.numBits() > 0, "Corrupt syncInstances");
 				m_syncInstances.setTrue(instanceIdx);
 			}
 
