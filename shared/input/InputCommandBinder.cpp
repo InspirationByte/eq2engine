@@ -789,12 +789,15 @@ void CInputCommandBinder::OnPressEvent(int keyIdent, bool pressed)
 	if(in_keys_debug.GetBool())
 		MsgWarning("-- KeyPress: %s (%d)\n", KeyCodeToString(keyIdent), pressed);
 
-	if (keyIdent >= MOU_B1)
-		m_lastInputDev = INPUTDEV_MOUSE;
-	else if (keyIdent >= JOYSTICK_START_KEYS)
-		m_lastInputDev = INPUTDEV_CONTROLLER;
-	else
-		m_lastInputDev = INPUTDEV_KEYBOARD;
+	if(!pressed)
+	{
+		if (keyIdent >= MOU_B1)
+			m_lastInputDev = INPUTDEV_MOUSE;
+		else if (keyIdent >= JOYSTICK_START_KEYS)
+			m_lastInputDev = INPUTDEV_CONTROLLER;
+		else
+			m_lastInputDev = INPUTDEV_KEYBOARD;
+	}
 
 	BitArrayImpl::set(m_currentButtonBits, BITS_BUTTONS, keyIdent, pressed);
 
@@ -848,7 +851,8 @@ void CInputCommandBinder::OnVectorEvent(int keyIdent, const Vector3D& value)
 
 void CInputCommandBinder::OnTouchEvent(int finger, const Vector2D& position, bool down)
 {
-	m_lastInputDev = INPUTDEV_TOUCHPAD;
+	if(!down)
+		m_lastInputDev = INPUTDEV_TOUCHPAD;
 
 	if(in_touchZones_debug.GetInt() == 2)
 		MsgWarning("-- Touch [%g %g] (%d)\n", position.x, position.y, down);
