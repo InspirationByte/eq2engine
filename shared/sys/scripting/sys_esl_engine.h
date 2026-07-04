@@ -21,18 +21,18 @@ struct DDCylinder;
 struct DDLine;
 struct DDPoly;
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(IDebugOverlay, "IDebugOverlay", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(EmitParams, "EmitParams", BY_VALUE)
-EQSCRIPT_BIND_TYPE_NO_PARENT(CSoundEmitterSystem, "CSoundEmitterSystem", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(CSoundingObject, "CSoundingObject", BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(IDebugOverlay, "IDebugOverlay", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(EmitParams, "EmitParams", esl::BY_VALUE)
+EQSCRIPT_BIND_TYPE_NO_PARENT(CSoundEmitterSystem, "CSoundEmitterSystem", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(CSoundingObject, "CSoundingObject", esl::BY_REF)
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(DDText3D, "DbgText3D", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(DDBox, "DbgBox", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(DDOrientedBox, "DDOrientedBox", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(DDSphere, "DbgSphere", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(DDCylinder, "DbgCylinder", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(DDLine, "DbgLine", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(DDPoly, "DbgPoly", BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(DDText3D, "DbgText3D", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(DDBox, "DbgBox", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(DDOrientedBox, "DDOrientedBox", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(DDSphere, "DbgSphere", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(DDCylinder, "DbgCylinder", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(DDLine, "DbgLine", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(DDPoly, "DbgPoly", esl::BY_REF)
 
 bool eslSysHostInit(const esl::ScriptState& state);
 bool eslSysStateManagerInit(const esl::ScriptState& state);

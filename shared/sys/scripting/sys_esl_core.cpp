@@ -99,6 +99,7 @@ static void LuaConVarChangeCallbackFunc(ConVar* pVar, char const* pszOldValue)
 
 static void S_ConCommandBase_SetVariantsCallback(ConCommandBase* base, const esl::LuaFunctionRef& variantsFunc)
 {
+	// TODO: create command ref for native cvars
 	LuaConCommandFunc* ref = FindLuaCommandRef(base->GetName());
 	ASSERT_MSG(ref, "LuaConVarChangeCallbackFunc ref is invalid for %s", base->GetName());
 
@@ -112,6 +113,7 @@ static void S_ConCommandBase_SetVariantsCallback(ConCommandBase* base, const esl
 
 static void S_ConVar_SetChangeCallback(ConVar* base, const esl::LuaFunctionRef& variantsFunc)
 {
+	// TODO: create command ref for native cvars
 	LuaConCommandFunc* ref = FindLuaCommandRef(base->GetName());
 	ASSERT_MSG(ref, "LuaConVarChangeCallbackFunc ref is invalid for %s", base->GetName());
 

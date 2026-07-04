@@ -19,15 +19,15 @@ class CUIManager;
 }
 
 // temporary
-EQSCRIPT_BIND_TYPE_NO_PARENT(EqWString, "wstring", BY_VALUE)
+EQSCRIPT_BIND_TYPE_NO_PARENT(EqWString, "wstring", esl::BY_VALUE)
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(ITextLayoutBuilder, "ITextLayoutBuilder", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(FontStyleParam, "FontStyleParam", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(IEqFont, "IEqFont", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(IEqFontCache, "IEqFontCache", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(equi::CUIManager, "equi::CUIManager", BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(ITextLayoutBuilder, "ITextLayoutBuilder", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(FontStyleParam, "FontStyleParam", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(IEqFont, "IEqFont", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(IEqFontCache, "IEqFontCache", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(equi::CUIManager, "equi::CUIManager", esl::BY_REF)
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(equi::IUIControl, "equi::IUIControl", WEAK_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(equi::IUIControl, "equi::IUIControl", esl::WEAK_REF)
 EQSCRIPT_BIND_TYPE_WITH_PARENT(equi::Panel, equi::IUIControl, "equi::Panel")
 EQSCRIPT_BIND_TYPE_WITH_PARENT(equi::Container, equi::IUIControl, "equi::Container")
 EQSCRIPT_BIND_TYPE_WITH_PARENT(equi::Image, equi::IUIControl, "equi::Image")

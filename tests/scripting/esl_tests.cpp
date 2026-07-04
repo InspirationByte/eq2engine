@@ -145,7 +145,7 @@ struct TerrainSpline : public Spline
 	bool saveOverloadCalled = false;
 };
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(Vector2D, "Vector2D", BY_VALUE)
+EQSCRIPT_BIND_TYPE_NO_PARENT(Vector2D, "Vector2D", esl::BY_VALUE)
 EQSCRIPT_TYPE_BEGIN(Vector2D)
 	EQSCRIPT_BIND_CONSTRUCTOR(float)
 	EQSCRIPT_BIND_CONSTRUCTOR(float, float)
@@ -155,7 +155,7 @@ EQSCRIPT_TYPE_BEGIN(Vector2D)
 	EQSCRIPT_BIND_VAR(y)
 EQSCRIPT_TYPE_END
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(Vector3D, "Vector3D", BY_VALUE)
+EQSCRIPT_BIND_TYPE_NO_PARENT(Vector3D, "Vector3D", esl::BY_VALUE)
 EQSCRIPT_TYPE_BEGIN(Vector3D)
 	EQSCRIPT_BIND_CONSTRUCTOR(float)
 	EQSCRIPT_BIND_CONSTRUCTOR(float, float, float)
@@ -172,12 +172,12 @@ EQSCRIPT_TYPE_BEGIN(Vector3D)
 	EQSCRIPT_BIND_VAR(z)
 EQSCRIPT_TYPE_END
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(KVSection, "KVSection", BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(KVSection, "KVSection", esl::BY_REF)
 EQSCRIPT_TYPE_BEGIN(KVSection)
 	EQSCRIPT_BIND_CONSTRUCTOR()
 EQSCRIPT_TYPE_END
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(Spline, "Spline", BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(Spline, "Spline", esl::BY_REF)
 EQSCRIPT_TYPE_BEGIN(Spline)
 	EQSCRIPT_BIND_CONSTRUCTOR()
 	EQSCRIPT_BIND_CONSTRUCTOR(int)
@@ -844,7 +844,7 @@ struct TestRefPtr : public RefCountedObject<TestRefPtr>
 	EqString			strValue;
 };
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(TestRefPtr, "TestRefPtr", REF_PTR)
+EQSCRIPT_BIND_TYPE_NO_PARENT(TestRefPtr, "TestRefPtr", esl::REF_PTR)
 EQSCRIPT_TYPE_BEGIN(TestRefPtr)
 	EQSCRIPT_BIND_CONSTRUCTOR()
 	EQSCRIPT_BIND_VAR(value)
@@ -961,7 +961,7 @@ struct TestWeakPtr : public WeakRefObject<TestWeakPtr>
 	int				value{ 555 };
 };
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(TestWeakPtr, "TestRefPtr", WEAK_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(TestWeakPtr, "TestRefPtr", esl::WEAK_REF)
 EQSCRIPT_TYPE_BEGIN(TestWeakPtr)
 	EQSCRIPT_BIND_VAR(value)
 EQSCRIPT_TYPE_END
@@ -1053,7 +1053,7 @@ struct TestEvent
 	ESL_DECLARE_EVENT(Event);
 };
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(TestEvent, "TestEvent", BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(TestEvent, "TestEvent", esl::BY_REF)
 EQSCRIPT_TYPE_BEGIN(TestEvent)
 	EQSCRIPT_BIND_EVENT(Event)
 EQSCRIPT_TYPE_END
@@ -1108,7 +1108,7 @@ static void ToStringTest(const OperatorTests& v, char* dest, const int destSize)
 	snprintf(dest, destSize, "current value: %d", v.value);
 }
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(OperatorTests, "TestOperators", BY_VALUE)
+EQSCRIPT_BIND_TYPE_NO_PARENT(OperatorTests, "TestOperators", esl::BY_VALUE)
 EQSCRIPT_TYPE_BEGIN(OperatorTests)
 	EQSCRIPT_BIND_CONSTRUCTOR()
 	EQSCRIPT_BIND_OP_TOSTRING(ToStringTest)
@@ -1151,7 +1151,7 @@ struct ByValueTests
 	bool	isMoved{ false };
 };
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(ByValueTests, "ByValueTests", BY_VALUE)
+EQSCRIPT_BIND_TYPE_NO_PARENT(ByValueTests, "ByValueTests", esl::BY_VALUE)
 EQSCRIPT_TYPE_BEGIN(ByValueTests)
 	EQSCRIPT_BIND_CONSTRUCTOR()
 	EQSCRIPT_BIND_CONSTRUCTOR(const ByValueTests&)
@@ -1308,7 +1308,7 @@ struct ConstTest
 	}
 };
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(ConstTest, "ConstTest", BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(ConstTest, "ConstTest", esl::BY_REF)
 EQSCRIPT_TYPE_BEGIN(ConstTest)
 	EQSCRIPT_BIND_VAR(testValue)
 
@@ -1442,7 +1442,7 @@ struct BindTest
 	int value;
 };
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(BindTest, "BindTest", BY_VALUE)
+EQSCRIPT_BIND_TYPE_NO_PARENT(BindTest, "BindTest", esl::BY_VALUE)
 EQSCRIPT_TYPE_BEGIN(BindTest)
 	EQSCRIPT_BIND_VAR(value)
 EQSCRIPT_TYPE_END
