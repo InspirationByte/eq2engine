@@ -191,7 +191,7 @@ EqStringRef fnmPathCombineF(int num, ...)
 	outPath.Resize(maxLength);
 	for (int i = 0; i < paths.numElem(); ++i)
 	{
-		outPath.Append(paths[i].TrimChar(_CORRECT_PATH_SEPARATOR_STR _INCORRECT_PATH_SEPARATOR_STR, true, true));
+		outPath.Append(paths[i].TrimChar(_CORRECT_PATH_SEPARATOR_STR _INCORRECT_PATH_SEPARATOR_STR, i > 0, true));
 		if (i < paths.numElem() - 1)
 			outPath.Append(CORRECT_PATH_SEPARATOR);
 	}
