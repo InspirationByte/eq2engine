@@ -188,7 +188,7 @@ static int DbgAssertHandler(PPSourceLine sl, const char* expression, const char*
 		auto assertFunc = *state.GetGlobal<esl::LuaFunctionRef>("assert");
 		using AssertFunc = esl::runtime::FunctionCall<void, bool, EqStringRef>;
 
-		EqStringRef errorMessage = EqString::Format("C++ assert: %s %s", expression, message);
+		EqStringRef errorMessage = EqString::Format("C++ assert: %s %s\nLocation: %s:%d", expression, message, sl.GetFileName(), sl.GetLine());
 		AssertFunc::Invoke(assertFunc, false, errorMessage);
 	}
 	return DefaultAssertHandler(sl, expression, message, skipOnly);
