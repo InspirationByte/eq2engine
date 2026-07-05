@@ -179,6 +179,8 @@ static int DbgRuntimeError(lua_State* L)
 	return 0;
 }
 
+static AssertHandlerFn s_coreAssertHandler = DefaultAssertHandler;
+
 static int DbgAssertHandler(PPSourceLine sl, const char* expression, const char* message, bool skipOnly)
 {
 	if(!Platform_IsDebuggerPresent() && IsLuaDebuggerPresent())
@@ -191,7 +193,7 @@ static int DbgAssertHandler(PPSourceLine sl, const char* expression, const char*
 		EqStringRef errorMessage = EqString::Format("C++ assert: %s %s\nLocation: %s:%d", expression, message, sl.GetFileName(), sl.GetLine());
 		AssertFunc::Invoke(assertFunc, false, errorMessage);
 	}
-	return DefaultAssertHandler(sl, expression, message, skipOnly);
+	return s_coreAssertHandler(sl, expression, message, skipOnly);
 }
 
 static void OpenDebugger(lua_State* L)
@@ -219,7 +221,7 @@ static void OpenDebugger(lua_State* L)
 		MsgWarning("--- Lua Local Debugger path: %s ---\n", debuggerFilePath);
 
 		esl::runtime::SetErrorHandler(DbgRuntimeError);
-		SetAssertHandler(DbgAssertHandler);
+		s_coreAssertHandler = SetAssertHandler(DbgAssertHandler);
 	}
 
 #endif // !_RETAIL
@@ -344,6 +346,9 @@ static void FreeLuaState(lua_State* state)
 {
 	lua_gc(state, LUA_GCCOLLECT, 0);
 	lua_close(state);
+
+	SetAssertHandler(s_coreAssertHandler);
+	s_coreAssertHandler = DefaultAssertHandler;
 }
 
 static void ExceptionCbPrintLuaStackTrace()
