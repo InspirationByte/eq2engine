@@ -52,9 +52,7 @@ int main(int argc, char **argv)
 		_CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_DEBUG );
 	#endif
 
-#ifdef _WIN32
 	Install_SpewFunction();
-#endif
 
 	CoreAppInitParameters appInitParams;
 	appInitParams.appName = "egfCa";
@@ -62,7 +60,7 @@ int main(int argc, char **argv)
 	g_eqCore->Init(appInitParams);
 
 	MsgWarning("EGFCA, a command-line utility to compile  model scripts (esc)\n");
-	MsgWarning("Copyright © Inspiration Byte 2009-2014\n");
+	MsgWarning("Copyright ï¿½ Inspiration Byte 2009-2014\n");
 	MsgWarning("Generates EGF of version %d\n", EQUILIBRIUM_MODEL_VERSION);
 
 	// Filesystem is first!

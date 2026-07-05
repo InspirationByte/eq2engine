@@ -323,9 +323,7 @@ int main(int argc, char **argv)
 		_CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_DEBUG );
 	#endif
 
-#ifdef _WIN32
 	Install_SpewFunction();
-#endif
 
 	// Core initialization test was passes successfully
 	GetCore()->Init("model_info",argc,argv);
