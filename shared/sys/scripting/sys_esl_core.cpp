@@ -23,7 +23,7 @@
 #include "sys_esl.h"
 #include "sys_esl_core.h"
 
-struct LuaConCommandFunc
+struct LuaConCommandRef
 {
 	void Clean()
 	{
@@ -32,6 +32,8 @@ struct LuaConCommandFunc
 		SAFE_DELETE_ARRAY(defaultValue);
 		SAFE_DELETE(instance);
 	}
+
+	bool IsNative() const { return name == nullptr; }
 
 	esl::LuaFunctionRef cmdFuncRef;
 	esl::LuaFunctionRef variantsFuncRef;
@@ -42,21 +44,33 @@ struct LuaConCommandFunc
 	const char* defaultValue{ nullptr };
 };
 
-static Map<int, LuaConCommandFunc> s_luaComCommands(PP_SL);
+static Map<const void*, LuaConCommandRef> s_luaComCommands(PP_SL);
 
-static LuaConCommandFunc* FindLuaCommandRef(const char* cmdName)
+// finds or creates native command refs
+static LuaConCommandRef& FindOrCreateCommandRef(const ConCommandBase* cmdBase)
 {
-	const int nameHash = StringId24(cmdName);
-	auto it = s_luaComCommands.find(nameHash);
+	auto it = s_luaComCommands.find(cmdBase);
+	if(it)
+		return *it;
+	
+	LuaConCommandRef ref;
+	ref.instance = const_cast<ConCommandBase*>(cmdBase);
+	it = s_luaComCommands.insert(ref.instance, ref);
+
+	return *it;
+}
+
+static LuaConCommandRef* FindLuaCommandRef(const ConCommandBase* cmdBase)
+{
+	auto it = s_luaComCommands.find(cmdBase);
 	if (it.atEnd())
 		return nullptr;
-
 	return &(*it);
 }
 
 DECLARE_CONCOMMAND_FN(luaConCommandHandler)
 {
-	LuaConCommandFunc* ref = FindLuaCommandRef(cmd->GetName());
+	LuaConCommandRef* ref = FindLuaCommandRef(cmd);
 	ASSERT_MSG(ref, "luaConCommandHandler ref is invalid for %s", cmd->GetName());
 
 	esl::ScriptState state(eslSys::GetScriptState());
@@ -72,7 +86,7 @@ DECLARE_CONCOMMAND_FN(luaConCommandHandler)
 
 static void LuaCommandVariantsFunc(const ConCommandBase* base, Array<EqString>& variants, const char* query)
 {
-	LuaConCommandFunc* ref = FindLuaCommandRef(base->GetName());
+	LuaConCommandRef* ref = FindLuaCommandRef(base);
 	ASSERT_MSG(ref, "LuaCommandVariantsFunc ref is invalid for %s", base->GetName());
 
 	using VariantsFunc = esl::runtime::FunctionCall<esl::LuaTable, const char*>;
@@ -89,7 +103,7 @@ static void LuaCommandVariantsFunc(const ConCommandBase* base, Array<EqString>& 
 
 static void LuaConVarChangeCallbackFunc(ConVar* pVar, char const* pszOldValue)
 {
-	LuaConCommandFunc* ref = FindLuaCommandRef(pVar->GetName());
+	LuaConCommandRef* ref = FindLuaCommandRef(pVar);
 	ASSERT_MSG(ref, "LuaConVarChangeCallbackFunc ref is invalid for %s", pVar->GetName());
 
 	using OnChangedFunc = esl::runtime::FunctionCall<void, const char*>;
@@ -99,11 +113,8 @@ static void LuaConVarChangeCallbackFunc(ConVar* pVar, char const* pszOldValue)
 
 static void S_ConCommandBase_SetVariantsCallback(ConCommandBase* base, const esl::LuaFunctionRef& variantsFunc)
 {
-	// TODO: create command ref for native cvars
-	LuaConCommandFunc* ref = FindLuaCommandRef(base->GetName());
-	ASSERT_MSG(ref, "LuaConVarChangeCallbackFunc ref is invalid for %s", base->GetName());
-
-	ref->variantsFuncRef = variantsFunc;
+	LuaConCommandRef& ref = FindOrCreateCommandRef(base);
+	ref.variantsFuncRef = variantsFunc;
 
 	if (variantsFunc.IsValid())
 		base->SetVariantsCallback(LuaCommandVariantsFunc);
@@ -113,11 +124,8 @@ static void S_ConCommandBase_SetVariantsCallback(ConCommandBase* base, const esl
 
 static void S_ConVar_SetChangeCallback(ConVar* base, const esl::LuaFunctionRef& variantsFunc)
 {
-	// TODO: create command ref for native cvars
-	LuaConCommandFunc* ref = FindLuaCommandRef(base->GetName());
-	ASSERT_MSG(ref, "LuaConVarChangeCallbackFunc ref is invalid for %s", base->GetName());
-
-	ref->changeCbFuncRef = variantsFunc;
+	LuaConCommandRef& ref = FindOrCreateCommandRef(base);
+	ref.changeCbFuncRef = variantsFunc;
 
 	if (variantsFunc.IsValid())
 		base->SetCallback(LuaConVarChangeCallbackFunc);
@@ -322,34 +330,36 @@ static ConCommand* Lua_Console_CreateCommand(char const* name, esl::LuaFunctionR
 	// register con. command function reference
 	ASSERT_MSG(cmdFunc.IsValid() == true, "Not valid function for Lua ConCommand %s", name);
 
-	LuaConCommandFunc ref;
+	LuaConCommandRef ref;
 	ref.name = CString::DuplicateNew(name);
 	ref.desc = desc ? CString::DuplicateNew(desc) : nullptr;
 	ref.cmdFuncRef = cmdFunc;
 	ref.instance = PPNew ConCommand(ref.name, CONCOMMAND_FN(luaConCommandHandler), flags, ConCommand::Desc(ref.desc));
-	s_luaComCommands.insert(StringId24(name), ref);
+	s_luaComCommands.insert(ref.instance, ref);
 
 	return static_cast<ConCommand*>(ref.instance);
 }
 
 static ConVar* Lua_Console_CreateCvar(char const* name, char const* value, char const* desc, int flags)
 {
-	LuaConCommandFunc ref;
+	LuaConCommandRef ref;
 	ref.name = CString::DuplicateNew(name);
 	ref.desc = desc ? CString::DuplicateNew(desc) : nullptr;
 	ref.defaultValue = CString::DuplicateNew(value);
 	ref.instance = PPNew ConVar(ref.name, ref.defaultValue, flags, ConCommand::Desc(ref.desc));
-	s_luaComCommands.insert(StringId24(name), ref);
+	s_luaComCommands.insert(ref.instance, ref);
 
 	return static_cast<ConVar*>(ref.instance);
 }
 
-static void Lua_Console_RemoveCommandBase(ConCommandBase* cmdbase)
+static void Lua_Console_RemoveCommandBase(const ConCommandBase* cmdBase)
 {
-	const int nameHash = StringId24(cmdbase->GetName());
-	auto it = s_luaComCommands.find(nameHash);
+	auto it = s_luaComCommands.find(cmdBase);
 	if (!it.atEnd())
 	{
+		if(it->IsNative())
+			return;
+
 		(*it).Clean();
 		s_luaComCommands.remove(it);
 	}
@@ -684,7 +694,12 @@ bool eslSysConsoleInit(const esl::ScriptState& state)
 void eslSysConsoleTerm()
 {
 	for (auto it = s_luaComCommands.begin(); !it.atEnd(); ++it)
+	{	
+		if(it->IsNative())
+			continue;
+
 		(*it).Clean();
+	}
 	s_luaComCommands.clear();
 }
 
