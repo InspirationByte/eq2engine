@@ -583,7 +583,7 @@ EqTStrRef<CH> EqTStrRef<CH>::TrimChar(const CH* ch, bool left, bool right) const
 	};
 
 	// trim whitespace from left
-	while (*begin && ischr(ch, *begin))
+	while (left && *begin && ischr(ch, *begin))
 		++begin;
 
 	if (*begin == 0)
@@ -592,7 +592,7 @@ EqTStrRef<CH> EqTStrRef<CH>::TrimChar(const CH* ch, bool left, bool right) const
 	const CH* end = begin + CString::Length(begin) - 1;
 
 	// trim whitespace from right
-	while (end > begin && ischr(ch, *end))
+	while (right && end > begin && ischr(ch, *end))
 		--end;
 
 	return Mid(begin - m_pszString, end - begin + 1);
