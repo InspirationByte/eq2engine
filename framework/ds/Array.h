@@ -595,21 +595,29 @@ inline void ArrayBase<T, STORAGE_TYPE>::reserve(int requiredSize)
 // Resize to the exact size specified irregardless of granularity
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline void ArrayBase<T, STORAGE_TYPE>::setNum(int newnum, bool shrinkResize)
+inline void ArrayBase<T, STORAGE_TYPE>::setNum(int newNum, bool shrinkResize)
 {
-	ASSERT(newnum >= 0);
+	ASSERT(newNum >= 0);
 
-	if (shrinkResize || newnum > STORAGE_TYPE::getSize())
-		resize(newnum);
-
-	// initialize new elements
-	T* listPtr = STORAGE_TYPE::getData();
-	for (int i = m_nNumElem; i < newnum; ++i)
+	if (newNum < m_nNumElem)
 	{
-		PPSLPlacementNew<T>(std::addressof(listPtr[i]), STORAGE_TYPE::getSL());
+		T* listPtr = STORAGE_TYPE::getData();
+		ArrayStorageBase<T>::destructElements(listPtr + newNum, m_nNumElem - newNum);
+	}
+	else
+	{
+		if (shrinkResize || newNum > STORAGE_TYPE::getSize())
+			resize(newNum);
+
+		// initialize new elements
+		T* listPtr = STORAGE_TYPE::getData();
+		for (int i = m_nNumElem; i < newNum; ++i)
+		{
+			PPSLPlacementNew<T>(std::addressof(listPtr[i]), STORAGE_TYPE::getSL());
+		}
 	}
 
-	m_nNumElem = newnum;
+	m_nNumElem = newNum;
 }
 
 // -----------------------------------------------------------------
