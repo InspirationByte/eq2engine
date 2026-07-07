@@ -106,14 +106,14 @@ static StudioVertexData MakeStudioVertex(const DSVertex& vert)
 	return vertex;
 }
 
-static void ApplyShapeKeyOnVertex( DSShapeKey* modShapeKey, const DSVertex& vert, StudioVertexData& destVert, float weight )
+static void ApplyShapeKeyOnVertex(const DSShapeKey& modShapeKey, const DSVertex& vert, StudioVertexData& destVert, float weight )
 {
-	for(DSShapeVert& shapeVert : modShapeKey->verts)
+	for(DSShapeVert& shapeVert : modShapeKey.verts)
 	{
 		if(shapeVert.vertexId == vert.vertexId )
 		{
-			destVert.posUvs.point = lerp(destVert.posUvs.point, shapeVert.position, weight);
-			destVert.tbn.normal = lerp(destVert.tbn.normal, shapeVert.normal, weight);
+			destVert.posUvs.point = destVert.posUvs.point + shapeVert.position * weight;
+			destVert.tbn.normal = normalize(destVert.tbn.normal + shapeVert.normal * weight);
 			return;
 		}
 	}
@@ -132,12 +132,12 @@ int CEGFGenerator::UsedMaterialIndex(const char* pszName)
 
 
 // writes group
-void CEGFGenerator::WriteGroup(studioHdr_t* header, IFileStream* stream, DSMesh* srcGroup, DSShapeKey* modShapeKey, float simplifyThreshold, studioMeshDesc_t* dstGroup)
+void CEGFGenerator::WriteGroup(studioHdr_t* header, IFileStream* stream, const DSMesh& srcGroup, const DSShapeKey* modShapeKey, float simplifyThreshold, studioMeshDesc_t* dstGroup)
 {
 	int vertexStreamsAvailableBits = STUDIO_VERTFLAG_POS_UV | STUDIO_VERTFLAG_TBN;
 
 	// DSM groups to be generated indices and optimized here
-	dstGroup->materialIndex = m_notextures ? -1 : UsedMaterialIndex(srcGroup->texture);
+	dstGroup->materialIndex = m_notextures ? -1 : UsedMaterialIndex(srcGroup.texture);
 
 	// triangle list by default
 	dstGroup->primitiveType = STUDIO_PRIM_TRIANGLES;
@@ -152,7 +152,7 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IFileStream* stream, DSMesh*
 	shapeVertsList.reserve(dstGroup->numVertices);
 	indexList.reserve(dstGroup->numVertices);
 
-	for(const DSVertex& srcVertex : srcGroup->verts)
+	for(const DSVertex& srcVertex : srcGroup.verts)
 	{
 		const StudioVertexData newVertex = MakeStudioVertex(srcVertex);
 
@@ -171,7 +171,7 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IFileStream* stream, DSMesh*
 			{
 				StudioVertexData& shapeVert = shapeVertsList.append();
 				shapeVert = newVertex;
-				ApplyShapeKeyOnVertex(modShapeKey, srcVertex, shapeVert, 1.0f);
+				ApplyShapeKeyOnVertex(*modShapeKey, srcVertex, shapeVert, 1.0f);
 			}
 		}
 		else
@@ -236,7 +236,7 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IFileStream* stream, DSMesh*
 
 		// optimize vertex cache
 		{
-			MsgInfo("Optimizing group '%s'...\n", srcGroup->texture.ToCString());
+			MsgInfo("Optimizing group '%s'...\n", srcGroup.texture.ToCString());
 			outIndices.setNum(indexList.numElem());
 			meshopt_optimizeVertexCache(outIndices.ptr(), indexList.ptr(), indexList.numElem(), usedVertList.numElem());
 			indexList.swap(outIndices);
@@ -244,7 +244,7 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IFileStream* stream, DSMesh*
 
 		if (simplifyThreshold > 0.0f)
 		{
-			MsgInfo("Simplifying group '%s' by %.2f threshold...\n", srcGroup->texture.ToCString(), simplifyThreshold);
+			MsgInfo("Simplifying group '%s' by %.2f threshold...\n", srcGroup.texture.ToCString(), simplifyThreshold);
 
 			constexpr float simplifyTargetError = 0.1f;
 
@@ -268,7 +268,7 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IFileStream* stream, DSMesh*
 		{
 			const int stripBreakIdx = 0;	// TODO: fix bug in render
 
-			MsgInfo("Generating strips for group '%s'...\n", srcGroup->texture.ToCString());
+			MsgInfo("Generating strips for group '%s'...\n", srcGroup.texture.ToCString());
 			outIndices.setNum(meshopt_stripifyBound(indexList.numElem()));
 			const int indexCount = meshopt_stripify(outIndices.ptr(), indexList.ptr(), indexList.numElem(), usedVertList.numElem(), stripBreakIdx);
 
@@ -430,8 +430,8 @@ void CEGFGenerator::WriteModels(studioHdr_t* header, IFileStream* stream)
 			studioMeshDesc_t* groupDesc = pDesc->pMesh(j);
 
 			// shape key modifier (if available)
-			DSShapeKey* key = (modelRef.shapeIndex != -1) ? modelRef.shapeData->shapes[modelRef.shapeIndex] : nullptr;
-			WriteGroup(header, stream, modelRef.model->meshes[j], key, modelRef.simplifyThreshold, groupDesc);
+			const DSShapeKey* key = (modelRef.shapeIndex != -1) ? modelRef.shapeData->shapes[modelRef.shapeIndex] : nullptr;
+			WriteGroup(header, stream, *modelRef.model->meshes[j], key, modelRef.simplifyThreshold, groupDesc);
 
 			Msg("Wrote group %s:%d", modelRef.name.ToCString(), j);
 

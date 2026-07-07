@@ -16,70 +16,35 @@
 #include "dsm_fbx_loader.h"
 #include "egf/model.h"
 
+
 static constexpr const int MaxFramesPerAnimation = 10000;
 
 namespace SharedModel
 {
 
-Vector3D FromFBXRotation(const ofbx::Vec3& vec, const Matrix3x3& orient)
-{
-	Quaternion o(orient);
-	Quaternion q = rotateXYZ(vec.x, vec.y, vec.z);
-
-	return eulersXYZ(o * q);
-}
-
-Vector3D FromFBXRotation(const Vector3D& vec, const Matrix3x3& orient)
-{
-	Quaternion o(orient);
-	Quaternion q = rotateXYZ(vec.x, vec.y, vec.z);
-
-	return eulersXYZ(o * q);
-}
-
 template<typename T>
 Vector3D FixOrient(const T& v, const ofbx::GlobalSettings& settings)
 {
-	switch (settings.UpAxis) {
-		case ofbx::UpVector_AxisY: return Vector3D(v.x, v.y, v.z);
-		case ofbx::UpVector_AxisZ: return Vector3D(v.x, v.z, -v.y);
-		case ofbx::UpVector_AxisX: return Vector3D(-v.y, v.x, v.z);
-	}
-	return Vector3D(v.x, v.y, v.z);
+	Vector3D srcVec(v.x, v.y, v.z);
+	return srcVec * Vector3D((settings.CoordAxis == ofbx::CoordinateAxis::NEGATIVE_X) ? -1.0f : 1.0f, 1.0f, 1.0f);
 }
 
-Vector3D FromFBXVector(const ofbx::Vec3& v, const ofbx::GlobalSettings& settings)
+static Vector3D FromFBXVector(const ofbx::Vec3& v, const ofbx::GlobalSettings& settings)
 {
 	return FixOrient(v, settings);
 }
 
-Vector3D FromFBXVector(const Vector3D& v, const ofbx::GlobalSettings& settings)
-{
-	return FixOrient(v, settings);
-}
-
-MColor FromFBXColorVector(const ofbx::Vec4& v)
+static MColor FromFBXColorVector(const ofbx::Vec4& v)
 {
 	return MColor((float)v.x, (float)v.y, (float)v.z, (float)v.w);
 }
 
-Quaternion FixOrient(const Quaternion& v, const ofbx::GlobalSettings& settings)
-{
-	switch (settings.UpAxis)
-	{
-		case ofbx::UpVector_AxisY: return Quaternion(v.x, v.y, v.z, v.w);
-		case ofbx::UpVector_AxisZ: return Quaternion(v.x, v.z, -v.y, v.w);
-		case ofbx::UpVector_AxisX: return Quaternion(-v.y, v.x, v.z, v.w);
-	}
-	return Quaternion(v.x, v.y, v.z, v.w);
-}
-
-Vector2D FromFBXUvVector(const ofbx::Vec2& vec)
+static Vector2D FromFBXUvVector(const ofbx::Vec2& vec)
 {
 	return Vector2D(vec.x, 1.0f - vec.y);
 }
 
-Matrix4x4 FromFBXMatrix(const ofbx::Matrix& mat, const Matrix3x3& orient)
+static Matrix4x4 FromFBXMatrix(const ofbx::DMatrix& mat, const Matrix3x3& orient)
 {
 	Matrix4x4 m(mat.m[0], mat.m[1], mat.m[2], mat.m[3],
 				mat.m[4], mat.m[5], mat.m[6], mat.m[7], 
@@ -94,7 +59,22 @@ Matrix4x4 FromFBXMatrix(const ofbx::Matrix& mat, const Matrix3x3& orient)
 	return m;
 }
 
-Matrix4x4 FromFBXMatrix(const ofbx::Matrix& mat)
+static Matrix4x4 FromFBXMatrix(const ofbx::Matrix& mat, const Matrix3x3& orient)
+{
+	Matrix4x4 m(mat.m[0], mat.m[1], mat.m[2], mat.m[3],
+				mat.m[4], mat.m[5], mat.m[6], mat.m[7], 
+				mat.m[8], mat.m[9], mat.m[10], mat.m[11], 
+				mat.m[12], mat.m[13], mat.m[14], mat.m[15]);
+
+	m.rows[0] = Vector4D(orient * m.rows[0].xyz(), 0.0f);
+	m.rows[1] = Vector4D(orient * m.rows[1].xyz(), 0.0f);
+	m.rows[2] = Vector4D(orient * m.rows[2].xyz(), 0.0f);
+	m.rows[3] = Vector4D(orient * m.rows[3].xyz(), 1.0f);
+
+	return m;
+}
+
+static Matrix4x4 FromFBXMatrix(const ofbx::DMatrix& mat)
 {
 	Matrix4x4 m(mat.m[0], mat.m[1], mat.m[2], mat.m[3],
 		mat.m[4], mat.m[5], mat.m[6], mat.m[7],
@@ -104,22 +84,25 @@ Matrix4x4 FromFBXMatrix(const ofbx::Matrix& mat)
 	return m;
 }
 
-void GetFBXConvertMatrix(const ofbx::GlobalSettings& settings, Matrix3x3& convertMatrix, bool& invertFaces)
+static Matrix4x4 FromFBXMatrix(const ofbx::Matrix& mat)
 {
-	const float scaleFactor = settings.UnitScaleFactor * 0.01f;
-	Vector3D scale(scaleFactor);
-	if (settings.CoordAxis == ofbx::CoordSystem::CoordSystem_RightHanded)
-	{
-		scale.x *= -1.0f;
-		invertFaces = true;
-	}
-	else
-		invertFaces = false;
+	Matrix4x4 m(mat.m[0], mat.m[1], mat.m[2], mat.m[3],
+		mat.m[4], mat.m[5], mat.m[6], mat.m[7],
+		mat.m[8], mat.m[9], mat.m[10], mat.m[11],
+		mat.m[12], mat.m[13], mat.m[14], mat.m[15]);
 
-	convertMatrix = scale3(scale.x, scale.y, scale.z);
+	return m;
 }
 
-void TransformModelGeom(DSModel& model, const Matrix4x4& transform)
+static void GetFBXConvertMatrix(const ofbx::GlobalSettings& settings, Matrix3x3& convertMatrix, bool& invertFaces)
+{
+	const float scaleFactor = settings.UnitScaleFactor * 0.01f;
+
+	invertFaces = (settings.CoordAxis == ofbx::CoordinateAxis::NEGATIVE_X);
+	convertMatrix = scale3(scaleFactor, scaleFactor, scaleFactor);
+}
+
+static void TransformModelGeom(DSModel& model, const Matrix4x4& transform)
 {
 	Matrix3x3 normalsRotateVec = transform.getRotationComponent();
 	normalsRotateVec.rows[0] = normalize(normalsRotateVec.rows[0]);
@@ -136,7 +119,7 @@ void TransformModelGeom(DSModel& model, const Matrix4x4& transform)
 	}
 }
 
-void TransformShapeDataGeom(DSShapeData* shapeData, const Matrix4x4& transform)
+static void TransformShapeDataGeom(DSShapeData* shapeData, const Matrix4x4& transform)
 {
 	Matrix3x3 normalsRotateVec = transform.getRotationComponent();
 	normalsRotateVec.rows[0] = normalize(normalsRotateVec.rows[0]);
@@ -176,9 +159,10 @@ struct ObjectData
 
 };
 
-void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone>& bones, Array<VertexWeightData>& weightData, const Matrix4x4& transform, const Matrix3x3& convertMatrix)
+static void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone>& bones, Array<VertexWeightData>& weightData, const ofbx::GlobalSettings& settings, const Matrix4x4& transform, const Matrix3x3& convertMatrix)
 {
 	const ofbx::Geometry& geom = *mesh.getGeometry();
+	const ofbx::GeometryData& geomData = geom.getGeometryData();
 	const ofbx::Skin* skin = geom.getSkin();
 	const ofbx::Pose& pose = *mesh.getPose();
 
@@ -187,19 +171,8 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone>& bones, Array<Vertex
 
 	const int weightDataStart = weightData.numElem();
 
+	const float matDet = settings.CoordAxis == ofbx::CoordinateAxis::NEGATIVE_X ? -1.0f : 1.0f;
 	const Matrix4x4 poseMatrix = FromFBXMatrix(pose.getMatrix());
-	const Matrix4x4 skinConvertMatrix = Matrix4x4(convertMatrix);
-
-	const Matrix3x3 normalizedConvertMatrix = Matrix3x3(
-		normalize(convertMatrix.rows[0]), 
-		normalize(convertMatrix.rows[1]),
-		normalize(convertMatrix.rows[2]));
-
-	const float matDet = det(normalizedConvertMatrix);
-	const Vector3D convertMatrixScale = Vector3D(
-		dot(convertMatrix.rows[0], normalizedConvertMatrix.rows[0]),
-		dot(convertMatrix.rows[1], normalizedConvertMatrix.rows[1]),
-		dot(convertMatrix.rows[2], normalizedConvertMatrix.rows[2]));
 
 	// collect matrices and weights first
 	Array<Matrix4x4> boneMatries(PP_SL);
@@ -216,7 +189,7 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone>& bones, Array<Vertex
 		boneSet.insert(fbxBoneLink);
 
 		// link matrix must be same as fbxBoneLink->getGlobalTransform()
-		const ofbx::Matrix fbxBoneMat = fbxCluster.getTransformLinkMatrix(); 
+		const ofbx::DMatrix fbxBoneMat = fbxCluster.getTransformLinkMatrix(); 
 
 		// apply mesh transform alongside with FBX conversion matrix
 		const Matrix4x4 boneTransform = FromFBXMatrix(fbxBoneMat);
@@ -228,13 +201,12 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone>& bones, Array<Vertex
 		wd.sourceCluster = &fbxCluster;
 
 		const int* indices = fbxCluster.getIndices();
-		for (int k = 0; k < fbxCluster.getIndicesCount(); ++k)
-		{
-			wd.indexWeightMap.insert(indices[k], fbxCluster.getWeights()[k]);
-		}
-	}
+		const double* weights = fbxCluster.getWeights();
+		ASSERT(fbxCluster.getWeightsCount() == fbxCluster.getIndicesCount());
 
-	MsgInfo("	Mesh %s\n", mesh.name);
+		for (int k = 0; k < fbxCluster.getIndicesCount(); ++k)
+			wd.indexWeightMap.insert(indices[k], weights[k]);
+	}
 
 	// add bones
 	ArrayRef<VertexWeightData> thisWeightData(weightData.ptr() + weightDataStart, weightData.numElem() - weightDataStart);
@@ -273,9 +245,9 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone>& bones, Array<Vertex
 		}
 
 		// FIXME: WTF m8, this does seem to work
-		Matrix4x4 boneMatrix = boneMatries[i] * Matrix4x4(normalizedConvertMatrix) * !poseMatrix;
+		Matrix4x4 boneMatrix = boneMatries[i] * identity4 * !poseMatrix;
 		if (dsBone.parentIdx != -1)
-			boneMatrix = boneMatrix * !(boneMatries[dsBone.parentIdx] * Matrix4x4(normalizedConvertMatrix) * !poseMatrix);
+			boneMatrix = boneMatrix * !(boneMatries[dsBone.parentIdx] * identity4 * !poseMatrix);
 		else
 			boneMatrix = boneMatrix * transform;
 
@@ -284,7 +256,7 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone>& bones, Array<Vertex
 			dsBone.position = boneMatrix.getTranslationComponent();
 			dsBone.angles = EulerMatrixXYZ(boneMatrix.getRotationComponent());
 
-			if(matDet < 0)
+			if (matDet < 0)
 			{
 				dsBone.angles *= -Vector3D(sign(matDet), 1.0f, 1.0f);
 				dsBone.position *= Vector3D(sign(matDet), 1.0f, 1.0f);
@@ -293,131 +265,144 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone>& bones, Array<Vertex
 	}
 }
 
-void ConvertFBXMeshToDSM(int meshId, DSModel& model, DSShapeData* shapeData, Map<int, DSMesh*>& geomSkins, const ofbx::Mesh& mesh, const ofbx::GlobalSettings& settings, bool invertFaces, const Matrix4x4& transform, const Matrix3x3& convertMatrix)
+static void ConvertFBXMeshToDSM(int meshId, DSModel& model, DSShapeData* shapeData, Map<int, DSMesh*>& geomSkins, const ofbx::Mesh& mesh, const ofbx::GlobalSettings& settings, bool invertFaces, const Matrix4x4& transform, const Matrix3x3& convertMatrix)
 {
+	MsgInfo("Mesh '%s'\n", mesh.name);
+	
 	Array<VertexWeightData> weightData(PP_SL);
-	GetFBXBonesAsDSM(mesh, model.bones, weightData, transform, convertMatrix);
+	GetFBXBonesAsDSM(mesh, model.bones, weightData, settings, transform, convertMatrix);
 
 	const ofbx::Geometry& geom = *mesh.getGeometry();
-	const ofbx::Vec3* vertices = geom.getVertices();
-	const ofbx::Vec3* normals = geom.getNormals();
-	const ofbx::Vec3* tangents = geom.getTangents(); // TODO: tangent space must be preserved from FBX
-	const ofbx::Vec4* colors = geom.getColors();
-	const ofbx::Vec2* uvs = geom.getUVs(0);			 // TODO: multiple UV channels support (under s_uvs_max)
+	const ofbx::GeometryData& geomData = geom.getGeometryData();
+
+	ArrayCRef<int> materials(geomData.getMaterialMap(), geomData.getMaterialMapSize());
+	ofbx::Vec3Attributes vertices = geomData.getPositions();
+	ofbx::Vec2Attributes uvs = geomData.getUVs();	// TODO: multiple UV channels support (under s_uvs_max)
+	ofbx::Vec4Attributes colors = geomData.getColors();
+	ofbx::Vec3Attributes normals = geomData.getNormals();
+	//ofbx::Vec3Attributes tangents = geomData.getTangents();
+
+	Array<int> vertIndices(PP_SL);
+	Array<int> tempIndices(PP_SL);
+	Array<float> tempWeights(PP_SL);
+	Array<int> tempWeightBones(PP_SL);
+	for(int partIdx = 0; partIdx < geomData.getPartitionCount(); ++partIdx)
+	{
+		ofbx::GeometryPartition geomPart = geomData.getPartition(partIdx);
+		vertIndices.setNum(geomPart.triangles_count * 3);
+		for(int polyIdx = 0; polyIdx < geomPart.polygon_count; ++polyIdx)
+		{
+			const ofbx::GeometryPartition::Polygon& polygon = geomPart.polygons[polyIdx];
+			tempIndices.reserve(polygon.vertex_count);
+
+			const int indexCount = ofbx::triangulate(geomData, polygon, vertIndices.ptr(), tempIndices.ptr());
+
+			// walk triangles
+			for (int vertIdx = 0; vertIdx < indexCount; vertIdx += 3)
+			{
+				const int skinIdx = meshId | (partIdx << 16);
+				auto skinMeshIt = geomSkins.find(skinIdx);
+				if (skinMeshIt.atEnd())
+				{
+					DSMesh* dsmGrp = PPNew DSMesh();
+
+					const ofbx::Material* material = mesh.getMaterialCount() > 0 ? mesh.getMaterial(partIdx) : nullptr;
+					if (material)
+						dsmGrp->texture = material->name;
+
+					skinMeshIt = geomSkins.insert(skinIdx, dsmGrp);
+					model.meshes.append(dsmGrp);
+				}
+
+				for (int k = 0; k < 3; ++k)
+				{
+					const int idx = vertIndices[vertIdx + (invertFaces ? 2 - k : k)];
+
+					DSVertex& vert = skinMeshIt.value()->verts.append();
+					vert.position = FromFBXVector(vertices.get(idx), settings);
+
+					if (normals.values)
+						vert.normal = FromFBXVector(normals.get(idx), settings);
+					if (uvs.values)
+						vert.texcoord = FromFBXUvVector(uvs.get(idx));
+					if (colors.values)
+						vert.color = FromFBXColorVector(colors.get(idx));
+
+					vert.vertexId = vertices.indices ? vertices.indices[idx] : idx;
+
+					ASSERT(length(vert.position) < F_INFINITY);
+					ASSERT(vecIsFinite(vert.position) && vecIsValid(vert.position));
+					ASSERT(vecIsValid(vert.normal));
+					ASSERT(vecIsValid(vert.texcoord));
+
+					tempWeights.clear();
+					tempWeightBones.clear();
+
+					// Apply bone weights to vertex
+					for (const VertexWeightData& wd : weightData)
+					{
+						auto it = wd.indexWeightMap.find(vertices.indices ? vertices.indices[idx] : idx);
+						if (it.atEnd())
+							continue;
+
+						tempWeights.append(*it);
+						tempWeightBones.append(wd.boneId);
+					}
+
+					const int numNewWeights = SortAndBalanceBones(tempWeights.numElem(), MAX_MODEL_VERTEX_WEIGHTS, tempWeightBones.ptr(), tempWeights.ptr());
+					vert.weights.setNum(numNewWeights);
+					for (int w = 0; w < numNewWeights; w++)
+					{
+						DSWeight& weight = vert.weights[w];
+						weight.bone = tempWeightBones[w];
+						weight.weight = tempWeights[w];
+					}
+				}
+			}
+		}
+	}
 
 	// get blend shapes
 	const ofbx::BlendShape* blendShape = geom.getBlendShape();
 	if (blendShape && shapeData)
 	{
 		const int numBlendShapeChannels = blendShape->getBlendShapeChannelCount();
-		Msg("    has %d blend shape channels\n", numBlendShapeChannels);
-		for (int j = 0; j < numBlendShapeChannels; ++j)
+		Msg("    %d blend shape channels\n", numBlendShapeChannels);
+		for (int i = 0; i < numBlendShapeChannels; ++i)
 		{
-			const ofbx::BlendShapeChannel* blendShapeChan = blendShape->getBlendShapeChannel(j);
+			const ofbx::BlendShapeChannel* blendShapeChan = blendShape->getBlendShapeChannel(i);
+			const float deformPercent = blendShapeChan->getDeformPercent();
 			const int numBlendShapes = blendShapeChan->getShapeCount();
-			Msg("\t has %d blend shapes\n", numBlendShapes);
-			for (int k = 0; k < numBlendShapes; ++k)
+			Msg("\t %d blend shapes:", numBlendShapes);
+			for (int j = 0; j < numBlendShapes; ++j)
 			{
-				const ofbx::Shape* shape = blendShapeChan->getShape(k);
-				Msg("\t\t %s\n", shape->name);
+				const ofbx::Shape* shape = blendShapeChan->getShape(j);
+				MsgInfo(" %s", shape->name);
 
 				DSShapeKey* shapeKey = PPNew DSShapeKey();
 				shapeKey->name = shape->name;
+				shapeKey->verts.reserve(shape->getVertexCount());
 
 				shapeData->shapes.append(shapeKey);
 
 				const ofbx::Vec3* shapeVertices = shape->getVertices();
 				const ofbx::Vec3* shapeNormals = shape->getNormals();
+				const int* shapeIndices = shape->getIndices();
+				const int indexCount = shape->getIndexCount();
 
 				const int vertCount = shape->getVertexCount();
-				for (int vertId = 0; vertId < vertCount; vertId += 3)
+				for (int vertId = 0; vertId < vertCount; ++vertId)
 				{
-					for (int tVert = 0; tVert < 3; ++tVert)
-					{
-						const int tVertId = vertId + (invertFaces ? 2 - tVert : tVert);
-
-						DSShapeVert& vert = shapeKey->verts.append();
-						vert.vertexId = tVertId;
-						vert.position = FromFBXVector(shapeVertices[tVertId], settings);
-						vert.normal = FromFBXVector(shapeNormals[tVertId], settings);
-					}
-				} // vertId
-			} // k
-		} // j
-	}
-
-	// const int* faceIndices = geom.getFaceIndices();
-	const int* vertMaterials = geom.getMaterials();
-
-	// NOTE: OpenFBX prefers triangulation without indexation
-	// and it's not possible to validly obtain the indices with messing up the geometry.
-	int triNum = 0;
-	const int vertexCount = geom.getVertexCount();
-	for (int j = 0; j < vertexCount; j += 3, ++triNum)
-	{
-		DSMesh* dsmGrp = nullptr;
-
-		const int materialIdx = vertMaterials ? vertMaterials[triNum] : 0;
-		const int skinIdx = meshId | (materialIdx << 16);
-		auto found = geomSkins.find(skinIdx);
-		if (found.atEnd())
-		{
-			dsmGrp = PPNew DSMesh();
-
-			const ofbx::Material* material = mesh.getMaterialCount() > 0 ? mesh.getMaterial(materialIdx) : nullptr;
-			if (material)
-				dsmGrp->texture = material->name;
-
-			geomSkins.insert(skinIdx, dsmGrp);
-			model.meshes.append(dsmGrp);
-		}
-		else
-		{
-			dsmGrp = *found;
-		}
-
-		for (int k = 0; k < 3; ++k)
-		{
-			const int jj = j + (invertFaces ? 2 - k : k);
-			DSVertex& vert = dsmGrp->verts.append();
-			vert.position = FromFBXVector(vertices[jj], settings);
-
-			if (normals)
-				vert.normal = FromFBXVector(normals[jj], settings);
-			if (uvs)
-				vert.texcoord = FromFBXUvVector(uvs[jj]);
-			if (colors)
-				vert.color = FromFBXColorVector(colors[jj]);
-
-			vert.vertexId = jj;
-
-			const int numWeights = weightData.numElem();
-			Array<float> tempWeights(PP_SL);
-			Array<int> tempWeightBones(PP_SL);
-
-			// Apply bone weights to vertex
-			for (int w = 0; w < numWeights; ++w)
-			{
-				const VertexWeightData& wd = weightData[w];
-				auto it = wd.indexWeightMap.find(jj);
-				if (it.atEnd())
-					continue;
-
-				tempWeights.append(*it);
-				tempWeightBones.append(wd.boneId);
-			} // w
-
-			const int numNewWeights = SortAndBalanceBones(tempWeights.numElem(), MAX_MODEL_VERTEX_WEIGHTS, tempWeightBones.ptr(), tempWeights.ptr());
-
-			// copy weights
-			for (int w = 0; w < numNewWeights; w++)
-			{
-				DSWeight& weight = vert.weights.append();
-				weight.bone = tempWeightBones[w];
-				weight.weight = tempWeights[w];
+					// NOTE: shape key positions and normals ARE RELATIVE
+					DSShapeVert& shapeVert = shapeKey->verts.append();
+					shapeVert.vertexId = shapeIndices[vertId];
+					shapeVert.position = FromFBXVector(shapeVertices[vertId], settings);
+					shapeVert.normal = FromFBXVector(shapeNormals[vertId], settings);
+				}
 			}
-		} // k
-	} // j
+			Msg("\n");
+		}
+	}
 
 	TransformModelGeom(model, transform);
 
@@ -425,19 +410,17 @@ void ConvertFBXMeshToDSM(int meshId, DSModel& model, DSShapeData* shapeData, Map
 		TransformShapeDataGeom(shapeData, transform);
 }
 
-
 bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename)
 {
 	VSSize fileSize = 0;
-	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);
-
+	ubyte* fileBuffer = g_fileSystem->GetFileBuffer(filename, &fileSize);
 	if (!fileBuffer)
 	{
 		MsgError("Couldn't open FBX file '%s'\n", filename);
 		return false;
 	}
 
-	ofbx::IScene* scene = ofbx::load((ofbx::u8*)fileBuffer, fileSize, (ofbx::u64)ofbx::LoadFlags::TRIANGULATE);
+	ofbx::IScene* scene = ofbx::load((ofbx::u8*)fileBuffer, fileSize, (ofbx::u64)ofbx::LoadFlags::KEEP_MATERIAL_MAP);
 
 	if (!scene)
 	{
@@ -448,6 +431,19 @@ bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename)
 
 	{
 		const ofbx::GlobalSettings& settings = *scene->getGlobalSettings();
+
+		static const char* axesNames[] = {
+			"X",
+			"-X",
+			"Y",
+			"-Y",
+			"Z",
+			"-Z",
+			"Unknown"
+		};
+		MsgInfo("  FBX Forward: %s\n", axesNames[static_cast<int>(settings.FrontAxis)]);
+		MsgInfo("  FBX Up: %s\n", axesNames[static_cast<int>(settings.UpAxis)]);
+		MsgInfo("  Original Up: %s\n", axesNames[static_cast<int>(settings.OriginalUpAxis)]);
 
 		Matrix3x3 convertMatrix = identity3;
 		bool invertFaces = false;
@@ -495,7 +491,7 @@ bool LoadFBXCompound( DSModel& model, const char* filename )
 		return false;
 	}
 
-	ofbx::IScene* scene = ofbx::load((ofbx::u8*)fileBuffer, fileSize, (ofbx::u64)ofbx::LoadFlags::TRIANGULATE);
+	ofbx::IScene* scene = ofbx::load((ofbx::u8*)fileBuffer, fileSize, (ofbx::u64)ofbx::LoadFlags::KEEP_MATERIAL_MAP);
 
 	if (!scene)
 	{
@@ -543,7 +539,7 @@ bool LoadFBXShapes(DSModelContainer& modelContainer, const char* filename)
 		return false;
 	}
 
-	ofbx::IScene* scene = ofbx::load((ofbx::u8*)fileBuffer, fileSize, (ofbx::u64)ofbx::LoadFlags::TRIANGULATE);
+	ofbx::IScene* scene = ofbx::load((ofbx::u8*)fileBuffer, fileSize, (ofbx::u64)ofbx::LoadFlags::KEEP_MATERIAL_MAP);
 
 	if (!scene)
 	{
@@ -741,18 +737,7 @@ void CollectFBXAnimations(Array<DSAnimData>& animations, ofbx::IScene* scene, co
 	Matrix3x3 convertMatrix;
 	bool invertFaces;
 	GetFBXConvertMatrix(settings, convertMatrix, invertFaces);
-
-	const Matrix4x4 skinConvertMatrix = Matrix4x4(convertMatrix);
-	const Matrix3x3 normalizedConvertMatrix = Matrix3x3(
-		normalize(convertMatrix.rows[0]),
-		normalize(convertMatrix.rows[1]),
-		normalize(convertMatrix.rows[2]));
-
-	const float matDet = det(normalizedConvertMatrix);
-	const Vector3D convertMatrixScale = Vector3D(
-		dot(convertMatrix.rows[0], normalizedConvertMatrix.rows[0]),
-		dot(convertMatrix.rows[1], normalizedConvertMatrix.rows[1]),
-		dot(convertMatrix.rows[2], normalizedConvertMatrix.rows[2]));
+	const float matDet = settings.CoordAxis == ofbx::CoordinateAxis::NEGATIVE_X ? -1.0f : 1.0f;
 
 	// get bones from all meshes
 	Array<ObjectData> objectDatas(PP_SL);
@@ -776,7 +761,7 @@ void CollectFBXAnimations(Array<DSAnimData>& animations, ofbx::IScene* scene, co
 		objData.mesh = &mesh;
 		objData.geom = mesh.getGeometry();
 		objData.skin = objData.geom ? objData.geom->getSkin() : nullptr;
-		GetFBXBonesAsDSM(mesh, objData.bones, objData.weightData, transform, convertMatrix);
+		GetFBXBonesAsDSM(mesh, objData.bones, objData.weightData, settings, transform, convertMatrix);
 	}
 
 	if (!objectDatas.numElem())
@@ -902,8 +887,8 @@ void CollectFBXAnimations(Array<DSAnimData>& animations, ofbx::IScene* scene, co
 					const Vector3D rotation = boneAnimation.rotations[k];
 					const Vector3D translation = boneAnimation.translations[k];
 
-					const ofbx::Vec3 translationFrame{translation.x, translation.y, translation.z};
-					const ofbx::Vec3 rotationFrame{rotation.x, rotation.y, rotation.z};
+					const ofbx::DVec3 translationFrame{translation.x, translation.y, translation.z};
+					const ofbx::DVec3 rotationFrame{rotation.x, rotation.y, rotation.z};
 
 					Matrix4x4 meshAnimTransform = identity4;
 					if (bone.parentIdx == -1)
@@ -911,8 +896,8 @@ void CollectFBXAnimations(Array<DSAnimData>& animations, ofbx::IScene* scene, co
 						const Vector3D rotation = rootAnimation.rotations[k];
 						const Vector3D translation = rootAnimation.translations[k];
 
-						const ofbx::Vec3 translationFrame{translation.x, translation.y, translation.z};
-						const ofbx::Vec3 rotationFrame{rotation.x, rotation.y, rotation.z};
+						const ofbx::DVec3 translationFrame{translation.x, translation.y, translation.z};
+						const ofbx::DVec3 rotationFrame{rotation.x, rotation.y, rotation.z};
 
 						// we need to apply this parent transform accordingly
 						meshAnimTransform = FromFBXMatrix(skeletonObj.evalLocal(translationFrame, rotationFrame)) * meshTransform;
@@ -972,7 +957,7 @@ bool LoadFBXAnimations(Array<DSAnimData>& animations, const char* filename, cons
 		return false;
 	}
 
-	ofbx::IScene* scene = ofbx::load((ofbx::u8*)fileBuffer, fileSize, (ofbx::u64)ofbx::LoadFlags::TRIANGULATE);
+	ofbx::IScene* scene = ofbx::load((ofbx::u8*)fileBuffer, fileSize, (ofbx::u64)ofbx::LoadFlags::KEEP_MATERIAL_MAP);
 
 	if (!scene)
 	{

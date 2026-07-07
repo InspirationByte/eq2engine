@@ -90,7 +90,7 @@ protected:
 	int						UsedMaterialIndex(const char* pszName);
 
 	// writing to stream	
-	void					WriteGroup(studioHdr_t* header, IFileStream* stream, SharedModel::DSMesh* srcGroup, SharedModel::DSShapeKey* modShapeKey, float simplifyThreshold, studioMeshDesc_t* dstGroup);
+	void					WriteGroup(studioHdr_t* header, IFileStream* stream, const SharedModel::DSMesh& srcGroup, const SharedModel::DSShapeKey* modShapeKey, float simplifyThreshold, studioMeshDesc_t* dstGroup);
 
 	void					WriteModels(studioHdr_t* header, IFileStream* stream);
 	void					WriteLods(studioHdr_t* header, IFileStream* stream);

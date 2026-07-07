@@ -181,7 +181,6 @@ bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel& mod)
 bool CEGFGenerator::PostProcessDSM(GenModel& mod)
 {
 	const int nVerts = GetTotalVertsOfDSM(*mod.model);
-
 	if ((float)nVerts / 3.0f != nVerts / 3)
 	{
 		MsgError("Reference model '%s' has invalid triangles (tip: vertex count must be divisible by 3 without remainder)\n", mod.model->name.ToCString());
@@ -193,13 +192,12 @@ bool CEGFGenerator::PostProcessDSM(GenModel& mod)
 	{
 		AssignShapeKeyVertexIndexes(*mod.model, mod.shapeData);
 
-		for (int i = 0; i < mod.shapeData->shapes.numElem(); ++i)
+		for (DSShapeKey* shapeKey : mod.shapeData->shapes)
 		{
-			DSShapeKey* shapeKey = mod.shapeData->shapes[i];
-			for (int j = 0; j < shapeKey->verts.numElem(); ++j)
+			for (DSShapeVert& shapeVert : shapeKey->verts)
 			{
-				shapeKey->verts[j].position *= m_modelScale;
-				shapeKey->verts[j].position += m_modelOffset;
+				shapeVert.position *= m_modelScale;
+				shapeVert.position += m_modelOffset;
 			}
 		}
 	}
@@ -214,19 +212,17 @@ bool CEGFGenerator::PostProcessDSM(GenModel& mod)
 	}
 
 	// check material list and move/scale verts
-	for (int i = 0; i < mod.model->meshes.numElem(); i++)
+	for (DSMesh* mesh : mod.model->meshes)
 	{
-		DSMesh* group = mod.model->meshes[i];
-
 		// scale vertices
-		for (int j = 0; j < group->verts.numElem(); j++)
+		for (DSVertex& vert : mesh->verts)
 		{
-			group->verts[j].position *= m_modelScale;
-			group->verts[j].position += m_modelOffset;
+			vert.position *= m_modelScale;
+			vert.position += m_modelOffset;
 		}
 
 		// if material is not found, add new one
-		int found = GetMaterialIndex(mod.model->meshes[i]->texture);
+		const int found = GetMaterialIndex(mesh->texture);
 		if (found == -1)
 		{
 			if (m_materials.numElem() - 1 == MAX_STUDIOMATERIALS)
@@ -234,12 +230,8 @@ bool CEGFGenerator::PostProcessDSM(GenModel& mod)
 				MsgError("Exceeded used material count (MAX_STUDIOMATERIALS = %d)!", MAX_STUDIOMATERIALS);
 				break;
 			}
-
-			// create new material
-			GenMaterialDesc desc;
-			strcpy(desc.materialname, mod.model->meshes[i]->texture);
-
-			m_materials.append(desc);
+			GenMaterialDesc& desc = m_materials.append();
+			strcpy(desc.materialname, mesh->texture);
 		}
 	}
 
