@@ -350,7 +350,7 @@ void CBaseShader::PipelineCreatorJob::Execute()
 	IGPURenderPipelinePtr renderPipeline = m_renderAPI->CreateRenderPipeline(m_pipelineDesc, m_pipelineInfo.layout);
 	if (!renderPipeline)
 	{
-		m_pipelinePromise.SetError(-1, EqString::Format("%s is unable to create pipeline", GetName()));
+		m_pipelinePromise.SetError(-1, EqString::Format("%s cannot create render pipeline", GetName()));
 		return;
 	}
 	m_pipelinePromise.SetResult(std::move(renderPipeline));
@@ -460,7 +460,7 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 		newPipelineInfo.pipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, newPipelineInfo.layout);
 		if (!newPipelineInfo.pipeline)
 		{
-			MsgError("Failed to create render pipeline for shader %s", GetName());
+			MsgError("Material %s produced error:\nShader %s cannot create render pipeline\n", this->m_material->GetName(), GetName());
 
 			m_lastPipelineInfo = &newPipelineInfo;
 			m_lastPipelineInfoHash = pipelineId;
@@ -495,7 +495,7 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 			cachePipeline.future.AddCallback([&cache = *cacheIt, &newPipelineInfo, onInit, inputParams, this](const FutureResult<IGPURenderPipelinePtr>& result) {
 				if (result.IsError())
 				{
-					MsgError("%s\n", result.GetErrorMessage());
+					MsgError("Material %s produced error:\n%s\n", this->m_material->GetName(), result.GetErrorMessage());
 					return;
 				}
 
