@@ -63,6 +63,7 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 
 	bool success = false;
 	KVSection root;
+	KVSection atlRoot;
 
 	const int numSteps = r_allowSourceTextures.GetBool() ? 2 : 1;
 	EqString atlasKVSFileName;
@@ -78,7 +79,7 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 		// load atlas file
 		if (!m_atlas)
 		{
-			KVSection atlRoot;
+			atlRoot.Clear();
 			if (KV_LoadFromFile(atlasKVSFileName, materialSearchPath, atlRoot))
 			{
 				const KVSection* atlasSec = atlRoot["AtlasGroup"];

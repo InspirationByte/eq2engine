@@ -628,8 +628,8 @@ bool CMaterialSystem::LoadShaderLibrary(const char* libname)
 
 bool CMaterialSystem::IsMaterialExist(const char* szMaterialName) const
 {
-	EqString mat_path(m_materialsPath + szMaterialName + _Es(".mat"));
-	return g_fileSystem->FileExist(mat_path.GetData());
+	EqStringRef fullMaterialpath = fnmPathCombine(m_materialsPath, fnmPathApplyExt(szMaterialName, s_materialFileExt));
+	return g_fileSystem->FileExist(fullMaterialpath);
 }
 
 // creates new material with defined parameters
@@ -673,11 +673,9 @@ IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName, int instan
 	if(*szMaterialName == 0)
 		return nullptr;
 
-	EqString materialName = EqStringRef(szMaterialName).LowerCase();
+	EqString materialName(szMaterialName);
 	fnmPathFixSeparators(materialName);
-
-	if (materialName[0] == CORRECT_PATH_SEPARATOR)
-		materialName = materialName.ToCString() + 1;
+	materialName.TrimChar(_CORRECT_PATH_SEPARATOR_STR, true, false);
 
 	const int nameHash = StringId24(materialName, true);
 
