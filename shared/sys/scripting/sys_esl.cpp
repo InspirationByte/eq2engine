@@ -11,8 +11,9 @@
 #include "sys_esl.h"
 #include "scripting/esl_event.h"
 
-#include "sys_esl_math.h"
 #include "sys_esl_keyvalues.h"
+#include "sys_esl_math.h"
+#include "sys_esl_math_utils.h"
 #include "sys_esl_core.h"
 #include "sys_esl_movie.h"
 #include "sys_esl_animating.h"
@@ -438,10 +439,11 @@ bool eslSysInit(const esl::ScriptState& state)
 	ESL_SYS_INIT(eslSysDebugInit);
 	ESL_SYS_INIT(eslSysFileSystemInit);
 	ESL_SYS_INIT(eslSysConsoleInit);
+	ESL_SYS_INIT(eslSysKeyValuesInit);
 	//ESL_SYS_INIT_EXT(eslSysNetworkingInit);
 
 	ESL_SYS_INIT(eslSysMathInit);
-	ESL_SYS_INIT(eslSysKeyValuesInit);
+	ESL_SYS_INIT(eslSysMathUtilsInit);
 	ESL_SYS_INIT(eslSysDebugDrawingInit);
 	ESL_SYS_INIT(eslSysInputInit);
 	ESL_SYS_INIT(eslSysSoundEmitterSystemInit);

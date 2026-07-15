@@ -6,7 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "math/Utility.h"
 #include "math/Random.h"
 
 #include "scripting/esl.h"
@@ -681,42 +680,6 @@ static Quaternion quatIdentity()
 	return qidentity;
 }
 
-static esl::Any<2> L_LineIntersectsLine2D(const esl::ScriptState& state, const Vector2D& lAB, const Vector2D& lAE, const Vector2D& lBB, const Vector2D& lBE)
-{
-	Vector2D isectPoint;
-	const bool result = LineIntersectsLine2D(lAB, lAE, lBB, lBE, isectPoint);
-	state.PushValue(result);
-	state.PushValue(isectPoint);
-	return {};
-}
-
-static esl::Any<2> L_LineSegIntersectsLineSeg2D(const esl::ScriptState& state, const Vector2D& lAB, const Vector2D& lAE, const Vector2D& lBB, const Vector2D& lBE)
-{
-	Vector2D isectPoint;
-	const bool result = LineSegIntersectsLineSeg2D(lAB, lAE, lBB, lBE, isectPoint);
-	state.PushValue(result);
-	state.PushValue(isectPoint);
-	return {};
-}
-
-static esl::Any<2> L_LineSegIntersectsCircle2D(const esl::ScriptState& state, const Vector2D& lB, const Vector2D& lE, const Vector2D& center, float radius)
-{
-	FixedArray<Vector2D, 2> isectPoints;
-	const bool result = LineSegIntersectsCircle2D(lB, lE, center, radius, isectPoints);
-	state.PushValue(result);
-	if (result)
-	{
-		esl::LuaTable isectPointsTbl = state.CreateTable();
-		for (int i = 0; i < isectPoints.numElem(); ++i)
-			isectPointsTbl.Set(i + 1, isectPoints[i]);
-
-		state.PushValue(isectPointsTbl);
-	}
-	else
-		state.PushValue(nullptr);
-	return {};
-}
-
 static esl::Any<2> L_AngleVectors(const esl::ScriptState& state, const Vector3D& v)
 {
 	Vector3D forward, right, up;
@@ -780,15 +743,10 @@ bool eslSysMathInit(const esl::ScriptState& state)
 	state.SetGlobal("qrotateZXY", EQSCRIPT_CFUNC_OVERLOAD(rotateZXY, Quaternion, (float, float, float)));
 	state.SetGlobal("qlookAt", EQSCRIPT_CFUNC(lookAt));
 
-	state.SetGlobal("AngleDiff", EQSCRIPT_CFUNC(AngleDiff));
-	state.SetGlobal("AnglesDiff", EQSCRIPT_CFUNC(AnglesDiff));
-
 	state.SetGlobal("AngleVectors", EQSCRIPT_CFUNC(L_AngleVectors));
 	state.SetGlobal("VectorAngles", EQSCRIPT_CFUNC(VectorAngles));
 
-	state.SetGlobal("LineIntersectsLine2D", EQSCRIPT_CFUNC(L_LineIntersectsLine2D));
-	state.SetGlobal("LineSegIntersectsLineSeg2D", EQSCRIPT_CFUNC(L_LineSegIntersectsLineSeg2D));
-	state.SetGlobal("LineSegIntersectsCircle2D", EQSCRIPT_CFUNC(L_LineSegIntersectsCircle2D));
-	
 	return true;
 }
+
+

@@ -68,14 +68,21 @@ enum ESplineTangent : int
 struct Spline3dPoint
 {
 	//Quaternion	rotation;
-	Vector3D	position;
-	Vector3D	tangents[TANGENT_COUNT];
+	Vector3D	position{ vec3_zero };
+	Vector3D	tangents[TANGENT_COUNT]{ -vec3_forward, vec3_forward };
 	float		time{ -1.0f };
+
+	const Vector3D& GetTangentBefore() const { return tangents[TANGENT_BEFORE]; }
+	void			SetTangentBefore(const Vector3D& tangent) { tangents[TANGENT_BEFORE] = tangent; }
+
+	const Vector3D& GetTangentAfter() const { return tangents[TANGENT_AFTER]; }
+	void			SetTangentAfter(const Vector3D& tangent) { tangents[TANGENT_AFTER] = tangent; }
 };
 
 class CSpline3d
 {
 public:
+	CSpline3d() = default;
 	void					Clear();
 
 	void					SetLooped(bool loop) { m_loop = loop; }
@@ -89,8 +96,8 @@ public:
 
 	int						GetPointsCount() const { return m_points.numElem(); }
 	const Spline3dPoint&	GetPoint(int idx) const { return m_points[idx]; }
-	const float				GetPointTime(int idx) const { return m_points[idx].time; }
-	const float				GetPointDistance(int idx) const { return m_distances[idx * m_stepsPerSegment].y; }
+	float					GetPointTime(int idx) const { return m_points[idx].time; }
+	float					GetPointDistance(int idx) const { return m_distances[idx * m_stepsPerSegment].y; }
 	const Vector3D&			GetTangent(int idx, ESplineTangent tangentId) const { return m_points[idx].tangents[tangentId]; }
 
 	// spline samplers
