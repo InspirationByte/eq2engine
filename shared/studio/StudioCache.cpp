@@ -148,6 +148,8 @@ CEqStudioGeom* CStudioCache::GetModel(int index) const
 // decrements reference count and deletes if it's zero
 void CStudioCache::FreeModel(int index)
 {
+	CScopedWriteLocker m(s_studioCacheRWLock);
+
 	CEqStudioGeom* model = m_geomCachedList[index];
 	if (!model)
 		return;
