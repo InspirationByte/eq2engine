@@ -186,7 +186,6 @@ bool Studio_LoadMotionData(const char* pszPath, StudioMotionData& motionData)
 		pData += pLump->size;
 	}
 
-	motionData.name = fnmPathStripExt(fnmPathExtractName(pszPath));
 	return true;
 }
 

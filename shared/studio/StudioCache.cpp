@@ -172,7 +172,7 @@ const StudioMotionData* CStudioCache::GetMotionData(int index) const
 	if (index <= STUDIOCACHE_INVALID_IDX)
 		return nullptr;
 
-	return &m_motionCachedList[index];
+	return m_motionCachedList[index];
 }
 
 int	CStudioCache::PrecacheMotionData(const char* fileName, const char* requestedBy /*= nullptr*/)
@@ -197,8 +197,8 @@ int	CStudioCache::PrecacheMotionData(const char* fileName, const char* requested
 
 	DevMsg(DEVMSG_CORE, "Loading motion package '%s'\n", nameStr.ToCString());
 
-	StudioMotionData motionData;
-	if(!Studio_LoadMotionData(nameStr, motionData))
+	StudioMotionData loadedMotionData;
+	if(!Studio_LoadMotionData(nameStr, loadedMotionData))
 	{
 		if(requestedBy)
 			MsgError("Cannot open motion data package '%s' requested by '%s'!\n", nameStr.ToCString(), requestedBy);
@@ -208,19 +208,21 @@ int	CStudioCache::PrecacheMotionData(const char* fileName, const char* requested
 	int newCacheIdx = STUDIOCACHE_INVALID_IDX;
 	{
 		CScopedWriteLocker m(s_studioCacheRWLock);
-		
+
+		StudioMotionData* motionData = PPNew StudioMotionData(std::move(loadedMotionData));
 		if (m_motionFreeCacheSlots.numElem())
 		{
 			newCacheIdx = m_motionFreeCacheSlots.popBack();
-			m_motionCachedList[newCacheIdx] = std::move(motionData);
+			m_motionCachedList[newCacheIdx] = motionData;
 		}
 		else
 		{
-			newCacheIdx = m_motionCachedList.append(std::move(motionData));
+			newCacheIdx = m_motionCachedList.append(motionData);
 		}
 
-		m_motionCachedList[newCacheIdx].nameHash = nameHash;
-		m_motionCachedList[newCacheIdx].cacheIdx = newCacheIdx;
+		motionData->name = fnmPathStripExt(fnmPathExtractName(nameStr));
+		motionData->nameHash = nameHash;
+		motionData->cacheIdx = newCacheIdx;
 
 		m_motionCacheIndex.insert(nameHash, newCacheIdx);
 	}
@@ -230,15 +232,18 @@ int	CStudioCache::PrecacheMotionData(const char* fileName, const char* requested
 
 void CStudioCache::FreeMotionData(int index)
 {
-	StudioMotionData& motionData = m_motionCachedList[index];
-	if (motionData.cacheIdx == STUDIOCACHE_INVALID_IDX)
+	if (!m_motionCachedList[index])
 		return;
 
+	CScopedWriteLocker m(s_studioCacheRWLock);
+
+	StudioMotionData& motionData = *m_motionCachedList[index];
 	m_motionCacheIndex.remove(motionData.nameHash);
 	m_motionFreeCacheSlots.append(index);
 
-	Studio_FreeMotionData(m_motionCachedList[index]);
-	motionData.cacheIdx = STUDIOCACHE_INVALID_IDX;
+	Studio_FreeMotionData(motionData);
+
+	SAFE_DELETE(m_motionCachedList[index]);
 }
 
 void CStudioCache::ReleaseCache()
@@ -254,8 +259,11 @@ void CStudioCache::ReleaseCache()
 		delete model;
 	}
 
-	for (StudioMotionData& motionData : m_motionCachedList)
-		Studio_FreeMotionData(motionData);
+	for (StudioMotionData* motionData : m_motionCachedList)
+	{
+		Studio_FreeMotionData(*motionData);
+		delete motionData;
+	}
 
 	m_geomCachedList.clear(true);
 	m_geomCacheIndex.clear(true);
@@ -282,9 +290,9 @@ void CStudioCache::PrintLoaded() const
 	MsgInfo("Cached motion package count: %d\n", m_motionCachedList.numElem());
 	for (int i = 0; i < m_motionCachedList.numElem(); ++i)
 	{
-		const StudioMotionData& motionData = m_motionCachedList[i];
-		if (motionData.cacheIdx >= 0)
-			Msg("  %d: %s\n", i, motionData.name.ToCString());
+		const StudioMotionData* motionData = m_motionCachedList[i];
+		if (motionData && motionData->cacheIdx >= 0)
+			Msg("  %d: %s\n", i, motionData->name.ToCString());
 	}
 	MsgInfo("--- end\n");
 }

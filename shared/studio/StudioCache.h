@@ -55,7 +55,7 @@ private:
 	Array<int>					m_geomFreeCacheSlots{ PP_SL };
 
 	Map<int, int>				m_motionCacheIndex{ PP_SL };
-	Array<StudioMotionData>		m_motionCachedList{ PP_SL };
+	Array<StudioMotionData*>	m_motionCachedList{ PP_SL };
 	Array<int>					m_motionFreeCacheSlots{ PP_SL };
 
 	mutable IVertexFormatPtr	m_egfFormat{ nullptr };
