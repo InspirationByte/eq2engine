@@ -68,6 +68,7 @@ public:
 
 	bool						BeginFrame(ISwapChain* swapChain);
 	bool						EndFrame();
+	uint						GetFrameId() const { return m_frame; }
 
 	ITexturePtr					GetCurrentBackbuffer() const;
 	ITexturePtr					GetDefaultDepthBuffer() const;

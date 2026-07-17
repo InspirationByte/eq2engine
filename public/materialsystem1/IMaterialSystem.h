@@ -69,7 +69,7 @@ struct MaterialsInitSettings
 class IMaterialSystem : public IEqCoreModule
 {
 public:
-	CORE_INTERFACE("E2_MaterialSystem_029")
+	CORE_INTERFACE("E2_MaterialSystem_030")
 
 	// Initialize material system
 	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)
@@ -104,6 +104,8 @@ public:
 
 	virtual bool					BeginFrame(ISwapChain* swapChain) = 0;
 	virtual bool					EndFrame() = 0;
+	virtual uint					GetFrameId() const = 0;
+
 	virtual ITexturePtr				GetCurrentBackbuffer() const = 0;
 	virtual ITexturePtr				GetDefaultDepthBuffer() const = 0;
 

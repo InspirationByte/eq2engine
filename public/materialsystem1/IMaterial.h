@@ -130,6 +130,8 @@ public:
 	virtual EMaterialLoadingState	GetState() const = 0;	// EMaterialLoadingState
 	virtual bool					IsError() const = 0;
 
+	virtual uint					GetLastBoundFrameId() const = 0;
+
 	// material var operations
 	virtual MatVarProxyUnk			FindMaterialVar( const char* pszVarName ) const = 0;	// only searches for existing matvar
 	virtual MatVarProxyUnk			GetMaterialVar( const char* pszVarName, const char* defaultValue = nullptr) = 0;

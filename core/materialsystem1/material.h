@@ -33,6 +33,8 @@ public:
 	bool					IsError() const {return (m_state == MATERIAL_LOAD_ERROR);}
 	int						GetFlags() const;
 
+	uint					GetLastBoundFrameId() const { return m_frameBound; }
+
 // init + shutdown
 
 	// initializes material from file
