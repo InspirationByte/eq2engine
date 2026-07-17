@@ -1563,6 +1563,7 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 
 		// material loading flags
 		bool allMaterialsLoaded = true;
+		bool materialIsRendered = true;
 		{
 			const GRIMBaseRenderer::GPULodList& lodList = renderer.m_drawLodsList[archetypeId];
 
@@ -1575,6 +1576,9 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 					const GRIMBaseRenderer::GPUIndexedBatch& batch = renderer.m_drawBatchs[batchIdx];
 					const GRIMBaseRenderer::DrawInfo& drawInfo = renderer.m_drawInfos[batch.cmdIdx];
 					
+					if (g_matSystem->GetFrameId() - 60 > drawInfo.material->GetLastBoundFrameId())
+						materialIsRendered = false;
+
 					if (drawInfo.material->GetState() != MATERIAL_LOAD_OK)
 						allMaterialsLoaded = false;
 				}
@@ -1585,26 +1589,31 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 		if(!archetypeVisibleOnScreen && showOnScreen)
 			continue;
 		
-		EqString str = EqString::Format("[%d] %d %s", instCount, archetypeId, archetypeId != -1 ? archetypeNames[archetypeId] : "<invalid>");
+		EqString str = EqString::Format("[%d] %d %s%s%s", 
+			instCount, archetypeId, archetypeId != -1 ? archetypeNames[archetypeId] : "<invalid>",
+			allMaterialsLoaded ? "" : " <MAT LOAD ERR>",
+			materialIsRendered ? "" : " <DRAW ERR>");
 		if(*archetypeFilter != 0)
 		{
 			if(str.Find(archetypeFilter) == -1)
 				continue;
 		}
 
-		if (!allMaterialsLoaded )
+		const bool hasDrawErrors = !allMaterialsLoaded || !materialIsRendered;
+
+		if (hasDrawErrors)
 			ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(0, 0.9f, 0.5f));
 		
-		if(!archetypeVisibleOnScreen || !allMaterialsLoaded)
+		if(!archetypeVisibleOnScreen || hasDrawErrors)
 			ImGui::PushStyleColor(ImGuiCol_PlotHistogram, (ImVec4)ImColor::HSV(0, 0.9f, 0.9f));
 
 		ImGui::ProgressBar(instCount / (float)maxInst, ImVec2(0.f, 0.f), str);
 		ImGui::SameLine();
 
-		if(!archetypeVisibleOnScreen || !allMaterialsLoaded)
+		if(!archetypeVisibleOnScreen || hasDrawErrors)
 			ImGui::PopStyleColor();
 
-		if(!allMaterialsLoaded)
+		if(hasDrawErrors)
 			ImGui::PopStyleColor();
 
 		if(!detailsOpen && ImGui::IsItemHovered())
