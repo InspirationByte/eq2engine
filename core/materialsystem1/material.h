@@ -19,15 +19,15 @@ public:
 	friend class			CMaterialSystem;
 	friend class			CEqMatSystemThreadedLoader;
 
-							// constructor, destructor
-							CMaterial(const char* materialName, int instanceFormatId, bool loadFromDisk);
-							~CMaterial();
+	// constructor, destructor
+	CMaterial(const char* materialName, int instanceFormatId, bool loadFromDisk);
+	~CMaterial();
 
 	void					Ref_DeleteObject();
 
 	const char*				GetName() const { return m_szMaterialName.GetData(); }
 	const char*				GetShaderName() const;
-	CTextureAtlas*			GetAtlas() const;
+	CTextureAtlas*			GetAtlas() const { return m_atlas; }
 
 	EMaterialLoadingState	GetState() const {return (EMaterialLoadingState)m_state;}
 	bool					IsError() const {return (m_state == MATERIAL_LOAD_ERROR);}

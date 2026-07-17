@@ -162,13 +162,13 @@ void CMaterial::InitMaterialProxy(const KVSection* proxySec)
 	// try any kind of proxy
 	for(const KVSection& proxyItemSec : proxySec->Keys())
 	{
-		IMaterialProxy* pProxy = g_matSystem->CreateProxyByName(proxyItemSec.GetName());
+		IMaterialProxy* proxy = g_matSystem->CreateProxyByName(proxyItemSec.GetName());
 
-		if(pProxy)
+		if(proxy)
 		{
 			// initialize proxy
-			pProxy->InitProxy( this, proxyItemSec);
-			m_proxies.append( pProxy );
+			proxy->InitProxy(this, proxyItemSec);
+			m_proxies.append(proxy);
 		}
 		else
 		{
@@ -201,7 +201,7 @@ void CMaterial::InitMaterialVars(const KVSection* kvs, const char* prefix)
 	// init material vars
 	for(const KVSection& materialVarSec : kvs->Keys())
 	{
-		if(materialVarSec.IsSection() )
+		if(materialVarSec.IsSection())
 			continue;
 
 		// ignore some preserved vars
@@ -270,46 +270,26 @@ void CMaterial::InitShader(IShaderAPI* renderAPI)
 //
 void CMaterial::InitVars(const KVSection* shaderRoot, const char* renderAPIName)
 {
-	// Get an API preferences
-	const KVSection* apiPrefs = shaderRoot->FindSection(EqString::Format("API_%s", renderAPIName).ToCString(), KV_FLAG_SECTION);
-
-	// init root material vars
 	InitMaterialVars( shaderRoot );
 
-	//
-	// API preference lookup
-	//
-	if(apiPrefs)
-	{
-		const KVSection* pPair = apiPrefs->FindSection("Shader");
-
-		// Set shader name from API prefs if available
-		if(pPair)
-			m_szShaderName = KV_GetValueString(pPair);
-
-		// init material vars from api preferences if have some
-		InitMaterialVars( apiPrefs );
-	}
-
-	//
-	// if shader has an editor section we should override it here
-	//
-	if(g_matSystem->GetConfiguration().editormode)
+	if (g_matSystem->GetConfiguration().editormode)
 	{
 		const KVSection* editorPrefs = shaderRoot->FindSection("editor", KV_FLAG_SECTION);
-
-		// API preference lookup
-		if(editorPrefs)
+		if (editorPrefs)
 		{
-			const KVSection* pPair = editorPrefs->FindSection("Shader");
+			// try override shader
+			editorPrefs->Get("Shader").GetValues(m_szShaderName);
+			InitMaterialVars(editorPrefs, "editor");
+		}
+	}
 
-			// Set shader name from API prefs if available
-			if(pPair)
-				m_szShaderName = KV_GetValueString(pPair);
-
-			// init material vars from editor overrides if have some
-			// see BaseShader on how it handles editor prefix
-			InitMaterialVars( editorPrefs, "editor");
+	{
+		const KVSection* apiPrefs = shaderRoot->FindSection(EqString::Format("API_%s", renderAPIName).ToCString(), KV_FLAG_SECTION);
+		if (apiPrefs)
+		{
+			// try override shader
+			apiPrefs->Get("Shader").GetValues(m_szShaderName);
+			InitMaterialVars(apiPrefs);
 		}
 	}
 
@@ -367,10 +347,9 @@ void CMaterial::WaitForLoading() const
 
 MatVarProxyUnk CMaterial::GetMaterialVar(const char* pszVarName, const char* defaultValue)
 {
-	CScopedMutex m(s_materialVarMutex);
-
 	const int nameHash = StringId24(pszVarName, true);
 
+	CScopedMutex m(s_materialVarMutex);
 	auto it = m_vars.variableMap.find(nameHash);
 	if (!it.atEnd())
 		return MatVarProxyUnk(*it, m_vars);
@@ -400,19 +379,13 @@ const ITexturePtr& CMaterial::GetBaseTexture(int stage)
 {
 	if(m_shader != nullptr && !IsError())
 	{
-		// try load
 		DoLoadShaderAndTextures();
-
-		// wait if it was loading in another thread
 		WaitForLoading();
 
 		return m_shader->GetBaseTexture(stage);
 	}
-	else
-	{
-		// Return error texture
-		return g_matSystem->GetErrorCheckerboardTexture();
-	}
+
+	return g_matSystem->GetErrorCheckerboardTexture();
 }
 
 int CMaterial::GetFlags() const
@@ -449,11 +422,6 @@ void CMaterial::SetStorage(int id, const MatStoragePtr& ptr)
 	m_storage[id] = ptr;
 }
 
-CTextureAtlas* CMaterial::GetAtlas() const
-{
-	return m_atlas;
-}
-
 void CMaterial::Cleanup(bool dropVars, bool dropShader)
 {
 	WaitForLoading();
@@ -473,8 +441,9 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 	}
 
 	// always drop proxies
-	for (int i = 0; i < m_proxies.numElem(); i++)
-		delete m_proxies[i];
+	for (IMaterialProxy* proxy : m_proxies)
+		delete proxy;
+
 	m_proxies.clear(true);
 	m_storage.clear(true);
 
