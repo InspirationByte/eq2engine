@@ -87,6 +87,7 @@ public:
 	virtual void				Unload() = 0;
 
 	virtual bool				IsInitialized() const = 0;
+	virtual ArrayCRef<int>		GetSupportedVertexLayoutIds() const = 0;
 
 	virtual void				InitTextures(IShaderAPI* renderAPI) = 0;
 	virtual void				InitShader(IShaderAPI* renderAPI) = 0;

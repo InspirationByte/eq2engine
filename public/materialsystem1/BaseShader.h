@@ -177,7 +177,6 @@ protected:
 		const IShaderMeshInstanceProvider*	meshInstProvider{ nullptr };
 	};
 
-	virtual ArrayCRef<int>		GetSupportedVertexLayoutIds() const = 0;
 	virtual IGPUBindGroupPtr	GetSharedBindGroup(EBindGroupId bindGroupId, uint version) const = 0;
 	virtual void				SetSharedBindGroup(EBindGroupId bindGroupId, IGPUBindGroup* bindGroup, uint version) const = 0;
 
