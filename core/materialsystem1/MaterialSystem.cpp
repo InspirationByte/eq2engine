@@ -1637,6 +1637,16 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 	material->LoadShaderAndTextures();
 
 	CMaterial* matSysMaterial = static_cast<CMaterial*>(material);
+	IMatSystemShader* matShader = matSysMaterial->m_shader;
+	if (!matShader)
+		return false;
+
+	if (matSysMaterial->m_instanceFormatId != 0)
+	{
+		ArrayCRef<int> vertexLayoutIds = matShader->GetSupportedVertexLayoutIds();
+		if (arrayFindIndex(vertexLayoutIds, meshInstFormat.formatId) == -1)
+			return false;
+	}
 
 	// step material proxies
 	const uint proxyFrame = m_frame;
@@ -1645,10 +1655,6 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 		matSysMaterial->UpdateProxy(m_proxyDeltaTime);
 		matSysMaterial->m_frameBound = proxyFrame;
 	}
-
-	IMatSystemShader* matShader = matSysMaterial->m_shader;
-	if (!matShader)
-		return false;
 
 	// update proxy GPU buffers
 	if (matSysMaterial->m_needUpdateGPUProxies)
