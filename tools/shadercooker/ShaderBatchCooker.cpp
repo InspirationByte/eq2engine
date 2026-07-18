@@ -288,7 +288,7 @@ static void ParseVertexLayouts(ShaderInfo& shaderInfo, const KVSection* vertLayo
 
 bool CShaderCooker::ParsePackage(const char* shaderDefFileName, const KVSection& shaderSection)
 {
-	const KVSection* fileListSec = shaderSection["FileList"];
+	const KVSection* fileListSec = shaderSection.FindSection("FileList");
 	if (!fileListSec)
 	{
 		MsgWarning("%s missing 'FileList' section\n", shaderDefFileName);
@@ -303,7 +303,7 @@ bool CShaderCooker::ParsePackage(const char* shaderDefFileName, const KVSection&
 	// process file list
 	ParseFileList(shaderInfo, fileListSec);
 
-	ParseVertexLayouts(shaderInfo, shaderSection["VertexLayouts"]);
+	ParseVertexLayouts(shaderInfo, shaderSection.FindSection("VertexLayouts"));
 
 	return true;
 }
@@ -445,7 +445,7 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 	shaderInfo.totalVariationCount = nonAliasVertLayouts * (1 << numSwitchableDefines);
 
 	// process file list if exists
-	ParseFileList(shaderInfo, shaderSection["FileList"]);
+	ParseFileList(shaderInfo, shaderSection.FindSection("FileList"));
 
 	return true;
 }
@@ -1608,7 +1608,7 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 	// get the target properties
 	{
 		// load target info
-		const KVSection* targets = kvs["Targets"];
+		const KVSection* targets = kvs.FindSection("Targets");
 		if (!targets)
 		{
 			MsgError("Missing 'Targets' section in '%s'\n", confFileName);

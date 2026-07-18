@@ -82,7 +82,7 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 			atlRoot.Clear();
 			if (KV_LoadFromFile(atlasKVSFileName, materialSearchPath, atlRoot))
 			{
-				const KVSection* atlasSec = atlRoot["AtlasGroup"];
+				const KVSection* atlasSec = atlRoot.FindSection("AtlasGroup");
 				if (atlasSec)
 				{
 					m_atlas = PPNew CTextureAtlas(atlasSec);

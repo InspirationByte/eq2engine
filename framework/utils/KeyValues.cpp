@@ -121,9 +121,7 @@ constexpr int KV_MAX_SECTION_DEPTH = 10;
 
 KVPairValue::~KVPairValue()
 {
-	if (section)
-		delete section;
-
+	SAFE_DELETE(section);
 	PPFree(value);
 }
 
@@ -283,26 +281,6 @@ bool KVPairValue::GetBool() const
 	return atoi(value) > 0;
 }
 
-KVSection* KVSection::operator[](const char* pszName)
-{
-	return FindSection(pszName); 
-}
-
-KVPairValue& KVSection::operator[](int index)
-{
-	return values[index]; 
-}
-
-const KVSection* KVSection::operator[](const char* pszName) const
-{
-	return FindSection(pszName);
-}
-
-const KVPairValue& KVSection::operator[](int index) const
-{
-	return values[index];
-}
-
 //----------------------------------------------------------------------------------------------
 // KEY (PAIR) BASE
 //----------------------------------------------------------------------------------------------
@@ -448,61 +426,6 @@ void KVSection::AddValue(KVPairValue& value)
 {
 	KVPairValue& val = CreateValue();
 	val.SetFrom(value);
-}
-
-//-------------------------
-
-// adds value to key
-void KVSection::AddUniqueValue(const char* value)
-{
-	for(int i = 0; i < values.numElem(); i++)
-	{
-		if( !CString::Compare(KV_GetValueString(this, i, ""), value) )
-			return;
-	}
-
-	CreateValue();
-
-	SetValue(value, values.numElem()-1);
-}
-
-void KVSection::AddUniqueValue(int nValue)
-{
-	for(int i = 0; i < values.numElem(); i++)
-	{
-		if(KV_GetValueInt(this, i, 0) == nValue)
-			return;
-	}
-
-	CreateValue();
-
-	SetValue(nValue, values.numElem()-1);
-}
-
-void KVSection::AddUniqueValue(float fValue)
-{
-	for(int i = 0; i < values.numElem(); i++)
-	{
-		if(KV_GetValueFloat(this, i, 0.0f) == fValue)
-			return;
-	}
-
-	CreateValue();
-
-	SetValue(fValue, values.numElem()-1);
-}
-
-void KVSection::AddUniqueValue(bool bValue)
-{
-	for(int i = 0; i < values.numElem(); i++)
-	{
-		if(KV_GetValueBool(this, i, false) == bValue)
-			return;
-	}
-
-	CreateValue();
-
-	SetValue(bValue, values.numElem()-1);
 }
 
 //-----------------------------------------------------------------------------
@@ -796,7 +719,6 @@ KVSection* KVSection::FindSection(const char* pszName, int nFlags) const
 			continue;
 
 		if(section->nameHash == hash)
-		//if(!CString::CompareCaseIns(section->name, pszName))
 			return section;
 	}
 
@@ -829,34 +751,27 @@ void KVSection::AddSection(KVSection* keyBase)
 void KVSection::RemoveSectionByName( const char* name, bool removeAll )
 {
 	const int strHash = StringId24(name, true);
-
-	for(int i = 0; i < keys.numElem(); i++)
+	for (int i = 0; i < keys.numElem(); i++)
 	{
-		if(keys[i]->nameHash == strHash)
-		//if(!CString::CompareCaseIns(keys[i]->name, name))
-		{
-			delete keys[i];
-			keys.removeIndex(i);
+		if (keys[i]->nameHash != strHash)
+			continue;
 
-			if(removeAll)
-				i--;
-			else
-				return;
-		}
+		delete keys[i];
+		keys.removeIndex(i--);
+
+		if (!removeAll)
+			return;
 	}
 }
 
-void KVSection::RemoveSection(KVSection* base)
+void KVSection::RemoveSection(const KVSection* sec)
 {
-	for(int i = 0; i < keys.numElem(); i++)
-	{
-		if(keys[i] == base)
-		{
-			delete keys[i];
-			keys.removeIndex(i);
-			return;
-		}
-	}
+	const int idx = arrayFindIndex(keys, sec);
+	if (idx == -1)
+		return;
+
+	delete keys[idx];
+	keys.removeIndex(idx);
 }
 
 void KVSection::MergeFrom(const KVSection& base, bool recursive)
@@ -2209,9 +2124,8 @@ const char* KV_GetValueString(const KVSection* pBase, int nIndex, const char* ps
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return pszDefault;
 
-	return (*pBase)[nIndex].GetString();
+	return pBase->ValueAt(nIndex).GetString();
 }
-
 
 //
 // Returns integer value
@@ -2222,7 +2136,7 @@ int	KV_GetValueInt(const KVSection* pBase, int nIndex, int nDefault )
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return nDefault;
 
-	return (*pBase)[nIndex].GetInt();
+	return pBase->ValueAt(nIndex).GetInt();
 }
 
 //
@@ -2234,7 +2148,7 @@ float KV_GetValueFloat(const KVSection* pBase, int nIndex, float fDefault )
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return fDefault;
 
-	return (*pBase)[nIndex].GetFloat();
+	return pBase->ValueAt(nIndex).GetFloat();
 }
 
 //
@@ -2246,7 +2160,7 @@ bool KV_GetValueBool(const KVSection* pBase, int nIndex, bool bDefault)
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return bDefault;
 
-	return (*pBase)[nIndex].GetBool();
+	return pBase->ValueAt(nIndex).GetBool();
 }
 
 //

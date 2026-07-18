@@ -61,11 +61,6 @@ EQSCRIPT_TYPE_BEGIN(KVSection)
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("AddValueSection", AddValue, void, (KVSection*), ESL_APPLY_TRAITS(void, esl::ToCpp<KVSection*>))
 	//EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("AddValuePair", AddValue, void, (KVPairValue*))
 
-	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("AddUniqueValueString", AddUniqueValue, void, (const char*))
-	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("AddUniqueValueInt", AddUniqueValue, void, (int))
-	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("AddUniqueValueFloat", AddUniqueValue, void, (float))
-	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("AddUniqueValueBool", AddUniqueValue, void, (bool))
-
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("SetValueStringAt", SetValue, void, (const char*, int))
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("SetValueIntAt", SetValue, void, (int, int))
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("SetValueFloatAt", SetValue, void, (float, int))

@@ -223,11 +223,10 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 	shaderInfo.shaderPackFile = shaderPackFile;
 	shaderInfo.shaderName = shaderInfoKvs.GetName();
 
-	const KVSection* defines = shaderInfoKvs["Defines"];
-	if (defines)
 	{
-		shaderInfo.defines.reserve(defines->ValueCount());
-		for (const EqStringRef def : defines->Values<EqStringRef>())
+		const KVSection& defines = shaderInfoKvs.Get("Defines");
+		shaderInfo.defines.reserve(defines.ValueCount());
+		for (const EqStringRef def : defines.Values<EqStringRef>())
 			shaderInfo.defines.append(def);
 	}
 
@@ -270,8 +269,8 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 	Map<uint, int> usedVertexAttribs(PP_SL);
 
 	filesFound = 0;
-	const KVSection* fileListSec = shaderInfoKvs["FileList"];
-	for (const KVSection& itemSec : fileListSec->Keys("blob"))
+	const KVSection& fileListSec = shaderInfoKvs.Get("FileList");
+	for (const KVSection& itemSec : fileListSec.Keys("blob"))
 	{
 		int vertLayoutIdx = -1;
 		EqStringRef kindStr;
@@ -320,7 +319,7 @@ bool ShaderInfo::ParseShaderInfo(ShaderInfo& shaderInfo, IPackFileReaderPtr shad
 
 	// we need to validate references so collect refs in second pass
 	int refIdx = 0;
-	for (const KVSection& itemSec : fileListSec->Keys("ref"))
+	for (const KVSection& itemSec : fileListSec.Keys("ref"))
 	{
 		int vertLayoutIdx = -1;
 		EqStringRef kindStr;

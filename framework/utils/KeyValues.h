@@ -99,12 +99,12 @@ struct KVValueIterator
 	struct Init;
 
 	KVValueIterator() = default;
-	KVValueIterator(const KVSection* key)
+	KVValueIterator(const KVSection& key)
 		: key(key)
 	{
 	}
 
-	KVValueIterator(const KVSection* key, int index);
+	KVValueIterator(const KVSection& key, int index);
 
 	operator	KVPairValue&() const;
 	T			operator*() const;
@@ -116,7 +116,7 @@ struct KVValueIterator
 	bool		atEnd() const;
 	void		Rewind();
 private:
-	const KVSection*	key{ nullptr };
+	const KVSection&	key;
 	int					index{ 0 };
 };
 
@@ -207,17 +207,6 @@ struct KVPairValue
 
 	KVPairValue(const KVPairValue& other) = delete;
 
-	KVSection*	section{ nullptr };
-	char*		value{ nullptr };
-	EKVPairType	type{ KVPAIR_STRING };
-
-	union
-	{
-		int		nValue{ 0 };
-		bool	bValue;
-		float	fValue;
-	};
-
 	// TODO: Clone
 
 	// sets string value
@@ -235,6 +224,18 @@ struct KVPairValue
 	void		SetInt(int nValue);
 	void		SetFloat(float fValue);
 	void		SetBool(bool bValue);
+
+// TODO: private:
+	KVSection*	section{ nullptr };
+	char*		value{ nullptr };
+	EKVPairType	type{ KVPAIR_STRING };
+
+	union
+	{
+		int		nValue{ 0 };
+		bool	bValue;
+		float	fValue;
+	};
 };
 
 //
@@ -259,29 +260,29 @@ struct KVSection
 
 	// Array values iterator
 	template<typename T>
-	inline typename KVValueIterator<T>::Init	Values(int startIdx) const { return { KVValueIterator<T>(this, startIdx) }; }
+	inline typename KVValueIterator<T>::Init	Values(int startIdx) const { return { KVValueIterator<T>(*this, startIdx) }; }
 	
 	template<typename T>
-	inline typename KVValueIterator<T>::Init	Values() const { return { KVValueIterator<T>(this) }; }
+	inline typename KVValueIterator<T>::Init	Values() const { return { KVValueIterator<T>(*this) }; }
 
 	// Array keys iterator
 	inline KVKeyIterator::Init	Keys(const char* nameFilter = nullptr, int searchFlags = 0) const { return { KVKeyIterator(*this, nameFilter, searchFlags) }; }
 
 	// Key values getter
 	template<typename ...Args>
-	inline int					GetValues(Args&... outArgs) const { return KV_GetValues(this, outArgs...); };
+	inline int					GetValues(Args&... outArgs) const { return KV_GetValues(*this, outArgs...); };
 
 	// Key values getter at specific value idx
 	template<typename ...Args>
-	inline int					GetValuesAt(int idx, Args&... outArgs) const { return KV_GetValuesAt(this, idx, outArgs...); };
+	inline int					GetValuesAt(int idx, Args&... outArgs) const { return KV_GetValuesAt(*this, idx, outArgs...); };
 
 	// Key values getter
 	template<typename ...Args>
-	inline KVValues<Args...>	TryGetValues(Args&... outArgs) const { return KV_TryGetValues(this, outArgs...); };
+	inline KVValues<Args...>	TryGetValues(Args&... outArgs) const { return KV_TryGetValues(*this, outArgs...); };
 
 	// Key values getter at specific value idx
 	template<typename ...Args>
-	inline KVValues<Args...>	TryGetValuesAt(int idx, Args&... outArgs) const { return KV_TryGetValuesAt(this, idx, outArgs...); };
+	inline KVValues<Args...>	TryGetValuesAt(int idx, Args&... outArgs) const { return KV_TryGetValuesAt(*this, idx, outArgs...); };
 
 	//----------------------------------------------
 	// The section functions
@@ -300,11 +301,11 @@ struct KVSection
 	// adds existing section. You should set it's name manually. It should not be allocated by other section
 	void				AddSection(KVSection* keyBase);
 
-	// removes key base by name
+	// removes section by name
 	void				RemoveSectionByName( const char* name, bool removeAll = false );
 
-	// removes key base
-	void				RemoveSection(KVSection* base);
+	// removes section
+	void				RemoveSection(const KVSection* sec);
 
 	//-----------------------------------------------------
 
@@ -350,12 +351,6 @@ struct KVSection
 	void				AddValue(KVSection* keybase);
 	void				AddValue(KVPairValue& value);
 
-	// adds unique value to key
-	void				AddUniqueValue(const char* value);
-	void				AddUniqueValue(int nValue);
-	void				AddUniqueValue(float fValue);
-	void				AddUniqueValue(bool bValue);
-
 	// sets value
 	void				SetValue(const char* value, int idxAt = 0);
 	void				SetValue(int nValue, int idxAt = 0);
@@ -365,12 +360,6 @@ struct KVSection
 	void				SetValue(const Vector3D& value, int idxAt = 0);
 	void				SetValue(const Vector4D& value, int idxAt = 0);
 	void				SetValue(const KVPairValue& value, int idxAt = 0);
-
-	KVSection*			operator[](const char* pszName);
-	KVPairValue&		operator[](int index);
-
-	const KVSection*	operator[](const char* pszName) const;
-	const KVPairValue&	operator[](int index) const;
 
 	Array<KVSection*>::Iterator		Begin() const { return keys.begin(); }
 
@@ -481,16 +470,16 @@ Vector4D		KV_GetVector4D(const KVSection* pBase, int nIndex = 0, const Vector4D&
 // For KV Value iterator
 
 template<typename T>
-KVValueIterator<T>::KVValueIterator(const KVSection* key, int index)
+KVValueIterator<T>::KVValueIterator(const KVSection& key, int index)
 	: key(key)
-	, index(min(index, key->ValueCount())) // limit to end()
+	, index(min(index, key.ValueCount())) // limit to end()
 {
 }
 
 template<typename T>
 KVValueIterator<T>::operator KVPairValue& () const
 {
-	return const_cast<KVPairValue&>(key->values[index]);
+	return const_cast<KVPairValue&>(key.ValueAt(index));
 }
 
 template<typename T>
@@ -508,7 +497,7 @@ void KVValueIterator<T>::operator++()
 template<typename T>
 bool KVValueIterator<T>::atEnd() const
 {
-	return key ? index >= key->ValueCount() : true;
+	return index >= key.ValueCount();
 }
 
 template<typename T>
@@ -520,33 +509,30 @@ void KVValueIterator<T>::Rewind()
 template<typename T>
 KVValueIterator<T> KVValueIterator<T>::Init::end() const
 {
-	KVValueIterator<T> endIt;
-	endIt.key = _initial.key;
-	endIt.index = _initial.key->ValueCount();
-	return endIt;
+	return KVValueIterator<T>(_initial.key, _initial.key.ValueCount());
 }
 
 template<> struct KVPairValuesGetter<const char*>
 {
-	static const char* Get(const KVSection* section, int index) { return (*section)[index].GetString(); }
+	static const char* Get(const KVSection& section, int index) { return section.ValueAt(index).GetString(); }
 	static const int vcount = 1;
 };
 
 template<> struct KVPairValuesGetter<float>
 {
-	static float Get(const KVSection* section, int index) { return (*section)[index].GetFloat(); }
+	static float Get(const KVSection& section, int index) { return section.ValueAt(index).GetFloat(); }
 	static const int vcount = 1;
 };
 
 template<> struct KVPairValuesGetter<int>
 {
-	static int Get(const KVSection* section, int index) { return (*section)[index].GetInt(); }
+	static int Get(const KVSection& section, int index) { return section.ValueAt(index).GetInt(); }
 	static const int vcount = 1;
 };
 
 template<> struct KVPairValuesGetter<bool>
 {
-	static bool Get(const KVSection* section, int index) { return (*section)[index].GetBool(); }
+	static bool Get(const KVSection& section, int index) { return section.ValueAt(index).GetBool(); }
 	static const int vcount = 1;
 };
 
@@ -564,7 +550,7 @@ template <typename T>
 struct KVPairValuesGetter<TVec2D<T>>
 {
 	using CompGetter = KVPairValuesGetter<T>;
-	static TVec2D<T> Get(const KVSection* section, int index)
+	static TVec2D<T> Get(const KVSection& section, int index)
 	{
 		return TVec2D<T>(CompGetter::Get(section, index), CompGetter::Get(section, index+1));
 	}
@@ -575,7 +561,7 @@ template <typename T>
 struct KVPairValuesGetter<TVec3D<T>>
 {
 	using CompGetter = KVPairValuesGetter<T>;
-	static TVec3D<T> Get(const KVSection* section, int index)
+	static TVec3D<T> Get(const KVSection& section, int index)
 	{
 		return TVec3D<T>(CompGetter::Get(section, index), CompGetter::Get(section, index + 1), CompGetter::Get(section, index + 2));
 	}
@@ -586,7 +572,7 @@ template <typename T>
 struct KVPairValuesGetter<TVec4D<T>>
 {
 	using CompGetter = KVPairValuesGetter<T>;
-	static TVec4D<T> Get(const KVSection* section, int index)
+	static TVec4D<T> Get(const KVSection& section, int index)
 	{
 		return TVec4D<T>(CompGetter::Get(section, index), CompGetter::Get(section, index + 1), CompGetter::Get(section, index + 2), CompGetter::Get(section, index + 3));
 	}
@@ -597,7 +583,7 @@ template <>
 struct KVPairValuesGetter<MColor>
 {
 	using CompGetter = KVPairValuesGetter<float>;
-	static MColor Get(const KVSection* section, int index)
+	static MColor Get(const KVSection& section, int index)
 	{
 		return MColor(CompGetter::Get(section, index), CompGetter::Get(section, index + 1), CompGetter::Get(section, index + 2), CompGetter::Get(section, index + 3));
 	}
@@ -606,15 +592,15 @@ struct KVPairValuesGetter<MColor>
 
 namespace kvdetail
 {
-inline int GetValuesR(const KVSection* key, int idx, int cntIdx)
+inline int GetValuesR(const KVSection& key, int idx, int cntIdx)
 {
 	return cntIdx; // end of recursion
 }
 
 template<typename T, typename ...Rest>
-inline int GetValuesR(const KVSection* key, int idx, int cntIdx, T& out, Rest&... outArgs)
+inline int GetValuesR(const KVSection& key, int idx, int cntIdx, T& out, Rest&... outArgs)
 {
-	if (idx + KVPairValuesGetter<T>::vcount > key->ValueCount())
+	if (idx + KVPairValuesGetter<T>::vcount > key.ValueCount())
 		return cntIdx;
 	out = KVPairValuesGetter<T>::Get(key, idx);
 
@@ -622,26 +608,26 @@ inline int GetValuesR(const KVSection* key, int idx, int cntIdx, T& out, Rest&..
 }
 
 template<typename ...Args, std::size_t... Is>
-int GetValuesImpl(const KVSection* key, int idx, std::index_sequence<Is...>, std::tuple<Args...>& newValues)
+int GetValuesImpl(const KVSection& key, int idx, std::index_sequence<Is...>, std::tuple<Args...>& newValues)
 {
 	return GetValuesR(key, idx, 0, std::get<Is>(newValues)...);
 }
 }
 
 template<typename ...Args>
-int KV_GetValuesAt(const KVSection* key, int idx, Args&... outArgs)
+int KV_GetValuesAt(const KVSection& key, int idx, Args&... outArgs)
 {
 	return kvdetail::GetValuesR(key, idx, 0, outArgs...);
 }
 
 template<typename ...Args>
-int KV_GetValues(const KVSection* key, Args&... outArgs)
+int KV_GetValues(const KVSection& key, Args&... outArgs)
 {
 	return kvdetail::GetValuesR(key, 0, 0, outArgs...);
 }
 
 template<typename ...Args>
-KVValues<Args...> KV_TryGetValuesAt(const KVSection* key, int idx, Args&... outArgs)
+KVValues<Args...> KV_TryGetValuesAt(const KVSection& key, int idx, Args&... outArgs)
 {
 	KVValues<Args...> values(outArgs...);
 	values.count = kvdetail::GetValuesImpl(key, idx, std::index_sequence_for<Args...>{}, values.newValues);
@@ -649,7 +635,7 @@ KVValues<Args...> KV_TryGetValuesAt(const KVSection* key, int idx, Args&... outA
 }
 
 template<typename ...Args>
-KVValues<Args...> KV_TryGetValues(const KVSection* key, Args&... outArgs)
+KVValues<Args...> KV_TryGetValues(const KVSection& key, Args&... outArgs)
 {
 	KVValues<Args...> values(outArgs...);
 	values.count = kvdetail::GetValuesImpl(key, 0, std::index_sequence_for<Args...>{}, values.newValues);
@@ -694,7 +680,7 @@ struct DescFieldArray : public KVDescFieldInfo
 			T& arrayRef = *reinterpret_cast<T*>(outPtr);
 
 			for (int i = 0; i < min(static_cast<int>(CArrayLenGetter<T>::len), valueCount); ++i)
-				KV_GetValuesAt(&sec, i, arrayRef[i]);
+				KV_GetValuesAt(sec, i, arrayRef[i]);
 		}
 		else
 		{
@@ -703,7 +689,7 @@ struct DescFieldArray : public KVDescFieldInfo
 
 			arrayRef.reserve(arrayRef.numElem() + valueCount);
 			for (int i = 0; i < valueCount; ++i)
-				KV_GetValuesAt(&sec, i, arrayRef.append());
+				KV_GetValuesAt(sec, i, arrayRef.append());
 		}
 		return true;
 	}
