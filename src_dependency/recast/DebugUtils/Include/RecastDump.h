@@ -19,9 +19,11 @@
 #ifndef RECAST_DUMP_H
 #define RECAST_DUMP_H
 
+#include <stddef.h>
+
 struct duFileIO
 {
-	virtual ~duFileIO() = 0;
+	virtual ~duFileIO();
 	virtual bool isWriting() const = 0;
 	virtual bool isReading() const = 0;
 	virtual bool write(const void* ptr, const size_t size) = 0;
@@ -38,6 +40,5 @@ bool duDumpCompactHeightfield(struct rcCompactHeightfield& chf, duFileIO* io);
 bool duReadCompactHeightfield(struct rcCompactHeightfield& chf, duFileIO* io);
 
 void duLogBuildTimes(rcContext& ctx, const int totalTileUsec);
-
 
 #endif // RECAST_DUMP_H
