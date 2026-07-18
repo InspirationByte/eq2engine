@@ -48,7 +48,9 @@ public:
 	CEqStudioGeom();
 	~CEqStudioGeom();
 
-	int						GetCacheId() const { return m_nameHash; }
+	int						GetCacheIdx() const { return m_cacheIdx; }
+
+	int						GetNameHash() const { return m_nameHash; }
 	const char*				GetName() const;
 	EModelLoadingState		GetLoadingState() const;	// EModelLoadingState
 	Future<bool>			GetLoadingFuture() const;
