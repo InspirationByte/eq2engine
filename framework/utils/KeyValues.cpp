@@ -730,7 +730,7 @@ void KVSection::AddSection(KVSection* section)
 	if (!section)
 		return;
 
-	ASSERT(arrayFindIndex(keys, section) == -1, "Section is already added");
+	ASSERT_MSG(arrayFindIndex(keys, section) == -1, "Section is already added");
 	keys.append(section);
 }
 
