@@ -16,7 +16,7 @@ BEGIN_SHADER_CLASS(UIOverlayMask)
 		m_blendMode = SHADER_BLEND_TRANSLUCENT;
 	}
 
-	SHADER_INIT_TEXTURES()
+	SHADER_INIT_RESOURCES()
 	{
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture);
 		SHADER_PARAM_TEXTURE(MaskTexture, m_maskTexture);

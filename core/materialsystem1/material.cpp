@@ -325,7 +325,7 @@ bool CMaterial::DoLoadShaderAndTextures()
 	// try init
 	if(!shader->IsInitialized())
 	{
-		shader->InitTextures(renderAPI);
+		shader->InitResources(renderAPI);
 		shader->InitShader(renderAPI);
 	}
 

@@ -22,7 +22,7 @@ BEGIN_SHADER_CLASS(
 	}
 
 	// Initialize textures
-	SHADER_INIT_TEXTURES()
+	SHADER_INIT_RESOURCES()
 	{
 		SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_cubemapTexture, TEXFLAG_CUBEMAP);
 	}

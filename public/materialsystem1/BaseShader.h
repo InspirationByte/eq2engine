@@ -55,7 +55,7 @@ struct MatSysCamera;
 	DEFINE_SHADER(ThisClassNameStr, ThisShaderClass) }
 
 #define SHADER_INIT_PARAMS()	void ShaderInitParams(IShaderAPI* renderAPI)
-#define SHADER_INIT_TEXTURES()	void InitTextures(IShaderAPI* renderAPI) override
+#define SHADER_INIT_RESOURCES()	void InitResources(IShaderAPI* renderAPI) override
 
 #define SHADER_PARAM_TEXTURE(param, variable, ...)			variable = LoadTextureByVar(#param, true, ##__VA_ARGS__ )
 #define SHADER_PARAM_TEXTURE_NOERROR(param, variable, ...)	variable = LoadTextureByVar(#param, false, ##__VA_ARGS__ )

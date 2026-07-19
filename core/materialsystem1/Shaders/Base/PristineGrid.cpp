@@ -21,17 +21,16 @@ BEGIN_SHADER_CLASS(
 		m_lineSpacing = GetMaterialVar("lineSpacing", "1");
 		m_blendMode = SHADER_BLEND_TRANSLUCENT;
 		m_flags |= MATERIAL_FLAG_NO_Z_WRITE;
+	}
 
+	SHADER_INIT_RESOURCES()
+	{
 		m_materialParamsBuffer = MakeParameterUniformBuffer("gridMaterialParams", BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST,
-			m_lineWidth.Get(), 
+			m_lineWidth.Get(),
 			m_lineSpacing.Get(),
 			0.0f,
 			0.0f
 		);
-	}
-
-	SHADER_INIT_TEXTURES()
-	{
 	}
 
 	void UpdateProxy(IGPUCommandRecorder* cmdRecorder) const override

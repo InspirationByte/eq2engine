@@ -14,14 +14,13 @@ BEGIN_SHADER_CLASS(BloomRange)
 	{
 		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
 		m_rangeProps = GetMaterialVar("RangeProps", "[0.6 40 100 100]");
+	}
 
+	SHADER_INIT_RESOURCES()
+	{
 		m_proxyBuffer = MakeParameterUniformBuffer("bloomProxyBuffer", BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST,
 			m_rangeProps.Get()
 		);
-	}
-
-	SHADER_INIT_TEXTURES()
-	{
 		m_bloomSource = GetMaterialVar("BloomSource", "");
 	}
 

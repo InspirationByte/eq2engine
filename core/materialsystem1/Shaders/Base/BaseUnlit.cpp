@@ -22,14 +22,14 @@ BEGIN_SHADER_CLASS(
 	SHADER_INIT_PARAMS()
 	{
 		m_colorVar = GetMaterialVar("color", "[1 1 1 1]");
+	}
+
+	SHADER_INIT_RESOURCES()
+	{
 		m_materialParamsBuffer = MakeParameterUniformBuffer("unlitMaterialParams", BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST,
 			m_colorVar.Get(),
 			Vector4D(1, 1, 0, 0)
 		);
-	}
-
-	SHADER_INIT_TEXTURES()
-	{
 		SHADER_PARAM_TEXTURE(BaseTexture, m_baseTexture);
 	}
 

@@ -23,16 +23,16 @@ BEGIN_SHADER_CLASS(Outline)
 
 		m_outlineColor = GetMaterialVar("OutlineColor", "[0.0 0.5 0.0 1.0]");
 		m_outlineWidth = GetMaterialVar("OutlineWidth", "16");
+	}
 
+	SHADER_INIT_RESOURCES()
+	{
 		OutlineParams materialParams;
 		materialParams.outlineColor = m_outlineColor.Get();
 		materialParams.outlineWidth = m_outlineWidth.Get();
 
 		m_proxyBuffer = MakeParameterUniformBuffer("outlineProxy", BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST, materialParams);
-	}
 
-	SHADER_INIT_TEXTURES()
-	{
 		SHADER_PARAM_TEXTURE_FIND(SourceDepth, m_sourceTex);
 	}
 

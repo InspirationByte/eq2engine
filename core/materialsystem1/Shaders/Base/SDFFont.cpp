@@ -53,7 +53,7 @@ BEGIN_SHADER_CLASS(
 		m_shadowOffset = GetMaterialVar("ShadowOffset", "[0 0]");
 	}
 
-	SHADER_INIT_TEXTURES()
+	SHADER_INIT_RESOURCES()
 	{
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture);
 	}

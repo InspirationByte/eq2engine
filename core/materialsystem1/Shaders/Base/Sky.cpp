@@ -20,7 +20,7 @@ BEGIN_SHADER_CLASS(Skybox)
 	}
 
 	// Initialize textures
-	SHADER_INIT_TEXTURES()
+	SHADER_INIT_RESOURCES()
 	{
 		SHADER_PARAM_TEXTURE(BaseTexture, m_baseTexture);
 	}
