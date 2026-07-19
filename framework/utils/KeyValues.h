@@ -227,7 +227,7 @@ struct KVPairValue
 
 // TODO: private:
 	KVSection*	section{ nullptr };
-	char*		value{ nullptr };
+	EqString	value;
 	EKVPairType	type{ KVPAIR_STRING };
 
 	union
@@ -299,7 +299,7 @@ struct KVSection
 	KVSection&			CreateSection(const char* pszName, const char* pszValue = nullptr, EKVPairType pairType = KVPAIR_STRING);
 
 	// adds existing section. You should set it's name manually. It should not be allocated by other section
-	void				AddSection(KVSection* keyBase);
+	void				AddSection(KVSection* section);
 
 	// removes section by name
 	void				RemoveSectionByName( const char* name, bool removeAll = false );
@@ -334,9 +334,9 @@ struct KVSection
 	void				SetValueFrom(KVSection& pOther);
 
 	KVPairValue&		CreateValue();
-	KVSection*			CreateSectionValue();
+	KVSection&			CreateSectionValue();
 
-	KVSection&			Clone() const;
+	KVSection*			Clone() const;
 	void				CopyTo(KVSection& dest) const;
 	void				CopyValuesTo(KVSection& dest) const;
 
@@ -348,7 +348,7 @@ struct KVSection
 	void				AddValue(const Vector2D& vecValue);
 	void				AddValue(const Vector3D& vecValue);
 	void				AddValue(const Vector4D& vecValue);
-	void				AddValue(KVSection* keybase);
+	void				AddValue(KVSection* section);
 	void				AddValue(KVPairValue& value);
 
 	// sets value
