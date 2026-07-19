@@ -917,7 +917,7 @@ KVKeyIterator KVKeyIterator::Init::end() const
 bool KeyValues::ParseText(const char* pszBuffer, VSSize bufferSize, KVSection& outSection, const char* pszFileName, int nStartLine)
 {
 	if (bufferSize < 0)
-		bufferSize = strlen(pszBuffer);
+		bufferSize = CString::Length(pszBuffer);
 
 	if (bufferSize == 0)
 		return true;
@@ -1710,7 +1710,7 @@ void KeyValues::WriteValueBinary(IFileStream* outStream, const KVPairValue& valu
 	binValue.type = value.type;
 
 	if(binValue.type == KVPAIR_STRING)
-		binValue.nValue = strlen(value.value); // store string length
+		binValue.nValue = value.value.Length(); // store string length
 	else if(binValue.type == KVPAIR_INT)
 		binValue.nValue = value.nValue;
 	else if(binValue.type == KVPAIR_FLOAT)
@@ -1743,7 +1743,7 @@ void KeyValues::WriteBinary(IFileStream* outStream, const KVSection& base)
 	binBase.keyCount = base.keys.numElem();
 	binBase.valueCount = base.values.numElem();
 	binBase.type = base.type;
-	binBase.nameLen = strlen(base.name);
+	binBase.nameLen = base.name.Length();
 
 	// write header to the stream
 	outStream->Write(&binBase, 1, sizeof(binBase));
@@ -1903,15 +1903,9 @@ void KeyValues::WriteValue(IFileStream* out, const KVPairValue& val, int depth)
 	// write typed data
 	if(val.type == KVPAIR_STRING)
 	{
-		if(val.value == nullptr)
-		{
-			out->Print("\"%s\"", "VALUE_MISSING");
-			return;
-		}
-
 		const int numSpecial = CountSpecialSymbols(val.value);
 
-		char* outValueString = (char*)PPAlloc(strlen(val.value) + numSpecial + 1);
+		char* outValueString = (char*)PPAlloc(val.value.Length() + numSpecial + 1);
 		PreProcessStringValue( outValueString, val.value );
 		WriteSelectQuotedString( out, outValueString );
 		//out->Print("\"%s\"", outValueString);
