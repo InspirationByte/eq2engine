@@ -40,7 +40,7 @@ EQSCRIPT_TYPE_BEGIN(KVSection)
 	EQSCRIPT_BIND_FUNC(CreateSection)
 	EQSCRIPT_BIND_FUNC(AddSection, ESL_APPLY_TRAITS(void, esl::ToCpp<KVSection*>))
 	EQSCRIPT_BIND_FUNC(RemoveSectionByName)
-	EQSCRIPT_BIND_FUNC(RemoveSection, ESL_APPLY_TRAITS(void, esl::ToCpp<KVSection*>))
+	EQSCRIPT_BIND_FUNC(RemoveSection)
 
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("SetKeyString", SetKey, KVSection&, (const char*, const char*))
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("SetKeyInt", SetKey, KVSection&, (const char*, int))
@@ -68,7 +68,7 @@ EQSCRIPT_TYPE_BEGIN(KVSection)
 	//EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("SetValuePairAt", SetValue, void, KVPairValue*, int)
 
 	EQSCRIPT_BIND_FUNC(MergeFrom)
-	EQSCRIPT_BIND_FUNC(Clone)
+	EQSCRIPT_BIND_FUNC(Clone, ESL_APPLY_TRAITS(esl::ToLua<KVSection*>, void))
 	EQSCRIPT_BIND_FUNC(CopyTo)
 
 	EQSCRIPT_BIND_FUNC(FindSection)
