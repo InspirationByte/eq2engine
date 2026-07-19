@@ -135,8 +135,6 @@ protected:
 	EqString					GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const;
 	EqString					GetSearchPath(ESearchPath search, int directoryId = -1) const;
 
-	void						MapFiles(FSSearchPathInfo& pathInfo);
-
 	using SPWalkFunc = EqFunction<bool(const EqString& filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags)>;
 	bool						WalkOverSearchPaths(int searchFlags, const char* fileName, const SPWalkFunc& func) const;
 

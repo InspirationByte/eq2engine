@@ -12,6 +12,8 @@
 #include <Windows.h>
 #ifdef CloseModule
 #	undef CloseModule
+#else
+#define USE_PATH_TO_FILE_MAPPING
 #endif
 
 #include <direct.h>	// mkdir()
@@ -52,6 +54,56 @@ using namespace Threading;
 static CEqMutex	s_FSMutex;
 
 EXPORTED_INTERFACE(IFileSystem, CFileSystem);
+
+struct FSSearchPathInfo
+{
+	// name hash to file path mapping (case-insensitive support)
+	Map<int, EqString> pathToFileMapping{ PP_SL };
+	EqString	id;
+	EqString	path;
+	bool		writePath{ false };
+
+	static void MapFiles(EqStringRef basePath, FSSearchPathInfo& pathInfo);
+};
+
+void FSSearchPathInfo::MapFiles(EqStringRef basePath, FSSearchPathInfo& pathInfo)
+{
+	Array<EqString> openSet(PP_SL);
+	openSet.reserve(5000);
+
+	openSet.append(fnmPathCombine(basePath, pathInfo.path));
+
+	while (openSet.numElem())
+	{
+		EqString path = openSet.fastPopFront();
+
+		OSFindData findData;
+		if (!findData.Init(path + _CORRECT_PATH_SEPARATOR_STR "*"))
+			break;
+
+		do
+		{
+			EqStringRef name = findData.GetCurrentPath();
+			if (name[0] == '.')
+				continue;
+
+			EqStringRef entryName = fnmPathCombine(path.TrimChar(CORRECT_PATH_SEPARATOR), name);
+			if (findData.IsDirectory())
+			{
+				openSet.append(entryName);
+			}
+			else
+			{
+				// add a mapping
+				const int nameHash = FSStringId(entryName);
+				pathInfo.pathToFileMapping.insert(nameHash, entryName);
+			}
+		} while (findData.GetNext());
+	}
+
+	if (pathInfo.pathToFileMapping.size())
+		DevMsg(DEVMSG_FS, "Mapped %d files for '%s'\n", pathInfo.pathToFileMapping.size(), pathInfo.path.ToCString());
+}
 
 //------------------------------------------------------------------------------
 // File stream
@@ -136,12 +188,19 @@ public:
 	IFileStreamPtr		Open(int fileIndex, int modeFlags) { return nullptr; }
 	int					FindFileIndex(const char* filename) const { return -1; }
 	int					GetFileCount() const { return -1; }
+
+private:
+	FSSearchPathInfo	m_pathInfo;
 };
 
 bool CFlatFileReader::InitPackage(const char* filename, const char* name /*= nullptr*/, const char* mountPath /*= nullptr*/)
 {
 	m_name = name ? name : filename;
 	m_packagePath = filename;
+
+	m_pathInfo.path = m_packagePath;
+	FSSearchPathInfo::MapFiles("", m_pathInfo);
+
 	return true;
 }
 
@@ -151,13 +210,24 @@ IFileStreamPtr CFlatFileReader::Open(const char* filename, int modeFlags)
 		return nullptr;
 
 	EqString filePath = fnmPathCombine(m_packagePath, filename);
-	return g_fileSystem->Open(filePath, FS_OPEN_READ);
+	const int nameHash = FSStringId(filePath);
+	auto it = m_pathInfo.pathToFileMapping.find(nameHash);
+	if (!it)
+		return nullptr;
+
+	COSFile osFile;
+	if (osFile.Open(filePath, COSFile::READ))
+		return IFileStreamPtr(CRefPtr_new(CFile, *it, std::move(osFile)));
+
+	return nullptr;
 }
 
 bool CFlatFileReader::FileExist(const char* filename) const
 {
 	EqString filePath = fnmPathCombine(m_packagePath, filename);
-	return g_fileSystem->FileExist(filePath);
+	const int nameHash = FSStringId(filePath);
+	auto it = m_pathInfo.pathToFileMapping.find(nameHash);
+	return !it.atEnd();
 }
 
 //------------------------------------------------------------------------------
@@ -171,17 +241,6 @@ struct FSFindData
 	int			searchPaths{ -1 };
 	int			dirIndex{ 0 };
 	bool		singleDir{ false };
-};
-
-struct FSSearchPathInfo
-{
-#ifndef _WIN32
-	// name hash to file path mapping (case-insensitive support)
-	Map<int, EqString> pathToFileMapping{ PP_SL };
-#endif
-	EqString	id;
-	EqString	path;
-	bool		writePath{ false };
 };
 
 //--------------------------------------------------
@@ -394,7 +453,7 @@ IFileStreamPtr CFileSystem::Open(const char* filename, int openFlags, int search
 			return true;
 		}
 
-		if (isWrite)
+		if (isWrite || (spFlags & SP_IGNORE_PACKAGE))
 			return false;
 
 		const EqStringRef filePathNoBase = filePath.ToCString() + m_basePath.Length();
@@ -511,6 +570,9 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 		if (access(filePath, F_OK) != -1)
 			return true;
 
+		if (spFlags & SP_IGNORE_PACKAGE)
+			return false;
+
 		const EqStringRef filePathNoBase = filePath.ToCString() + m_basePath.Length();
 
 		// If failed to load directly, load it from package, in backward order
@@ -612,7 +674,7 @@ void CFileSystem::Rename(const char* oldNameOrPath, const char* newNameOrPath, E
 {
 	rename(GetAbsolutePath(search, oldNameOrPath), GetAbsolutePath(search, newNameOrPath));
 }
-
+PRAGMA_OPTIMIZE_OFF
 bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, const SPWalkFunc& func) const
 {
 	int flags = searchFlags;
@@ -628,19 +690,34 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	// First we checking mod directory
 	if (flags & SP_MOD)
 	{
+#ifdef USE_PATH_TO_FILE_MAPPING
+		const FSSearchPathInfo* foundSpInfo = nullptr;
+		for (const FSSearchPathInfo& spInfo : m_directories)
+		{
+			if (spInfo.pathToFileMapping.isEmpty())
+				continue;
+
+			filePath = fnmPathCombine(m_basePath, spInfo.path, fileName);
+			const int nameHash = FSStringId(filePath);
+
+			const auto it = spInfo.pathToFileMapping.find(nameHash);
+			if (it)
+			{
+				// fill will be open directly
+				filePath = *it;
+				flags |= SP_IGNORE_PACKAGE;
+				foundSpInfo = &spInfo;
+				break;
+			}
+		}
+
+		if (foundSpInfo && func(filePath, SP_MOD, *foundSpInfo, flags))
+			return true;
+#endif
+
 		for (const FSSearchPathInfo& spInfo : m_directories)
 		{
 			filePath = fnmPathCombine(m_basePath, spInfo.path, fileName);
-#ifndef _WIN32
-			const int nameHash = FSStringId(filePath);
-			const auto it = spInfo.pathToFileMapping.find(nameHash);
-			if (!it.atEnd())
-			{
-				// apply correct filepath
-				filePath = *it;
-			}
-#endif
-
 			if (func(filePath, SP_MOD, spInfo, flags))
 				return true;
 		}
@@ -749,6 +826,9 @@ IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchF
 			return true;
 		}
 
+		if (searchFlags & SP_IGNORE_PACKAGE)
+			return false;
+
 		const EqStringRef filePathNoBase = filePath.ToCString() + m_basePath.Length();
 
 		// If failed to load directly, load it from package, in backward order
@@ -782,56 +862,6 @@ IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchF
 	return IPackFileReaderPtr(reader);
 }
 
-void CFileSystem::MapFiles(FSSearchPathInfo& pathInfo)
-{
-#ifndef _WIN32
-	Array<EqString> openSet(PP_SL);
-	openSet.reserve(5000);
-
-	openSet.append(fnmPathCombine(m_basePath, pathInfo.path));
-
-	while (openSet.numElem())
-	{
-		EqString path = openSet.fastPopFront();
-
-		DIR* dir = opendir(path);
-		if (!dir)
-			break;
-
-		do
-		{
-			dirent* entry = readdir(dir);
-			if (!entry)
-				break;
-
-			if (*entry->d_name == 0)
-				continue;
-
-			if (*entry->d_name == '.')
-				continue;
-
-			EqString entryName(EqString::Format("%s/%s", path.TrimChar(CORRECT_PATH_SEPARATOR).ToCString(), entry->d_name));
-
-			bool isEntryDir = false;
-			struct stat st;
-			if (stat(entryName, &st) == 0 && (st.st_mode & S_IFDIR))
-			{
-				openSet.append(entryName);
-			}
-			else
-			{
-				// add a mapping
-				const int nameHash = FSStringId(entryName);
-				pathInfo.pathToFileMapping.insert(nameHash, entryName);
-			}
-		} while (true);
-	}
-
-	if (pathInfo.pathToFileMapping.size())
-		DevMsg(DEVMSG_FS, "Mapped %d files for '%s'\n", pathInfo.pathToFileMapping.size(), pathInfo.path.ToCString());
-#endif // _WIN32
-}
-
 // sets fallback directory for mod
 void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 {
@@ -862,8 +892,10 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 			pathInfoIdx = m_directories.append(pathInfo);
 	}
 
+#ifdef USE_PATH_TO_FILE_MAPPING
 	if(!isWritePath)
-		MapFiles(m_directories[pathInfoIdx]);
+		FSSearchPathInfo::MapFiles(m_basePath, m_directories[pathInfoIdx]);
+#endif
 }
 
 void CFileSystem::RemoveSearchPath(const char* pathId)
