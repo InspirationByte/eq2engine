@@ -12,8 +12,6 @@
 #include <Windows.h>
 #ifdef CloseModule
 #	undef CloseModule
-#else
-#define USE_PATH_TO_FILE_MAPPING
 #endif
 
 #include <direct.h>	// mkdir()
@@ -23,6 +21,7 @@
 #else
 #include <unistd.h> // rmdir(), access()
 #include <dirent.h> // opendir, readdir
+#define USE_PATH_TO_FILE_MAPPING
 #endif
 
 #include <sys/types.h>
