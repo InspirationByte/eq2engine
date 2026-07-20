@@ -528,7 +528,9 @@ void CEqStudioGeom::AddMotionPackage(const char* filename)
 	if (motionDataIdx == STUDIOCACHE_INVALID_IDX)
 		return;
 
-	m_motionData.append(motionDataIdx);
+	ASSERT_MSG(m_motionData.isFull() == false, "MAX_MOTIONPACKAGES (%d) exceeded for model '%s'", MAX_MOTIONPACKAGES, m_name.ToCString());
+
+	m_motionData.addUnique(motionDataIdx);
 }
 
 void CEqStudioGeom::LoadMotionPackages()
@@ -537,7 +539,7 @@ void CEqStudioGeom::LoadMotionPackages()
 	{
 		const int motionDataIdx = g_studioCache->PrecacheMotionData(fnmPathApplyExt(m_name, s_egfMotionPackageExt));
 		if (motionDataIdx != STUDIOCACHE_INVALID_IDX)
-			m_motionData.append(motionDataIdx);
+			m_motionData.addUnique(motionDataIdx);
 	}
 
 	const studioHdr_t* studio = m_studio;
@@ -550,7 +552,10 @@ void CEqStudioGeom::LoadMotionPackages()
 
 		const int motionDataIdx = g_studioCache->PrecacheMotionData(packagePath, m_name);
 		if (motionDataIdx != STUDIOCACHE_INVALID_IDX)
-			m_motionData.append(motionDataIdx);
+		{
+			ASSERT_MSG(m_motionData.isFull() == false, "MAX_MOTIONPACKAGES (%d) exceeded for model '%s'", MAX_MOTIONPACKAGES, m_name.ToCString());
+			m_motionData.addUnique(motionDataIdx);
+		}
 	}
 
 	// load additional external motion packages requested by user
@@ -558,7 +563,10 @@ void CEqStudioGeom::LoadMotionPackages()
 	{
 		const int motionDataIdx = g_studioCache->PrecacheMotionData(extraMotionPackName, m_name);
 		if (motionDataIdx != STUDIOCACHE_INVALID_IDX)
-			m_motionData.append(motionDataIdx);
+		{
+			ASSERT_MSG(m_motionData.isFull() == false, "MAX_MOTIONPACKAGES (%d) exceeded for model '%s'", MAX_MOTIONPACKAGES, m_name.ToCString());
+			m_motionData.addUnique(motionDataIdx);
+		}
 	}
 	m_additionalMotionPackages.clear(true);
 }
