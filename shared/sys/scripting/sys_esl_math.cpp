@@ -43,6 +43,8 @@ static void VecToStringImpl(const Quaternion& v, char* dest, const int destSize)
 template<typename T, esl::binder::EOpType OpType>
 int VectorOperatorsFunc(lua_State* L)
 {
+	esl::ScriptState state(L);
+	
 	constexpr int opIdxA = 1;
 	constexpr int opIdxB = 2;
 
@@ -50,62 +52,72 @@ int VectorOperatorsFunc(lua_State* L)
 	if constexpr (OpType == esl::binder::OP_unm)
 	{
 		// NOTE: not performing additional type checking
-		esl::runtime::New<T>(L, -*esl::runtime::PushGet<T>::Get(L, opIdxA, false, isConst, {}));
+		esl::runtime::New<T>(state, -*esl::runtime::PushGet<T>::Get(state, opIdxA, false, isConst, {}));
 		return 1;
 	}
 	else if constexpr (OpType == esl::binder::OP_not)
 	{
 		// NOTE: not performing additional type checking
-		lua_pushboolean(L, !*esl::runtime::PushGet<T>::Get(L, opIdxA, false, isConst, {}));
+		lua_pushboolean(state, !*esl::runtime::PushGet<T>::Get(state, opIdxA, false, isConst, {}));
 		return 1;
 	}
 	else
 	{
-		T tmp;
-		const T* lhs = &tmp;
-		const T* rhs = &tmp;
-		if (lua_type(L, opIdxA) == LUA_TNUMBER)
+		T tmpLhs;
+		T tmpRhs;
+		const T* lhs = &tmpLhs;
+		const T* rhs = &tmpRhs;
+		const int lhsType = state.GetStackType(opIdxA);
+		const int rhsType = state.GetStackType(opIdxB);
+
+		if (lhsType == LUA_TNUMBER)
 		{
-			tmp = lua_tonumber(L, opIdxA);
-			rhs = *esl::runtime::GetValue<const T*, false, false>(L, opIdxB);
-		}
-		else if(lua_type(L, opIdxB) == LUA_TNUMBER)
-		{
-			lhs = *esl::runtime::GetValue<const T*, false, false>(L, opIdxA);
-			tmp = lua_tonumber(L, opIdxB);
+			tmpLhs = lua_tonumber(state, opIdxA);
 		}
 		else
 		{
-			lhs = *esl::runtime::GetValue<const T*, false, false>(L, opIdxA);
-			rhs = *esl::runtime::GetValue<const T*, false, false>(L, opIdxB);
+			auto valResult = esl::runtime::GetValue<const T*, true, false>(state, opIdxA);
+			if (!valResult) state.ThrowError(valResult.errorMessage);
+			lhs = *valResult;
+		}
+
+		if(rhsType == LUA_TNUMBER)
+		{
+			tmpRhs = lua_tonumber(state, opIdxB);
+		}
+		else
+		{
+			auto valResult = esl::runtime::GetValue<const T*, true, false>(state, opIdxB);
+			if (!valResult) state.ThrowError(valResult.errorMessage);
+			rhs = *valResult;
 		}
 
 		if constexpr (OpType == esl::binder::OP_add)
-			esl::runtime::New<T>(L, *lhs + *rhs);
+			esl::runtime::New<T>(state, *lhs + *rhs);
 		else if constexpr (OpType == esl::binder::OP_sub)
-			esl::runtime::New<T>(L, *lhs - *rhs);
+			esl::runtime::New<T>(state, *lhs - *rhs);
 		else if constexpr (OpType == esl::binder::OP_mul)
-			esl::runtime::New<T>(L, *lhs * *rhs);
+			esl::runtime::New<T>(state, *lhs * *rhs);
 		else if constexpr (OpType == esl::binder::OP_div)
-			esl::runtime::New<T>(L, *lhs / *rhs);
+			esl::runtime::New<T>(state, *lhs / *rhs);
 		else if constexpr (OpType == esl::binder::OP_mod)
-			esl::runtime::New<T>(L, *lhs % *rhs);
+			esl::runtime::New<T>(state, *lhs % *rhs);
 		else if constexpr (OpType == esl::binder::OP_band)
-			esl::runtime::New<T>(L, *lhs & *rhs);
+			esl::runtime::New<T>(state, *lhs & *rhs);
 		else if constexpr (OpType == esl::binder::OP_bor)
-			esl::runtime::New<T>(L, *lhs | *rhs);
+			esl::runtime::New<T>(state, *lhs | *rhs);
 		else if constexpr (OpType == esl::binder::OP_xor)
-			esl::runtime::New<T>(L, *lhs ^ *rhs);
+			esl::runtime::New<T>(state, *lhs ^ *rhs);
 		else if constexpr (OpType == esl::binder::OP_shl)
-			esl::runtime::New<T>(L, *lhs << *rhs);
+			esl::runtime::New<T>(state, *lhs << *rhs);
 		else if constexpr (OpType == esl::binder::OP_shr)
-			esl::runtime::New<T>(L, *lhs >> *rhs);
+			esl::runtime::New<T>(state, *lhs >> *rhs);
 		else if constexpr (OpType == esl::binder::OP_eq)
-			lua_pushboolean(L, *lhs == *rhs);
+			lua_pushboolean(state, *lhs == *rhs);
 		else if constexpr (OpType == esl::binder::OP_lt)
-			lua_pushboolean(L, *lhs < *rhs);
+			lua_pushboolean(state, *lhs < *rhs);
 		else if constexpr (OpType == esl::binder::OP_le)
-			lua_pushboolean(L, *lhs <= *rhs);
+			lua_pushboolean(state, *lhs <= *rhs);
 		else
 			static_assert(sizeof(T) > 0, "Unsupported operator type");
 		return 1;
