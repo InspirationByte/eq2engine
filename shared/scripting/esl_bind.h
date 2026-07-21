@@ -281,7 +281,7 @@ NOTE on weak pointers:
 #define _ESL_GET_FIELD(field)			+[](const BindClass& self) { return self.##field; }
 #define _ESL_GET_ARR_FIELD(field)		+[](const BindClass& self, int idx) { return self.##field##[idx]; }
 
-#define ESL_APPLY_TRAITS(...)		, __VA_ARGS__
+#define ESL_APPLY_TRAITS(R,...)		, R, __VA_ARGS__
 
 // Constructor([ ArgT1, ArgT2, ...ArgTN ])
 #define EQSCRIPT_BIND_CONSTRUCTOR(...) \
