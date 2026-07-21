@@ -27,6 +27,7 @@ public:
 	void				InitMotionData(const char* name);
 
 	void				DestroyAnimating();
+	bool				IsAnimatingInitialized() const { return m_geomReference; }
 
 	int					FindBone(const char* boneName) const;			// finds bone
 
