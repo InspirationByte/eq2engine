@@ -278,8 +278,8 @@ NOTE on weak pointers:
 #define _ESL_CLASS_OVERLOAD(R, ...) 	static_cast<R(BindClass::*) __VA_ARGS__>
 #define _ESL_CFUNC_OVERLOAD(R, ...) 	static_cast<R(*)__VA_ARGS__>
 
-#define _ESL_GET_FIELD(field)			+[](const BindClass& self) { return self.##field; }
-#define _ESL_GET_ARR_FIELD(field)		+[](const BindClass& self, int idx) { return self.##field##[idx]; }
+#define _ESL_GET_FIELD(...)			+[](const BindClass& self) { return self. __VA_ARGS__; }
+#define _ESL_GET_ARR_FIELD(...)		+[](const BindClass& self, int idx) { return self. __VA_ARGS__[idx]; }
 
 #define ESL_APPLY_TRAITS(R,...)		, R, __VA_ARGS__
 
