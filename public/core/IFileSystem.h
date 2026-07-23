@@ -14,10 +14,12 @@
 
 enum ESearchPath : int
 {
-	SP_ROOT = (1 << 0),
-    SP_DATA = (1 << 1),
-    SP_MOD	= (1 << 2),
-	SP_IGNORE_PACKAGE = (1 << 3),
+	SP_ROOT = (1 << 0),	// Direct and absolute path (relative to baseDir)
+	SP_DATA = (1 << 1),	// Engine data path
+	SP_MOD	= (1 << 2),	// GameData and addons path
+
+	SP_DIRECT = (1 << 3),			// same as SP_ROOT but baseDir is ignored
+	SP_IGNORE_PACKAGE	= (1 << 4),	// ignore files from packages
 };
 
 struct FSFindData;
@@ -30,7 +32,7 @@ class IFileSystem : public IEqCoreModule
 {
 	friend class CFileSystemFind;
 public:
-	CORE_INTERFACE("E2_Filesystem_010")
+	CORE_INTERFACE("E2_Filesystem_011")
 
     // Initialization of filesystem
     virtual bool			Init(bool bEditorMode) = 0;
@@ -57,12 +59,12 @@ public:
 	virtual void			RemoveSearchPath(const char* pathId) = 0;
 	
 	// renames file or directory
-	virtual void			Rename(const char* oldNameOrPath, const char* newNameOrPath, ESearchPath search) const = 0;
+	virtual bool			Rename(const char* oldNameOrPath, const char* newNameOrPath, ESearchPath search) const = 0;
 	
 	// Directory operations
 	virtual bool			DirExist(const char* dirname, ESearchPath search) const = 0;
-	virtual void			MakeDir(const char* dirname, ESearchPath search ) const = 0;
-	virtual void			RemoveDir(const char* dirname, ESearchPath search ) const = 0;
+	virtual bool			MakeDir(const char* dirname, ESearchPath search ) const = 0;
+	virtual bool			RemoveDir(const char* dirname, ESearchPath search ) const = 0;
 	
 	//------------------------------------------------------------
 	// File operations
@@ -73,7 +75,7 @@ public:
 	// other operations
 	virtual EqString		FindFilePath(const char* filename, int searchFlags = -1) const = 0;
 	virtual bool			FileExist(const char* filename, int searchFlags = -1) const = 0;
-	virtual void			FileRemove(const char* filename, ESearchPath search ) const = 0;
+	virtual bool			FileRemove(const char* filename, ESearchPath search ) const = 0;
 	virtual bool			FileCopy(const char* filename, const char* dest_file, bool overWrite, ESearchPath search) = 0;
 	
 	// The next ones are deprecated and will be removed

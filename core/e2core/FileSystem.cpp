@@ -630,8 +630,7 @@ static bool UTIL_IsAbsolutePath(const char* dirOrFileName)
 EqString CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const
 {
 	EqString fullPath;
-	const bool isAbsolutePath = (search == SP_ROOT && UTIL_IsAbsolutePath(dirOrFileName));
-	if (isAbsolutePath)
+	if (search == SP_DIRECT || search == SP_ROOT && UTIL_IsAbsolutePath(dirOrFileName))
 	{
 		fullPath = dirOrFileName;
 		fnmPathFixSeparators(fullPath);
@@ -644,36 +643,33 @@ EqString CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFileN
 	return fullPath;
 }
 
-void CFileSystem::FileRemove(const char* filename, ESearchPath search ) const
+bool CFileSystem::FileRemove(const char* filename, ESearchPath search ) const
 {
-	remove(GetAbsolutePath(search, filename));
+	return remove(GetAbsolutePath(search, filename)) == 0;
 }
 
 bool CFileSystem::DirExist(const char* dirname, ESearchPath search) const
 {
 	struct stat info;
-	if (stat(GetAbsolutePath(search, dirname), &info) != 0)
-		return false;
-
-	return info.st_mode & S_IFDIR;
+	return stat(GetAbsolutePath(search, dirname), &info) == 0 && (info.st_mode & S_IFDIR);
 }
 
 //Directory operations
-void CFileSystem::MakeDir(const char* dirname, ESearchPath search ) const
+bool CFileSystem::MakeDir(const char* dirname, ESearchPath search ) const
 {
-	mkdirRecursive(GetAbsolutePath(search, dirname), true);
+	return mkdirRecursive(GetAbsolutePath(search, dirname), true);
 }
 
-void CFileSystem::RemoveDir(const char* dirname, ESearchPath search ) const
+bool CFileSystem::RemoveDir(const char* dirname, ESearchPath search ) const
 {
-    rmdir(GetAbsolutePath(search, dirname));
+    return rmdir(GetAbsolutePath(search, dirname)) == 0;
 }
 
-void CFileSystem::Rename(const char* oldNameOrPath, const char* newNameOrPath, ESearchPath search) const
+bool CFileSystem::Rename(const char* oldNameOrPath, const char* newNameOrPath, ESearchPath search) const
 {
-	rename(GetAbsolutePath(search, oldNameOrPath), GetAbsolutePath(search, newNameOrPath));
+	return rename(GetAbsolutePath(search, oldNameOrPath), GetAbsolutePath(search, newNameOrPath)) == 0;
 }
-PRAGMA_OPTIMIZE_OFF
+
 bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, const SPWalkFunc& func) const
 {
 	int flags = searchFlags;
@@ -762,7 +758,7 @@ bool CFileSystem::SetAccessKey(const char* accessKey)
 
 bool CFileSystem::AddPackage(const char* packageName, ESearchPath type, const char* mountPath /*= nullptr*/)
 {
-	const EqString packagePath = g_fileSystem->GetAbsolutePath(SP_ROOT, packageName);
+	const EqString packagePath = GetAbsolutePath(SP_ROOT, packageName);
 
 	for(IPackFileReaderPtr package : m_fsPackages)
 	{
@@ -794,7 +790,7 @@ bool CFileSystem::AddPackage(const char* packageName, ESearchPath type, const ch
 
 void CFileSystem::RemovePackage(const char* packageName)
 {
-	const EqString packagePath = g_fileSystem->GetAbsolutePath(SP_ROOT, packageName);
+	const EqString packagePath = GetAbsolutePath(SP_ROOT, packageName);
 
 	for (int i = 0; i < m_fsPackages.numElem(); i++)
 	{
@@ -817,7 +813,7 @@ IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchF
 		if (reader->InitPackage(filePath, packageName, nullptr))
 			return true;
 
-		if (g_fileSystem->DirExist(filePath, searchPath))
+		if (DirExist(filePath, SP_DIRECT))
 		{
 			// open flat reader
 			reader = CBasePackageReaderPtr(CRefPtr_new(CFlatFileReader));
