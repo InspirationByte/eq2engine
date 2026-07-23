@@ -418,6 +418,18 @@ TEST(EQSTRING_TESTS, TestAppendOperators)
 	}
 }
 
+TEST(EQSTRING_TESTS, TestMove)
+{
+	EqString str1 = "John";
+	const char* strPtr = str1.ToCString();
+	EqString str2 = std::move(str1);
+
+	EXPECT_EQ(str1.Length(), 0);
+	EXPECT_EQ(str1.GetData(), nullptr);
+	EXPECT_EQ(str2, "John");
+	EXPECT_EQ(reinterpret_cast<const void*>(str2.ToCString()), reinterpret_cast<const void*>(strPtr));
+}
+
 TEST(EQSTRINGREF_TESTS, Empty)
 {
 	EqStringRef testString;
@@ -428,7 +440,6 @@ TEST(EQSTRINGREF_TESTS, Empty)
 	EXPECT_EQ(testString.GetData(), nullptr);
 	EXPECT_EQ(testString.ToCString(), nullptr);
 }
-
 
 TEST(EQSTRINGREF_TESTS, Instantiate)
 {
@@ -556,3 +567,4 @@ TEST(STRING_UTILS, FilenameUtils)
 
 	EXPECT_TRUE(fnmPathCombine("test", "newpath") == ("test" _CORRECT_PATH_SEPARATOR_STR "newpath"));
 }
+
