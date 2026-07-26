@@ -11,7 +11,7 @@ template<typename T>
 struct PushGet
 {
 	using PushFunc = void(*)(lua_State* L, const BaseType<T>& obj, int flags);
-	using GetFunc = BaseType<T>* (*)(lua_State* L, int index, bool toCpp, bool& isConst, const runtime::BaseClassInfo& upcastBaseInfo);
+	using GetFunc = BaseType<T>* (*)(lua_State* L, int index, bool toCpp, bool& isConst, const BaseClassInfo& upcastBaseInfo);
 	using GetThisFunc = ThisGetterFunc;
 
 	static PushFunc Push;
@@ -20,5 +20,9 @@ struct PushGet
 };
 
 bool	CheckUserdataCanBeUpcasted(lua_State* L, int index, const char* typeName);
+
+void	Init(lua_State* L);
+BoxUD* 	GetBoxUD(lua_State* L, void* objPtr, int flags, const char* metaType, bool& justCreated);
+void 	RemoveBoxUD(lua_State* L, BoxUD* ud);
 
 }

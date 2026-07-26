@@ -2,19 +2,6 @@
 
 namespace esl
 {
-enum EUserDataFlags : int
-{
-	UD_FLAG_CONST	= (1 << 0),		// a 'const' qualified object
-	UD_FLAG_OWNED	= (1 << 1),		// was created by Lua and should be destroyed
-};
-
-// boxed userdata
-struct BoxUD
-{
-	void*	objPtr{ nullptr };
-	void*	weakRefHandle{ nullptr };
-	uint	flags{ 0 };
-};
 
 template<typename T>
 LuaUserRef Object<T>::ToRef() const
@@ -127,7 +114,7 @@ T& New(lua_State* L, Args&&... args)
 {
 	if constexpr (PushType<T>::value == BY_VALUE)
 	{
-		T* ud = static_cast<T*>(lua_newuserdata(L, sizeof(T)));
+		T* ud = static_cast<T*>(lua_newuserdatauv(L, sizeof(T), 0));
 		new(ud) T{ std::forward<Args>(args)... };
 		luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
 
@@ -137,14 +124,18 @@ T& New(lua_State* L, Args&&... args)
 	{
 		T* newObj = PPNew T{ std::forward<Args>(args)... };
 
-		BoxUD* ud = new(lua_newuserdata(L, sizeof(BoxUD))) BoxUD();
-		ud->objPtr = newObj;
-		ud->flags = UD_FLAG_OWNED;
+		//BoxUD* ud = new(lua_newuserdatauv(L, sizeof(BoxUD), 0)) BoxUD();
+		//ud->objPtr = newObj;
+		//ud->flags = BOX_UD_FLAG_OWNED;
+		//luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
+
+		bool justCreated;
+		BoxUD* ud = GetBoxUD(L, newObj, BOX_UD_FLAG_OWNED, LuaBaseTypeAlias<T>::value, justCreated);
+		ASSERT(justCreated);
 
 		if constexpr (PushType<T>::value == REF_PTR)
 			newObj->Ref_Grab();
 
-		luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
 		return *newObj;
 	}
 }
@@ -183,14 +174,17 @@ static int DestroyImpl(lua_State* L)
 		}
 		else
 		{
-			if (ud->flags & UD_FLAG_OWNED)
+			if (ud->flags & BOX_UD_FLAG_OWNED)
 			{
 				ESL_VERBOSE_LOG("destroy owned obj %s", LuaBaseTypeAlias<T>::value);
 				delete static_cast<T*>(ud->objPtr);
-				ud->flags &= ~UD_FLAG_OWNED;
+				ud->flags &= ~BOX_UD_FLAG_OWNED;
 				ud->objPtr = nullptr;
 			}
 		}
+
+		// remove from cache
+		RemoveBoxUD(L, ud);
 	}
 	return 0;
 }
@@ -210,27 +204,34 @@ struct PushGetImpl
 
 		if constexpr (PushType<BaseUType>::value == BY_VALUE)
 		{
-			BaseUType* ud = static_cast<BaseUType*>(lua_newuserdata(L, sizeof(BaseUType)));
+			BaseUType* ud = static_cast<BaseUType*>(lua_newuserdatauv(L, sizeof(BaseUType), 0));
 			new(ud) BaseUType(obj);
+			luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
 		}
 		else
 		{
-			BoxUD* ud = new(lua_newuserdata(L, sizeof(BoxUD))) BoxUD();
-			ud->objPtr = const_cast<void*>(reinterpret_cast<const void*>(&obj));
-			ud->flags = flags;
+			//BoxUD* ud = new(lua_newuserdatauv(L, sizeof(BoxUD), 0)) BoxUD();
+			//ud->objPtr = const_cast<void*>(reinterpret_cast<const void*>(&obj));
+			//ud->flags = flags;
+			//luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
 
-			if constexpr (PushType<BaseUType>::value == REF_PTR)
-				const_cast<BaseUType*>(&obj)->Ref_Grab();
+			bool justCreated;
+			BoxUD* ud = GetBoxUD(L, const_cast<void*>(reinterpret_cast<const void*>(&obj)), flags, LuaBaseTypeAlias<T>::value, justCreated);
 
-			if constexpr (PushType<BaseUType>::value == WEAK_REF)
+			if(justCreated)
 			{
-				auto* weakHandle = obj.GetWeakHandle();
-				weakHandle->Ref_Grab();
+				if constexpr (PushType<BaseUType>::value == REF_PTR)
+					const_cast<BaseUType*>(&obj)->Ref_Grab();
 
-				ud->weakRefHandle = weakHandle;
+				if constexpr (PushType<BaseUType>::value == WEAK_REF)
+				{
+					auto* weakHandle = obj.GetWeakHandle();
+					weakHandle->Ref_Grab();
+
+					ud->weakRefHandle = weakHandle;
+				}
 			}
 		}
-		luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
 	}
 
 	static T* GetObject(lua_State* L, int index, bool toCpp, bool& isConst, const bindings::BaseClassStorage::Info& upcastBaseInfo)
@@ -252,7 +253,7 @@ struct PushGetImpl
 			if (!ud)
 				return static_cast<BaseUType*>(nullptr);
 
-			isConst = (ud->flags & UD_FLAG_CONST);
+			isConst = (ud->flags & BOX_UD_FLAG_CONST);
 
 			if constexpr (PushType<BaseUType>::value == WEAK_REF)
 			{
@@ -264,7 +265,7 @@ struct PushGetImpl
 			// drop ownership flag when ToCpp is specified
 			// so Lua can no longer delete object (C++ now has to)
 			if (toCpp)
-				ud->flags &= ~UD_FLAG_OWNED;
+				ud->flags &= ~BOX_UD_FLAG_OWNED;
 
 			return reinterpret_cast<BaseUType*>(reinterpret_cast<uintptr_t>(ud->objPtr) + upcastBaseInfo.offset);
 		}
@@ -284,11 +285,11 @@ struct PushGetImpl
 		}
 		else
 		{
-			esl::BoxUD* ud = static_cast<esl::BoxUD*>(objPtr);
+			BoxUD* ud = static_cast<BoxUD*>(objPtr);
 			if (!ud)
 				return nullptr;
 
-			isConst = (ud->flags & UD_FLAG_CONST);
+			isConst = (ud->flags & BOX_UD_FLAG_CONST);
 
 			if constexpr (PushType<BaseUType>::value == WEAK_REF)
 			{
@@ -374,9 +375,9 @@ static void PushValue(lua_State* L, const T& value)
 		using UT = BaseType<StripWeakPtrT<StripRefPtrT<BaseType<T>>>>;
 
 		// can't be used for RefPtr but it's ok for weak pointer
-		constexpr int retTraitFlag = HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0;
+		constexpr int retTraitFlag = HasToLuaReturnTrait<WT>::value ? BOX_UD_FLAG_OWNED : 0;
 		if (value)
-			PushGet<UT>::Push(L, value.Ref(), (std::is_const_v<UT> ? UD_FLAG_CONST : 0) | retTraitFlag);
+			PushGet<UT>::Push(L, value.Ref(), (std::is_const_v<UT> ? BOX_UD_FLAG_CONST : 0) | retTraitFlag);
 		else
 			lua_pushnil(L);
 	}
@@ -391,7 +392,7 @@ static void PushValue(lua_State* L, const T& value)
 
 		using UT = BaseType<StripWeakPtrT<T>>;
 
-		constexpr int retTraitFlag = (HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0) | (std::is_const_v<BaseTypeWithCv<WT>> ? UD_FLAG_CONST : 0);
+		constexpr int retTraitFlag = (HasToLuaReturnTrait<WT>::value ? BOX_UD_FLAG_OWNED : 0) | (std::is_const_v<BaseTypeWithCv<WT>> ? BOX_UD_FLAG_CONST : 0);
 		if constexpr (std::is_pointer_v<T>)
 		{
 			if (value != nullptr)
@@ -935,7 +936,6 @@ struct MemberFunction
 	{
 		constexpr int ArgCount = sizeof...(Args) - (HasLuaStateArg::value ? 1 : 0);
 
-		ESL_VERBOSE_LOG("call member %s:%x", ScriptClass<T>::className, FuncPtr);
 		if constexpr (IsAny<R>::value)
 		{
 			Invoke(thisPtr, L, std::make_index_sequence<ArgCount>{});

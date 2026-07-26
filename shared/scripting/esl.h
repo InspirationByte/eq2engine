@@ -466,6 +466,21 @@ private:
 
 namespace esl::runtime
 {
+enum EBoxUDFlags : int
+{
+	BOX_UD_FLAG_CONST	= (1 << 0),		// a 'const' qualified object
+	BOX_UD_FLAG_OWNED	= (1 << 1),		// owned and managed by script
+};
+
+// boxed userdata
+struct BoxUD
+{
+	const char* metaType{ nullptr };
+	void*		objPtr{ nullptr };
+	void*		weakRefHandle{ nullptr };
+	uint		flags{ 0 };	// EBoxUDFlags
+};
+
 struct BaseClassInfo
 {
 	EqStringRef name;

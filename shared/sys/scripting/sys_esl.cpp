@@ -339,6 +339,7 @@ static lua_State* AllocLuaState()
 	OpenLibs(state);
 	OpenDebugger(state);
 
+	esl::runtime::Init(state);
 	esl::runtime::SetGlobal(state, "loadfile", &LuaLoadFile);
 	return state;
 }
