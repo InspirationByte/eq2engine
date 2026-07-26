@@ -205,8 +205,8 @@ enum EMemberType : int
 
 enum EPushType
 {
-	BY_REF = 0,
-	BY_VALUE,
+	BY_VALUE = 0,
+	BY_REF,
 	REF_PTR,
 	WEAK_REF
 };

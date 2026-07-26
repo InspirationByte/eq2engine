@@ -656,7 +656,7 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 	}
 
 	// push especial eq operator that compares userdata
-	if (typeInfo.pushType != esl::BY_REF)
+	if (typeInfo.pushType != esl::BY_VALUE)
 	{
 		// mt[__eq] = function ()
 		lua_pushstring(L, "__eq");
