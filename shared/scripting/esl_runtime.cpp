@@ -655,14 +655,7 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 		lua_rawset(L, fields);
 	}
 
-	// push especial eq operator that compares userdata
-	if (typeInfo.pushType != esl::BY_VALUE)
-	{
-		// mt[__eq] = function ()
-		lua_pushstring(L, "__eq");
-		lua_pushcclosure(L, &esl::runtime::UserTypeCompareBoxedPointers, 0);
-		lua_rawset(L, mt);
-	}
+	bool hasEqOperator = false;
 
 	for (const esl::Member& mem : typeInfo.members)
 	{
@@ -703,6 +696,9 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 			lua_pushstring(L, mem.name);
 			lua_pushcclosure(L, mem.staticFunc, 0);
 			lua_rawset(L, mt);
+
+			if(!CString::Compare(mem.name, "__eq"))
+				hasEqOperator = true;
 		}
 		else if (mem.type == esl::MEMB_DTOR)
 		{
@@ -716,6 +712,14 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 			lua_pushlightuserdata(L, const_cast<Member*>(&mem));
 			lua_rawset(L, fields);
 		}
+	}
+
+	// push default eq operator for userdata if those are boxed
+	if (!hasEqOperator && typeInfo.pushType != esl::BY_VALUE)
+	{
+		lua_pushstring(L, "__eq");
+		lua_pushcclosure(L, &esl::runtime::UserTypeCompareBoxedPointers, 0);
+		lua_rawset(L, mt);
 	}
 
 	lua_pushvalue(L, fields);
