@@ -475,7 +475,6 @@ enum EBoxUDFlags : int
 // boxed userdata
 struct BoxUD
 {
-	const char* metaType{ nullptr };
 	void*		objPtr{ nullptr };
 	void*		weakRefHandle{ nullptr };
 	uint		flags{ 0 };	// EBoxUDFlags

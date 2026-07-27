@@ -6,7 +6,6 @@
 #include "esl_bind.h"
 #include "esl_runtime.h"
 
-//#define ESL_USERDATA_CACHE
 
 namespace esl::runtime 
 {
@@ -598,22 +597,66 @@ static void SetIndexFunction(lua_State* L, const esl::TypeInfo& typeInfo, int fi
 	lua_rawset(L, mt);
 }
 
-static char s_userDataCacheKey = 'k';
+
+static int ToRawUserData(lua_State* L)
+{
+	const int type = lua_type(L, -1);
+	if (type == LUA_TUSERDATA)
+	{
+		BoxUD* ud = reinterpret_cast<BoxUD*>(lua_touserdata(L, -1));
+
+		lua_pushlightuserdata(L, ud->objPtr);
+
+		// TODO: store EBoxUDFlags and weakRefHandle
+		// TODO: push Box metatable instead?
+		lua_getmetatable(L, -2);
+		lua_setmetatable(L, -2);
+	}
+	else if (type == LUA_TLIGHTUSERDATA)
+	{
+		lua_pushvalue(L, -1);
+	}
+	else
+	{
+		lua_pushnil(L);
+	}
+
+	return 1;
+}
+
+static int FromRawUserData(lua_State* L)
+{
+	const int type = lua_type(L, -1);
+	if (type == LUA_TUSERDATA)
+	{
+		lua_pushvalue(L, -1);
+	}
+	else if (type == LUA_TLIGHTUSERDATA)
+	{
+		void* objPtr = lua_touserdata(L, -1);
+		BoxUD* ud = new(lua_newuserdatauv(L, sizeof(BoxUD), 0)) BoxUD();
+		ud->objPtr = objPtr;
+
+		// TODO: recover EBoxUDFlags and weakRefHandle
+		// TODO: recover from Box metatable instead?
+		lua_getmetatable(L, -2);
+		lua_setmetatable(L, -2);
+		lua_remove(L, -2);
+	}
+	else
+	{
+		lua_pushnil(L);
+	}
+
+	return 1;
+}
 
 void Init(lua_State* L) 
 {
-#ifdef ESL_USERDATA_CACHE
-	// init box UD cache
-	{
-		lua_pushlightuserdata(L, &s_userDataCacheKey);
-		lua_newtable(L);
-
-		lua_pushliteral(L, "k");      // weak keys
-		lua_setfield(L, -2, "__mode");
-
-		lua_settable(L, LUA_REGISTRYINDEX);
-	}
-#endif
+	ScriptState state(L);
+	// worst necessary hacks for Lua to have userdata as keys for tables
+	state.SetGlobal("toraw", &ToRawUserData);
+	state.SetGlobal("fromraw", &FromRawUserData);
 }
 
 static void PushCacheKey(lua_State* L, const char* metaType, void* objPtr, int flags) 
@@ -626,75 +669,16 @@ static void PushCacheKey(lua_State* L, const char* metaType, void* objPtr, int f
 	lua_pushlightuserdata(L, reinterpret_cast<void*>(key));
 }
 
-BoxUD* GetBoxUD(lua_State* L, void* objPtr, int flags, const char* metaType, bool& justCreated)
+BoxUD* GetBoxUD(lua_State* L, void* objPtr, int flags, const char* metaType)
 {
 	ASSERT(objPtr);
-	justCreated = false;
-
-#ifdef ESL_USERDATA_CACHE
-	const int startTop = lua_gettop(L);
-	lua_pushlightuserdata(L, &s_userDataCacheKey);
-	lua_gettable(L, LUA_REGISTRYINDEX);
-
-	// weak_table[key]
-	PushCacheKey(L, metaType, objPtr, flags);
-	lua_rawget(L, -2);
-
-	if (lua_type(L, -1) == LUA_TUSERDATA)
-	{
-		// FIXME: beyond this point stack becomes MEGA-corrupted
-		lua_remove(L, -2);
-
-		BoxUD* ud = reinterpret_cast<BoxUD*>(lua_touserdata(L, -1));
-		ASSERT(ud);
-		ASSERT(ud->metaType == metaType);
-		ASSERT(ud->objPtr == objPtr);
-		ASSERT(ud->flags == flags);
-	    return ud;
-	}
-	lua_pop(L, 1);
 
 	BoxUD* ud = new(lua_newuserdatauv(L, sizeof(BoxUD), 0)) BoxUD();
-	ud->metaType = metaType;
 	ud->objPtr = objPtr;
 	ud->flags = flags;
 	luaL_setmetatable(L, metaType);
 
-	justCreated = true;
-
-	// FIXME: beyond this point stack becomes corrupted
-
-	// weak_table[key] = ud
-	PushCacheKey(L, metaType, objPtr, flags);
-	lua_pushvalue(L, -2);
-	lua_rawset(L, -4);
-
-	lua_remove(L, -2);
-#else
-    BoxUD* ud = new(lua_newuserdatauv(L, sizeof(BoxUD), 0)) BoxUD();
-    ud->objPtr = objPtr;
-    ud->flags = flags;
-	ud->metaType = metaType;
-	luaL_setmetatable(L, metaType);
-
-	justCreated = true;
-#endif
-    return ud;
-}
-
-void RemoveBoxUD(lua_State* L, BoxUD* ud)
-{
-#ifdef ESL_USERDATA_CACHE
-	lua_pushlightuserdata(L, &s_userDataCacheKey);
-	lua_gettable(L, LUA_REGISTRYINDEX);
-
-	// weak_table[key] = nil
-	PushCacheKey(L, ud->metaType, ud->objPtr, ud->flags);
-	lua_pushnil(L);
-	lua_rawset(L, -3);
-
-	lua_pop(L, 2);
-#endif
+	return ud;
 }
 
 void RegisterType(lua_State* L, esl::TypeInfo typeInfo)

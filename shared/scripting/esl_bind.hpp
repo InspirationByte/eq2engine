@@ -124,15 +124,7 @@ T& New(lua_State* L, Args&&... args)
 	{
 		T* newObj = PPNew T{ std::forward<Args>(args)... };
 
-		//BoxUD* ud = new(lua_newuserdatauv(L, sizeof(BoxUD), 0)) BoxUD();
-		//ud->objPtr = newObj;
-		//ud->flags = BOX_UD_FLAG_OWNED;
-		//luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
-
-		bool justCreated;
-		BoxUD* ud = GetBoxUD(L, newObj, BOX_UD_FLAG_OWNED, LuaBaseTypeAlias<T>::value, justCreated);
-		ASSERT(justCreated);
-
+		BoxUD* ud = GetBoxUD(L, newObj, BOX_UD_FLAG_OWNED, LuaBaseTypeAlias<T>::value);
 		if constexpr (PushType<T>::value == REF_PTR)
 			newObj->Ref_Grab();
 
@@ -182,9 +174,6 @@ static int DestroyImpl(lua_State* L)
 				ud->objPtr = nullptr;
 			}
 		}
-
-		// remove from cache
-		RemoveBoxUD(L, ud);
 	}
 	return 0;
 }
@@ -210,26 +199,17 @@ struct PushGetImpl
 		}
 		else
 		{
-			//BoxUD* ud = new(lua_newuserdatauv(L, sizeof(BoxUD), 0)) BoxUD();
-			//ud->objPtr = const_cast<void*>(reinterpret_cast<const void*>(&obj));
-			//ud->flags = flags;
-			//luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
+			BoxUD* ud = GetBoxUD(L, const_cast<void*>(reinterpret_cast<const void*>(&obj)), flags, LuaBaseTypeAlias<T>::value);
 
-			bool justCreated;
-			BoxUD* ud = GetBoxUD(L, const_cast<void*>(reinterpret_cast<const void*>(&obj)), flags, LuaBaseTypeAlias<T>::value, justCreated);
+			if constexpr (PushType<BaseUType>::value == REF_PTR)
+				const_cast<BaseUType*>(&obj)->Ref_Grab();
 
-			if(justCreated)
+			if constexpr (PushType<BaseUType>::value == WEAK_REF)
 			{
-				if constexpr (PushType<BaseUType>::value == REF_PTR)
-					const_cast<BaseUType*>(&obj)->Ref_Grab();
+				auto* weakHandle = obj.GetWeakHandle();
+				weakHandle->Ref_Grab();
 
-				if constexpr (PushType<BaseUType>::value == WEAK_REF)
-				{
-					auto* weakHandle = obj.GetWeakHandle();
-					weakHandle->Ref_Grab();
-
-					ud->weakRefHandle = weakHandle;
-				}
+				ud->weakRefHandle = weakHandle;
 			}
 		}
 	}
