@@ -6,7 +6,6 @@
 #include "esl_bind.h"
 #include "esl_runtime.h"
 
-
 namespace esl::runtime 
 {
 static void PushErrorIdStr(lua_State* vm)
@@ -597,51 +596,31 @@ static void SetIndexFunction(lua_State* L, const esl::TypeInfo& typeInfo, int fi
 	lua_rawset(L, mt);
 }
 
-
 static int ToRawUserData(lua_State* L)
 {
 	const int type = lua_type(L, -1);
 	if (type == LUA_TUSERDATA)
 	{
-		BoxUD* ud = reinterpret_cast<BoxUD*>(lua_touserdata(L, -1));
+		const int type = luaL_getmetafield(L, -1, "__pushtype");
+		const EPushType pushType = static_cast<EPushType>(lua_tointeger(L, -1));
+		lua_pop(L, 1);
 
-		lua_pushlightuserdata(L, ud->objPtr);
-
-		// TODO: store EBoxUDFlags and weakRefHandle
-		// TODO: push Box metatable instead?
-		lua_getmetatable(L, -2);
-		lua_setmetatable(L, -2);
+		if(pushType == BY_VALUE)
+		{
+			lua_pushvalue(L, -1);
+		}
+		else
+		{
+			const BoxUD* ud = reinterpret_cast<BoxUD*>(lua_touserdata(L, -1));
+			if(ud->flags & BOX_UD_FLAG_OWNED)
+				lua_pushvalue(L, -1);
+			else
+				lua_pushlightuserdata(L, ud->objPtr);
+		}
 	}
 	else if (type == LUA_TLIGHTUSERDATA)
 	{
 		lua_pushvalue(L, -1);
-	}
-	else
-	{
-		lua_pushnil(L);
-	}
-
-	return 1;
-}
-
-static int FromRawUserData(lua_State* L)
-{
-	const int type = lua_type(L, -1);
-	if (type == LUA_TUSERDATA)
-	{
-		lua_pushvalue(L, -1);
-	}
-	else if (type == LUA_TLIGHTUSERDATA)
-	{
-		void* objPtr = lua_touserdata(L, -1);
-		BoxUD* ud = new(lua_newuserdatauv(L, sizeof(BoxUD), 0)) BoxUD();
-		ud->objPtr = objPtr;
-
-		// TODO: recover EBoxUDFlags and weakRefHandle
-		// TODO: recover from Box metatable instead?
-		lua_getmetatable(L, -2);
-		lua_setmetatable(L, -2);
-		lua_remove(L, -2);
 	}
 	else
 	{
@@ -654,9 +633,9 @@ static int FromRawUserData(lua_State* L)
 void Init(lua_State* L) 
 {
 	ScriptState state(L);
-	// worst necessary hacks for Lua to have userdata as keys for tables
+
+	// table key-friendly user data conversion
 	state.SetGlobal("toraw", &ToRawUserData);
-	state.SetGlobal("fromraw", &FromRawUserData);
 }
 
 static void PushCacheKey(lua_State* L, const char* metaType, void* objPtr, int flags) 
@@ -721,6 +700,13 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 	
 		// mt[__pairs] = function (...)
 		lua_pushcclosure(L, UserTypePairsImpl, 2);
+		lua_rawset(L, mt);
+	}
+
+	{
+		// mt[__pushtype] = type
+		lua_pushstring(L, "__pushtype");
+		lua_pushinteger(L, typeInfo.pushType);
 		lua_rawset(L, mt);
 	}
 	
