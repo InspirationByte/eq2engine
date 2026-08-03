@@ -203,7 +203,7 @@ KVValues<Args...> KV_TryGetValues(const KVSection* key, Args&... outArgs);
 struct KVPairValue
 {
 	~KVPairValue();
-	KVPairValue() = default;
+	KVPairValue(KVSection& ownerSec);
 
 	KVPairValue(const KVPairValue& other) = delete;
 
@@ -226,7 +226,8 @@ struct KVPairValue
 	void		SetBool(bool bValue);
 
 // TODO: private:
-	KVSection*	section{ nullptr };
+	KVSection&	ownerSec;
+	KVSection*	sectionValue{ nullptr };
 	EqString	value;
 	EKVPairType	type{ KVPAIR_STRING };
 
@@ -243,12 +244,21 @@ struct KVPairValue
 //
 struct KVSection
 {
+	struct SectionPool
+	{
+		SectionPool(PPSourceLine sl);
+
+		MemoryPool<KVSection>	sectionPool;
+		MemoryPool<KVPairValue>	valuePool;
+	};
+
 	friend struct KVKeyIterator;
 	friend class KeyValues;
 
 	~KVSection();
 
-	KVSection() = default;
+	KVSection();
+	KVSection(SectionPool& pool);
 	KVSection(const KVSection& other) = delete;
 
 	void				Clear();
@@ -298,8 +308,8 @@ struct KVSection
 	// adds new section
 	KVSection&			CreateSection(const char* pszName, const char* pszValue = nullptr, EKVPairType pairType = KVPAIR_STRING);
 
-	// adds existing section. You should set it's name manually. It should not be allocated by other section
-	void				AddSection(KVSection* section);
+	// adds a clone of the existing section. You should set it's name manually.
+	void				AddSection(const KVSection& section);
 
 	// removes section by name
 	void				RemoveSectionByName( const char* name, bool removeAll = false );
@@ -316,7 +326,6 @@ struct KVSection
 	KVSection&			SetKey(const char* name, const Vector2D& value);
 	KVSection&			SetKey(const char* name, const Vector3D& value);
 	KVSection&			SetKey(const char* name, const Vector4D& value);
-	KVSection&			SetKey(const char* name, KVSection* value);
 
 	KVSection&			AddKey(const char* name, const char* value);
 	KVSection&			AddKey(const char* name, int nValue);
@@ -325,7 +334,6 @@ struct KVSection
 	KVSection&			AddKey(const char* name, const Vector2D& value);
 	KVSection&			AddKey(const char* name, const Vector3D& value);
 	KVSection&			AddKey(const char* name, const Vector4D& value);
-	KVSection&			AddKey(const char* name, KVSection* value);
 
 	//----------------------------------------------
 	// The self-key functions
@@ -336,7 +344,9 @@ struct KVSection
 	KVPairValue&		CreateValue();
 	KVSection&			CreateSectionValue();
 
+	// creates full clone of the section not attached to the pool
 	KVSection*			Clone() const;
+
 	void				CopyTo(KVSection& dest) const;
 	void				CopyValuesTo(KVSection& dest) const;
 
@@ -348,8 +358,8 @@ struct KVSection
 	void				AddValue(const Vector2D& vecValue);
 	void				AddValue(const Vector3D& vecValue);
 	void				AddValue(const Vector4D& vecValue);
-	void				AddValue(KVSection* section);
-	void				AddValue(KVPairValue& value);
+	void				AddValue(const KVSection& section);
+	void				AddValue(const KVPairValue& value);
 
 	// sets value
 	void				SetValue(const char* value, int idxAt = 0);
@@ -377,18 +387,22 @@ struct KVSection
 	KVSection*			KeyAt(int idx) const;
 
 	int					ValueCount() const;
-	KVPairValue&		ValueAt(int idx) const;
+	const KVPairValue&	ValueAt(int idx) const;
+	KVPairValue&		ValueAt(int idx);
 
 	void				SetType(int newType);
 	int					GetType() const;
 
 // TODO: private:
+	SectionPool			pool{ PPSourceLine::Empty()};
+	SectionPool&		poolRef;
+
 	EqString			name;
 	int					nameHash{ 0 };
 	int					line{ 0 };				// the line that the key is on
 
 	Array<KVSection*>	keys{ PP_SL };			// the nested keys
-	Array<KVPairValue>	values{ PP_SL };
+	Array<KVPairValue*>	values{ PP_SL };
 	EKVPairType			type{ KVPAIR_STRING };
 	bool				unicode{ false };
 };
