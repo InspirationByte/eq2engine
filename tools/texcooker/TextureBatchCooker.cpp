@@ -436,8 +436,8 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 		return;
 	}
 
-	const KVSection* kvMaterial = *kvs.Begin();
-	if (!kvMaterial->IsSection())
+	const KVSection& kvMaterial = kvs.KeyAt(0);
+	if (!kvMaterial.IsSection())
 	{
 		MsgError("'%s' is not valid material file\n", localMaterialFileName.ToCString());
 		return;
@@ -445,7 +445,7 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 
 	MsgInfo("Material: '%s'\n", localMaterialFileName.ToCString()); 
 
-	LoadMaterialImages(localMaterialFileName, *kvMaterial);
+	LoadMaterialImages(localMaterialFileName, kvMaterial);
 
 	const EqString atlasFileName = fnmPathApplyExt(localMaterialFileName, s_materialAtlasFileExt);
 	const EqString sourceAtlasFileName = fnmPathCombine(m_targetProps.sourceMaterialPath, atlasFileName);

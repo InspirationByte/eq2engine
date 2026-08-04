@@ -30,14 +30,33 @@ EQSCRIPT_TYPE_END
 
 EQSCRIPT_TYPE_BEGIN(KVSection)
 	EQSCRIPT_BIND_CONSTRUCTOR()
-	EQSCRIPT_BIND_FUNC(Clear)
-	EQSCRIPT_BIND_FUNC(ClearValues)
 
 	EQSCRIPT_BIND_FUNC(SetName)
-	EQSCRIPT_BIND_FUNC(GetName)
+	EQSCRIPT_BIND_FUNC(SetType)
 
-	EQSCRIPT_BIND_FUNC(CreateSection)
+	EQSCRIPT_BIND_FUNC(Clone, ESL_APPLY_TRAITS(esl::ToLua<KVSection*>, void))
+	EQSCRIPT_BIND_FUNC(CopyTo)
+	EQSCRIPT_BIND_FUNC(MergeFrom)
+
+	EQSCRIPT_BIND_FUNC(IsSection)
+	EQSCRIPT_BIND_FUNC(IsArray)
+	EQSCRIPT_BIND_FUNC(IsDefinition)
+
+	EQSCRIPT_BIND_FUNC(GetName)
+	EQSCRIPT_BIND_FUNC(GetType)
+
+	EQSCRIPT_BIND_FUNC(Clear)
+
+	EQSCRIPT_BIND_FUNC(KeyCount)
+	EQSCRIPT_BIND_FUNC_OVERLOAD(KeyAt, const KVSection&, (int) const)
+	EQSCRIPT_BIND_FUNC(ValueCount)
+	EQSCRIPT_BIND_FUNC_OVERLOAD(ValueAt, const KVPairValue&, (int) const)
+
+	EQSCRIPT_BIND_FUNC(Get)
+	EQSCRIPT_BIND_FUNC(FindSection)
+
 	EQSCRIPT_BIND_FUNC(AddSection)
+	EQSCRIPT_BIND_FUNC(CreateSection)
 	EQSCRIPT_BIND_FUNC(RemoveSectionByName)
 	EQSCRIPT_BIND_FUNC(RemoveSection)
 
@@ -51,36 +70,22 @@ EQSCRIPT_TYPE_BEGIN(KVSection)
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("AddKeyFloat", AddKey, KVSection&, (const char*, float))
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("AddKeyBool", AddKey, KVSection&, (const char*, bool))
 
+	EQSCRIPT_BIND_FUNC(ClearValues)
+
+	EQSCRIPT_BIND_FUNC(CreateValue)
+	EQSCRIPT_BIND_FUNC(CreateSectionValue)
+
+	EQSCRIPT_BIND_FUNC(CopyValuesTo)
+
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("AddValueString", AddValue, void, (const char*))
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("AddValueInt", AddValue, void, (int))
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("AddValueFloat", AddValue, void, (float))
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("AddValueBool", AddValue, void, (bool))
-	//EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("AddValuePair", AddValue, void, (KVPairValue*))
 
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("SetValueStringAt", SetValue, void, (const char*, int))
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("SetValueIntAt", SetValue, void, (int, int))
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("SetValueFloatAt", SetValue, void, (float, int))
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("SetValueBoolAt", SetValue, void, (bool, int))
-	//EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("SetValuePairAt", SetValue, void, KVPairValue*, int)
-
-	EQSCRIPT_BIND_FUNC(MergeFrom)
-	EQSCRIPT_BIND_FUNC(Clone, ESL_APPLY_TRAITS(esl::ToLua<KVSection*>, void))
-	EQSCRIPT_BIND_FUNC(CopyTo)
-
-	EQSCRIPT_BIND_FUNC(FindSection)
-	EQSCRIPT_BIND_FUNC(Get)
-
-	EQSCRIPT_BIND_FUNC(IsSection)
-	EQSCRIPT_BIND_FUNC(IsArray)
-	EQSCRIPT_BIND_FUNC(IsDefinition)
-
-	EQSCRIPT_BIND_FUNC(KeyCount)
-	EQSCRIPT_BIND_FUNC_OVERLOAD(KeyAt, const KVSection&, (int) const)
-	EQSCRIPT_BIND_FUNC(ValueCount)
-	EQSCRIPT_BIND_FUNC_OVERLOAD(ValueAt, const KVPairValue&, (int) const)
-
-	EQSCRIPT_BIND_FUNC(GetType)
-	EQSCRIPT_BIND_FUNC(SetType)
 EQSCRIPT_TYPE_END
 
 // This class only left as lua wrapper

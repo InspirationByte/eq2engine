@@ -117,19 +117,19 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 		return;
 	}
 
-	const KVSection* shaderRoot = *root.Begin();
-	if(!shaderRoot)
+	if(root.KeyCount() == 0)
 	{
 		MsgError("Material '%s' does not have a shader root section!\n",m_szMaterialName.ToCString());
 		Atomic::Exchange(m_state, MATERIAL_LOAD_ERROR);
 		return;
 	}
+	const KVSection& shaderRoot = root.KeyAt(0);
 
 	// section name is used as shader name
-	m_szShaderName = shaderRoot->GetName();
+	m_szShaderName = shaderRoot.GetName();
 
 	// begin initialization
-	InitVars( shaderRoot, renderAPI->GetRendererName() );
+	InitVars( &shaderRoot, renderAPI->GetRendererName() );
 	InitShader(g_matSystem->GetShaderAPI());
 }
 

@@ -390,13 +390,6 @@ void KVSection::CopyValuesTo(KVSection& dest) const
 		dest.AddValue(*val);
 }
 
-void KVSection::SetValueFrom(KVSection& pOther)
-{
-	this->Clear();
-	pOther.CopyTo(*this);
-}
-
-// adds value to key
 void KVSection::AddValue(const char* value)
 {
 	KVPairValue& val = CreateValue();

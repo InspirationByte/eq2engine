@@ -255,19 +255,6 @@ struct KVSection
 	friend struct KVKeyIterator;
 	friend class KeyValues;
 
-	~KVSection();
-
-	KVSection();
-	KVSection(SectionPool& pool);
-	KVSection(const KVSection& other) = delete;
-
-	void				Clear();
-	void				ClearValues();
-
-	// sets section name
-	void				SetName(const char* pszName);
-	const char*			GetName() const;
-
 	// Array values iterator
 	template<typename T>
 	inline typename KVValueIterator<T>::Init	Values(int startIdx) const { return { KVValueIterator<T>(*this, startIdx) }; }
@@ -294,30 +281,53 @@ struct KVSection
 	template<typename ...Args>
 	inline KVValues<Args...>	TryGetValuesAt(int idx, Args&... outArgs) const { return KV_TryGetValuesAt(*this, idx, outArgs...); };
 
-	//----------------------------------------------
-	// The section functions
-	//----------------------------------------------
+	//-----------------------------------------------------
+	
+	~KVSection();
+
+	KVSection();
+	KVSection(SectionPool& pool);
+	KVSection(const KVSection& other) = delete;
+
+	void				SetName(const char* pszName);
+	void				SetType(int newType);
+
+	// creates full clone of the section not attached to the pool
+	KVSection*			Clone() const;
+	void				CopyTo(KVSection& dest) const;
+	void				MergeFrom(const KVSection& base, bool recursive);
+	
+	const char*			GetName() const;
+	int					GetType() const;
+
+	bool				IsSection() const;
+	bool				IsArray() const;
+	bool				IsDefinition() const;
+
+	//-----------------------------------------------------
+	// Keys
+
+	void				Clear();
+
+	int					KeyCount() const;
+	const KVSection&		KeyAt(int idx) const;
+	KVSection&			KeyAt(int idx);
+
+	int					ValueCount() const;
+	const KVPairValue&	ValueAt(int idx) const;
+	KVPairValue&		ValueAt(int idx);
 
 	// searches for section and returns default empty if none found
 	const KVSection&	Get(const char* pszName, int nFlags = 0) const;
 	const KVSection&	GetOrDefault(const char* pszName, const KVSection& defaultSec, int nFlags = 0) const;
-
-	// searches for section
 	KVSection*			FindSection(const char* pszName, int nFlags = 0) const;
-
-	// adds new section
-	KVSection&			CreateSection(const char* pszName, const char* pszValue = nullptr, EKVPairType pairType = KVPAIR_STRING);
 
 	// adds a clone of the existing section. You should set it's name manually.
 	void				AddSection(const KVSection& section);
+	KVSection&			CreateSection(const char* pszName, const char* pszValue = nullptr, EKVPairType pairType = KVPAIR_STRING);
 
-	// removes section by name
 	void				RemoveSectionByName( const char* name, bool removeAll = false );
-
-	// removes section
 	void				RemoveSection(const KVSection* sec);
-
-	//-----------------------------------------------------
 
 	KVSection&			SetKey(const char* name, const char* value);
 	KVSection&			SetKey(const char* name, int nValue);
@@ -335,19 +345,14 @@ struct KVSection
 	KVSection&			AddKey(const char* name, const Vector3D& value);
 	KVSection&			AddKey(const char* name, const Vector4D& value);
 
-	//----------------------------------------------
-	// The self-key functions
-	//----------------------------------------------
+	//-----------------------------------------------------
+	// Values
 
-	void				SetValueFrom(KVSection& pOther);
+	void				ClearValues();
 
 	KVPairValue&		CreateValue();
 	KVSection&			CreateSectionValue();
 
-	// creates full clone of the section not attached to the pool
-	KVSection*			Clone() const;
-
-	void				CopyTo(KVSection& dest) const;
 	void				CopyValuesTo(KVSection& dest) const;
 
 	// adds value to key
@@ -371,28 +376,7 @@ struct KVSection
 	void				SetValue(const Vector4D& value, int idxAt = 0);
 	void				SetValue(const KVPairValue& value, int idxAt = 0);
 
-	Array<KVSection*>::Iterator		Begin() const { return keys.begin(); }
-
 	//----------------------------------------------
-
-	// copy all values recursively
-	void				MergeFrom(const KVSection& base, bool recursive);
-
-	// checkers
-	bool				IsSection() const;
-	bool				IsArray() const;
-	bool				IsDefinition() const;
-
-	int					KeyCount() const;
-	const KVSection&		KeyAt(int idx) const;
-	KVSection&			KeyAt(int idx);
-
-	int					ValueCount() const;
-	const KVPairValue&	ValueAt(int idx) const;
-	KVPairValue&		ValueAt(int idx);
-
-	void				SetType(int newType);
-	int					GetType() const;
 
 // TODO: private:
 	SectionPool			pool{ PPSourceLine::Empty()};
