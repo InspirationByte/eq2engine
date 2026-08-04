@@ -446,11 +446,13 @@ static void CookPackageTarget(const char* targetName)
 
 	for (int i = 0; i < currentTarget->KeyCount(); ++i)
 	{
-		const KVSection* kvSec = currentTarget->KeyAt(i);
-		if (!CString::CompareCaseIns(kvSec->GetName(), "add"))
+		const KVSection& kvSec = currentTarget->KeyAt(i);
+		if (!CString::CompareCaseIns(kvSec.GetName(), "add"))
 		{
-			EqString wildcard = KV_GetValueString(kvSec);
-			EqString targetNameOrDir = KV_GetValueString(kvSec, 1, wildcard);
+			EqString wildcard;
+			EqString targetNameOrDir;
+			if (kvSec.GetValues(wildcard, targetNameOrDir) == 1)
+				targetNameOrDir = wildcard;
 
 			ProcessVariableString(wildcard);
 			ProcessVariableString(targetNameOrDir);
@@ -468,9 +470,10 @@ static void CookPackageTarget(const char* targetName)
 				Msg("Adding %d files in '%s' as '%s' to package\n", fileCount, wildcard.ToCString(), targetNameOrDir.ToCString());
 			}
 		}
-		else if (!CString::CompareCaseIns(kvSec->GetName(), "ignoreCompressionExt"))
+		else if (!CString::CompareCaseIns(kvSec.GetName(), "ignoreCompressionExt"))
 		{
-			EqString extName = KV_GetValueString(kvSec);
+			EqString extName;
+			kvSec.GetValues(extName);
 			ProcessVariableString(extName);
 
 			MsgInfo("Ignoring compression for '%s' files\n", extName.ToCString());

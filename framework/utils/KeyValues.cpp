@@ -819,9 +819,14 @@ int	KVSection::KeyCount() const
 	return keys.numElem();
 }
 
-KVSection* KVSection::KeyAt(int idx) const
+const KVSection& KVSection::KeyAt(int idx) const
 {
-	return keys[idx];
+	return *keys[idx];
+}
+
+KVSection& KVSection::KeyAt(int idx)
+{
+	return *keys[idx];
 }
 
 int	KVSection::ValueCount() const

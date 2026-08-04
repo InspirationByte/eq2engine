@@ -384,7 +384,8 @@ struct KVSection
 	bool				IsDefinition() const;
 
 	int					KeyCount() const;
-	KVSection*			KeyAt(int idx) const;
+	const KVSection&		KeyAt(int idx) const;
+	KVSection&			KeyAt(int idx);
 
 	int					ValueCount() const;
 	const KVPairValue&	ValueAt(int idx) const;
