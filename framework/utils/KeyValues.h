@@ -310,7 +310,7 @@ struct KVSection
 	void				Clear();
 
 	int					KeyCount() const;
-	const KVSection&		KeyAt(int idx) const;
+	const KVSection&	KeyAt(int idx) const;
 	KVSection&			KeyAt(int idx);
 
 	int					ValueCount() const;
@@ -705,7 +705,7 @@ struct DescFieldEmbeddedArray : public KVDescFieldInfo
 		{
 			T& arrayRef = *reinterpret_cast<T*>(outPtr);
 			for (int i = 0; i < min(static_cast<int>(CArrayLenGetter<T>::len), sec.KeyCount()); ++i)
-				KeyValues::ParseDesc(arrayRef[i], *sec.KeyAt(i));
+				KeyValues::ParseDesc(arrayRef[i], sec.KeyAt(i));
 		}
 		else
 		{
