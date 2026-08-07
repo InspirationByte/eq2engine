@@ -24,6 +24,12 @@ static int instGranulatedCapacity(int capacity)
 }
 
 //---------------------------------------------------------------------
+GRIMBaseInstanceAllocator::GRIMBaseInstanceAllocator()
+	: m_instances(PP_SL, GPU_INSTANCE_POOL_SIZE_EXTEND)
+	, m_freeIndices(PP_SL, GPU_INSTANCE_POOL_SIZE_EXTEND)
+{
+
+}
 
 void GRIMBaseInstanceAllocator::Construct()
 {
@@ -47,6 +53,7 @@ void GRIMBaseInstanceAllocator::Initialize(const char* instanceComputeShaderName
 	PROF_EVENT("GRIM InstanceAllocator Init");
 
 	m_reservedInsts = instancesReserve;
+	m_buffersUpdated = 0;
 
 	if (!m_updateRootPipeline)
 	{
@@ -202,17 +209,22 @@ int GRIMBaseInstanceAllocator::GetInstanceComponentIdx(int instanceIdx, int comp
 
 GRIMInstanceRef	GRIMBaseInstanceAllocator::AllocInstance(GRIMArchetype archetypeId)
 {
-	const GRIMInstanceRef instanceRef = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
+	int sz = m_instances.numAllocated();
+	const GRIMInstanceRef instanceRef = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append(Instance{});
+
+	if(m_instances.numAllocated() - sz)
+		Msg("alloc: %d\n", m_instances.numAllocated() - sz);
 
 	if (m_instances.numElem() + 1 > m_syncInstances.numBits())
-		m_syncInstances.resize(m_instances.numElem() + 1);
+		m_syncInstances.resize(m_instances.numElem() + 1, true);
 
 	ASSERT_MSG(m_syncInstances.numBits() > 0, "Corrupt syncInstances");
 
 	Instance& inst = m_instances[instanceRef];
-	inst.archetype = archetypeId;
-	inst.updateFlags |= Instance::UPD_ALL;
 	memset(&inst.root.components, 0, sizeof(inst.root.components));
+	inst.updateFlags = Instance::UPD_ALL;
+	inst.lastSyncArchetype = GRIM_INVALID_ARCHETYPE;
+	inst.archetype = archetypeId;
 
 	m_updated.insert(instanceRef);
 	m_syncInstances.setFalse(instanceRef);
@@ -312,10 +324,9 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 	PROF_EVENT_F();
 
 	bool buffersUpdatedThisFrame = false;
-
 	{
 		CScopedWriteLocker m(m_rwLock);
-				ASSERT_MSG(m_syncInstances.numBits() > 0, "Corrupt syncInstances");
+		ASSERT_MSG(m_syncInstances.numBits() > 0, "Corrupt syncInstances");
 		const int oldBufferElems = m_rootBuffer ? m_rootBuffer->GetSize() / sizeof(InstRoot) : 0;
 
 		// update instance root buffer
@@ -346,21 +357,22 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			// update groupMask
 			{
 				IGPUBufferPtr sourceBuffer = m_groupMaskBuffer;
-				m_groupMaskBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GRIMArchetype), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS | BUFFERUSAGE_COPY_SRC, "InstGroupMask");
+				m_groupMaskBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS | BUFFERUSAGE_COPY_SRC, "InstGroupMask");
 
 				if (oldBufferElems > 0)
-					cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_groupMaskBuffer, 0, oldBufferElems * sizeof(GRIMArchetype));
+					cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_groupMaskBuffer, 0, oldBufferElems * sizeof(int));
 			}
 
 			// update single instances idxs
 			{
 				Array<int>& elementIds = m_instSyncArchetypes;
 				elementIds.reserve(allocInstBufferElems + 1);
+				elementIds.clear();
 				elementIds.append(allocInstBufferElems);
 				for (int i = 0; i < allocInstBufferElems; ++i)
 					elementIds.append(i);
 
-				m_singleInstIndexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), allocInstBufferElems + 1), BUFFERUSAGE_VERTEX | GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstIds");
+				m_singleInstIndexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), elementIds.numElem()), BUFFERUSAGE_VERTEX | GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstIds");
 				cmdRecorder->WriteBuffer(m_singleInstIndexBuffer, elementIds.ptr(), sizeof(elementIds[0]) * elementIds.numElem(), 0);
 
 				elementIds.clear();
@@ -373,6 +385,14 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			m_instSyncArchetypes.reserve(m_updated.size() + 1);
 			m_instSyncRoots.reserve(m_updated.size() + 1);
 			m_instSyncGroupMask.reserve(m_updated.size() + 1);
+
+			m_instSyncArchetypes.clear();
+			m_instSyncRoots.clear();
+			m_instSyncGroupMask.clear();
+
+			m_instSyncArchetypes.append(0);
+			m_instSyncRoots.append(0);
+			m_instSyncGroupMask.append(0);
 
 			for (auto it = m_updated.begin(); !it.atEnd(); ++it)
 			{
@@ -410,12 +430,10 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			const ubyte* archetypesSrcAddr = srcAddr + offsetOf(Instance, archetype);
 			const ubyte* groupMaskSrcAddr = srcAddr + offsetOf(Instance, groupMask);
 
-			auto UpdateInstanceItems = [this, cmdRecorder](IGPUComputePipeline* pipeline, IGPUBuffer* targetBuffer, Array<int>& itemIds, const ubyte* items, int itemSize) {
-				if (itemIds.isEmpty())
+			auto UpdateInstanceItems = [this, cmdRecorder](IGPUComputePipeline* pipeline, IGPUBuffer* targetBuffer, ArrayCRef<int> itemIds, const ubyte* items, int itemSize) {
+				const int idxsCount = itemIds.numElem()-1;
+				if (idxsCount <= 0)
 					return;
-
-				const int idxsCount = itemIds.numElem();
-				itemIds.insert(idxsCount, 0);
 
 				const BufferInfo reqIdxsBufferInfo(sizeof(itemIds[0]), itemIds.numElem());
 
@@ -429,17 +447,18 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 
 				GRIMBaseSyncrhronizedPool::PrepareDataBuffer(cmdRecorder, itemIds, items, sizeof(Instance), itemSize, m_updateDataBuffer);
 				GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, pipeline, m_updateIdxsBuffer, idxsCount, m_updateDataBuffer, targetBufferResource);
-
-				itemIds.clear();
 			};
 
 			// update roots
+			m_instSyncRoots[0] = m_instSyncRoots.numElem()-1;
 			UpdateInstanceItems(m_updateRootPipeline, m_rootBuffer, m_instSyncRoots, rootSrcAddr, sizeof(InstRoot));
 
 			// update archetypes data
+			m_instSyncArchetypes[0] = m_instSyncArchetypes.numElem()-1;
 			UpdateInstanceItems(m_updateIntPipeline, m_archetypesBuffer, m_instSyncArchetypes, archetypesSrcAddr, sizeof(GRIMArchetype));
 
 			// update groupMask
+			m_instSyncGroupMask[0] = m_instSyncGroupMask.numElem()-1;
 			UpdateInstanceItems(m_updateIntPipeline, m_groupMaskBuffer, m_instSyncGroupMask, groupMaskSrcAddr, sizeof(int));
 		}
 		m_updated.clear();

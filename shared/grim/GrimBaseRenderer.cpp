@@ -54,6 +54,8 @@ void GRIMBaseRenderer::Init()
 
 	m_sortShader = CRefPtr_new(ComputeSortShader);
 	m_sortShader->AddSortPipeline(SHADER_PIPELINE_SORT_INSTANCES, SHADERNAME_SORT_INSTANCES);
+
+	m_buffersUpdated = 0;
 	
 	m_instCalcBoundsPipeline = g_renderAPI->CreateComputePipeline(
 		Builder<ComputePipelineDesc>()
@@ -549,6 +551,8 @@ void GRIMBaseRenderer::DbgInvalidateAllData()
 		if(m_drawLodsList(i))
 			m_drawLodsList.SetUpdated(i);
 	}
+
+	m_buffersUpdated = 0;
 	m_dbgInvalidated = true;
 }
 
@@ -659,7 +663,7 @@ void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 	}
 
 	// we have to sync desc buffers first
-	bool buffersUpdated = false;
+	bool buffersUpdated = false;	
 	{
 		CScopedMutex m(s_grimRendererMutex);
 		if (m_drawLodsList.Sync(cmdRecorder, GRIMLock::EmptyLock, m_updDataBuffer, m_updIdxsBuffer))
@@ -674,7 +678,9 @@ void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 	
 	if (!buffersUpdated)
 		return;
+
 	m_dbgInvalidated = false;
+	++m_buffersUpdated;
 
 	m_updateBindGroup0 = g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
 		Builder<BindGroupDesc>()

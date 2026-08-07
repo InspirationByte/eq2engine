@@ -78,7 +78,7 @@ class GRIMBaseInstanceAllocator
 {
 	friend class GRIMInstanceDebug;
 public:
-	GRIMBaseInstanceAllocator() = default;
+	GRIMBaseInstanceAllocator();
 	~GRIMBaseInstanceAllocator() = default;
 
 	void			Initialize(const char* instanceComputeShaderName, int instancesReserve = 1000);
@@ -161,8 +161,8 @@ protected:
 
 	Array<GRIMInstanceRef>	m_tempInstances{ PP_SL };
 
-	Array<Instance>			m_instances{ PP_SL };
-	Array<int>				m_freeIndices{ PP_SL };
+	Array<Instance>			m_instances;
+	Array<int>				m_freeIndices;
 	Set<int>				m_updated{ PP_SL };
 	BitArray				m_syncInstances{ PP_SL };
 
@@ -194,7 +194,8 @@ public:
 	{
 		Threading::CScopedWriteLocker m(m_rwLock);
 		const int instanceId = AllocInstance(archetype);
-		AllocInstanceComponents<TComps...>(instanceId);
+		if(instanceId >= 0)
+			AllocInstanceComponents<TComps...>(instanceId);
 		return instanceId;
 	}
 
@@ -204,7 +205,8 @@ public:
 	{
 		Threading::CScopedWriteLocker m(m_rwLock);
 		const int instanceId = AllocTempInstance(archetype);
-		AllocInstanceComponents<TComps...>(instanceId);
+		if(instanceId >= 0)
+			AllocInstanceComponents<TComps...>(instanceId);
 		return instanceId;
 	}
 

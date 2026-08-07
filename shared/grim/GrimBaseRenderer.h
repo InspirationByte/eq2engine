@@ -191,6 +191,7 @@ protected:
 	GRIMDrawSettings			m_drawSettings;
 
 	uint						m_drawFrame{ 0 };
+	uint						m_buffersUpdated{ 0 };
 	bool						m_dbgInvalidated{ false };
 };
 
