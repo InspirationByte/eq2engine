@@ -209,12 +209,8 @@ int GRIMBaseInstanceAllocator::GetInstanceComponentIdx(int instanceIdx, int comp
 
 GRIMInstanceRef	GRIMBaseInstanceAllocator::AllocInstance(GRIMArchetype archetypeId)
 {
-	int sz = m_instances.numAllocated();
 	const GRIMInstanceRef instanceRef = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append(Instance{});
-
-	if(m_instances.numAllocated() - sz)
-		Msg("alloc: %d\n", m_instances.numAllocated() - sz);
-
+	
 	if (m_instances.numElem() + 1 > m_syncInstances.numBits())
 		m_syncInstances.resize(m_instances.numElem() + 1, true);
 
