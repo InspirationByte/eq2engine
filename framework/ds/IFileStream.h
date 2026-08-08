@@ -8,6 +8,8 @@
 
 #pragma once
 #include "ds/refcounted.h"
+#include "ds/Array.h"
+#include "ds/ArrayRef.h"
 
 using VSSize = int64;
 
@@ -64,7 +66,7 @@ public:
 	VSSize				WriteObj(const T& obj) { return VSWrite(this, obj); }
 
 	template <typename T>
-	VSSize				WriteArray(const T* obj, VSSize count) { size_t written = 0; while (count--) written += VSWrite(this, *obj++); return written; }
+	VSSize				WriteArray(const T* obj, VSSize count) { VSSize written = 0; while (count--) written += VSWrite(this, *obj++); return written; }
 
 	template <typename TArray>
 	VSSize				WriteArray(const TArray& arr) { return WriteArray(arr.ptr(), arr.numElem()); }
@@ -116,6 +118,37 @@ template<typename T, VSSize N>
 static VSSize VSWrite(IFileStream* stream, T(&obj)[N])
 {
 	return stream->Write(&obj, N, sizeof(T));
+}
+
+template< typename T, typename STORAGE_TYPE >
+static VSSize VSRead(IFileStream* stream, ArrayBase<T, STORAGE_TYPE>& arrayObj)
+{
+	VSSize cnt = 0;
+	int arrSize = 0;
+	cnt += stream->ReadObj(arrSize);
+	arrayObj.setNum(arrSize);
+	cnt += stream->ReadArray(arrayObj.ptr(), arrSize);
+	return cnt;
+}
+
+template< typename T, typename STORAGE_TYPE >
+static VSSize VSWrite(IFileStream* stream, const ArrayBase<T, STORAGE_TYPE>& arrayObj)
+{
+	VSSize cnt = 0;
+	const int arrSize = arrayObj.numElem();
+	cnt += stream->WriteObj(arrSize);
+	cnt += stream->WriteArray(arrayObj);
+	return cnt;
+}
+
+template<class T>
+static VSSize VSWrite(IFileStream* stream, const ArrayCRef<T> arrayObj)
+{
+	VSSize cnt = 0;
+	const int arrSize = arrayObj.numElem();
+	cnt += stream->WriteObj(arrSize);
+	cnt += stream->WriteArray(arrayObj);
+	return cnt;
 }
 
 template <typename T>
