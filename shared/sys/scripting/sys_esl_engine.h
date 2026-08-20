@@ -21,9 +21,9 @@ struct DDCylinder;
 struct DDLine;
 struct DDPoly;
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(IDebugOverlay, "IDebugOverlay", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(IDebugOverlay, "IDebugOverlay", esl::BY_REF | esl::ABSTRACT)
 EQSCRIPT_BIND_TYPE_NO_PARENT(EmitParams, "EmitParams", esl::BY_VALUE)
-EQSCRIPT_BIND_TYPE_NO_PARENT(CSoundEmitterSystem, "CSoundEmitterSystem", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(CSoundEmitterSystem, "CSoundEmitterSystem", esl::BY_REF | esl::ABSTRACT)
 EQSCRIPT_BIND_TYPE_NO_PARENT(CSoundingObject, "CSoundingObject", esl::BY_REF)
 
 EQSCRIPT_BIND_TYPE_NO_PARENT(DDText3D, "DbgText3D", esl::BY_REF)

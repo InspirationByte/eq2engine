@@ -203,13 +203,19 @@ enum EMemberType : int
 	MEMB_OPERATOR,
 };
 
-enum EPushType
+enum EPushType : uint8
 {
-	BY_VALUE = 0,
+	BY_VALUE			= 0,
 	BY_REF,
 	REF_PTR,
-	WEAK_REF
+	WEAK_REF,
+
+	PUSH_TYPE_MASK 		= 0x3,
+
+	// flags start
+	ABSTRACT			= (1 << 3),
 };
+
 
 struct Member;
 
@@ -337,6 +343,9 @@ struct ScriptClass
 
 template<typename T>
 struct PushType;
+
+template<typename T>
+constexpr EPushType GetPushType() { return static_cast<EPushType>(PushType<T>::value & PUSH_TYPE_MASK); }
 
 template<typename T>
 struct BaseScriptClass; // Type

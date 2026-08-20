@@ -233,14 +233,14 @@ NOTE on weak pointers:
 #define ESL_ENUM(x) // it was LuaTypeAlias before but now left as placeholder macro for future use only
 
 // Basic type binder
-#define _ESL_BIND_TYPE_BASICS(Class, ParentClass, name, push, ...) \
+#define _ESL_BIND_TYPE_BASICS(Class, ParentClass, name, push) \
 	namespace esl { \
 	template<> struct BaseScriptClass<Class> : ScriptClass<ParentClass> {}; \
 	template<> inline const char ScriptClass<Class>::className[] = name; \
 	template<> inline uint ScriptClass<Class>::classId = StringId24_Cexpr_B(name); \
 	template<> inline const char* ScriptClass<Class>::baseClassName = BaseScriptClass<Class>::className; \
 	template<> inline const char* LuaTypeAlias<Class, false>::value = ScriptClass<Class>::className; \
-	template<> struct PushType<Class> { static constexpr EPushType value = push; }; \
+	template<> struct PushType<Class> { static constexpr EPushType value = static_cast<EPushType>(push); }; \
 	}
 
 // Bind class without parent type that was bound

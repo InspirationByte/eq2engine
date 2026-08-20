@@ -5,7 +5,7 @@
 #include "esl_event.h"
 
 EQSCRIPT_BIND_TYPE_NO_PARENT(esl::LuaEvent::Handle, "LuaEventHandle", esl::REF_PTR)
-EQSCRIPT_BIND_TYPE_NO_PARENT(esl::LuaEvent, "LuaEvent", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(esl::LuaEvent, "LuaEvent", esl::BY_REF | esl::ABSTRACT)
 
 EQSCRIPT_TYPE_BEGIN(esl::LuaEvent::Handle)
 EQSCRIPT_TYPE_END

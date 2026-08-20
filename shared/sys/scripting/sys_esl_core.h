@@ -20,13 +20,13 @@ EQSCRIPT_BIND_TYPE_NO_PARENT(ICommandLine, "ICommandLine", esl::BY_REF)
 // filesystem & streams
 //
 EQSCRIPT_BIND_TYPE_NO_PARENT(IPackFileReader, "IPackFileReader", esl::REF_PTR)
-EQSCRIPT_BIND_TYPE_NO_PARENT(IFileSystem, "IFileSystem", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(IFileSystem, "IFileSystem", esl::BY_REF | esl::ABSTRACT)
 EQSCRIPT_BIND_TYPE_NO_PARENT(CFileSystemFind, "CFileSystemFind", esl::BY_VALUE)
 
 //
 // Localizer
 //
-EQSCRIPT_BIND_TYPE_NO_PARENT(ILocToken, "ILocToken", esl::BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(ILocToken, "ILocToken", esl::BY_REF | esl::ABSTRACT)
 
 #ifdef ENABLE_MULTIPLAYER
 

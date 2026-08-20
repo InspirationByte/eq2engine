@@ -112,7 +112,7 @@ struct ArgsSignature<First, Rest...>
 template<typename T, typename... Args>
 T& New(lua_State* L, Args&&... args)
 {
-	if constexpr (PushType<T>::value == BY_VALUE)
+	if constexpr (GetPushType<T>() == BY_VALUE)
 	{
 		T* ud = static_cast<T*>(lua_newuserdatauv(L, sizeof(T), 0));
 		new(ud) T{ std::forward<Args>(args)... };
@@ -125,7 +125,7 @@ T& New(lua_State* L, Args&&... args)
 		T* newObj = PPNew T{ std::forward<Args>(args)... };
 
 		BoxUD* ud = GetBoxUD(L, newObj, BOX_UD_FLAG_OWNED, LuaBaseTypeAlias<T>::value);
-		if constexpr (PushType<T>::value == REF_PTR)
+		if constexpr (GetPushType<T>() == REF_PTR)
 			newObj->Ref_Grab();
 
 		return *newObj;
@@ -139,7 +139,7 @@ static int DestroyImpl(lua_State* L)
 	using BaseUType = BaseType<UT>;
 
 	// destructor is safe to use statically-compiled ByVal
-	if constexpr (PushType<T>::value == BY_VALUE)
+	if constexpr (GetPushType<T>() == BY_VALUE)
 	{
 		ESL_VERBOSE_LOG("destroy val %s", LuaBaseTypeAlias<T>::value);
 		T* ud = static_cast<T*>(lua_touserdata(L, 1));
@@ -150,7 +150,7 @@ static int DestroyImpl(lua_State* L)
 		BoxUD* ud = static_cast<BoxUD*>(lua_touserdata(L, 1));
 		ASSERT(ud);
 
-		if constexpr (PushType<BaseUType>::value == WEAK_REF)
+		if constexpr (GetPushType<BaseUType>() == WEAK_REF)
 		{
 			using WeakHandle = typename WeakRefObject<BaseUType>::WeakHandle;
 
@@ -159,7 +159,7 @@ static int DestroyImpl(lua_State* L)
 				weakHandle->Ref_Drop();
 		}
 
-		if constexpr (PushType<BaseUType>::value == REF_PTR)
+		if constexpr (GetPushType<BaseUType>() == REF_PTR)
 		{
 			ESL_VERBOSE_LOG("deref obj %s", LuaBaseTypeAlias<T>::value);
 			static_cast<T*>(ud->objPtr)->Ref_Drop();
@@ -191,7 +191,7 @@ struct PushGetImpl
 
 		static_assert(std::is_fundamental_v<BaseUType> == false, "PushObject used for fundamental type");
 
-		if constexpr (PushType<BaseUType>::value == BY_VALUE)
+		if constexpr (GetPushType<BaseUType>() == BY_VALUE)
 		{
 			BaseUType* ud = static_cast<BaseUType*>(lua_newuserdatauv(L, sizeof(BaseUType), 0));
 			new(ud) BaseUType(obj);
@@ -201,10 +201,10 @@ struct PushGetImpl
 		{
 			BoxUD* ud = GetBoxUD(L, const_cast<void*>(reinterpret_cast<const void*>(&obj)), flags, LuaBaseTypeAlias<T>::value);
 
-			if constexpr (PushType<BaseUType>::value == REF_PTR)
+			if constexpr (GetPushType<BaseUType>() == REF_PTR)
 				const_cast<BaseUType*>(&obj)->Ref_Grab();
 
-			if constexpr (PushType<BaseUType>::value == WEAK_REF)
+			if constexpr (GetPushType<BaseUType>() == WEAK_REF)
 			{
 				auto* weakHandle = obj.GetWeakHandle();
 				weakHandle->Ref_Grab();
@@ -223,7 +223,7 @@ struct PushGetImpl
 
 		void* objPtr = lua_touserdata(L, index);
 
-		if constexpr (PushType<BaseUType>::value == BY_VALUE)
+		if constexpr (GetPushType<BaseUType>() == BY_VALUE)
 		{
 			return reinterpret_cast<UT*>(reinterpret_cast<uintptr_t>(objPtr) + upcastBaseInfo.offset);
 		}
@@ -235,7 +235,7 @@ struct PushGetImpl
 
 			isConst = (ud->flags & BOX_UD_FLAG_CONST);
 
-			if constexpr (PushType<BaseUType>::value == WEAK_REF)
+			if constexpr (GetPushType<BaseUType>() == WEAK_REF)
 			{
 				WeakRefObject<void>::WeakHandle* weakHandle = reinterpret_cast<WeakRefObject<void>::WeakHandle*>(ud->weakRefHandle);
 				if (weakHandle && !weakHandle->ptr)
@@ -259,7 +259,7 @@ struct PushGetImpl
 
 		void* objPtr = lua_touserdata(L, 1);
 
-		if constexpr (PushType<BaseUType>::value == BY_VALUE)
+		if constexpr (GetPushType<BaseUType>() == BY_VALUE)
 		{
 			return objPtr;
 		}
@@ -271,7 +271,7 @@ struct PushGetImpl
 
 			isConst = (ud->flags & BOX_UD_FLAG_CONST);
 
-			if constexpr (PushType<BaseUType>::value == WEAK_REF)
+			if constexpr (GetPushType<BaseUType>() == WEAK_REF)
 			{
 				WeakRefObject<void>::WeakHandle* weakHandle = reinterpret_cast<WeakRefObject<void>::WeakHandle*>(ud->weakRefHandle);
 				if (weakHandle && !weakHandle->ptr)
@@ -853,7 +853,7 @@ struct ConstructorBinder<T>
 
 	static int Func(lua_State* L)
 	{
-		ESL_VERBOSE_LOG("ctor(default) %s, byval %d", ScriptClass<T>::className, PushType<T>::value == BY_VALUE);
+		ESL_VERBOSE_LOG("ctor(default) %s, byval %d", ScriptClass<T>::className, GetPushType<T>() == BY_VALUE);
 		runtime::New<BaseUType>(L);
 		return 1;
 	}
@@ -869,7 +869,7 @@ struct ConstructorBinder
 	template<size_t... IDX>
 	static void Invoke(lua_State* L, std::index_sequence<IDX...>)
 	{
-		ESL_VERBOSE_LOG("ctor(...) %s, byval %d", ScriptClass<T>::className, PushType<T>::value == BY_VALUE);
+		ESL_VERBOSE_LOG("ctor(...) %s, byval %d", ScriptClass<T>::className, GetPushType<T>() == BY_VALUE);
 		runtime::New<BaseUType>(L, *runtime::GetValue<Args, true>(L, IDX + 1)...);
 	}
 
@@ -1175,11 +1175,19 @@ namespace esl::bindings
 template<typename T>
 Member ClassBinder<T>::MakeDestructor()
 {
-	Member m;
-	m.type = MEMB_DTOR;
-	m.name = "__gc";
-	m.staticFunc = &runtime::DestroyImpl<T>;
-	return m;
+	if constexpr(PushType<T>::value & ABSTRACT)
+	{
+		static_assert(GetPushType<T>() == BY_REF || GetPushType<T>() == WEAK_REF, "Abstract types must be bind only with esl::BY_REF or esl::WEAK_REF");
+		return {};
+	}
+	else
+	{
+		Member m;
+		m.type = MEMB_DTOR;
+		m.name = "__gc";
+		m.staticFunc = &runtime::DestroyImpl<T>;
+		return m;
+	}
 }
 
 template<typename T, auto MemberVar>
@@ -1278,6 +1286,8 @@ template<typename T>
 template<typename ...Args>
 Member ClassBinder<T>::MakeConstructor()
 {
+	static_assert((PushType<T>::value & ABSTRACT) == 0, "Cannot bind constructors when PushType is ABSTRACT");
+
 	Member m;
 	m.type = MEMB_CTOR;
 	m.name = "constructor";
