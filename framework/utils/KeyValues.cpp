@@ -12,10 +12,6 @@
 #include "ds/MemoryStream.h"
 #include "KeyValues.h"
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4267)
-#endif
-
 constexpr EqStringRef s_szkKVValueTypes[] =
 {
 	"string",

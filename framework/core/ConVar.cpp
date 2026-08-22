@@ -9,8 +9,6 @@
 #include "ConVar.h"
 #include "core/ICommandLine.h"
 
-#pragma warning(disable: 4267)
-
 ConVar::~ConVar()
 {
 }
@@ -107,8 +105,6 @@ bool ConVar::ClampValue( float& value )
 
 void ConVar::InternalSetString(const char* value)
 {
-	int len = strlen(value) + 1;
-	
 	char* pszOldValue = (char*)stackalloc(m_szValueString.Length()+1 );
 	pszOldValue[0] = '\0';
 

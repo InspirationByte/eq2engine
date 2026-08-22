@@ -9,10 +9,6 @@
 #include "MemoryStream.h"
 #include "utils/CRC32.h"
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4267)
-#endif
-
 static constexpr VSSize VSTREAM_GRANULARITY = 1024 * 4;	// 4kb
 
 // prints string to stream
@@ -123,7 +119,7 @@ VSSize CMemoryStream::Write(const void *src, VSSize count, VSSize size)
 	memcpy(m_currentPtr, src, numBytesToWrite);
 	m_currentPtr += numBytesToWrite;
 	
-	const int64 newSize = m_currentPtr - m_start;
+	const VSSize newSize = m_currentPtr - m_start;
 	ASSERT(newSize >= 0);
 
 	m_writeTop = max(m_writeTop, newSize);
@@ -240,9 +236,9 @@ bool CMemoryStream::Flush()
 }
 
 // reallocates memory
-void CMemoryStream::ReAllocate(int nNewSize)
+void CMemoryStream::ReAllocate(VSSize newSize)
 {
-	if(nNewSize == m_allocatedSize)
+	if(newSize == m_allocatedSize)
 		return;
 
 	// don't reallocate existing buffer
@@ -252,11 +248,11 @@ void CMemoryStream::ReAllocate(int nNewSize)
 		return;
 	}
 	
-	const int curPos = Tell();
-	m_start = (ubyte*)PPDReAlloc(m_start, nNewSize, m_sl);
+	const VSSize curPos = Tell();
+	m_start = (ubyte*)PPDReAlloc(m_start, newSize, m_sl);
 	ASSERT_MSG(m_start, "CMemoryStream reallocate failed!");
 
-	m_allocatedSize = nNewSize;
+	m_allocatedSize = newSize;
 	m_currentPtr = m_start + curPos;
 }
 
@@ -276,7 +272,7 @@ void CMemoryStream::ShrinkBuffer(VSSize size)
 void CMemoryStream::WriteToStream(IFileStream* stream, VSSize maxSize)
 {
 	ASSERT(stream);
-	stream->Write(m_start, 1, min(maxSize > 0 ? maxSize : INT_MAX, m_writeTop));
+	stream->Write(m_start, 1, min(maxSize > 0 ? maxSize : std::numeric_limits<VSSize>::max(), m_writeTop));
 }
 
 // reads other stream into this one
@@ -286,7 +282,7 @@ bool CMemoryStream::AppendStream(IFileStream* stream, VSSize maxSize)
 	ASSERT_MSG(m_openFlags & FS_OPEN_WRITE, "Stream must be open for WRITE");
 
 	const VSSize resetPos = stream->Tell();
-	const VSSize readSize = min(maxSize > 0 ? maxSize : INT_MAX, stream->GetSize() - resetPos);
+	const VSSize readSize = min(maxSize > 0 ? maxSize : std::numeric_limits<VSSize>::max(), stream->GetSize() - resetPos);
 	
 	m_writeTop = max(Tell() + readSize, m_writeTop);
 	ReAllocate(m_writeTop + 16);

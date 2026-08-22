@@ -66,7 +66,7 @@ public:
 protected:
 
 	// reallocates memory
-	void			ReAllocate(int nNewSize);
+	void			ReAllocate(VSSize newSize);
 
 private:
 	PPSourceLine	m_sl;
