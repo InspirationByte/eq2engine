@@ -111,7 +111,7 @@ float CSpline3d::DistanceAtTime(float time) const
 	auto distComparator = [](const Vector2D& a, float t) -> int {
 		return (a.x > t) - (a.x < t);
 		};
-	const int idx = arraySortedFindIndexExt<SortedFind::LAST_LEQUAL>(m_distances, time, distComparator);
+	const int idx = arraySortedFindIndexExt<ESortedFind::LAST_LEQUAL>(m_distances, time, distComparator);
 	if (idx == -1 || idx == m_distances.numElem() - 1)
 		return m_distances.back().y;
 
@@ -129,7 +129,7 @@ float CSpline3d::TimeAtDistance(float distance) const
 	auto distComparator = [](const Vector2D& a, float d) -> int {
 		return (a.y > d) - (a.y < d);
 		};
-	const int idx = arraySortedFindIndexExt<SortedFind::LAST_LEQUAL>(m_distances, distance, distComparator);
+	const int idx = arraySortedFindIndexExt<ESortedFind::LAST_LEQUAL>(m_distances, distance, distComparator);
 	if (idx == -1 || idx == m_distances.numElem() - 1)
 		return m_distances.back().x;
 
@@ -235,6 +235,6 @@ int CSpline3d::SegmentIndexByDistance(float dist) const
 		return (a.y > d) - (a.y < d);
 	};
 
-	const int idx = arraySortedFindIndexExt<SortedFind::LAST_LEQUAL>(m_distances, dist, distComparator);
+	const int idx = arraySortedFindIndexExt<ESortedFind::LAST_LEQUAL>(m_distances, dist, distComparator);
 	return m_distances[idx].x;
 }

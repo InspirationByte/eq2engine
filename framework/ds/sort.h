@@ -284,7 +284,30 @@ void arrayReverse(ARRAY_TYPE& arr, int start = 0, int count = -1)
 	arrayReverse(arr.ptr(), start, count);
 }
 
-enum class SortedFind : int
+// TODO: non-Array(base/ref) support
+template <typename ARRAY_TYPE>
+constexpr auto arrayEnumerate(ARRAY_TYPE& iterable)
+{
+	using TIterator = typename ARRAY_TYPE::Iterator;
+    struct Iter
+    {
+        int i;
+        TIterator iter;
+        bool operator!=(Iter& other) const	{ return iter != other.iter; }
+        void operator++()					{ ++i; ++iter; }
+        auto operator*()					{ return std::tie(i, *iter); }
+    };
+
+    struct IterWrap
+    {
+        ARRAY_TYPE& iterable;
+        auto begin() { return Iter{ 0, iterable.begin() }; }
+        auto end() { return Iter{ 0, iterable.end() }; }
+    };
+    return IterWrap{ iterable };
+}
+
+enum class ESortedFind : int
 {
 	FIRST,
 	LAST,
@@ -293,7 +316,7 @@ enum class SortedFind : int
 	LAST_LEQUAL,
 };
 
-template<SortedFind FIND, typename T, typename K, typename CMP>
+template<ESortedFind FIND, typename T, typename K, typename CMP>
 int arraySortedFindIndexExt(const T* arr, int length, const K& key, const CMP& comparator)
 {
 	if (length == 0)
@@ -306,7 +329,7 @@ int arraySortedFindIndexExt(const T* arr, int length, const K& key, const CMP& c
 		const int mid = (hi + lo) >> 1;
 		const int res = comparator(arr[mid], key);
 
-		if constexpr (FIND == SortedFind::FIRST || FIND == SortedFind::FIRST_GREATER)
+		if constexpr (FIND == ESortedFind::FIRST || FIND == ESortedFind::FIRST_GREATER)
 		{
 			if (res >= 0)
 				hi = mid;
@@ -322,35 +345,35 @@ int arraySortedFindIndexExt(const T* arr, int length, const K& key, const CMP& c
 		}
 	}
 
-	if constexpr (FIND == SortedFind::FIRST)
+	if constexpr (FIND == ESortedFind::FIRST)
 	{
 		if (comparator(arr[lo], key) == 0)
 			return lo;
 		if (comparator(arr[hi], key) == 0)
 			return hi;
 	}
-	else if constexpr (FIND == SortedFind::LAST)
+	else if constexpr (FIND == ESortedFind::LAST)
 	{
 		if (comparator(arr[hi], key) == 0)
 			return hi;
 		if (comparator(arr[lo], key) == 0)
 			return lo;
 	}
-	else if constexpr (FIND == SortedFind::FIRST_GREATER)
+	else if constexpr (FIND == ESortedFind::FIRST_GREATER)
 	{
 		if (comparator(arr[lo], key) > 0)
 			return lo;
 		if (comparator(arr[hi], key) > 0)
 			return hi;
 	}
-	else if constexpr (FIND == SortedFind::FIRST_GEQUAL)
+	else if constexpr (FIND == ESortedFind::FIRST_GEQUAL)
 	{
 		if (comparator(arr[lo], key) >= 0)
 			return lo;
 		if (hi != lo && comparator(arr[hi], key) >= 0)
 			return hi;
 	}
-	else if constexpr (FIND == SortedFind::LAST_LEQUAL)
+	else if constexpr (FIND == ESortedFind::LAST_LEQUAL)
 	{
 		if (comparator(arr[hi], key) <= 0)
 			return hi;
@@ -361,7 +384,7 @@ int arraySortedFindIndexExt(const T* arr, int length, const K& key, const CMP& c
 	return -1;
 }
 
-template<SortedFind FIND, typename ARRAY_TYPE, typename K, typename CMP>
+template<ESortedFind FIND, typename ARRAY_TYPE, typename K, typename CMP>
 int arraySortedFindIndexExt(const ARRAY_TYPE& arr, const K& key, const CMP& comparator)
 {
 	return arraySortedFindIndexExt<FIND>(arr.ptr(), arr.numElem(), key, comparator);
