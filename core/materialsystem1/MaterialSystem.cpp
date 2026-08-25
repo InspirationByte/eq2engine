@@ -1161,12 +1161,9 @@ bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 	const bool prevDeviceState = m_shaderAPI->IsDeviceActive();
 	if(!prevDeviceState)
 	{
-		for(int i = 0; i < m_lostDeviceCb.numElem(); i++)
+		for(DEVICE_LOST_RESTORE_CB cb : m_lostDeviceCb)
 		{
-			if (!m_lostDeviceCb[i])
-				continue;
-
-			if(!m_lostDeviceCb[i]())
+			if(!cb())
 				return false;
 		}
 	}
@@ -1180,12 +1177,9 @@ bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 
 	if(!prevDeviceState && deviceState)
 	{
-		for(int i = 0; i < m_restoreDeviceCb.numElem(); i++)
+		for(DEVICE_LOST_RESTORE_CB cb : m_restoreDeviceCb)
 		{
-			if (!m_restoreDeviceCb[i])
-				continue;
-
-			if(!m_restoreDeviceCb[i]())
+			if(!cb())
 				return false;
 		}
 	}
@@ -1201,11 +1195,35 @@ void CMaterialSystem::FramePrepareInternal()
 {
 	if (m_frameBegun)
 		return;
+
 	m_frameBegun = true;
 
 	// dismiss buffers if any left
 	for(int i = 0; i < m_proxyUpdateCmdRecorders.numElem(); ++i)
 		*m_proxyUpdateCmdRecorders[i] = nullptr;
+}
+
+void CMaterialSystem::FrameCompleteInternal()
+{
+	if (!m_frameBegun)
+		return;
+
+	m_frameBegun = false;
+
+	for (CDynamicMesh& dynMesh : m_dynamicMeshes)
+		dynMesh.OnEndFrame();
+
+	for (int i = 0; i < m_proxyUpdateCmdRecorders.numElem(); ++i)
+	{
+		IGPUCommandRecorderPtr cmdRecorder = *m_proxyUpdateCmdRecorders[i];
+		*m_proxyUpdateCmdRecorders[i] = nullptr;
+
+		if (cmdRecorder)
+			m_pendingCmdBuffers.append(cmdRecorder->End());
+	}
+
+	if(m_pendingCmdBuffers.numElem())
+		SubmitQueuedCommandsAwaitable();
 }
 
 IGPUCommandRecorderPtr CMaterialSystem::GetTlsProxyCmdRecorder()
@@ -1233,25 +1251,12 @@ bool CMaterialSystem::EndFrame()
 	if (!m_frameBegun)
 		return false;
 
-	for (CDynamicMesh& dynMesh : m_dynamicMeshes)
-		dynMesh.OnEndFrame();
-
-	for (int i = 0; i < m_proxyUpdateCmdRecorders.numElem(); ++i)
-	{
-		IGPUCommandRecorderPtr cmdRecorder = *m_proxyUpdateCmdRecorders[i];
-		if(cmdRecorder)
-			m_pendingCmdBuffers.append(cmdRecorder->End());
-		*m_proxyUpdateCmdRecorders[i] = nullptr;
-	}
-
-	SubmitQueuedCommandsAwaitable();
-
-	m_renderLibrary->EndFrame();
+	FrameCompleteInternal();
 
 	++m_frame;
 	m_proxyDeltaTime = m_proxyTimer.GetTime(true);
 
-	m_frameBegun = false;
+	m_renderLibrary->EndFrame();
 
 	return true;
 }
@@ -1321,16 +1326,16 @@ bool CMaterialSystem::SetWindowed(bool enable)
 	if(!changeMode)
 		return true;
 
-	for (int i = 0; i < m_lostDeviceCb.numElem(); i++)
+	for (DEVICE_LOST_RESTORE_CB cb : m_lostDeviceCb)
 	{
-		if (!m_lostDeviceCb[i]())
+		if (!cb())
 			return false;
 	}
 
 	const bool result = m_renderLibrary->SetWindowed(enable);
-	for (int i = 0; i < m_restoreDeviceCb.numElem(); i++)
+	for (DEVICE_LOST_RESTORE_CB cb : m_restoreDeviceCb)
 	{
-		if (!m_restoreDeviceCb[i]())
+		if (!cb())
 			return false;
 	}
 
@@ -1503,7 +1508,6 @@ void CMaterialSystem::QueueCommitInternalBuffers()
 			continue;
 		buffers.append(submitBuf);
 	}
-
 
 	if (m_bufferCmdRecorder)
 	{
@@ -1800,6 +1804,13 @@ void CMaterialSystem::AddDestroyLostCallbacks(DEVICE_LOST_RESTORE_CB destroy, DE
 		m_restoreDeviceCb.addUnique(restore);
 }
 
+// removes callbacks from list
+void CMaterialSystem::RemoveLostRestoreCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore)
+{
+	m_lostDeviceCb.remove(destroy);
+	m_restoreDeviceCb.remove(restore);
+}
+
 // prints loaded materials to console
 void CMaterialSystem::PrintLoadedMaterials() const
 {
@@ -1832,9 +1843,3 @@ void CMaterialSystem::PrintLoadedMaterials() const
 	Msg("Total render pipelines: %d from %d shaders\n", totalCached, totalShaders);
 }
 
-// removes callbacks from list
-void CMaterialSystem::RemoveLostRestoreCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore)
-{
-	m_lostDeviceCb.remove(destroy);
-	m_restoreDeviceCb.remove(restore);
-}

@@ -179,6 +179,8 @@ private:
 	void						InitDefaultMaterial();
 
 	void						FramePrepareInternal();
+	void						FrameCompleteInternal();
+
 	IGPUCommandRecorderPtr		GetTlsProxyCmdRecorder();
 	void						QueueCommitInternalBuffers();
 
