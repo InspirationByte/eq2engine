@@ -478,35 +478,32 @@ ISoundSourcePtr CEqAudioSystemAL::GetSample(const char* filename)
 	}
 
 	ISoundSourcePtr sampleSource = ISoundSource::CreateSound(filename);
+	if (!sampleSource)
+		return sampleSource;
 
-	if (sampleSource)
+	const ISoundSource::Format& fmt = sampleSource->GetFormat();
+	if (fmt.dataFormat != ISoundSource::FORMAT_PCM || fmt.bitwidth > 16)	// not PCM or 32 bit
 	{
-		const ISoundSource::Format& fmt = sampleSource->GetFormat();
-
-		if (fmt.dataFormat != ISoundSource::FORMAT_PCM || fmt.bitwidth > 16)	// not PCM or 32 bit
-		{
-			MsgWarning("Sound '%s' has unsupported format!\n", filename);
-			return nullptr;
-		}
-		else if (fmt.channels > 2)
-		{
-			MsgWarning("Sound '%s' has unsupported channel count (%d)!\n", filename, fmt.channels);
-			return nullptr;
-		}
-
-#if USE_ALSOFT_BUFFER_CALLBACK
-		if (!GetAlExt().alBufferCallbackSOFT && !sampleSource->IsStreaming())
-#else
-		if (!sampleSource->IsStreaming())
-#endif
-		{
-			// Set memory to OpenAL and destroy original source (as it's not needed anymore)
-			sampleSource = ISoundSourcePtr(CRefPtr_new(CSoundSource_OpenALCache, sampleSource));
-		}
-
-		AddSample(sampleSource);
+		MsgWarning("Sound '%s' has unsupported format!\n", filename);
+		return nullptr;
+	}
+	else if (fmt.channels > 2)
+	{
+		MsgWarning("Sound '%s' has unsupported channel count (%d)!\n", filename, fmt.channels);
+		return nullptr;
 	}
 
+#if USE_ALSOFT_BUFFER_CALLBACK
+	if (!GetAlExt().alBufferCallbackSOFT && !sampleSource->IsStreaming())
+#else
+	if (!sampleSource->IsStreaming())
+#endif
+	{
+		// Set memory to OpenAL and destroy original source (as it's not needed anymore)
+		sampleSource = ISoundSourcePtr(CRefPtr_new(CSoundSource_OpenALCache, sampleSource));
+	}
+
+	AddSample(sampleSource);
 	return sampleSource;
 }
 

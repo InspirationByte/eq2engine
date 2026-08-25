@@ -157,27 +157,22 @@ bool CSoundEmitterSystem::PrecacheSound(const char* pszName)
 		return false;
 	}
 
-	if(script->samples.numElem() > 0)
-		return true;
-
-	EqString soundName;
-	for(EqStringRef name : script->soundFileNames)
+	CScopedMutex m(s_soundEmitterSystemMutex);
+	if(script->samples.isEmpty())
 	{
-		if (name[0] != '$')
-			soundName = SOUND_DEFAULT_PATH + name;
-		else
-			soundName = name.ToCString() + 1;
-
-		ISoundSourcePtr sample = g_audioSystem->GetSample(soundName);
-
-		if (sample)
+		EqStringRef soundName;
+		for(EqStringRef name : script->soundFileNames)
 		{
-			CScopedMutex m(s_soundEmitterSystemMutex);
-			script->samples.append(sample);
-		}
-		else
-		{
-			MsgError("Can't precache sample '%s' for '%s'\n", soundName.ToCString(), pszName);
+			if (name[0] == '$')
+				soundName = name.ToCString() + 1;
+			else
+				soundName = fnmPathCombine(SOUND_DEFAULT_PATH, name);
+
+			ISoundSourcePtr sample = g_audioSystem->GetSample(soundName);
+			if (sample)
+				script->samples.append(sample);
+			else
+				MsgError("Can't precache sample '%s' for '%s'\n", soundName.ToCString(), pszName);
 		}
 	}
 
