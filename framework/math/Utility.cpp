@@ -415,10 +415,8 @@ float DistanceLineSegLineSeg(const Vector3D& L0, const Vector3D& L1, const Vecto
 	const float e = dot(v, w);
 
 	const float D = a * c - b * b;
-	float sc = 0.0f;
 	float sN = 0.0f;
 	float sD = D;
-	float tc = 0.0f;
 	float tN = 0.0f;
 	float tD = D;
 
@@ -486,8 +484,8 @@ float DistanceLineSegLineSeg(const Vector3D& L0, const Vector3D& L1, const Vecto
 		}
 	}
 	// finally do the division to get sc and tc
-	sc = sN / sD;
-	tc = tN / tD;
+	const float sc = sN / sD;
+	const float tc = tN / tD;
 
 	const Vector3D ln = L0 + u * sc;
 	const Vector3D sn = S0 + v * tc;
@@ -537,30 +535,25 @@ void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
 	hull.setNum(k - 1);
 }
 
-float RectangleAlongAxisSeparation(const Vector2D& pos, const Vector2D& axis, float extent,
+float RectangleAlongAxisSeparation(
+	const Vector2D& pos, const Vector2D& axis, float extent,
 	const Vector2D& otherDir, const Vector2D& otherPerpDir, const Vector2D& otherExtents)
 {
 	float result = fabs(dot(pos, axis)) - extent;
 	result -= fabs(dot(otherDir, axis) * otherExtents[0]);
 	result -= fabs(dot(otherPerpDir, axis) * otherExtents[1]);
-	return result;
+	return result; 
 }
 
 float RectangleRectangleSeparation(
-	const Vector2D& position0, const Vector2D& direction0, const Vector2D& perp0, const Vector2D& extents0,
-	const Vector2D& position1, const Vector2D& direction1, const Vector2D& perp1, const Vector2D& extents1)
+	const Vector2D& position0, const Vector2D& dir0, const Vector2D& perp0, const Vector2D& extents0,
+	const Vector2D& position1, const Vector2D& dir1, const Vector2D& perp1, const Vector2D& extents1)
 {
 	const Vector2D localPosition = position0 - position1;
-	float result = RectangleAlongAxisSeparation(localPosition, direction0, extents0[0], direction1, perp1, extents1);
-
-	float v = RectangleAlongAxisSeparation(localPosition, perp0, extents0[1], direction1, perp1, extents1);
-	result = (result <= v) ? v : result;
-
-	v = RectangleAlongAxisSeparation(localPosition, direction1, extents1[0], direction0, perp0, extents0);
-	result = (result <= v) ? v : result;
-
-	v = RectangleAlongAxisSeparation(localPosition, perp1, extents1[1], direction0, perp0, extents0);
-	result = (result <= v) ? v : result;
+	float result = RectangleAlongAxisSeparation(localPosition, dir0, extents0[0], dir1, perp1, extents1);
+	result = max(result, RectangleAlongAxisSeparation(localPosition, perp0, extents0[1], dir1, perp1, extents1));
+	result = max(result, RectangleAlongAxisSeparation(localPosition, dir1, extents1[0], dir0, perp0, extents0));
+	result = max(result, RectangleAlongAxisSeparation(localPosition, perp1, extents1[1], dir0, perp0, extents0));
 
 	return result;
 }
