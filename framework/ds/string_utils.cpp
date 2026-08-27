@@ -200,30 +200,18 @@ EqStringRef fnmPathCombineF(int num, ...)
 	return outPath;
 }
 
-void fnmPathFixSeparators(EqString& str)
+void fnmPathFixSeparators(EqStringRef str)
 {
+	// not so legal but OK
+	char* data = const_cast<char*>(str.GetData());
+
 	const int length = str.Length();
-	char* data = str.GetData();
 	for (int i = 0; i < length; ++i)
 	{
 		if (data[i] == INCORRECT_PATH_SEPARATOR)
 			data[i] = CORRECT_PATH_SEPARATOR;
 	}
 }
-
-void fnmPathFixSeparators(char* str)
-{
-	if (!str)
-		return;
-
-	while (*str)
-	{
-		if (*str == INCORRECT_PATH_SEPARATOR)
-			*str = CORRECT_PATH_SEPARATOR;
-		str++;
-	}
-}
-
 
 //------------------------------------------------------
 // string conversion

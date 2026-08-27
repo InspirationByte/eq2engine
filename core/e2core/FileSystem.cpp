@@ -10,17 +10,9 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#ifdef CloseModule
-#	undef CloseModule
-#endif
-
-#include <direct.h>	// mkdir()
-#include <io.h>		// _access()
-#define access		_access
-#define F_OK		0       // Test for existence.
+#include <direct.h>	// _mkdir()
 #else
-#include <unistd.h> // rmdir(), access()
-#include <dirent.h> // opendir, readdir
+#include <unistd.h> // rmdir()
 #define USE_PATH_TO_FILE_MAPPING
 #endif
 
@@ -31,10 +23,9 @@
 #include "core/ICommandLine.h"
 #include "core/platform/OSFindData.h"
 #include "utils/CRC32.h"
-
 #include "utils/KeyValues.h"
-#include "FileSystem.h"
 
+#include "FileSystem.h"
 #include "dpk/BasePackageFileReader.h"
 
 static int FSStringId(const char *str)
@@ -297,6 +288,56 @@ static bool mkdirRecursive(const char* path, bool includeDotPath)
 
 	return true;
 }
+PRAGMA_OPTIMIZE_OFF
+static int fast_stat(const char* path, struct stat* st)
+{
+#ifdef _WIN32
+	if (!path)
+		return -1;
+
+	WIN32_FILE_ATTRIBUTE_DATA attrData;
+	if (!GetFileAttributesExA(path, GetFileExInfoStandard, &attrData))
+		return -1;
+
+	if (!st)
+		return 0;
+
+	ZeroMemory(st, sizeof(*st));
+	LARGE_INTEGER fileSize;
+	fileSize.LowPart = attrData.nFileSizeLow;
+	fileSize.HighPart = attrData.nFileSizeHigh;
+	st->st_size = fileSize.QuadPart;
+
+	auto FileTimeToTime64 = [](const FILETIME& ft) {
+		ULARGE_INTEGER uli;
+		uli.LowPart = ft.dwLowDateTime;
+		uli.HighPart = ft.dwHighDateTime;
+		return static_cast<__time64_t>(uli.QuadPart / 10000000ULL - 11644473600ULL);
+	};
+
+	st->st_atime = FileTimeToTime64(attrData.ftLastAccessTime);
+	st->st_mtime = FileTimeToTime64(attrData.ftLastWriteTime);
+	st->st_ctime = FileTimeToTime64(attrData.ftCreationTime);
+
+	ushort mode = _S_IREAD;
+	if (attrData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		mode |= _S_IFDIR | _S_IEXEC;
+	else
+		mode |= _S_IFREG;
+
+	if (!(attrData.dwFileAttributes & FILE_ATTRIBUTE_READONLY))
+		mode |= _S_IWRITE;
+
+	st->st_mode = mode | (mode >> 3) | (mode >> 6);
+	st->st_nlink = 1;	// default dummy values for unused Win32 attributes
+
+	return 0;
+#else
+	struct stat dummy{};
+	if (!st) st = &dummy;
+	return stat(path, st);
+#endif
+}
 
 //--------------------------------------------------
 
@@ -403,9 +444,9 @@ EqString CFileSystem::FindFilePath(const char* filename, int searchFlags /*= -1*
 {
 	EqString existingFilePath;
 
-	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
+	auto walkFileFunc = [&](EqStringRef filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
 	{
-		if (access(filePath, F_OK) != -1)
+		if (fast_stat(filePath, nullptr) == 0)
 		{
 			existingFilePath = filePath;
 			return true;
@@ -440,7 +481,7 @@ IFileStreamPtr CFileSystem::Open(const char* filename, int openFlags, int search
 	const bool isWrite = osModeFlags & (COSFile::APPEND | COSFile::WRITE);
 
 	IFileStreamPtr fileHandle;
-	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
+	auto walkFileFunc = [&](EqStringRef filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
 	{
 		if (isWrite && !spInfo.writePath)
 			return false;
@@ -564,9 +605,9 @@ bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool ove
 
 bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 {
-	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
+	auto walkFileFunc = [&](EqStringRef filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
 	{
-		if (access(filePath, F_OK) != -1)
+		if (fast_stat(filePath, nullptr) == 0)
 			return true;
 
 		if (spFlags & SP_IGNORE_PACKAGE)
@@ -597,9 +638,9 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 	return WalkOverSearchPaths(searchFlags, filename, walkFileFunc);
 }
 
-EqString CFileSystem::GetSearchPath(ESearchPath search, int directoryId) const
+EqStringRef CFileSystem::GetSearchPath(ESearchPath search, int directoryId) const
 {
-	EqString searchPath;
+	EqStringRef searchPath;
 	switch (search)
 	{
 		case SP_DATA:
@@ -627,12 +668,12 @@ static bool UTIL_IsAbsolutePath(const char* dirOrFileName)
 	return (dirOrFileName[0] == CORRECT_PATH_SEPARATOR || CType::IsAlphabetic(dirOrFileName[0]) && dirOrFileName[1] == ':');
 }
 
-EqString CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const
+EqStringRef CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const
 {
-	EqString fullPath;
+	EqStringRef fullPath;
 	if (search == SP_DIRECT || search == SP_ROOT && UTIL_IsAbsolutePath(dirOrFileName))
 	{
-		fullPath = dirOrFileName;
+		fullPath = EqStringRef::GetTempString(dirOrFileName);
 		fnmPathFixSeparators(fullPath);
 	}
 	else
@@ -645,29 +686,40 @@ EqString CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFileN
 
 bool CFileSystem::FileRemove(const char* filename, ESearchPath search ) const
 {
-	return remove(GetAbsolutePath(search, filename)) == 0;
+	const EqStringRef path = GetAbsolutePath(search, filename);
+
+	return remove(path) == 0;
 }
 
 bool CFileSystem::DirExist(const char* dirname, ESearchPath search) const
 {
-	struct stat info;
-	return stat(GetAbsolutePath(search, dirname), &info) == 0 && (info.st_mode & S_IFDIR);
+	const EqStringRef path = GetAbsolutePath(search, dirname);
+
+	struct stat statDir;
+	return fast_stat(path, &statDir) == 0 && (statDir.st_mode & S_IFDIR);
 }
 
 //Directory operations
 bool CFileSystem::MakeDir(const char* dirname, ESearchPath search ) const
 {
-	return mkdirRecursive(GetAbsolutePath(search, dirname), true);
+	const EqStringRef path = GetAbsolutePath(search, dirname);
+
+	return mkdirRecursive(path, true);
 }
 
 bool CFileSystem::RemoveDir(const char* dirname, ESearchPath search ) const
 {
-    return rmdir(GetAbsolutePath(search, dirname)) == 0;
+	const EqStringRef path = GetAbsolutePath(search, dirname);
+
+    return rmdir(path) == 0;
 }
 
 bool CFileSystem::Rename(const char* oldNameOrPath, const char* newNameOrPath, ESearchPath search) const
 {
-	return rename(GetAbsolutePath(search, oldNameOrPath), GetAbsolutePath(search, newNameOrPath)) == 0;
+	const EqStringRef oldPath = GetAbsolutePath(search, oldNameOrPath);
+	const EqStringRef newPath = GetAbsolutePath(search, newNameOrPath);
+
+	return rename(oldPath, newPath) == 0;
 }
 
 bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, const SPWalkFunc& func) const
@@ -680,7 +732,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	if (isAbsolutePath)
 		flags = SP_ROOT;
 
-	EqString filePath;
+	EqStringRef filePath;
 
 	// First we checking mod directory
 	if (flags & SP_MOD)
@@ -758,7 +810,7 @@ bool CFileSystem::SetAccessKey(const char* accessKey)
 
 bool CFileSystem::AddPackage(const char* packageName, ESearchPath type, const char* mountPath /*= nullptr*/)
 {
-	const EqString packagePath = GetAbsolutePath(SP_ROOT, packageName);
+	const EqStringRef packagePath = GetAbsolutePath(SP_ROOT, packageName);
 
 	for(IPackFileReaderPtr package : m_fsPackages)
 	{
@@ -790,7 +842,7 @@ bool CFileSystem::AddPackage(const char* packageName, ESearchPath type, const ch
 
 void CFileSystem::RemovePackage(const char* packageName)
 {
-	const EqString packagePath = GetAbsolutePath(SP_ROOT, packageName);
+	const EqStringRef packagePath = GetAbsolutePath(SP_ROOT, packageName);
 
 	for (int i = 0; i < m_fsPackages.numElem(); i++)
 	{
@@ -808,7 +860,7 @@ IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchF
 {
 	CRefPtr<CBasePackageReader> reader = CBasePackageReader::CreateReaderByExtension(packageName);
 
-	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
+	auto walkFileFunc = [&](EqStringRef filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
 	{
 		if (reader->InitPackage(filePath, packageName, nullptr))
 			return true;
@@ -927,8 +979,8 @@ const char* CFileSystem::GetCurrentDataDirectory() const
 
 bool CFileSystem::InitNextPath(FSFindData* findData) const
 {
-	EqString fsBaseDir;
-	EqString searchWildcard;
+	EqStringRef fsBaseDir;
+	EqStringRef searchWildcard;
 
 	// Try Game paths
 	if (findData->searchPaths & SP_MOD)

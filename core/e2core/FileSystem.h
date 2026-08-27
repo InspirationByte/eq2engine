@@ -132,10 +132,10 @@ protected:
 	
 	bool						InitNextPath(FSFindData* findData) const;
 	
-	EqString					GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const;
-	EqString					GetSearchPath(ESearchPath search, int directoryId = -1) const;
+	EqStringRef					GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const;
+	EqStringRef					GetSearchPath(ESearchPath search, int directoryId = -1) const;
 	
-	using SPWalkFunc = EqFunction<bool(const EqString& filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags)>;
+	using SPWalkFunc = EqFunction<bool(EqStringRef filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags)>;
 	bool						WalkOverSearchPaths(int searchFlags, const char* fileName, const SPWalkFunc& func) const;
 	
 	EqString					m_basePath;			// base prepended path

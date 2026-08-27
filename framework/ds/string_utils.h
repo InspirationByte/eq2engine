@@ -111,8 +111,7 @@ EqStringRef	fnmPathExtractName(EqStringRef path);
 EqStringRef	fnmPathExtractPath(EqStringRef path);
 
 // changes path separator to correct one for platform
-void		fnmPathFixSeparators(EqString& str);
-void		fnmPathFixSeparators(char* str);
+void		fnmPathFixSeparators(EqStringRef str);
 
 // combines paths
 EqStringRef	fnmPathCombineF(int num, ...);

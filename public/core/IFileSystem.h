@@ -46,7 +46,7 @@ public:
 	virtual void			SetBasePath(const char* path) = 0;
 	virtual const char*		GetBasePath() const = 0;
 	
-	virtual EqString		GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const = 0;
+	virtual EqStringRef		GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const = 0;
 	
 	// Returns current game path
 	virtual const char*		GetCurrentGameDirectory() const = 0;
