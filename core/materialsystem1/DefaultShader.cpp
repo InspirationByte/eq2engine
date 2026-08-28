@@ -142,7 +142,9 @@ BEGIN_SHADER_CLASS(
 			uniformBuffers,
 			pipelineInfo,
 			passContext,
-			originalMaterial
+			originalMaterial,
+			nullptr,
+			pipelineId
 		};
 
 		passContext.recorder->SetPipeline(pipelineInfo.pipeline);

@@ -89,7 +89,18 @@ enum ETexAddressMode : uint8
 
 struct SamplerStateParams
 {
-	SamplerStateParams() = default;
+	SamplerStateParams()
+		: minFilter(TEXFILTER_NEAREST)
+		, magFilter(TEXFILTER_NEAREST)
+		, mipmapFilter(TEXFILTER_NEAREST)
+		, compareFunc(COMPFUNC_NONE)
+		, addressU(TEXADDRESS_WRAP)
+		, addressV(TEXADDRESS_WRAP) 
+		, addressW(TEXADDRESS_WRAP)
+		, maxAnisotropy(16)
+	{
+	}
+
 	SamplerStateParams(ETexFilterMode filterType, ETexAddressMode address, ECompareFunc compareFunc = COMPFUNC_NONE, int maxAnisotropy = 16)
 		: minFilter(filterType)
 		, magFilter((filterType == TEXFILTER_NEAREST) ? TEXFILTER_NEAREST : TEXFILTER_LINEAR)
@@ -103,17 +114,19 @@ struct SamplerStateParams
 	}
 
 	// TODO: minLodClamp/maxLodClamp
-	ETexFilterMode	minFilter{ TEXFILTER_NEAREST };
-	ETexFilterMode	magFilter{ TEXFILTER_NEAREST };
-	ETexFilterMode	mipmapFilter{ TEXFILTER_NEAREST }; // NOTE: TEXFILTER_NEAREST or TEXFILTER_LINEAR are accepted
+	ETexFilterMode	minFilter : 3;
+	ETexFilterMode	magFilter : 3;
+	ETexFilterMode	mipmapFilter : 3; // NOTE: mipmapFilter valid values are only TEXFILTER_NEAREST or TEXFILTER_LINEAR
+	uint8			maxAnisotropy : 5;
 
-	ECompareFunc	compareFunc{ COMPFUNC_NONE };
+	ETexAddressMode	addressU : 2;
+	ETexAddressMode	addressV : 2;
+	ETexAddressMode	addressW : 2;
 
-	ETexAddressMode	addressU{ TEXADDRESS_WRAP };
-	ETexAddressMode	addressV{ TEXADDRESS_WRAP };
-	ETexAddressMode	addressW{ TEXADDRESS_WRAP };
-	uint8			maxAnisotropy{ 16 };
+	ECompareFunc	compareFunc : 4;
 };
+
+static_assert(sizeof(SamplerStateParams) == 4, "SamplerStateParams is a bit more large, change hash methods");
 
 //---------------------------------------
 // Blending factors

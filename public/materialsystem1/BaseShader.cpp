@@ -356,17 +356,15 @@ void CBaseShader::PipelineCreatorJob::Execute()
 	m_pipelinePromise.SetResult(std::move(renderPipeline));
 }
 
-const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* renderAPI, const PipelineInputParams& inputParams, bool onInit)
+const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* renderAPI, const PipelineInputParams& inputParams, uint pipelineId, bool onInit)
 {
 	using namespace Threading;
 
-	HOOK_TO_CVAR(r_showPipelineCacheMisses);
-	HOOK_TO_CVAR(r_pipelineCacheDisable);
-	const bool usePipelineCache = r_pipelineCacheDisable->GetBool() == false;
-
-	const uint pipelineId = GetRenderPipelineId(inputParams);
 	if (m_lastPipelineInfoHash == pipelineId && m_lastPipelineInfo)
 		return *m_lastPipelineInfo;
+
+	HOOK_TO_CVAR(r_showPipelineCacheMisses);
+	HOOK_TO_CVAR(r_pipelineCacheDisable);
 
 	PipelineInfoMap::Iterator it;
 	
@@ -387,6 +385,8 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 
 	PipelineInfo& newPipelineInfo = *it;
 	newPipelineInfo.vertexLayoutId = inputParams.meshInstFormat.formatId;
+
+	const bool usePipelineCache = r_pipelineCacheDisable->GetBool() == false;
 
 	MatSysShaderPipelineCache::PipelineMap::Iterator cacheIt;
 	if (usePipelineCache)
@@ -558,7 +558,8 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 
 bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputParams& pipelineParams, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext, IMaterial* originalMaterial)
 {
-	const PipelineInfo& pipelineInfo = EnsureRenderPipeline(renderAPI, pipelineParams, passContext.waitForPipelines);
+	const uint pipelineId = GetRenderPipelineId(pipelineParams);
+	const PipelineInfo& pipelineInfo = EnsureRenderPipeline(renderAPI, pipelineParams, pipelineId, passContext.waitForPipelines);
 	if (!pipelineInfo.pipeline)
 		return false;
 
@@ -567,7 +568,8 @@ bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputPara
 		pipelineInfo,
 		passContext,
 		originalMaterial,
-		pipelineParams.meshInstProvider
+		pipelineParams.meshInstProvider,
+		pipelineId
 	};
 
 	passContext.recorder->SetPipeline(pipelineInfo.pipeline);

@@ -175,6 +175,7 @@ protected:
 		const RenderPassContext&			passContext;
 		IMaterial* 							originalMaterial{ nullptr };
 		const IShaderMeshInstanceProvider*	meshInstProvider{ nullptr };
+		uint								pipelineId{ 0 };
 	};
 
 	virtual IGPUBindGroupPtr	GetSharedBindGroup(EBindGroupId bindGroupId, uint version) const = 0;
@@ -192,7 +193,7 @@ protected:
 	virtual void				FillRenderPipelineDesc(const PipelineInputParams& inputParams, RenderPipelineDesc& renderPipelineDesc) const;
 	virtual void				BuildPipelineShaderQuery(Array<EqString>& shaderQuery) const {}
 
-	const PipelineInfo&			EnsureRenderPipeline(IShaderAPI* renderAPI, const PipelineInputParams& inputParams, bool onInit);
+	const PipelineInfo&			EnsureRenderPipeline(IShaderAPI* renderAPI, const PipelineInputParams& inputParams, uint pipelineId, bool onInit);
 
 	IGPUBindGroupPtr			CreatePersistentBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const;
 	IGPUBindGroupPtr			CreateSharedBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, uint version, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const;
