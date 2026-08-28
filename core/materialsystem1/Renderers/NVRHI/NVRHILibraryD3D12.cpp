@@ -262,6 +262,9 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	deviceDesc.pComputeCommandQueue = m_rhiComputeQueue;
 	deviceDesc.pCopyCommandQueue = m_rhiCopyQueue;
 
+	deviceDesc.samplerHeapSize = D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE;
+	deviceDesc.shaderResourceViewHeapSize = 65536;
+
 	m_nvrhiDevice = nvrhi::d3d12::createDevice(deviceDesc);
 #ifdef NVRHI_WITH_VALIDATION
 	if (nvrhi_validation.GetBool())

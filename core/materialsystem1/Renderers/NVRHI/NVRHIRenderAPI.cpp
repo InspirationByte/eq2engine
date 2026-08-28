@@ -781,15 +781,7 @@ void CNVRHIRenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqStri
 
 nvrhi::SamplerHandle CNVRHIRenderAPI::GetRHISampler(const SamplerStateParams& samplerStateParams)
 {
-	const uint samplerId = samplerStateParams.minFilter
-		| (samplerStateParams.magFilter << 3)		// 3
-		| (samplerStateParams.mipmapFilter << 6)	// 3
-		| (samplerStateParams.compareFunc << 9)		// 3
-		| (samplerStateParams.addressU << 11)		// 2
-		| (samplerStateParams.addressV << 13)		// 2
-		| (samplerStateParams.addressW << 15)		// 2
-		| (samplerStateParams.maxAnisotropy << 24);
-
+	const uint samplerId = *reinterpret_cast<const uint*>(&samplerStateParams);
 	auto it = m_rhiSamplers.find(samplerId);
 	if (it)
 		return *it;
