@@ -1,28 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-	<Type Name="PPSourceLine">
-		<DisplayString Condition="data == 0">[empty]</DisplayString>
-		<DisplayString Condition="data != 0">[{ (const char*)(data &amp; ((1ULL &lt;&lt; PPSL_ADDR_BITS) - 1)),sb }]:{ int((data &gt;&gt; PPSL_ADDR_BITS) &amp; ((1 &lt;&lt; 16) - 1)) }</DisplayString>
+	<Type Name="RawItem&lt;*&gt;">
+		<Intrinsic Name="Item" Expression="*($T1*)&amp;data"></Intrinsic>
+		<DisplayString>{ Item() }</DisplayString>
 		<Expand>
-			<Item Name = "filename">
-				(const char*)(data &amp; ((1ULL &lt;&lt; PPSL_ADDR_BITS) - 1))
-			</Item>
-			<Item Name = "line">
-				int((data &gt;&gt; PPSL_ADDR_BITS) &amp; ((1 &lt;&lt; 16) - 1))
-			</Item>
+			<ExpandedItem>Item()</ExpandedItem>
 		</Expand>
-
-	</Type>
-	<Type Name="CRefPtr&lt;*&gt;">
-		<SmartPointer Usage="Minimal">m_ptrObj</SmartPointer>
-		<DisplayString Condition="m_ptrObj == 0">[unallocated]</DisplayString>
-		<DisplayString Condition="m_ptrObj != 0">[ref count: { m_ptrObj->m_numRefs }] { m_ptrObj }</DisplayString>
-		<Expand>
-			<Item Name = "[ptr]">
-				m_ptrObj
-			</Item>
-		</Expand>
-		
 	</Type>
 	<Type Name="ArrayBase&lt;*, DynamicArrayStorage&lt;*&gt;&gt;">
 		<DisplayString Condition="m_pListPtr == 0">[unallocated]</DisplayString>
@@ -38,10 +21,10 @@
 				</Expand>
 			</Synthetic>
 
-			<Item Name = "Allocated">
+			<Item Name="Allocated">
 				m_nSize
 			</Item>
-			<Item Name = "Granularity">
+			<Item Name="Granularity">
 				m_nGranularity
 			</Item>
 		</Expand>
@@ -157,51 +140,47 @@
 			</Synthetic>
 		</Expand>
 	</Type>
-	<Type Name="RawItem&lt;*&gt;">
-		<DisplayString>{ *($T1*)&amp;data }</DisplayString>
-		<Expand>
-			<ExpandedItem>
-				*($T1*)&amp;data
-			</ExpandedItem>
-		</Expand>
-	</Type>
-	<Type Name="CWeakPtr&lt;*&gt;">
-		<SmartPointer Usage="Minimal">($T1*)m_weakRefPtr->ptr</SmartPointer>
-		<DisplayString Condition="m_weakRefPtr == nullptr">[nullptr]</DisplayString>
-		<DisplayString>{ ($T1*)m_weakRefPtr->ptr }</DisplayString>
-		<Expand>
-			<ExpandedItem>
-				($T1*)m_weakRefPtr->ptr
-			</ExpandedItem>
-			<Item Name = "Ref Count">
-				m_weakRefPtr->numRefs
-			</Item>
-		</Expand>
-	</Type>
+
 	<Type Name="CRefPtr&lt;*&gt;">
 		<SmartPointer Usage="Minimal">m_ptrObj</SmartPointer>
-		<DisplayString Condition="m_ptrObj == nullptr">[nullptr]</DisplayString>
-		<DisplayString>{ m_ptrObj }</DisplayString>
+		<DisplayString Condition="m_ptrObj == nullptr">&lt;nullptr&gt;</DisplayString>
+		<DisplayString Condition="m_ptrObj != nullptr">[refs: { m_ptrObj->m_numRefs }] { m_ptrObj }</DisplayString>
 		<Expand>
-			<ExpandedItem>
+			<ExpandedItem Condition="m_ptrObj != nullptr">
 				m_ptrObj
 			</ExpandedItem>
-			<Item Name = "Ref Count">
+			<Item Name="Ref Count" Condition="m_ptrObj != nullptr">
 				m_ptrObj->m_numRefs
 			</Item>
 		</Expand>
 	</Type>
+	<Type Name="CWeakPtr&lt;*&gt;">
+		<Intrinsic Name="Item" Expression="($T1*)m_weakRefPtr->ptr"></Intrinsic>
+		
+		<SmartPointer Usage="Minimal">Item()</SmartPointer>
+		<DisplayString Condition="m_weakRefPtr == nullptr">[nullptr]</DisplayString>
+		<DisplayString>{ Item() }</DisplayString>
+		<Expand>
+			<ExpandedItem>
+				Item()
+			</ExpandedItem>
+			<Item Name="Ref Count">
+				m_weakRefPtr->numRefs
+			</Item>
+		</Expand>
+	</Type>
+
 	<Type Name="EqTStr&lt;*&gt;">
 		<DisplayString Condition="m_nLength == 0">[empty str]</DisplayString>
 		<DisplayString Condition="strcmp(&quot;$T1&quot;,&quot;wchar_t&quot;) == 0">[wstring] { m_pszString,su }</DisplayString>
 		<DisplayString Condition="strcmp(&quot;$T1&quot;,&quot;char&quot;) == 0">[string] { m_pszString,sb }</DisplayString>
 		<Expand>
-			<Item Condition="strcmp(&quot;$T1&quot;,&quot;char&quot;) == 0" Name = "Value">m_pszString,sb</Item>
-			<Item Condition="strcmp(&quot;$T1&quot;,&quot;wchar_t&quot;) == 0" Name = "Value">m_pszString,su</Item>
-			<Item Name = "Length">
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;char&quot;) == 0" Name="Value">m_pszString,sb</Item>
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;wchar_t&quot;) == 0" Name="Value">m_pszString,su</Item>
+			<Item Name="Length">
 				m_nLength
 			</Item>
-			<Item Name = "Allocated">
+			<Item Name="Allocated">
 				m_nAllocated
 			</Item>
 		</Expand>
@@ -211,14 +190,71 @@
 		<DisplayString Condition="strcmp(&quot;$T1&quot;,&quot;char&quot;) == 0">[string ref] { m_pszString,sb }</DisplayString>
 		<DisplayString Condition="strcmp(&quot;$T1&quot;,&quot;wchar_t&quot;) == 0">[wstring ref] { m_pszString,su }</DisplayString>
 		<Expand>
-			<Item Condition="strcmp(&quot;$T1&quot;,&quot;char&quot;) == 0" Name = "Value">m_pszString,sb</Item>
-			<Item Condition="strcmp(&quot;$T1&quot;,&quot;wchar_t&quot;) == 0" Name = "Value">m_pszString,su</Item>
-			<Item Name = "Length">
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;char&quot;) == 0" Name="Value">m_pszString,sb</Item>
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;wchar_t&quot;) == 0" Name="Value">m_pszString,su</Item>
+			<Item Name="Length">
 				m_nLength
 			</Item>
 		</Expand>
 	</Type>
+	
+	<!--
+		PPMEM
+	-->
+	<Type Name="PPSourceLine">
+		<DisplayString Condition="data == 0">[empty]</DisplayString>
+		<DisplayString Condition="data != 0">[{ (const char*)(data &amp; ((1ULL &lt;&lt; PPSL_ADDR_BITS) - 1)),sb }]:{ int((data &gt;&gt; PPSL_ADDR_BITS) &amp; ((1 &lt;&lt; 16) - 1)) }</DisplayString>
+		<Expand>
+			<Item Name="filename">
+				(const char*)(data &amp; ((1ULL &lt;&lt; PPSL_ADDR_BITS) - 1))
+			</Item>
+			<Item Name="line">
+				int((data &gt;&gt; PPSL_ADDR_BITS) &amp; ((1 &lt;&lt; 16) - 1))
+			</Item>
+		</Expand>
+	</Type>
+	
+	<Intrinsic Name="PPMemStat" Expression="s_memStateList"></Intrinsic>
+	<Type Name="PPMemStateList">
+		<Intrinsic Name="State" Expression="*(PPMemState**)&amp;m_data[idx].data">
+			<Parameter Name="idx" Type="int"/>
+		</Intrinsic>
+		<Expand HideRawView="true">
+			<CustomListItems>
+				<Variable Name="mem" InitialValue="0"/>
+				<Variable Name="count" InitialValue="0"/>
+				<Variable Name="i" InitialValue="0"/>
+				<Loop>
+					<If Condition="i >= m_nNumElem">
+						<Item Name="Total memory (MB)">mem / 1024.0 / 1024.0</Item>
+						<Item Name="Total allocs">count</Item>
+						<Break />
+					</If>
+					<Exec>mem += State(i)->allocMemCounter</Exec>
+					<Exec>count += State(i)->numAllocs</Exec>
+					<Exec>++i</Exec>
+				</Loop>
+			</CustomListItems>
+			<Synthetic Name="TLS Counters">
+				<DisplayString Condition="m_data == 0">[unallocated]</DisplayString>
+				<DisplayString>[count: { m_nNumElem }]</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>m_nNumElem</Size>
+						<ValuePointer>m_data</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+		</Expand>
+	</Type>
 
+	<!--
+		Other Framework Types
+	-->
+	<Type Name="FReal">
+		<DisplayString>[fix] {(float)raw / (float)FPMATH_ONE}</DisplayString>
+	</Type>
+	
 	<Type Name="KVSection">
 		<DisplayString Condition="keys.m_nNumElem == 0 &amp;&amp; values.m_nNumElem == 0">"{name,sb}"</DisplayString>
 		<DisplayString Condition="keys.m_nNumElem == 0">"{name,sb}" [Values: {values.m_nNumElem}]</DisplayString>
@@ -247,11 +283,15 @@
 		<DisplayString Condition="type == KVPAIR_BOOL">[bool] { bValue }</DisplayString>
 		<DisplayString Condition="type == KVPAIR_SECTION">[section] { section }</DisplayString>
 	</Type>
+
+	<!--
+		MatSystem Types
+	-->
 	<Type Name="ITexture">
-		<DisplayString>RHI Texture { ((CTexture*)this)->m_szTexName }</DisplayString>
+		<DisplayString>RHI Texture { ((CTexture*)this)->m_name }</DisplayString>
 	</Type>
 	<Type Name="IMaterial">
-		<DisplayString>Material { ((CMaterial*)this)->m_szMaterialName }</DisplayString>
+		<DisplayString>Material { ((CMaterial*)this)->m_name }</DisplayString>
 	</Type>
 	<Type Name="MatVarProxy&lt;*&gt;">
 		<DisplayString Condition="m_matVarIdx == -1">MatVarProxy [empty]</DisplayString>
@@ -265,38 +305,39 @@
 		<DisplayString Condition="strcmp(&quot;$T1&quot;,&quot;Matrix3x3;&quot;) == 0">{ (TMat3&lt;float&gt;*)(*m_vars).variables.m_pListPtr[m_matVarIdx].vector }</DisplayString>
 		<DisplayString Condition="strcmp(&quot;$T1&quot;,&quot;Matrix4x4;&quot;) == 0">{ (TMat4&lt;float&gt;*)(*m_vars).variables.m_pListPtr[m_matVarIdx].vector }</DisplayString>
 		<Expand>
-			<Item Name = "String value">
+			<Item Name="String value">
 				(*m_vars).variables.m_pListPtr[m_matVarIdx].strValue
 			</Item>
-			<Item Condition="strcmp(&quot;$T1&quot;,&quot;CRefPtr&lt;ITexture&gt;&quot;) == 0" Name = "Value">
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;CRefPtr&lt;ITexture&gt;&quot;) == 0" Name="Value">
 				(*m_vars).variables.m_pListPtr[m_matVarIdx].texture
 			</Item>
-			<Item Condition="strcmp(&quot;$T1&quot;,&quot;int;&quot;) == 0" Name = "Value">
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;int;&quot;) == 0" Name="Value">
 				(*m_vars).variables.m_pListPtr[m_matVarIdx].intValue
 			</Item>
-			<Item Condition="strcmp(&quot;$T1&quot;,&quot;float;&quot;) == 0" Name = "Value">
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;float;&quot;) == 0" Name="Value">
 				(*m_vars).variables.m_pListPtr[m_matVarIdx].vector[0]
 			</Item>
-			<Item Condition="strcmp(&quot;$T1&quot;,&quot;TVec2D&lt;float&gt;&quot;) == 0" Name = "Value">
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;TVec2D&lt;float&gt;&quot;) == 0" Name="Value">
 				(TVec2D&lt;float&gt;*)(*m_vars).variables.m_pListPtr[m_matVarIdx].vector
 			</Item>
-			<Item Condition="strcmp(&quot;$T1&quot;,&quot;TVec3D&lt;float&gt;&quot;) == 0" Name = "Value">
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;TVec3D&lt;float&gt;&quot;) == 0" Name="Value">
 				(TVec3D&lt;float&gt;*)(*m_vars).variables.m_pListPtr[m_matVarIdx].vector
 			</Item>
-			<Item Condition="strcmp(&quot;$T1&quot;,&quot;TVec4D&lt;float&gt;&quot;) == 0" Name = "Value">
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;TVec4D&lt;float&gt;&quot;) == 0" Name="Value">
 				(TVec4D&lt;float&gt;*)(*m_vars).variables.m_pListPtr[m_matVarIdx].vector
 			</Item>
-			<Item Condition="strcmp(&quot;$T1&quot;,&quot;Matrix3x3;&quot;) == 0" Name = "Value">
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;Matrix3x3;&quot;) == 0" Name="Value">
 				(TMat3&lt;float&gt;*)(*m_vars).variables.m_pListPtr[m_matVarIdx].vector
 			</Item>
-			<Item Condition="strcmp(&quot;$T1&quot;,&quot;Matrix4x4;&quot;) == 0" Name = "Value">
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;Matrix4x4;&quot;) == 0" Name="Value">
 				(TMat4&lt;float&gt;*)(*m_vars).variables.m_pListPtr[m_matVarIdx].vector
 			</Item>
 		</Expand>
 	</Type>
-	<Type Name="FReal">
-		<DisplayString>[fix] {(float)raw / (float)FPMATH_ONE}</DisplayString>
-	</Type>
+	
+	<!--
+		Engine Types
+	-->
 	<Type Name="studioModelHeader_s">
 		<DisplayString>EGF { modelName,s }</DisplayString>
 		<Expand>
