@@ -317,7 +317,7 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 			uint8 modelDescId = EGF_INVALID_IDX;
 			do
 			{
-				modelDescId = lodModel->modelsIndexes[bodyGroupLOD--];
+				modelDescId = lodModel->meshIndexes[bodyGroupLOD--];
 			} while (modelDescId == EGF_INVALID_IDX && bodyGroupLOD >= 0);
 	
 			if (modelDescId == EGF_INVALID_IDX)

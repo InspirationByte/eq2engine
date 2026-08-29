@@ -112,7 +112,7 @@ ALIGNED_TYPE(studioLodParams_s, 4) studioLodParams_t;
 // lod models
 struct studioLodModel_s
 {
-	uint8			modelsIndexes[MAX_MODEL_LODS]; // lod model indexes, points to studioMeshGroupDesc_t
+	uint8			meshIndexes[MAX_MODEL_LODS]; // lod model indexes, points to studioMeshGroupDesc_t
 };
 ALIGNED_TYPE(studioLodModel_s, 4) studioLodModel_t;
 

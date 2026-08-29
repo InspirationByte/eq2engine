@@ -478,7 +478,7 @@ void CEGFGenerator::WriteLods(studioHdr_t* header, IFileStream* stream)
 		for(int j = 0; j < MAX_MODEL_LODS; j++)
 		{
 			const int modelIdx = (j < lodList.lodmodels.numElem()) ? m_modelrefs[lodList.lodmodels[j]].meshGroupIdx : -1;
-			pLod->modelsIndexes[j] = (modelIdx == -1) ? EGF_INVALID_IDX : modelIdx;
+			pLod->meshIndexes[j] = (modelIdx == -1) ? EGF_INVALID_IDX : modelIdx;
 		}
 	}
 

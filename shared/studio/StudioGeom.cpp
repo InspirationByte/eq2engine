@@ -953,7 +953,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 		uint8 modelDescId = EGF_INVALID_IDX;
 		do
 		{
-			modelDescId = lodModel->modelsIndexes[bodyGroupLOD];
+			modelDescId = lodModel->meshIndexes[bodyGroupLOD];
 			bodyGroupLOD--;
 		} while (modelDescId == EGF_INVALID_IDX && bodyGroupLOD >= 0);
 
@@ -1186,7 +1186,7 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 		uint8 modelDescId = EGF_INVALID_IDX;
 		do
 		{
-			modelDescId = lodModel->modelsIndexes[bodyGroupLOD];
+			modelDescId = lodModel->meshIndexes[bodyGroupLOD];
 			bodyGroupLOD--;
 		} while (modelDescId == EGF_INVALID_IDX && bodyGroupLOD >= 0);
 
@@ -1343,7 +1343,7 @@ float CEqStudioGeom::CheckIntersectionWithRay(const Vector3D& rayStart, const Ve
 		uint8 modelDescId = EGF_INVALID_IDX;
 		do
 		{
-			modelDescId = lodModel->modelsIndexes[bodyGroupLOD];
+			modelDescId = lodModel->meshIndexes[bodyGroupLOD];
 			bodyGroupLOD--;
 		} while (modelDescId == EGF_INVALID_IDX && bodyGroupLOD >= 0);
 
