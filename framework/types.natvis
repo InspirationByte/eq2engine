@@ -297,5 +297,163 @@
 	<Type Name="FReal">
 		<DisplayString>[fix] {(float)raw / (float)FPMATH_ONE}</DisplayString>
 	</Type>
-
+	<Type Name="studioModelHeader_s">
+		<DisplayString>EGF { modelName,s }</DisplayString>
+		<Expand>
+			<Synthetic Name="mesh groups">
+				<DisplayString Condition="numMeshGroups == 0">[none]</DisplayString>
+				<DisplayString>[count: { (int)numMeshGroups }]</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>numMeshGroups</Size>
+						<ValuePointer>(studioMeshGroupDesc_t*)((ubyte*)this + meshGroupsOffset)</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+			<Synthetic Name="body groups">
+				<DisplayString Condition="numBodyGroups == 0">[none]</DisplayString>
+				<DisplayString>[count: { (int)numBodyGroups }]</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>numBodyGroups</Size>
+						<ValuePointer>(studioBodyGroup_t*)((ubyte*)this + bodyGroupsOffset)</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+			<Synthetic Name="mesh lods">
+				<DisplayString Condition="numLods == 0">[none]</DisplayString>
+				<DisplayString>[count: { (int)numLods }]</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>numLods</Size>
+						<ValuePointer>(studioLodModel_t*)((ubyte*)this + lodsOffset)</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+			<Synthetic Name="lod params">
+				<DisplayString Condition="numLodParams == 0">[none]</DisplayString>
+				<DisplayString>[count: { (int)numLodParams }]</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>numLodParams</Size>
+						<ValuePointer>(studioLodParams_t*)((ubyte*)this + lodParamsOffset)</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+			<Synthetic Name="materials">
+				<DisplayString Condition="numMaterials == 0">[none]</DisplayString>
+				<DisplayString>[count: { (int)numMaterials }]</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>numMaterials</Size>
+						<ValuePointer>(studioMaterialDesc_t*)((ubyte*)this + materialsOffset)</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+			<Synthetic Name="material paths">
+				<DisplayString Condition="numMaterialSearchPaths == 0">[none]</DisplayString>
+				<DisplayString>[count: { (int)numMaterialSearchPaths }]</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>numMaterialSearchPaths</Size>
+						<ValuePointer>(materialPathDesc_t*)((ubyte*)this + materialSearchPathsOffset)</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+			<Synthetic Name="motion packs">
+				<DisplayString Condition="numMotionPackages == 0">[none]</DisplayString>
+				<DisplayString>[count: { (int)numMotionPackages }]</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>numMotionPackages</Size>
+						<ValuePointer>(motionPackageDesc_t*)((ubyte*)this + packagesOffset)</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+			<Synthetic Name="bones">
+				<DisplayString Condition="numBones == 0">[none]</DisplayString>
+				<DisplayString>[count: { (int)numBones }]</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>numBones</Size>
+						<ValuePointer>(studioBoneDesc_t*)((ubyte*)this + bonesOffset)</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+			<Synthetic Name="transforms">
+				<DisplayString Condition="numTransforms == 0">[none]</DisplayString>
+				<DisplayString>[count: { (int)numTransforms }]</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>numTransforms</Size>
+						<ValuePointer>(studioTransform_t*)((ubyte*)this + transformsOffset)</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+			<Synthetic Name="ik chains">
+				<DisplayString Condition="numIKChains == 0">[none]</DisplayString>
+				<DisplayString>[count: { (int)numIKChains }]</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>numIKChains</Size>
+						<ValuePointer>(studioIkChain_t*)((ubyte*)this + ikChainsOffset)</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+		</Expand>
+	</Type>
+	<Type Name="studioLodModel_s">
+		<Expand>
+			<CustomListItems>
+				<Variable Name="i" InitialValue="0" />
+				<Loop>
+					<If Condition="meshIndexes[i] == 255">
+						<Break />
+					</If>
+					<Item Name="[{i}]">(int)meshIndexes[i]</Item>
+					<Exec>++i</Exec>
+				</Loop>
+			</CustomListItems>
+		</Expand>
+	</Type>
+	<Type Name="studioMeshGroupDesc_s">
+		<DisplayString>[{ (int)numMeshes } meshes]</DisplayString>
+		<Expand>
+			<ArrayItems>
+				<Size>numMeshes</Size>
+				<ValuePointer>(studioMeshDesc_t*)((ubyte*)this + meshesOffset)</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
+	<Type Name="studioMaterialDesc_s">
+		<DisplayString>{ materialname,s }</DisplayString>
+		<Expand></Expand>
+	</Type>
+	<Type Name="materialPathDesc_s">
+		<DisplayString>{ searchPath,s }</DisplayString>
+		<Expand></Expand>
+	</Type>
+	<Type Name="studioBoneDesc_s">
+		<DisplayString>{ name,s }</DisplayString>
+	</Type>
+	<Type Name="studioMeshDesc_s">
+		<Intrinsic Name="MeshPrimType" Expression="(EStudioPrimType)mesh->primitiveType">
+			<Parameter Name="mesh" Type="studioMeshDesc_s*" />
+		</Intrinsic>
+		<Intrinsic Name="MeshTriangleCount"
+				   Expression="MeshPrimType(mesh) == STUDIO_PRIM_TRI_STRIP ? mesh->numIndices - 2 : mesh->numIndices / 3">
+			<Parameter Name="mesh" Type="studioMeshDesc_s*" />
+		</Intrinsic>
+		
+		<DisplayString>Mesh [{ numVertices } verts, { MeshTriangleCount(this) } tris]</DisplayString>
+		<Expand>
+			<Synthetic Name="prim type">
+				<DisplayString>{ MeshPrimType(this) }</DisplayString>
+			</Synthetic>
+			<Synthetic Name="vert type">
+				<DisplayString>{ (EStudioVertexStreamFlag)vertexType }</DisplayString>
+			</Synthetic>
+			<Item Name="materialIndex">(int)materialIndex</Item>
+		</Expand>
+	</Type>
 </AutoVisualizer>
