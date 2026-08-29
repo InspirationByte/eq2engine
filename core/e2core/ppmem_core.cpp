@@ -55,10 +55,13 @@ struct PPSrcCounter
 using PPSourceCounterMap = Map<uint64, PPSrcCounter>;
 using PPSourceMap = Map<const char*, const char*>;
 
-using PPMemStateList = FixedArray<PPMemState*, PPMEM_MAX_STAT_THREADS>;
+struct PPMemStateList : public FixedArray<PPMemState*, PPMEM_MAX_STAT_THREADS> {};
+
+static PPMemStateList* s_memStateList;
 static PPMemStateList& PPGetStateList()
 {
-	static FixedArray<PPMemState*, PPMEM_MAX_STAT_THREADS> s_memStates;
+	static PPMemStateList s_memStates;
+	s_memStateList = &s_memStates;
 	return s_memStates;
 }
 
