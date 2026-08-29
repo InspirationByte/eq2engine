@@ -25,7 +25,7 @@ public:
 
 	void					Ref_DeleteObject();
 
-	const char*				GetName() const { return m_szMaterialName.GetData(); }
+	const char*				GetName() const { return m_name.GetData(); }
 	const char*				GetShaderName() const;
 	CTextureAtlas*			GetAtlas() const { return m_atlas; }
 
@@ -73,8 +73,8 @@ protected:
 	void					OnVarUpdated();
 	static void 			OnMatVarChanged(int varIdx, void* userData);
 
-	EqString				m_szMaterialName;
-	EqString				m_szShaderName;
+	EqString				m_name;
+	EqString				m_shaderName;
 
 	// TODO: multiple shaders using same material
 	// for compatibility between vertex formats using same material

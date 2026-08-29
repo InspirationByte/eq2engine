@@ -22,8 +22,8 @@ static CEqMutex s_materialVarMutex;
 CMaterial::CMaterial(const char* materialName, int instanceFormatId, bool loadFromDisk)
 	: m_loadFromDisk(loadFromDisk)
 {
-	m_szMaterialName = materialName;
-	m_nameHash = StringId24(m_szMaterialName, true);
+	m_name = materialName;
+	m_nameHash = StringId24(m_name, true);
 	m_instanceFormatId = instanceFormatId;
 
 	m_vars.onChangedCb = OnMatVarChanged;
@@ -50,7 +50,7 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 {
 	ASSERT(m_loadFromDisk == true);
 
-	DevMsg(DEVMSG_MATSYSTEM, "Loading material '%s'\n", m_szMaterialName.ToCString());
+	DevMsg(DEVMSG_MATSYSTEM, "Loading material '%s'\n", m_name.ToCString());
 
 	const char* materialsPath = g_matSystem->GetMaterialPath();
 	const char* materialsSRCPath = g_matSystem->GetMaterialSRCPath();
@@ -73,8 +73,8 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 		//
 		// loading a material description
 		//
-		atlasKVSFileName = fnmPathCombine(materialsPaths[i], fnmPathApplyExt(m_szMaterialName, s_materialAtlasFileExt));
-		materialKVSFilename = fnmPathCombine(materialsPaths[i], fnmPathApplyExt(m_szMaterialName, s_materialFileExt));
+		atlasKVSFileName = fnmPathCombine(materialsPaths[i], fnmPathApplyExt(m_name, s_materialAtlasFileExt));
+		materialKVSFilename = fnmPathCombine(materialsPaths[i], fnmPathApplyExt(m_name, s_materialFileExt));
 
 		// load atlas file
 		if (!m_atlas)
@@ -108,10 +108,10 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 
 	if (!success)
 	{
-		MsgError("Can't load material '%s'\n", m_szMaterialName.ToCString());
+		MsgError("Can't load material '%s'\n", m_name.ToCString());
 
 		// TODO: pick valid error shader based on Vertex Layout ID
-		m_szShaderName = "Error";
+		m_shaderName = "Error";
 
 		Atomic::Exchange(m_state, MATERIAL_LOAD_NEED_LOAD);
 		return;
@@ -119,14 +119,14 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 
 	if(root.KeyCount() == 0)
 	{
-		MsgError("Material '%s' does not have a shader root section!\n",m_szMaterialName.ToCString());
+		MsgError("Material '%s' does not have a shader root section!\n",m_name.ToCString());
 		Atomic::Exchange(m_state, MATERIAL_LOAD_ERROR);
 		return;
 	}
 	const KVSection& shaderRoot = root.KeyAt(0);
 
 	// section name is used as shader name
-	m_szShaderName = shaderRoot.GetName();
+	m_shaderName = shaderRoot.GetName();
 
 	// begin initialization
 	InitVars( &shaderRoot, renderAPI->GetRendererName() );
@@ -142,7 +142,7 @@ void CMaterial::Init(IShaderAPI* renderAPI, const KVSection* shaderRoot)
 	if (shaderRoot)
 	{
 		// section name is used as shader name
-		m_szShaderName = shaderRoot->GetName();
+		m_shaderName = shaderRoot->GetName();
 
 		// begin initialization
 		InitVars(shaderRoot, renderAPI->GetRendererName());
@@ -172,7 +172,7 @@ void CMaterial::InitMaterialProxy(const KVSection* proxySec)
 		}
 		else
 		{
-			MsgWarning("Unknown proxy '%s' for material %s!\n", proxyItemSec.GetName(), m_szMaterialName.GetData());
+			MsgWarning("Unknown proxy '%s' for material %s!\n", proxyItemSec.GetName(), m_name.GetData());
 		}
 	}
 }
@@ -239,18 +239,18 @@ void CMaterial::InitShader(IShaderAPI* renderAPI)
 	if(m_shader)
 		return;
 
-	PROF_EVENT(EqString::Format("InitShader %s", m_szShaderName));
+	PROF_EVENT(EqString::Format("InitShader %s", m_shaderName));
 
-	const MatSysShaderFactory* shaderFactory = g_matSystem->GetShaderFactory(m_szShaderName, m_instanceFormatId);
+	const MatSysShaderFactory* shaderFactory = g_matSystem->GetShaderFactory(m_shaderName, m_instanceFormatId);
 	if (!shaderFactory)
 	{
-		MsgError("Invalid shader '%s' specified for material %s!\n", m_szShaderName.ToCString(), m_szMaterialName.ToCString());
+		MsgError("Invalid shader '%s' specified for material %s!\n", m_shaderName.ToCString(), m_name.ToCString());
 		shaderFactory = g_matSystem->GetShaderFactory("Error", m_instanceFormatId);
 	}
 
 	if(shaderFactory && arrayFindIndex(shaderFactory->vertexLayoutIds, m_instanceFormatId) == -1)
 	{
-		MsgError("Vertex instance format is unsupported by shader '%s' specified for material '%s'\n", shaderFactory->shaderName, m_szMaterialName.ToCString());
+		MsgError("Vertex instance format is unsupported by shader '%s' specified for material '%s'\n", shaderFactory->shaderName, m_name.ToCString());
 		shaderFactory = g_matSystem->GetShaderFactory("Error", m_instanceFormatId);
 	}
 	ASSERT_MSG(shaderFactory, "Error shader is not registered or overrides hasn't been set up");
@@ -278,7 +278,7 @@ void CMaterial::InitVars(const KVSection* shaderRoot, const char* renderAPIName)
 		if (editorPrefs)
 		{
 			// try override shader
-			editorPrefs->Get("Shader").GetValues(m_szShaderName);
+			editorPrefs->Get("Shader").GetValues(m_shaderName);
 			InitMaterialVars(editorPrefs, "editor");
 		}
 	}
@@ -288,7 +288,7 @@ void CMaterial::InitVars(const KVSection* shaderRoot, const char* renderAPIName)
 		if (apiPrefs)
 		{
 			// try override shader
-			apiPrefs->Get("Shader").GetValues(m_szShaderName);
+			apiPrefs->Get("Shader").GetValues(m_shaderName);
 			InitMaterialVars(apiPrefs);
 		}
 	}
@@ -332,7 +332,7 @@ bool CMaterial::DoLoadShaderAndTextures()
 	if(shader->IsInitialized() )
 		Atomic::Exchange(m_state, MATERIAL_LOAD_OK);
 	else
-		ASSERT_FAIL("please check shader '%s' (%s) for initialization (not error, not initialized)", m_szShaderName.ToCString(), m_shader->GetName());
+		ASSERT_FAIL("please check shader '%s' (%s) for initialization (not error, not initialized)", m_shaderName.ToCString(), m_shader->GetName());
 
 	return true;
 }
@@ -399,7 +399,7 @@ int CMaterial::GetFlags() const
 const char*	CMaterial::GetShaderName() const
 {
 	if(!m_shader)
-		return m_szShaderName;
+		return m_shaderName;
 
 	return m_shader->GetName();
 }
