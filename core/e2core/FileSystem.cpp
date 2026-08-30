@@ -288,7 +288,7 @@ static bool mkdirRecursive(const char* path, bool includeDotPath)
 
 	return true;
 }
-PRAGMA_OPTIMIZE_OFF
+
 static int fast_stat(const char* path, struct stat* st)
 {
 #ifdef _WIN32
