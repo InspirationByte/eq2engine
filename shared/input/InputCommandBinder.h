@@ -80,14 +80,12 @@ public:
 	void					WriteBindings(IFileStream* stream);
 
 	// binds a command with arguments to known key
-	bool					AddBinding(const char* key, const char* command, const char* args);
-	InputBinding*			AddBinding(const char* key, const char* name, InputCommand::Func func, void* userData = nullptr);
+	bool					BindCommand(const char* key, const char* command, const char* args);
+	void					UnbindCommand(const char* name);
+	void					UnbindKey(const char* pszKeyStr);
 
-	// removes single binding on specified keychar
-	void					UnbindKey( const char* pszKeyStr );
-	void					UnbindCommandByName( const char* name, const char* argStr = nullptr);
-	void					UnregisterCommand(ConCommandBase* cmdBase);
-	void					DeleteBinding(InputBinding* binding);
+	InputBinding*			AddNamedBinding(const char* name, const char* key, InputCommand::Func func, void* userData = nullptr);
+	void					RemoveNamedBinding(const char* name);
 
 	// clears and removes all key bindings
 	void					UnbindAll();
@@ -107,6 +105,10 @@ public:
 	ArrayCRef<InputBinding*>	GetBindingList() const { return m_bindings; }
 	ArrayCRef<InputTouchZone>	GetTouchZoneList() const { return m_touchZones; }
 	ArrayCRef<InputVectorAction>	GetAxisActionList() const { return m_axisActs; }
+
+	// lua use
+	void					UnregisterCommand(ConCommandBase* cmdBase);
+	void					DeleteBinding(InputBinding* binding);
 
 	// debug render
 	void					DebugDraw(const Vector2D& screenSize, IGPURenderPassRecorder* rendPassRecorder);

@@ -121,7 +121,7 @@ DECLARE_CMD_VARIANTS(bind, "Binds action to key", cmd_conKeyList, 0)
 		for (int i = 2; i < CMD_ARGC; i++)
 			agrstr.AppendFmt((i < CMD_ARGC - 1) ? "%s " : "%s", CMD_ARGV(i));
 
-		g_inputCommandBinder->AddBinding(CMD_ARGV(0), CMD_ARGV(1), agrstr);
+		g_inputCommandBinder->BindCommand(CMD_ARGV(0), CMD_ARGV(1), agrstr);
 	}
 	else
 		MsgInfo("Usage: bind <key> <command> [args,...]\n");
@@ -439,7 +439,7 @@ void CInputCommandBinder::WriteBindings(IFileStream* stream)
 	}
 }
 
-bool CInputCommandBinder::AddBinding( const char* pszKeyStr, const char* pszCommand, const char* pszArgs )
+bool CInputCommandBinder::BindCommand( const char* pszKeyStr, const char* pszCommand, const char* pszArgs )
 {
 	InputBinding* binding = CreateCommandBinding(pszKeyStr, pszCommand, pszArgs);
 	if (!binding)
@@ -493,7 +493,7 @@ InputBinding* CInputCommandBinder::CreateCommandBinding( const char* pszKeyStr, 
 	return newBind;
 }
 
-InputBinding* CInputCommandBinder::AddBinding(const char* pszKeyStr, const char* name, InputCommand::Func func, void* userData /*= nullptr*/)
+InputBinding* CInputCommandBinder::AddNamedBinding(const char* name, const char* key, InputCommand::Func func, void* userData /*= nullptr*/)
 {
 	InputBinding* binding = nullptr;
 	while (binding = FindBindingByCommandName(name, nullptr, binding))
@@ -504,15 +504,15 @@ InputBinding* CInputCommandBinder::AddBinding(const char* pszKeyStr, const char*
 		EqString keyNameString;
 		UTIL_GetBindingKeyString(keyNameString, binding);
 
-		if (!keyNameString.CompareCaseIns(pszKeyStr))
+		if (!keyNameString.CompareCaseIns(key))
 		{
-			MsgWarning("Command '%s' already bound to '%s'\n", name, pszKeyStr);
+			MsgWarning("Command '%s' already bound to '%s'\n", name, key);
 			return nullptr;
 		}
 	}
 
 	int bindingKeyIndices[3];
-	if (!InputGetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
+	if (!InputGetBindingKeyIndices(bindingKeyIndices, key))
 		return nullptr;
 
 	// create new binding
@@ -528,6 +528,19 @@ InputBinding* CInputCommandBinder::AddBinding(const char* pszKeyStr, const char*
 	m_bindings.append(newBind);
 
 	return newBind;
+}
+
+void CInputCommandBinder::RemoveNamedBinding(const char* name)
+{
+	InputBinding* binding = nullptr;
+	while (binding = FindBindingByCommandName(name, nullptr, binding))
+	{
+		if (!binding->custom)
+			continue;
+
+		DeleteBinding(binding);
+		break;
+	}
 }
 
 bool CInputCommandBinder::ResolveCommandBinding(InputBinding& binding, bool quiet)
@@ -677,11 +690,16 @@ void CInputCommandBinder::UnbindKey(const char* pszKeyStr)
 		MsgInfo("'%s' unbound (%d matches)\n", pszKeyStr, results);
 }
 
-void CInputCommandBinder::UnbindCommandByName(const char* name, const char* argStr /*= nullptr*/)
+void CInputCommandBinder::UnbindCommand(const char* name)
 {
 	InputBinding* binding = nullptr;
-	while (binding = FindBindingByCommandName(name, argStr, binding))
+	while (binding = FindBindingByCommandName(name, nullptr, binding))
+	{
+		if (binding->custom)
+			continue;
+
 		DeleteBinding(binding);
+	}
 }
 
 void CInputCommandBinder::UnregisterCommand(ConCommandBase* cmdBase)

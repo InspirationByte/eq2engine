@@ -387,7 +387,7 @@ static bool L_Input_AddBinding(const esl::ScriptState& state, char const* name, 
 		state.ThrowError("cmdFunc is null or not valid");
 
 	const int nameHash = StringId24(name);
-	InputBinding* binding = g_inputCommandBinder->AddBinding(keyStr, name, LuaInputBinding::CommandHandler, reinterpret_cast<void*>(nameHash));
+	InputBinding* binding = g_inputCommandBinder->AddNamedBinding(name, keyStr, LuaInputBinding::CommandHandler, reinterpret_cast<void*>(nameHash));
 
 	if (!binding)
 		return false;
@@ -406,6 +406,7 @@ static void L_Input_RemoveBinding(const esl::ScriptState& state, const char* nam
 
 	const int nameHash = StringId24(name);
 	LuaInputBinding::s_bindings.remove(nameHash);
+	g_inputCommandBinder->RemoveNamedBinding(name);
 }
 
 //---------------------------------------------------
@@ -508,7 +509,7 @@ static void L_Input_UnbindCommand(const esl::ScriptState& state, const char* com
 	if (!commandName)
 		state.ThrowError("commandName is null");
 
-	g_inputCommandBinder->UnbindCommandByName(commandName);
+	g_inputCommandBinder->UnbindCommand(commandName);
 }
 
 static void L_Input_UnregisterCommand(const esl::ScriptState& state, ConCommandBase* cmdBase)
@@ -541,7 +542,7 @@ static void L_Input_BindAction(const esl::ScriptState& state, const char* keysSt
 	while (existingBinding = g_inputCommandBinder->FindBinding(keysStr, actionCategoryName))
 		g_inputCommandBinder->DeleteBinding(existingBinding);
 
-	g_inputCommandBinder->AddBinding(keysStr, actionName, args);
+	g_inputCommandBinder->BindCommand(keysStr, actionName, args);
 }
 
 static int L_Input_GetLastInputDeviceUsed()
