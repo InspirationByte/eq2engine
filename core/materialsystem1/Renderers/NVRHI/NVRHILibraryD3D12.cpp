@@ -155,6 +155,7 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 			disableMessageIDs.append(D3D12_MESSAGE_ID_RESOURCE_BARRIER_BEFORE_AFTER_MISMATCH);
 			disableMessageIDs.append(D3D12_MESSAGE_ID_COMMAND_LIST_STATIC_DESCRIPTOR_RESOURCE_DIMENSION_MISMATCH);
 			disableMessageIDs.append(D3D12_MESSAGE_ID_CREATEGRAPHICSPIPELINESTATE_RENDERTARGETVIEW_NOT_SET);
+			disableMessageIDs.append(D3D12_MESSAGE_ID_RENDER_TARGET_OR_DEPTH_STENCIL_RESOUCE_NOT_INITIALIZED);
 			disableMessageIDs.append(D3D12_MESSAGE_ID_INVALID_SUBRESOURCE_STATE); // currently suppressed as depth targets need supporting it
 
 			D3D12_INFO_QUEUE_FILTER filter = {};
@@ -261,6 +262,7 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	deviceDesc.pGraphicsCommandQueue = m_rhiGraphicsQueue;
 	deviceDesc.pComputeCommandQueue = m_rhiComputeQueue;
 	deviceDesc.pCopyCommandQueue = m_rhiCopyQueue;
+	deviceDesc.enableEnhancedBarriers = false;
 
 	deviceDesc.samplerHeapSize = D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE;
 	deviceDesc.shaderResourceViewHeapSize = 65536;

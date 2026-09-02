@@ -466,6 +466,7 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 		.setHeight((uint)newSize.height)
 		.setArraySize((uint)newSize.arraySize)
 		.setIsRenderTarget(true)
+		.setUseClearValue(true)
 		.setIsVirtual(flags & TEXFLAG_TRANSIENT)
 		.setInitialState(isDepth ? nvrhi::ResourceStates::DepthRead : nvrhi::ResourceStates::RenderTarget)
 		.setKeepInitialState(true);

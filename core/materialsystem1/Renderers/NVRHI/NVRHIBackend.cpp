@@ -35,11 +35,7 @@ void CNVRHIMessageCallback::message(nvrhi::MessageSeverity severity, const char*
 		}
 		break;
 	case nvrhi::MessageSeverity::Fatal:
-		if (nvrhi_breakOnError.GetBool())
-		{
-			ASSERT_FAIL("NVRHI FATAL: %s", messageText);
-		}
-
+		ASSERT_FAIL("NVRHI FATAL: %s", messageText);
 		CrashMsg("NVRHI FATAL: %s", messageText);
 		break;
 	}
