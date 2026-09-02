@@ -961,6 +961,13 @@ inline T lengthSqr(const TVec4D<T> &v)
 //-----------------------
 
 template <typename T>
+inline TVec2D<T> reflect(const TVec2D<T>& v, const TVec2D<T>& normal)
+{
+	T n = dot(v, normal);
+	return v - 2 * n * normal;
+}
+
+template <typename T>
 inline TVec3D<T> reflect(const TVec3D<T> &v, const TVec3D<T> &normal)
 {
 	T n = dot(v, normal);
