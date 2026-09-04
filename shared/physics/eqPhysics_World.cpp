@@ -910,7 +910,7 @@ void CEqPhysicsWorld::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj,
 		// Due to btCompoundShape producing unreliable results, there is a really slow checks appear...
 		for (const btCollisionShape* shapeB : bodyB->GetBulletCollisionShapes())
 		{
-			for (int i = 0; i < staticShapes.numElem(); ++i)
+			for (auto const [i, shapeA] : arrayEnumerate(staticShapes))
 			{
 				if (staticIndexedMesh)
 				{
@@ -922,7 +922,7 @@ void CEqPhysicsWorld::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj,
 						continue;
 				}
 
-				btCollisionObjectWrapper obA(nullptr, staticShapes[i], objA, transA, -1, -1);
+				btCollisionObjectWrapper obA(nullptr, shapeA, objA, transA, -1, -1);
 				btCollisionObjectWrapper obB(nullptr, shapeB, objB, transB, -1, -1);
 
 				if (!algorithm)
@@ -1597,7 +1597,7 @@ bool CEqPhysicsWorld::CheckAllowContactTest(const eqPhysCollisionFilter* filterP
 	return true;
 }
 
-
+PRAGMA_OPTIMIZE_OFF
 bool CEqPhysicsWorld::TestLineSingleObject(
 	CEqCollisionObject* object,
 	const FVector3D& start,
@@ -1634,7 +1634,7 @@ bool CEqPhysicsWorld::TestLineSingleObject(
 
 	const CEqBulletIndexedMesh* indexedMesh = object->GetMesh();
 	ArrayCRef<btCollisionShape*> objectShapes = object->GetBulletCollisionShapes();
-	for (int i = 0; i < objectShapes.numElem(); ++i)
+	for (auto const [i, shape] : arrayEnumerate(objectShapes))
 	{
 		if (indexedMesh)
 		{
@@ -1642,11 +1642,11 @@ bool CEqPhysicsWorld::TestLineSingleObject(
 			const eqPhysSurfParam* surfParam = GetSurfaceParamByID(surfMaterialIdx);
 
 			// skip the shape if collide mask not meeting expectation
-			if (surfParam && (surfParam->collideMask & rayMask) != rayMask)
+			if (surfParam && (surfParam->collideMask & rayMask) == 0)
 				continue;
 		}
 
-		btCollisionObjectWrapper objWrap(nullptr, objectShapes[i], object->m_collObject, objTransform, -1, -1);
+		btCollisionObjectWrapper objWrap(nullptr, shape, object->m_collObject, objTransform, -1, -1);
 		m_collisionWorld->rayTestSingleInternal(startTrans, endTrans, &objWrap, hitResultCallback);
 	}
 
@@ -1762,7 +1762,7 @@ bool CEqPhysicsWorld::TestConvexSweepSingleObject(CEqCollisionObject* object,
 
 	const CEqBulletIndexedMesh* indexedMesh = object->GetMesh();
 	ArrayCRef<btCollisionShape*> objectShapes = object->GetBulletCollisionShapes();
-	for (int i = 0; i < objectShapes.numElem(); ++i)
+	for (auto const [i, shape] : arrayEnumerate(objectShapes))
 	{
 		if (indexedMesh)
 		{
@@ -1770,11 +1770,11 @@ bool CEqPhysicsWorld::TestConvexSweepSingleObject(CEqCollisionObject* object,
 			const eqPhysSurfParam* surfParam = GetSurfaceParamByID(surfMaterialIdx);
 
 			// skip the shape if collide mask not meeting expectation
-			if (surfParam && (surfParam->collideMask & rayMask) != rayMask)
+			if (surfParam && (surfParam->collideMask & rayMask) == 0)
 				continue;
 		}
 
-		btCollisionObjectWrapper objWrap(nullptr, objectShapes[i], object->m_collObject, objTransform, -1, -1);
+		btCollisionObjectWrapper objWrap(nullptr, shape, object->m_collObject, objTransform, -1, -1);
 		m_collisionWorld->objectQuerySingleInternal((btConvexShape*)params.shape, startTrans, endTrans, &objWrap, hitResultCallback, 0.01f);
 	}
 
