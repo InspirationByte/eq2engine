@@ -79,8 +79,10 @@ bool COSFile::Open(const char* fileName, int modeFlags)
 	}
 
 	DWORD fileFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
-	if(modeFlags & WITH_OFFSET)
+	if (modeFlags & WITH_OFFSET)
 		fileFlagsAndAttributes |= FILE_FLAG_OVERLAPPED;
+	else
+		fileFlagsAndAttributes |= FILE_FLAG_SEQUENTIAL_SCAN;
 
 	m_fp = CreateFileA(fileName, desiredAccess, FILE_SHARE_READ, nullptr, creationDisposition, fileFlagsAndAttributes, nullptr);
 	if (m_fp == INVALID_HANDLE_VALUE)
@@ -210,8 +212,13 @@ int64 COSFile::ReadWithOffset(void* buffer, int64 count, int64 offset)
 #ifdef _WIN32
 	DWORD countRead;
 	OVERLAPPED overlapped{ 0 };
+	overlapped.hEvent = CreateEventA(NULL, TRUE, FALSE, NULL);
 	overlapped.Offset = offset & 0xFFFFFFFF;
 	overlapped.OffsetHigh = offset >> 32;
+
+	defer{
+		CloseHandle(overlapped.hEvent);
+	};
 
 	if (!ReadFile((HANDLE)m_fp, buffer, count, &countRead, &overlapped))
 	{
@@ -221,7 +228,9 @@ int64 COSFile::ReadWithOffset(void* buffer, int64 count, int64 offset)
 	}
 
 	if (GetOverlappedResult((HANDLE)m_fp, &overlapped, &countRead, TRUE))
+	{
 		return countRead;
+	}
 
 	return -1;
 #else
