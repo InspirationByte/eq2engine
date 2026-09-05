@@ -77,8 +77,12 @@ bool COSFile::Open(const char* fileName, int modeFlags)
 		desiredAccess = GENERIC_READ;
 		creationDisposition = OPEN_EXISTING;
 	}
-	m_fp = CreateFileA(fileName, desiredAccess, FILE_SHARE_READ, nullptr, creationDisposition, FILE_ATTRIBUTE_NORMAL, nullptr);
 
+	DWORD fileFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
+	if(modeFlags & WITH_OFFSET)
+		fileFlagsAndAttributes |= FILE_FLAG_OVERLAPPED;
+
+	m_fp = CreateFileA(fileName, desiredAccess, FILE_SHARE_READ, nullptr, creationDisposition, fileFlagsAndAttributes, nullptr);
 	if (m_fp == INVALID_HANDLE_VALUE)
 		return false;
 
@@ -170,7 +174,7 @@ bool COSFile::IsOpen() const
 #endif
 }
 
-size_t COSFile::Read(void* buffer, int64 count)
+int64 COSFile::Read(void* buffer, int64 count)
 {
 	if (count <= 0)
 		return 0;
@@ -198,7 +202,34 @@ size_t COSFile::Read(void* buffer, int64 count)
 #endif
 }
 
-size_t COSFile::Write(const void* buffer, int64 count)
+int64 COSFile::ReadWithOffset(void* buffer, int64 count, int64 offset)
+{
+	if (count <= 0)
+		return 0;
+
+#ifdef _WIN32
+	DWORD countRead;
+	OVERLAPPED overlapped{ 0 };
+	overlapped.Offset = offset & 0xFFFFFFFF;
+	overlapped.OffsetHigh = offset >> 32;
+
+	if (!ReadFile((HANDLE)m_fp, buffer, count, &countRead, &overlapped))
+	{
+		const DWORD lastError = GetLastError();
+		if (lastError != ERROR_IO_PENDING)
+			return (lastError == ERROR_HANDLE_EOF) ? 0 : -1;
+	}
+
+	if (GetOverlappedResult((HANDLE)m_fp, &overlapped, &countRead, TRUE))
+		return countRead;
+
+	return -1;
+#else
+	return ::pread((int)(intptr_t)m_fp, buffer, count, offset);
+#endif
+}
+
+int64 COSFile::Write(const void* buffer, int64 count)
 {
 	if (count <= 0)
 		return 0;
@@ -228,7 +259,7 @@ size_t COSFile::Write(const void* buffer, int64 count)
 #endif
 }
 
-size_t COSFile::Seek(int64 offset, ESeekPos pos)
+int64 COSFile::Seek(int64 offset, ESeekPos pos)
 {
 #ifdef _WIN32
 	DWORD moveMethod[3] = { 
@@ -258,7 +289,7 @@ size_t COSFile::Seek(int64 offset, ESeekPos pos)
 #endif
 }
 
-size_t COSFile::Tell() const
+int64 COSFile::Tell() const
 {
 #ifdef _WIN32
 	LARGE_INTEGER li;

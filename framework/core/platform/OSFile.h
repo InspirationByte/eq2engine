@@ -9,6 +9,8 @@ public:
 		WRITE		= (1 << 1),
 		APPEND		= (1 << 2),
 		OPEN_EXIST	= (1 << 3),
+
+		WITH_OFFSET	= (1 << 4),
 	};
 
 	enum class ESeekPos
@@ -26,10 +28,11 @@ public:
 	void	Close();
 	bool	IsOpen() const;
 
-	size_t	Read(void* buffer, int64 count);
-	size_t	Write(const void* buffer, int64 count);
-	size_t	Seek(int64 offset, ESeekPos pos);
-	size_t	Tell() const;
+	int64	Read(void* buffer, int64 count);
+	int64	ReadWithOffset(void* buffer, int64 count, int64 offset);
+	int64	Write(const void* buffer, int64 count);
+	int64	Seek(int64 offset, ESeekPos pos);
+	int64	Tell() const;
 
 	bool	Flush();
 
