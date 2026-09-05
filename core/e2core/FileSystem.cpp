@@ -99,23 +99,23 @@ void FSSearchPathInfo::MapFiles(EqStringRef basePath, FSSearchPathInfo& pathInfo
 // File stream
 //------------------------------------------------------------------------------
 
-CFile::CFile(const char* fileName, COSFile&& file)
+COSFileStream::COSFileStream(const char* fileName, COSFile&& file)
 	: m_name(fileName)
 	, m_osFile(std::move(file))
 {
 }
 
-VSSize CFile::Seek(int64 pos, EFileStreamSeek seekType )
+VSSize COSFileStream::Seek(int64 pos, EFileStreamSeek seekType )
 {
 	return m_osFile.Seek(pos, static_cast<COSFile::ESeekPos>(seekType));
 }
 
-VSSize CFile::Tell() const
+VSSize COSFileStream::Tell() const
 {
 	return m_osFile.Tell();
 }
 
-VSSize CFile::Read( void *dest, VSSize count, VSSize size)
+VSSize COSFileStream::Read( void *dest, VSSize count, VSSize size)
 {
 	VSSize numBytes = count * size;
 	if (numBytes <= 0)
@@ -123,7 +123,7 @@ VSSize CFile::Read( void *dest, VSSize count, VSSize size)
 	return m_osFile.Read(dest, numBytes) / size;
 }
 
-VSSize CFile::Write( const void *src, VSSize count, VSSize size)
+VSSize COSFileStream::Write( const void *src, VSSize count, VSSize size)
 {
 	VSSize numBytes = count * size;
 	if (numBytes <= 0)
@@ -131,12 +131,12 @@ VSSize CFile::Write( const void *src, VSSize count, VSSize size)
 	return m_osFile.Write(src, numBytes) / size;
 }
 
-bool CFile::Flush()
+bool COSFileStream::Flush()
 {
 	return m_osFile.Flush();
 }
 
-VSSize CFile::GetSize()
+VSSize COSFileStream::GetSize()
 {
 	const VSSize currentPos = Tell();
 	Seek(0, FS_SEEK_END);
@@ -147,7 +147,7 @@ VSSize CFile::GetSize()
 	return size;
 }
 
-uint32 CFile::GetCRC32()
+uint32 COSFileStream::GetCRC32()
 {
 	const VSSize pos = Tell();
 	const VSSize fileSize = GetSize();
@@ -207,7 +207,7 @@ IFileStreamPtr CFlatFileReader::Open(const char* filename, int modeFlags)
 
 	COSFile osFile;
 	if (osFile.Open(filePath, COSFile::READ))
-		return IFileStreamPtr(CRefPtr_new(CFile, *it, std::move(osFile)));
+		return IFileStreamPtr(CRefPtr_new(COSFileStream, *it, std::move(osFile)));
 
 	return nullptr;
 }
@@ -489,7 +489,7 @@ IFileStreamPtr CFileSystem::Open(const char* filename, int openFlags, int search
 		COSFile osFile;
 		if (osFile.Open(filePath, osModeFlags))
 		{
-			fileHandle = IFileStreamPtr(CRefPtr_new(CFile, filename, std::move(osFile)));
+			fileHandle = IFileStreamPtr(CRefPtr_new(COSFileStream, filename, std::move(osFile)));
 			return true;
 		}
 

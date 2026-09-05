@@ -16,12 +16,12 @@ struct FSSearchPathInfo;
 // File stream
 //------------------------------------------------------------------------------
 
-class CFile : public IFileStream
+class COSFileStream : public IFileStream
 {
 	friend class CFileSystem;
 
 public:
-	CFile(const char* fileName, COSFile&& file);
+	COSFileStream(const char* fileName, COSFile&& file);
 
 	VSSize				Seek(int64 pos, EFileStreamSeek seekType );
 	VSSize				Tell() const;
@@ -47,7 +47,7 @@ protected:
 
 class CFileSystem : public IFileSystem
 {
-	friend class CFile;
+	friend class COSFileStream;
 	friend class CDPKFileReader;
 	friend class CZipFileReader;
 public:
