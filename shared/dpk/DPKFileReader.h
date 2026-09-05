@@ -31,8 +31,7 @@ class CDPKFileStream : public IPackFileStream
 	friend class CDPKFileReader;
 	friend class CFileSystem;
 public:
-	CDPKFileStream(const char* filename, const DPKFileHdr& info, COSFile&& osFile);
-	~CDPKFileStream();
+	CDPKFileStream(const char* filename, const DPKFileHdr& info, COSFile& osFile);
 
 	// reads data from virtual stream
 	VSSize				Read(void *dest, VSSize count, VSSize size);
@@ -44,7 +43,7 @@ public:
 	bool				Flush();
 
 	// returns stream type
-	EFileStreamType			GetType() const { return FS_TYPE_FILE_PACKAGE; }
+	EFileStreamType		GetType() const { return FS_TYPE_FILE_PACKAGE; }
 
 	// returns CRC32 checksum of stream
 	uint32				GetCRC32();
@@ -54,7 +53,7 @@ public:
 	CBasePackageReader* GetHostPackage() const;
 
 protected:
-	void				DecodeBlock(int block);
+	bool				DecodeBlock(int block);
 
 	struct BlockInfo;
 
@@ -62,9 +61,9 @@ protected:
 
 	DPKFileHdr			m_info;
 	IceKey				m_ice;
-	COSFile				m_osFile;
 	Array<BlockInfo>	m_blockInfo{ PP_SL };
-	
+
+	COSFile&			m_osFile;
 	CDPKFileReader*		m_host{ nullptr };
 	void*				m_blockData{ nullptr };
 	void*				m_tmpDecompressData{ nullptr };
@@ -93,8 +92,9 @@ public:
 	int						FindFileIndex(const char* filename) const;
 
 protected:
-	bool					InitPackageInternal(COSFile& osFile, const VSSize startOffset, const dpkheader_t& header, const char* mountPath /*= nullptr*/);
+	bool					InitPackageInternal(const VSSize startOffset, const char* mountPath /*= nullptr*/);
 
+	COSFile					m_osFile;
 	Array<DPKFileHdr>		m_dpkFiles{ PP_SL };
 	Map<int, int>			m_fileIndices{ PP_SL };
 	int						m_version{ 0 };
