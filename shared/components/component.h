@@ -15,6 +15,8 @@ enum EComponentFlags
 template <typename HOST>
 struct SimpleComponentBase
 {
+	virtual ~SimpleComponentBase() = default;
+
 	static constexpr int FLAGS = 0;
 };
 
