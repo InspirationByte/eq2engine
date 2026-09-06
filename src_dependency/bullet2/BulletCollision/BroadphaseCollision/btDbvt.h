@@ -176,9 +176,15 @@ private:
 // Types
 typedef btDbvtAabbMm btDbvtVolume;
 
+struct btDbvtNode;
+typedef btDbvtNode* (*btDbvtNodeAllocFn)();
+typedef void (*btDbvtNodeFreeFn)(btDbvtNode* node);
+
 /* btDbvtNode				*/
 struct btDbvtNode
 {
+	static void setNodeAllocFreeFunc(btDbvtNodeAllocFn alloc, btDbvtNodeFreeFn free);
+
 	btDbvtVolume volume;
 	btDbvtNode* parent;
 	DBVT_INLINE bool isleaf() const { return (childs[1] == 0); }

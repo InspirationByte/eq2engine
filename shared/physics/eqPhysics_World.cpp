@@ -404,6 +404,7 @@ void CEqPhysicsWorld::InitWorld()
 void CEqPhysicsWorld::InitGrid(const BoundingBox& worldBBox)
 {
 	m_broadphase = PPNew CEqPhysicsBroadphase();
+	btDbvtNode::setNodeAllocFreeFunc(CEqPhysicsBroadphase::AllocNode, CEqPhysicsBroadphase::FreeNode);
 
 	for(CEqRigidBody* body : m_dynObjects)
 		SetupCollisionObjectBroadphase(body);
@@ -427,6 +428,7 @@ void CEqPhysicsWorld::DestroyGrid()
 		collObj->m_broadphaseUnit = nullptr;
 
 	SAFE_DELETE(m_broadphase);
+	btDbvtNode::setNodeAllocFreeFunc(nullptr, nullptr);
 }
 
 void CEqPhysicsWorld::DestroyWorld()
@@ -1597,7 +1599,6 @@ bool CEqPhysicsWorld::CheckAllowContactTest(const eqPhysCollisionFilter* filterP
 	return true;
 }
 
-PRAGMA_OPTIMIZE_OFF
 bool CEqPhysicsWorld::TestLineSingleObject(
 	CEqCollisionObject* object,
 	const FVector3D& start,

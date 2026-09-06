@@ -16,6 +16,25 @@ subject to the following restrictions:
 
 #include "btDbvt.h"
 
+static btDbvtNode* allocnodedefault()
+{
+	return new (btAlignedAlloc(sizeof(btDbvtNode), 16)) btDbvtNode();
+}
+
+static void freenodedefault(btDbvtNode* node)
+{
+	btAlignedFree(node);
+}
+
+static btDbvtNodeAllocFn s_allocNodeFunc = allocnodedefault;
+static btDbvtNodeFreeFn s_freeNodeFunc = freenodedefault;
+
+void btDbvtNode::setNodeAllocFreeFunc(btDbvtNodeAllocFn allocfn, btDbvtNodeFreeFn freefn)
+{
+	s_allocNodeFunc = allocfn ? allocfn : allocnodedefault;
+	s_freeNodeFunc = freefn ? freefn : freenodedefault;
+}
+
 //
 typedef btAlignedObjectArray<btDbvtNode*> tNodeArray;
 typedef btAlignedObjectArray<const btDbvtNode*> tConstNodeArray;
@@ -72,7 +91,7 @@ static void getmaxdepth(const btDbvtNode* node, int depth, int& maxdepth)
 static DBVT_INLINE void deletenode(btDbvt* pdbvt,
 								   btDbvtNode* node)
 {
-	btAlignedFree(pdbvt->m_free);
+	s_freeNodeFunc(pdbvt->m_free);
 	pdbvt->m_free = node;
 }
 
@@ -103,7 +122,7 @@ static DBVT_INLINE btDbvtNode* createnode(btDbvt* pdbvt,
 	}
 	else
 	{
-		node = new (btAlignedAlloc(sizeof(btDbvtNode), 16)) btDbvtNode();
+		node = s_allocNodeFunc();
 	}
 	node->parent = parent;
 	node->data = data;
@@ -478,7 +497,7 @@ void btDbvt::clear()
 {
 	if (m_root)
 		recursedeletenode(this, m_root);
-	btAlignedFree(m_free);
+	s_freeNodeFunc(m_free);
 	m_free = 0;
 	m_lkhd = -1;
 	m_stkStack.clear();

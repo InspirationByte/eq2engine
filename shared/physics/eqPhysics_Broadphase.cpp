@@ -6,11 +6,23 @@
 
 static constexpr float BROADPHASE_DBVT_MARGIN = 1.0f;
 
-eqPhysBroadphaseUnit* CEqPhysicsBroadphase::CreateUnit(const BoundingBox& bbox, CEqCollisionObject* collObj)
+MemoryPool<btDbvtNode> CEqPhysicsBroadphase::s_nodeAlloc{ PP_SL };
+
+btDbvtNode* CEqPhysicsBroadphase::AllocNode()
+{
+	return new(s_nodeAlloc.allocate()) btDbvtNode();
+}
+
+void CEqPhysicsBroadphase::FreeNode(btDbvtNode* node)
+{
+	s_nodeAlloc.deallocate(node);
+}
+
+CEqPhysicsBroadphase::Unit* CEqPhysicsBroadphase::CreateUnit(const BoundingBox& bbox, CEqCollisionObject* collObj)
 {
 	using namespace EqBulletUtils;
 
-	eqPhysBroadphaseUnit* newUnit = new (m_unitAlloc.allocate()) eqPhysBroadphaseUnit;
+	Unit* newUnit = new (m_unitAlloc.allocate()) Unit();
 	const int setIdx = collObj->IsDynamic() ? DYNAMIC_SET : FIXED_SET;
 
 	btDbvtVolume dbvtBox;
@@ -24,13 +36,13 @@ eqPhysBroadphaseUnit* CEqPhysicsBroadphase::CreateUnit(const BoundingBox& bbox, 
 	return newUnit;
 }
 
-void CEqPhysicsBroadphase::DestroyUnit(eqPhysBroadphaseUnit* unit)
+void CEqPhysicsBroadphase::DestroyUnit(Unit* unit)
 {
 	m_sets[unit->setIdx].remove(unit->leaf);
 	m_unitAlloc.deallocate(unit);
 }
 
-void CEqPhysicsBroadphase::SetAabb(eqPhysBroadphaseUnit* unit, const BoundingBox& bbox)
+void CEqPhysicsBroadphase::SetAabb(Unit* unit, const BoundingBox& bbox)
 {
 	using namespace EqBulletUtils;
 
@@ -76,7 +88,7 @@ struct CEqPhysicsBroadphase::RayTester : btDbvt::ICollide
 	}
 	void Process(const btDbvtNode* leaf)
 	{
-		eqPhysBroadphaseUnit* unit = (eqPhysBroadphaseUnit*)leaf->data;
+		Unit* unit = (Unit*)leaf->data;
 		processFunc(unit->object);
 	}
 };
@@ -91,7 +103,7 @@ struct CEqPhysicsBroadphase::AABBTester : btDbvt::ICollide
 	}
 	void Process(const btDbvtNode* leaf)
 	{
-		eqPhysBroadphaseUnit* unit = (eqPhysBroadphaseUnit*)leaf->data;
+		Unit* unit = (Unit*)leaf->data;
 		processFunc(unit->object);
 	}
 };
