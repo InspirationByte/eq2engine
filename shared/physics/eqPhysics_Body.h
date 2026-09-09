@@ -93,9 +93,9 @@ public:
 	void				ApplyWorldImpulse(const FVector3D& position, const Vector3D& impulse);		///< apply impulse at world position
 	void				ApplyWorldForce(const FVector3D& position, const Vector3D& force);			///< apply impulse at world position
 
-	void				SetPosition(const FVector3D& position);										///< sets new position
-	void				SetOrientation(const Quaternion& orient);									///< sets new orientation and updates inertia tensor
-	void				SetTransform(const Transform3D& trs);
+	void				SetPosition(const FVector3D& position) override;							///< sets new position
+	void				SetOrientation(const Quaternion& orient) override;							///< sets new orientation and updates inertia tensor
+	void				SetTransform(const Transform3D& trs) override;
 
 	const FVector3D&	GetPrevPosition() const;													///< returns last frame body position
 	const Quaternion&	GetPrevOrientation() const;													///< returns last frame body Quaternion orientation
