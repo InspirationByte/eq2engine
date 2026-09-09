@@ -12,15 +12,17 @@
 #include "core/IFileSystem.h"
 #include "core/IEqCPUServices.h"
 #include "core/platform/eqjobmanager.h"
+#include "utils/KeyValues.h"
 
 DECLARE_CVAR(__cheats, "1", "Enable cheats", CV_PROTECTED | CV_INVISIBLE);
 
 void Usage()
 {
-	MsgWarning("USAGE:\n	shadercooker -target <target name>\n");
+	MsgWarning("USAGE:\n	shadercooker [-set <PARAMETER> <VALUE>] -target <target name>\n");
 }
 
 extern void CookTarget(CEqJobManager& jobMng, const char* pszTargetName, const char* shaderNameFilter);
+extern void SetVariable(const char* key, const char* value);
 
 int main(int argc, char* argv[])
 {
@@ -42,6 +44,9 @@ int main(int argc, char* argv[])
 	if (args.numElem() <= 1)
 		Usage();
 
+	SetVariable("ENGINE_DIR", g_fileSystem->GetCurrentDataDirectory());
+	SetVariable("GAME_DIR", g_fileSystem->GetCurrentGameDirectory());
+
 	{
 		EqString shaderFilter;
 
@@ -53,6 +58,17 @@ int main(int argc, char* argv[])
 				CookTarget(jobMng, g_cmdLine->GetArgumentsOf(i), shaderFilter);
 			else if (!argStr.CompareCaseIns("-filter"))
 				shaderFilter = g_cmdLine->GetArgumentsOf(i);
+			else if (!argStr.CompareCaseIns("-set"))
+			{
+				const char* keyValue[2];
+				const int numValues = g_cmdLine->GetArgumentsOf(i, keyValue, elementsOf(keyValue));
+				if (numValues != 2)
+				{
+					Msg("-set: key and value are required\n");
+					continue;
+				}
+				SetVariable(keyValue[0], keyValue[1]);
+			}
 		}
 	}
 

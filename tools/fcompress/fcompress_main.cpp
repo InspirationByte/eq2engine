@@ -19,7 +19,7 @@
 #include <lz4.h>
 
 #if defined(_WIN32)
-#include <direct.h>
+#include <direct.h>v
 #if defined(_DEBUG)
 #include <crtdbg.h>
 #endif
@@ -30,7 +30,7 @@
 
 static void Usage()
 {
-	MsgWarning("USAGE:\n	fcompress -target <target name> -set <key> <value>\n");
+	MsgWarning("USAGE:\n	fcompress [-set <PARAMETER> <VALUE>] -target <target name>\n");
 #if REPACK_SUPPORT
 	MsgWarning("			fcompress -repack <EPK v6 filename>\n");
 #endif

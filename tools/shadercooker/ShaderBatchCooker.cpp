@@ -38,8 +38,23 @@ Targets
 }
 */
 
-static constexpr EqStringRef s_engineDirTag("%ENGINE_DIR%");
-static constexpr EqStringRef s_gameDirTag("%GAME_DIR%");
+static KVSection s_variables;
+
+static void ProcessVariableString(EqString& string)
+{
+	for (const KVSection& key : s_variables.Keys())
+	{
+		int found = 0;
+		do {
+			found = string.ReplaceSubstr(EqString::Format("%%%s%%", key.GetName()), KV_GetValueString(&key), true, found);
+		} while (found != -1);
+	}
+}
+
+void SetVariable(const char* key, const char* value)
+{
+	s_variables.SetKey(key, value);
+}
 
 //-----------------------------------------------------------------------
 
@@ -1643,8 +1658,7 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 				EqString includePath;
 				includePathKey.GetValues(includePath);
 
-				includePath.ReplaceSubstr(s_engineDirTag, g_fileSystem->GetCurrentDataDirectory());
-				includePath.ReplaceSubstr(s_gameDirTag, g_fileSystem->GetCurrentGameDirectory());
+				ProcessVariableString(includePath);
 
 				m_targetProps.includePaths.append(std::move(includePath));
 			}
@@ -1675,8 +1689,7 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 			m_targetProps.sourceShaderPath = shadersSrc;
 			m_targetProps.sourceShaderDescExt = sourceFileExt.TrimChar('.');
 
-			m_targetProps.sourceShaderPath.ReplaceSubstr(s_engineDirTag, g_fileSystem->GetCurrentDataDirectory());
-			m_targetProps.sourceShaderPath.ReplaceSubstr(s_gameDirTag, g_fileSystem->GetCurrentGameDirectory());
+			ProcessVariableString(m_targetProps.sourceShaderPath);
 		}
 
 		// target settings
@@ -1690,8 +1703,7 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 
 			m_targetProps.targetFolder = targetFolder;
 
-			m_targetProps.targetFolder.ReplaceSubstr(s_engineDirTag, g_fileSystem->GetCurrentDataDirectory());
-			m_targetProps.targetFolder.ReplaceSubstr(s_gameDirTag, g_fileSystem->GetCurrentGameDirectory());
+			ProcessVariableString(m_targetProps.targetFolder);
 
 			g_fileSystem->MakeDir(m_targetProps.targetFolder, SP_ROOT);
 		}
