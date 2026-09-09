@@ -23,11 +23,10 @@ public:
 
 protected:
 	void			ParseData(OggVorbis_File* file);
-
 	int				ReadData(void* out, int offset, int count) const;
 
 	IFileStreamPtr	m_oggFile;
-	OggVorbis_File		m_oggStream;
+	OggVorbis_File	m_oggStream;
 
-	int					m_dataSize;     // in bytes
+	int				m_dataSize;     // in bytes
 };

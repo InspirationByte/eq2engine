@@ -721,6 +721,8 @@ bool CEqAudioSourceAL::QueueStreamChannel(ALuint buffer)
 	ALenum alFormat = GetSoundSourceFormatAsALEnum(fmt);
 	const int sampleSize = (fmt.bitwidth >> 3) * fmt.channels;
 
+	// TODO: async
+
 	// read sample data and update AL buffers
 	const int numRead = sample->GetSamples(pcmBuffer, EQSND_STREAM_BUFFER_SIZE / sampleSize, streamPos, m_looping);
 

@@ -14,25 +14,23 @@ namespace eqVorbisFile
 {
 	size_t fread(void *ptr, size_t size, size_t nmemb, void *datasource)
 	{
-		IFileStream* pFile = (IFileStream*)datasource;
-
-		return pFile->Read(ptr, nmemb, size);
+		IFileStream* file = reinterpret_cast<IFileStream*>(datasource);
+		return file->Read(ptr, nmemb, size);
 	}
 
 	int	fseek(void *datasource, ogg_int64_t offset, int whence)
 	{
-		IFileStream* pFile = (IFileStream*)datasource;
+		IFileStream* file = reinterpret_cast<IFileStream*>(datasource);
 
 		// let's do some undocumented features of ogg
 
 		int returnVal;
-
 		switch(whence)
 		{
 			case SEEK_SET:
 			case SEEK_CUR:
 			case SEEK_END:
-				returnVal = pFile->Seek(offset, (EFileStreamSeek)whence);
+				returnVal = file->Seek(offset, (EFileStreamSeek)whence);
 				break;
 			default: //Bad value
 				return -1;
@@ -40,15 +38,14 @@ namespace eqVorbisFile
 
 		if(returnVal >= 0)
 			return 0;
-		else
-			return -1; //Could not do a seek. Device not capable of seeking. (Should never encounter this case)
+
+		return -1; //Could not do a seek. Device not capable of seeking. (Should never encounter this case)
 	}
 
 	long ftell(void *datasource)
 	{
-		IFileStream* pFile = (IFileStream*)datasource;
-
-		return pFile->Tell();
+		IFileStream* file = reinterpret_cast<IFileStream*>(datasource);
+		return file->Tell();
 	}
 
 	int fclose(void *datasource)
@@ -62,6 +59,6 @@ void CSoundSource_Ogg::ParseFormat(vorbis_info& info)
 	m_format.channels = info.channels;
 	m_format.frequency = info.rate;
 	m_format.dataFormat = 1;	// PCM
-	m_format.bitwidth = 16; // Ogg Vorbis is always 16 bit
+	m_format.bitwidth = 16;		// Ogg Vorbis is always 16 bit
 }
 

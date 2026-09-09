@@ -18,7 +18,6 @@ bool CSoundSource_OggStream::Load()
 		return false;
 
 	int ovResult = ov_open_callbacks(m_oggFile, &m_oggStream, nullptr, 0, eqVorbisFile::callbacks);
-
 	if(ovResult < 0)
 	{
 		m_oggFile = nullptr;
