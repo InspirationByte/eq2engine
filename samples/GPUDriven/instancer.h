@@ -39,7 +39,7 @@ public:
 	DemoGRIMRenderer(DemoGRIMInstanceAllocator& instAlloc);
 
 	void	FillBindGroupLayoutDesc(BindGroupLayoutDesc& bindGroupLayout) const;
-	void	GetInstancesBindGroup(int bindGroupIdx, IGPUPipelineLayout* pipelineLayout, IGPUBindGroupPtr& outBindGroup, uint& lastUpdateToken) const;
+	void	GetInstancesBindGroup(int bindGroupIdx, IGPUBindingLayout* pipelineLayout, IGPUBindGroupPtr& outBindGroup, uint& lastUpdateToken) const;
 
 	void	VisibilityCullInstances_Compute(IntermediateState& intermediate);
 	void	VisibilityCullInstances_Software(IntermediateState& intermediate);

@@ -20,15 +20,14 @@ BEGIN_SHADER_CLASS(
 	{
 		m_flags |= MATERIAL_FLAG_SKINNED;
 		m_colorVar = GetMaterialVar("color", "[1 1 1 1]");
+	}
 
-		m_materialParamsBuffer = MakeParameterUniformBuffer(
+	SHADER_INIT_RESOURCES()
+	{
+		m_materialParamsBuffer = MakeParameterUniformBuffer("paramBuffer", BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST,
 			m_colorVar.Get(),
 			Vector4D(1, 1, 0, 0)
 		);
-	}
-
-	SHADER_INIT_TEXTURES()
-	{
 		SHADER_PARAM_TEXTURE(BaseTexture, m_baseTexture);
 	}
 
@@ -60,15 +59,15 @@ BEGIN_SHADER_CLASS(
 	void FillBindGroupLayout_Constant(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const
 	{
 		Builder<BindGroupLayoutDesc>(bindGroupLayout)
-			.Buffer("CameraBuffer", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
-			.Sampler("Filter", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-			.Texture("BaseTex", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D);
+			.Buffer(StringIdConst24("materialParams"), 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
+			.Sampler(StringIdConst24("BaseTextureSampler"), 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+			.Texture(StringIdConst24("BaseTexture"), 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D);
 	}
 
 	void FillBindGroupLayout_RenderPass(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const
 	{
 		Builder<BindGroupLayoutDesc>(bindGroupLayout)
-			.Buffer("CameraBuffer", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM);
+			.Buffer(StringIdConst24("camera"), 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM);
 	}
 
 	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
@@ -79,9 +78,9 @@ BEGIN_SHADER_CLASS(
 			{
 				const ITexturePtr& baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetErrorCheckerboardTexture();
 				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-					.Buffer(0, m_materialParamsBuffer)
-					.Sampler(1, SamplerStateParams(m_texFilter, m_texAddressMode))
-					.Texture(2, baseTexture)
+					.Buffer(StringIdConst24("materialParams"), m_materialParamsBuffer)
+					.Sampler(StringIdConst24("BaseTextureSampler"), SamplerStateParams(m_texFilter, m_texAddressMode))
+					.Texture(StringIdConst24("BaseTexture"), baseTexture)
 					.End();
 				CreatePersistentBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 			}
@@ -111,7 +110,7 @@ BEGIN_SHADER_CLASS(
 			}
 
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, cameraParamsBuffer)
+				.Buffer(StringIdConst24("camera"), cameraParamsBuffer)
 				.End();
 			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 		}

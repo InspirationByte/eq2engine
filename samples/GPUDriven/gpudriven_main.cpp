@@ -67,27 +67,27 @@ CState_GpuDrivenDemo::CState_GpuDrivenDemo()
 // @from - used to transfer data
 void CState_GpuDrivenDemo::OnEnter(CAppStateBase* from)
 {
-	g_inputCommandBinder->AddBinding("W", "forward", [](void* _this, const Vector3D& value) {
+	g_inputCommandBinder->AddNamedBinding("forward", "W", [](void* _this, const Vector3D& value) {
 		CState_GpuDrivenDemo* this_ = reinterpret_cast<CState_GpuDrivenDemo*>(_this);
 		bitsSet(this_->m_cameraButtons, CAM_FORWARD, value.x > 0);
 	}, this);
 
-	g_inputCommandBinder->AddBinding("S", "backward", [](void* _this, const Vector3D& value) {
+	g_inputCommandBinder->AddNamedBinding("backward", "S", [](void* _this, const Vector3D& value) {
 		CState_GpuDrivenDemo* this_ = reinterpret_cast<CState_GpuDrivenDemo*>(_this);
 		bitsSet(this_->m_cameraButtons, CAM_BACKWARD, value.x > 0);
 	}, this);
 
-	g_inputCommandBinder->AddBinding("A", "strafeleft", [](void* _this, const Vector3D& value) {
+	g_inputCommandBinder->AddNamedBinding("strafeleft", "A", [](void* _this, const Vector3D& value) {
 		CState_GpuDrivenDemo* this_ = reinterpret_cast<CState_GpuDrivenDemo*>(_this);
 		bitsSet(this_->m_cameraButtons, CAM_SIDE_LEFT, value.x > 0);
 	}, this);
 
-	g_inputCommandBinder->AddBinding("D", "straferight", [](void* _this, const Vector3D& value) {
+	g_inputCommandBinder->AddNamedBinding("straferight", "D", [](void* _this, const Vector3D& value) {
 		CState_GpuDrivenDemo* this_ = reinterpret_cast<CState_GpuDrivenDemo*>(_this);
 		bitsSet(this_->m_cameraButtons, CAM_SIDE_RIGHT, value.x > 0);
 	}, this);
 
-	g_inputCommandBinder->AddBinding("R", "reset", [](void* _this, const Vector3D& value) {
+	g_inputCommandBinder->AddNamedBinding("reset", "R", [](void* _this, const Vector3D& value) {
 		CState_GpuDrivenDemo* this_ = reinterpret_cast<CState_GpuDrivenDemo*>(_this);
 
 		if (value.x <= 0)
@@ -136,7 +136,7 @@ void CState_GpuDrivenDemo::OnEnter(CAppStateBase* from)
 			const GRIMArchetype archetypeId = DemoGRIMRenderer::Get().CreateStudioDrawArchetype(geom, s_gameObjectVF, 3);
 
 			// TODO: body group lookup
-			s_modelIdToArchetypeId.insert(geom->GetCacheId(), archetypeId);
+			s_modelIdToArchetypeId.insert(geom->GetCacheIdx(), archetypeId);
 		}
 	}
 
@@ -156,10 +156,10 @@ void CState_GpuDrivenDemo::OnLeave(CAppStateBase* to)
 	s_storedRenderState = {};
 	s_gameObjectVF = nullptr;
 
-	g_inputCommandBinder->UnbindCommandByName("forward");
-	g_inputCommandBinder->UnbindCommandByName("backward");
-	g_inputCommandBinder->UnbindCommandByName("strafeleft");
-	g_inputCommandBinder->UnbindCommandByName("straferight");
+	g_inputCommandBinder->RemoveNamedBinding("forward");
+	g_inputCommandBinder->RemoveNamedBinding("backward");
+	g_inputCommandBinder->RemoveNamedBinding("strafeleft");
+	g_inputCommandBinder->RemoveNamedBinding("straferight");
 
 	g_studioCache->ReleaseCache();
 }
@@ -176,10 +176,10 @@ void CState_GpuDrivenDemo::InitGame()
 
 	for (int i = 0; i < inst_count.GetInt(); ++i)
 	{
-		const int rndModelIdx = (i % (modelCount - 1)) + 1;
+		const int rndModelIdx = modelCount > 1 ? (i % (modelCount - 1)) + 1 : 0;
 
 		CEqStudioGeom* geom = g_studioCache->GetModel(rndModelIdx);
-		auto it = s_modelIdToArchetypeId.find(geom->GetCacheId());
+		auto it = s_modelIdToArchetypeId.find(geom->GetCacheIdx());
 		if (it.atEnd())
 		{
 			ASSERT_FAIL("Can't get archetype for model idx = %d", rndModelIdx);
@@ -356,7 +356,7 @@ void CState_GpuDrivenDemo::RenderGame()
 		{
 			IGPURenderPassRecorderPtr rendPassRecorder = cmdRecorder->BeginRenderPass(
 				Builder<RenderPassDesc>()
-				.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+				.ColorTarget(g_matSystem->GetCurrentBackbuffer(), true)
 				.DepthStencilTarget(g_matSystem->GetDefaultDepthBuffer())
 				.DepthClear()
 				.End()
