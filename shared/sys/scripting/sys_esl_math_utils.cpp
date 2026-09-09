@@ -53,6 +53,8 @@ static bool	CSpline3d_FromKeyValues(CSpline3d& spline, const KVSection& section)
 		pointSec.Get("tangentBefore").GetValues(splinePt.tangents[TANGENT_BEFORE]);
 		pointSec.Get("tangentAfter").GetValues(splinePt.tangents[TANGENT_AFTER]);
 	}
+	spline.SetDuration(static_cast<float>(spline.GetPointsCount()));
+	spline.UpdateDistances();
 	return true;
 }
 

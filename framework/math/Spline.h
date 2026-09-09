@@ -89,6 +89,7 @@ public:
 	bool					IsLooped() const { return m_loop; }
 
 	float					GetDuration() const { return m_duration; }
+	void					SetDuration(float duration) { m_duration = duration; }
 	float					GetLength() const { return m_distances.numElem() ? m_distances.back().y : 0.0f; }
 
 	// raw points
