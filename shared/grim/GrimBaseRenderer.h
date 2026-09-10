@@ -122,7 +122,6 @@ protected:
 	virtual void	VisibilityCullInstances_Software(IntermediateState& intermediate) = 0;
 
 	void			SortInstances_Compute(IntermediateState& intermediate);
-	void			SortInstances_Software(IntermediateState& intermediate);
 
 	void			UpdateInstanceBounds_Compute(IntermediateState& intermediate);
 	void			UpdateInstanceBounds_Software(IntermediateState& intermediate);
@@ -221,7 +220,7 @@ struct GRIMBaseRenderer::GPUInstanceBound
 {
 	int		first{ 0 };
 	int		last{ 0 };
-	int		archIdx{ -1 };
+	int		archIdx{ -1 };	// GRIMArchetype
 	int		lodIndex{ -1 };
 };
 

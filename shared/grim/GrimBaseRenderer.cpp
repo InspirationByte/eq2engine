@@ -863,23 +863,6 @@ void GRIMBaseRenderer::SortInstances_Compute(IntermediateState& intermediate)
 	m_sortShader->SortKeys(StringIdConst24(SHADER_PIPELINE_SORT_INSTANCES), intermediate.cmdRecorder, rendState.sortedInstanceIdsBuffer, maxInstancesCount, rendState.culledInstanceInfosBuffer);
 }
 
-void GRIMBaseRenderer::SortInstances_Software(IntermediateState& intermediate)
-{
-	PROF_EVENT_F();
-
-	ArrayRef<GPUInstanceInfo> instanceInfos = intermediate.instanceInfos;
-
-	// COMPUTE SHADER REFERENCE: SortInstanceArchetypes
-	// Input / Output:
-	//		instanceInfos		: buffer<GPUInstanceInfo[]>
-
-	// sort instances by archetype
-	// as we need them to be linear for each draw call
-	arraySort(instanceInfos, [](const GPUInstanceInfo& a, const GPUInstanceInfo& b) {
-		return a.packedArchetypeId - b.packedArchetypeId;
-	});
-}
-
 void GRIMBaseRenderer::UpdateInstanceBounds_Compute(IntermediateState& intermediate)
 {
 	CGPUScopedDbgGroup g("UpdateInstanceBounds", intermediate.cmdRecorder);
@@ -916,58 +899,60 @@ void GRIMBaseRenderer::UpdateInstanceBounds_Software(IntermediateState& intermed
 {
 	PROF_EVENT_F();
 
+	// each loop is a Compute shader invocation.
+
 	ArrayCRef<GPUInstanceInfo> instanceInfos = intermediate.instanceInfos;
-	IGPUCommandRecorder* cmdRecorder = intermediate.cmdRecorder;
-	IGPUBufferPtr instanceIdsBuffer = intermediate.renderState.instanceIdsBuffer;
 	Array<GPUInstanceBound>& drawInstanceBounds = intermediate.drawInstanceBounds;
 
-	const int instanceCount = instanceInfos.numElem();
+	// Notice: Instance bounds furst must be counted using this code:
+	//		const int boundIdx = archetypeId * GRIM_MAX_INSTANCE_LODS + lodIndex;
+	//		++drawInstanceBounds[boundIdx].last;
+	// 
+	// so here we can initialize each bound first and last instance
+	// this is pretty much a sorting by counting
 
-	// COMPUTE SHADER REFERENCE: VisibilityCullInstances
-	// Input:
-	//		instanceInfos			: buffer<GPUInstanceInfo>
-	// Output:
-	//		instanceIds				: buffer<int[]>
-	//		drawInstanceBounds		: buffer<GPUInstanceBound[]>
+	// calculate instance bounds
+	int boundFirstIdx = 0;
+	for (auto [boundIdx, bound] : arrayEnumerate(drawInstanceBounds))
+	{
+		if (!bound.last)
+		{
+			bound = {};
+			continue;
+		}
+
+		bound.archIdx = boundIdx / GRIM_MAX_INSTANCE_LODS;
+		bound.lodIndex = boundIdx % GRIM_MAX_INSTANCE_LODS;
+
+		const int first = boundFirstIdx;
+		boundFirstIdx += bound.last;
+
+		// bound needs to remember first element
+		// 'last' is also becomes an index where we insert sorted instance
+		bound.first = bound.last = first;
+	}
 
 	static thread_local Array<int> instanceIds(PP_SL);
-	instanceIds.setNum(instanceCount);
 
-	drawInstanceBounds.setNum(m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS);
-	if (instanceCount > 0)
-	{
-		const int lastArchetypeId = instanceInfos[instanceCount - 1].packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
-		const int lastArchLodIndex = (instanceInfos[instanceCount - 1].packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
-		ASSERT(lastArchLodIndex < GRIM_MAX_INSTANCE_LODS);
-		const int lastBoundIdx = lastArchetypeId * GRIM_MAX_INSTANCE_LODS + lastArchLodIndex;
-
-		drawInstanceBounds[lastBoundIdx].last = instanceCount;
-	}
+	// fill instance IDs list
+	const int instanceCount = instanceInfos.numElem();
+	instanceIds.setNum(instanceCount, false);
 
 	for (int i = 0; i < instanceCount; ++i)
 	{
-		instanceIds[i] = instanceInfos[i].instanceId;
+		const GPUInstanceInfo& instInfo = instanceInfos[i];
+		const int archetypeId = instInfo.packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
+		const int lodIndex = (instInfo.packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
+		const int boundIdx = archetypeId * GRIM_MAX_INSTANCE_LODS + lodIndex;
 
-		if (i == 0 || instanceInfos[i].packedArchetypeId > instanceInfos[i - 1].packedArchetypeId)
-		{
-			const int archetypeId = instanceInfos[i].packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
-			const int archLodIndex = (instanceInfos[i].packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
-			ASSERT(archLodIndex < GRIM_MAX_INSTANCE_LODS);
-			const int boundIdx = archetypeId * GRIM_MAX_INSTANCE_LODS + archLodIndex;
-
-			drawInstanceBounds[boundIdx].first = i;
-			drawInstanceBounds[boundIdx].archIdx = archetypeId;
-			drawInstanceBounds[boundIdx].lodIndex = archLodIndex;
-			if (i > 0)
-			{
-				const int lastArchetypeId = instanceInfos[i - 1].packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
-				const int lastArchLodIndex = (instanceInfos[i - 1].packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
-				const int lastBoundIdx = lastArchetypeId * GRIM_MAX_INSTANCE_LODS + lastArchLodIndex;
-
-				drawInstanceBounds[lastBoundIdx].last = i;
-			}
-		}
+		// insert instance
+		const int idx = drawInstanceBounds[boundIdx].last;
+		++drawInstanceBounds[boundIdx].last;
+		instanceIds[idx] = instInfo.instanceId;
 	}
+
+	IGPUCommandRecorder* cmdRecorder = intermediate.cmdRecorder;
+	IGPUBufferPtr instanceIdsBuffer = intermediate.renderState.instanceIdsBuffer;
 	cmdRecorder->WriteBuffer(instanceIdsBuffer, instanceIds.ptr(), sizeof(instanceIds[0]) * instanceIds.numElem(), 0);
 }
 
@@ -1016,11 +1001,6 @@ void GRIMBaseRenderer::UpdateIndirectInstances_Software(IntermediateState& inter
 	//
 	// Notes:
 	//		instanceInfos must be sorted by archetype id prior to executing
-
-	//static thread_local Array<GPUDrawIndexedIndirectCmd> drawCommands(PP_SL);
-	//drawCommands.setNum(m_drawInfos.numSlots());
-
-	//memset(drawCommands.ptr(), 0, drawCommands.numElem() * sizeof(drawCommands[0]));
 
 	for (const GPUInstanceBound& bound : drawInstanceBounds)
 	{
@@ -1111,17 +1091,20 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 	CGPUScopedDbgGroup dbgPrep("GRIMPrepareDraw", intermediate.cmdRecorder);
 	cmdRecorder->ClearBuffer(intermediate.renderState.drawInvocationsBuffer, 0, intermediate.renderState.drawInvocationsBuffer->GetSize());
 
+	const int numBounds = m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS;
+
 	if (IsSoftwareMode())
 	{
+		Array<GPUInstanceBound>& drawInstanceBounds = intermediate.drawInstanceBounds;
+		drawInstanceBounds.setNum(numBounds, false);
+		memset(drawInstanceBounds.ptr(), 0, sizeof(drawInstanceBounds.numElem()) * sizeof(drawInstanceBounds[0]));
+
 		FilterInstances_Software(intermediate);
 		VisibilityCullInstances_Software(intermediate);
-		SortInstances_Software(intermediate);
 		UpdateInstanceBounds_Software(intermediate);
 		UpdateIndirectInstances_Software(intermediate);
 		return;
 	}
-
-	const int numBounds = m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS;
 
 	const BufferInfo sortedInstanceIdsBufferInfo(sizeof(int), intermediate.maxNumberOfObjects + 1);
 	if(!renderState.sortedInstanceIdsBuffer || renderState.sortedInstanceIdsBuffer->GetSize() < sortedInstanceIdsBufferInfo.GetBufferSize())

@@ -116,6 +116,7 @@ void DemoGRIMRenderer::VisibilityCullInstances_Software(IntermediateState& inter
 	const Vector3D& viewPos = renderState.viewPos;
 	const Volume& frustum = renderState.frustum;
 	Array<GPUInstanceInfo>& instanceInfos = intermediate.instanceInfos;
+	ArrayRef<GPUInstanceBound> drawInstanceBounds = intermediate.drawInstanceBounds;
 
 	// compute potentially visible archetypes and store states as bitarray
 	renderState.visibleArchetypes.reset();
@@ -161,6 +162,10 @@ void DemoGRIMRenderer::VisibilityCullInstances_Software(IntermediateState& inter
 
 		// update instance
 		instInfo.packedArchetypeId = archetypeId | (drawLod << GPUInstanceInfo::ARCHETYPE_BITS);
+
+		// count instances and put their counts per archetypes
+		const int boundIdx = archetypeId * GRIM_MAX_INSTANCE_LODS + drawLod;
+		++drawInstanceBounds[boundIdx].last;
 	}
 }
 
