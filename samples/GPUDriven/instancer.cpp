@@ -134,20 +134,30 @@ void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& interm
 	computeRecorder->Complete();
 }
 
+bool DemoGRIMRenderer::CullInstance_Software(const GRIMRenderState& renderState, const GPUInstanceInfo& instInfo, float& outViewDistanceSqr) const
+{
+	const DemoGRIMInstanceAllocator& instAlloc = DemoGRIMRenderer::GetAllocator();
+	const DemoRenderState& demoRenderState = static_cast<const DemoRenderState&>(renderState);
+
+	const Vector3D& viewPos = demoRenderState.viewPos;
+	const Volume& frustum = demoRenderState.frustum;
+
+	const int trsIdx = instAlloc.GetInstanceComponentIdx(instInfo.instanceId, InstTransform::COMPONENT_ID);
+	const InstTransform& trs = instAlloc.GetComponentPool<InstTransform>().GetDataPool()[trsIdx];
+
+	if (!frustum.IsSphereInside(trs.position, trs.boundingSphere))
+		return false;
+
+	outViewDistanceSqr = distanceSqr(viewPos, trs.position);
+
+	return true;
+}
+
 void DemoGRIMRenderer::VisibilityCullInstances_Software(IntermediateState& intermediate)
 {
 	PROF_EVENT_F();
 
-	// COMPUTE SHADER REFERENCE: VisibilityCullInstances
-	// Input:
-	//		instanceIds		: buffer<int[]>
-	// Output:
-	//		instanceInfos	: buffer<GPUInstanceInfo[]>
-
-	DemoRenderState& renderState = static_cast<DemoRenderState&>(intermediate.renderState);
-
-	const Vector3D& viewPos = renderState.viewPos;
-	const Volume& frustum = renderState.frustum;
+	GRIMRenderState& renderState = intermediate.renderState;
 	Array<GPUInstanceInfo>& instanceInfos = intermediate.instanceInfos;
 	ArrayRef<GPUInstanceBound> drawInstanceBounds = intermediate.drawInstanceBounds;
 
@@ -159,8 +169,6 @@ void DemoGRIMRenderer::VisibilityCullInstances_Software(IntermediateState& inter
 		GPUInstanceInfo& instInfo = instanceInfos[i];
 
 		const GRIMArchetype archetypeId = instInfo.packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
-		const int lodIndex = (instInfo.packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
-
 		const GPULodList& lodList = m_drawLodsList[archetypeId];
 		if (lodList.firstLodInfo < 0)
 		{
@@ -168,28 +176,26 @@ void DemoGRIMRenderer::VisibilityCullInstances_Software(IntermediateState& inter
 			continue;
 		}
 
-		const int trsIdx = DemoGRIMRenderer::GetAllocator().GetInstanceComponentIdx(instInfo.instanceId, InstTransform::COMPONENT_ID);
-		const InstTransform& trs = DemoGRIMRenderer::GetAllocator().GetComponentPool<InstTransform>().GetDataPool()[trsIdx];
-
-		if (!frustum.IsSphereInside(trs.position, trs.boundingSphere))
+		float distFromCameraSqr = F_UNDEF;
+		if(!CullInstance_Software(renderState, instanceInfos[i], distFromCameraSqr))
 		{
 			instanceInfos.fastRemoveIndex(i--);
 			continue;
 		}
 
-		renderState.visibleArchetypes.setTrue(archetypeId);
-
-		const float distFromCamera = distanceSqr(viewPos, trs.position);
-
 		// find suitable lod idx
-		int drawLod = lodIndex;
-		if (drawLod == GPUInstanceInfo::LOD_MASK)
+		const int lodIndex = (instInfo.packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
+		int drawLod = (lodIndex == GPUInstanceInfo::LOD_MASK) ? -1 : lodIndex;
+		if (drawLod == -1)
 		{
-			drawLod = -1;
-			for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = m_drawLodInfos[lodIdx].next, ++drawLod)
+			int lodIdx = lodList.firstLodInfo;
+			for (int i = 0; i < GRIM_MAX_INSTANCE_LODS; ++i)
 			{
-				if (distFromCamera < sqr(m_drawLodInfos[lodIdx].distance))
+				if (lodIdx == -1 || distFromCameraSqr < sqr(m_drawLodInfos[lodIdx].distance))
 					break;
+
+				++drawLod;
+				lodIdx = m_drawLodInfos[lodIdx].next;
 			}
 		}
 
@@ -199,6 +205,9 @@ void DemoGRIMRenderer::VisibilityCullInstances_Software(IntermediateState& inter
 		// count instances and put their counts per archetypes
 		const int boundIdx = archetypeId * GRIM_MAX_INSTANCE_LODS + drawLod;
 		++drawInstanceBounds[boundIdx].last;
+
+		// set visible
+		renderState.visibleArchetypes.setTrue(archetypeId);
 	}
 }
 

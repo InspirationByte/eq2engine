@@ -65,6 +65,7 @@ public:
 	void			Update(int idx, const T& data) { POOL_WRITE; return DataPool::Update(idx, data); }
 
 	DataPool&		GetDataPool() { return *this; }
+	const DataPool&	GetDataPool() const { return *this; }
 	IGPUBufferPtr	GetBuffer() const { return DataPool::GetGPUData().template Get<IGPUBuffer>(); }
 
 	EqStringRef		GetName() const override { return T::NAME; }

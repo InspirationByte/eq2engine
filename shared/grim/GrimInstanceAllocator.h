@@ -228,6 +228,9 @@ public:
 	template<typename TComp>
 	auto&			GetComponentPool() { return std::get<typename TComp::POOL_T>(m_componentPoolsStorage); }
 
+	template<typename TComp>
+	const auto&		GetComponentPool() const { return std::get<typename TComp::POOL_T>(m_componentPoolsStorage); }
+
 protected:
 	using POOL_STORAGE = std::tuple<typename Components::POOL_T...>;
 
@@ -309,7 +312,7 @@ inline void GRIMInstanceAllocator<Ts...>::AllocInstanceComponents(int instanceId
 	InstRoot& inst = m_instances[instanceId].root;
 	([&]{
 		using Pool = typename TComps::POOL_T;
-		Pool& compPool = GetComponentPool<TComps>();
+		Pool& compPool = std::get<Pool>(m_componentPoolsStorage);
 		inst.components[TComps::COMPONENT_ID] = compPool.Add(TComps{});
 	} (), ...);
 

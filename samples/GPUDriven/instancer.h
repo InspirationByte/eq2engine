@@ -46,6 +46,8 @@ public:
 	void	VisibilityCullInstances_Compute(IntermediateState& intermediate);
 	void	VisibilityCullInstances_Software(IntermediateState& intermediate);
 
+	bool	CullInstance_Software(const GRIMRenderState& renderState, const GPUInstanceInfo& instInfo, float& outViewDistanceSqr) const;
+
 	static DemoGRIMInstanceAllocator&	GetAllocator();
 	static DemoGRIMRenderer&			Get();
 };
