@@ -29,6 +29,7 @@ struct DemoRenderState : public GRIMRenderState
 {
 	Vector3D		viewPos;
 	Volume			frustum;
+	IGPUBufferPtr	viewParamsBuffer;
 };
 
 using DemoGRIMInstanceAllocator = GRIMInstanceAllocator<InstTransform, InstScale>;
@@ -37,6 +38,7 @@ class DemoGRIMRenderer : public GRIMBaseRenderer
 {
 public:
 	DemoGRIMRenderer(DemoGRIMInstanceAllocator& instAlloc);
+	void	Init();
 
 	void	FillBindGroupLayoutDesc(BindGroupLayoutDesc& bindGroupLayout) const;
 	void	GetInstancesBindGroup(int bindGroupIdx, IGPUBindingLayout* pipelineLayout, IGPUBindGroupPtr& outBindGroup, uint& lastUpdateToken) const;

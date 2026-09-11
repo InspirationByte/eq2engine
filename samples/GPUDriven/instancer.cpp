@@ -24,12 +24,38 @@ DemoGRIMRenderer::DemoGRIMRenderer(DemoGRIMInstanceAllocator& instAlloc)
 {
 }
 
+void DemoGRIMRenderer::Init()
+{
+	PROF_EVENT("GRIM World Renderer Init");
+
+	BindingLayoutDesc cullLayoutDesc = Builder<BindingLayoutDesc>()
+		.Group(Builder<BindGroupLayoutDesc>()
+			.Buffer(StringIdConst24("drawLodInfos"), 0, SHADERKIND_COMPUTE, BUFFERBIND_STORAGE_READONLY)
+			.Buffer(StringIdConst24("drawLodsList"), 1, SHADERKIND_COMPUTE, BUFFERBIND_STORAGE_READONLY)
+			.End())
+		.Group(Builder<BindGroupLayoutDesc>()
+			.Buffer(StringIdConst24("viewOccluders"), 0, SHADERKIND_COMPUTE, BUFFERBIND_UNIFORM)
+			.Buffer(StringIdConst24("instanceInfos"), 1, SHADERKIND_COMPUTE, BUFFERBIND_STORAGE_READONLY)
+			.Buffer(StringIdConst24("instanceInfosCount"), 2, SHADERKIND_COMPUTE, BUFFERBIND_STORAGE_READONLY)
+			.End())
+		.Group(Builder<BindGroupLayoutDesc>()
+			.Buffer(StringIdConst24("culledInstances"), 0, SHADERKIND_COMPUTE, BUFFERBIND_STORAGE)
+			.Buffer(StringIdConst24("culledInstanceCount"), 1, SHADERKIND_COMPUTE, BUFFERBIND_STORAGE)
+			.End())
+		.End();
+	FillBindGroupLayoutDesc(cullLayoutDesc.bindGroups.append());
+
+	m_cullInstancesBindingLayout = g_renderAPI->CreateBindingLayout(cullLayoutDesc);
+
+	GRIMBaseRenderer::Init();
+}
+
 void DemoGRIMRenderer::FillBindGroupLayoutDesc(BindGroupLayoutDesc& bindGroupLayout) const
 {
 	Builder<BindGroupLayoutDesc>(bindGroupLayout)
-		.Buffer(StringIdConst24("instRoots"), 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_STORAGE_READONLY)
-		.Buffer(StringIdConst24("instTransforms"), 1, SHADERKIND_VERTEX, BUFFERBIND_STORAGE_READONLY)
-		.Buffer(StringIdConst24("instScales"), 2, SHADERKIND_VERTEX, BUFFERBIND_STORAGE_READONLY);
+		.Buffer(StringIdConst24("instRoots"), 0, SHADERKIND_COMPUTE | SHADERKIND_VERTEX, BUFFERBIND_STORAGE_READONLY)
+		.Buffer(StringIdConst24("instTransforms"), 1, SHADERKIND_COMPUTE | SHADERKIND_VERTEX, BUFFERBIND_STORAGE_READONLY)
+		.Buffer(StringIdConst24("instScales"), 2, SHADERKIND_COMPUTE | SHADERKIND_VERTEX, BUFFERBIND_STORAGE_READONLY);
 }
 
 void DemoGRIMRenderer::GetInstancesBindGroup(int bindGroupIdx, IGPUBindingLayout* pipelineLayout, IGPUBindGroupPtr& outBindGroup, uint& lastUpdateToken) const
@@ -42,10 +68,14 @@ void DemoGRIMRenderer::GetInstancesBindGroup(int bindGroupIdx, IGPUBindingLayout
 	BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
 		.GroupIndex(bindGroupIdx)
 		.Buffer(StringIdConst24("instRoots"), m_instAllocator.GetRootBuffer())
-		.Buffer(StringIdConst24("instTransforms"), static_cast<DemoGRIMInstanceAllocator&>(m_instAllocator).GetComponentPool<InstTransform>().GetBuffer())
-		.Buffer(StringIdConst24("instScales"), static_cast<DemoGRIMInstanceAllocator&>(m_instAllocator).GetComponentPool<InstScale>().GetBuffer())
+		.Buffer(StringIdConst24("instTransforms"), GetAllocator().GetComponentPool<InstTransform>().GetBuffer())
+		.Buffer(StringIdConst24("instScales"), GetAllocator().GetComponentPool<InstScale>().GetBuffer())
 		.End();
-	outBindGroup = g_renderAPI->CreateSharedBindGroup(pipelineLayout, bindGroupDesc);
+
+	if(pipelineLayout)
+		outBindGroup = g_renderAPI->CreateSharedBindGroup(pipelineLayout, bindGroupDesc);
+	else
+		outBindGroup = g_renderAPI->CreateBindGroup(m_cullInstancesPipeline, bindGroupDesc);
 }
 
 void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& intermediate)
@@ -53,20 +83,26 @@ void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& interm
 	CGPUScopedDbgGroup g("CullInstances", intermediate.cmdRecorder);
 	PROF_EVENT_F();
 
-	DemoRenderState& renderState = static_cast<DemoRenderState&>(intermediate.renderState);
-
 	struct CullViewParams
 	{
 		Vector4D	frustumPlanes[6];
 		Vector4D	viewPos;
 	};
 
+	DemoRenderState& renderState = static_cast<DemoRenderState&>(intermediate.renderState);
+
+	IGPUBufferPtr viewParamsBuffer = renderState.viewParamsBuffer;
+	if(!viewParamsBuffer)
+	{
+		viewParamsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(CullViewParams), 1), BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST, "ViewParamsBuffer");
+		renderState.viewParamsBuffer = viewParamsBuffer;
+	}
+
 	CullViewParams cullView;
 	memcpy(cullView.frustumPlanes, renderState.frustum.GetPlanes().ptr(), sizeof(cullView.frustumPlanes));
 	cullView.viewPos = Vector4D(renderState.viewPos, 1.0f);
-
-	IGPUBufferPtr viewParamsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(CullViewParams), 1), BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST, "ViewParamsBuffer");
 	intermediate.cmdRecorder->WriteBuffer(viewParamsBuffer, &cullView, sizeof(cullView), 0);
+
 	intermediate.cmdRecorder->ClearBuffer(renderState.sortedInstanceIdsBuffer, 0, sizeof(int));
 
 	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("CullInstances");
@@ -88,14 +124,11 @@ void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& interm
 		.End())
 	);
 
-	computeRecorder->SetBindGroup(3, g_renderAPI->CreateBindGroup(m_cullInstancesPipeline, Builder<BindGroupDesc>()
-		.GroupIndex(3)
-		.Buffer(StringIdConst24("instRoots"), m_instAllocator.GetRootBuffer())
-		.Buffer(StringIdConst24("instTransforms"), DemoGRIMRenderer::GetAllocator().GetComponentPool<InstTransform>().GetBuffer())
-		.End())
-	);
+	GetInstancesBindGroup(3, m_cullInstancesBindingLayout, renderState.instBindGroup, renderState.instBindGroupUpdateToken);
+	computeRecorder->SetBindGroup(3, renderState.instBindGroup);
 
-	IVector2D workGroups = VisCalcWorkSize(intermediate.maxNumberOfObjects);
+	const int instanceCount = m_instAllocator.GetInstanceCount();
+	const IVector2D workGroups = VisCalcWorkSize(instanceCount);
 
 	computeRecorder->DispatchWorkgroups(workGroups.x, workGroups.y);
 	computeRecorder->Complete();
