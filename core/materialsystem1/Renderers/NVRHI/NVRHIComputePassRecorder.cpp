@@ -46,7 +46,7 @@ void CNVRHIComputePassRecorder::CommitComputeState(nvrhi::IBuffer* indirectBuffe
 
 	nvrhi::IDevice* nvrhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
 
-	CNVRHIComputePipeline* pipelineImpl = static_cast<CNVRHIComputePipeline*>(m_pipeline.Ptr());
+	CNVRHIComputePipeline* pipelineImpl = m_pipeline.Ptr();
 	ASSERT(pipelineImpl);
 	
 	auto rhiComputeState = nvrhi::ComputeState()
@@ -64,13 +64,13 @@ void CNVRHIComputePassRecorder::CommitComputeState(nvrhi::IBuffer* indirectBuffe
 
 void CNVRHIComputePassRecorder::SetPipeline(IGPUComputePipeline* pipeline)
 {
-	m_pipeline.Assign(pipeline);
+	m_pipeline.Assign(static_cast<CNVRHIComputePipeline*>(pipeline));
 	m_computeStateDirty = true;
 }
 
 void CNVRHIComputePassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup)
 {
-	m_bindings[groupIndex].Assign(bindGroup);
+	m_bindings[groupIndex].Assign(static_cast<CNVRHIBindGroup*>(bindGroup));
 	m_computeStateDirty = true;
 }
 
@@ -91,7 +91,7 @@ void CNVRHIComputePassRecorder::DispatchWorkgroupsIndirect(IGPUBuffer* indirectB
 
 	// since indirect buffer is part of state, we need to update it
 	m_computeStateDirty = m_computeStateDirty || indirectBuffer != m_lastIndirectBuffer;
-	m_lastIndirectBuffer = indirectBuffer;
+	m_lastIndirectBuffer = indirectBufferImpl;
 
 	CommitComputeState(indirectBufferImpl->GetNVRHIBufferHandle());
 	m_rhiCommandList->dispatchIndirect(indirectOffset);

@@ -1,6 +1,9 @@
 #pragma once
 #include "renderers/IShaderAPI.h"
+#include "NVRHIStates.h"
 #include "ResourcePool.h"
+
+class CNVRHIBuffer;
 
 class CNVRHIRenderPassRecorder : public IGPURenderPassRecorder
 {
@@ -23,7 +26,7 @@ public:
 	void					DbgAddMarker(const char* label) const;
 
 	void					SetPipeline(IGPURenderPipeline* pipeline);
-	IGPURenderPipelinePtr	GetPipeline() const { return m_pipeline; }
+	IGPURenderPipelinePtr	GetPipeline() const { return IGPURenderPipelinePtr(m_pipeline); }
 
 	void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup);
 	void					SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset = 0, int64 size = -1);
@@ -60,9 +63,9 @@ public:
 	bool					IsViewportAndScissorValid() const;
 
 	GPUBufferView				m_rhiVertexBuffers[MAX_VERTEXSTREAM];
-	IGPUBindGroupPtr			m_bindings[MAX_BINDGROUPS];
+	CNVRHIBindGroupPtr			m_bindings[MAX_BINDGROUPS];
 	GPUBufferView				m_indexBuffer;
-	IGPUBuffer*					m_lastIndirectBuffer{ nullptr };
+	CNVRHIBuffer*				m_lastIndirectBuffer{ nullptr };
     nvrhi::FramebufferHandle	m_rhiFramebuffer;
     nvrhi::Viewport				m_rhiViewport;
 	nvrhi::Rect					m_rhiScissor;
@@ -75,7 +78,7 @@ public:
 	bool						m_depthReadOnly{ false };
 	bool						m_stencilReadOnly{ false };
 
-	IGPURenderPipelinePtr		m_pipeline;
+	CNVRHIRenderPipelinePtr		m_pipeline;
 	nvrhi::CommandListHandle	m_rhiCommandList{ nullptr };
 
 	EqString					m_dbgName;

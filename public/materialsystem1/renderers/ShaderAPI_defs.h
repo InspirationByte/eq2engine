@@ -570,7 +570,7 @@ struct BindGroupLayoutDesc
 		};
 		int				nameId;				// StringId24
 		int				binding{ 0 };
-		uint8			visibility{ 0 };	// EShaderKind
+		EShaderKind		visibility{ 0 };
 		EBindEntryType	type{ BINDENTRY_BUFFER };
 	};
 
@@ -626,7 +626,7 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 		Entry& entry = ref.entries.append();
 		entry.nameId = nameId;
 		entry.binding = binding;
-		entry.visibility = shaderVisibility;
+		entry.visibility = static_cast<EShaderKind>(shaderVisibility);
 		entry.type = type;
 		return entry;
 	}

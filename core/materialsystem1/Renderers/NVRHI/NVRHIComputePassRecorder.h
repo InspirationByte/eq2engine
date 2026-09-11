@@ -1,6 +1,9 @@
 #pragma once
 #include "renderers/IShaderAPI.h"
+#include "NVRHIStates.h"
 #include "ResourcePool.h"
+
+class CNVRHIBuffer;
 
 class CNVRHIComputePassRecorder : public IGPUComputePassRecorder
 {
@@ -17,7 +20,7 @@ public:
 	void*					GetUserData() const { return m_userData; }
 
 	void					SetPipeline(IGPUComputePipeline* pipeline);
-	IGPUComputePipelinePtr	GetPipeline() const { return m_pipeline; }
+	IGPUComputePipelinePtr	GetPipeline() const { return IGPUComputePipelinePtr(m_pipeline); }
 
 	void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup);
 
@@ -33,11 +36,11 @@ public:
 
 	void					CommitComputeState(nvrhi::IBuffer* indirectBuffer = nullptr);
 
-	IGPUBindGroupPtr			m_bindings[MAX_BINDGROUPS];
-	IGPUComputePipelinePtr		m_pipeline;
+	CNVRHIBindGroupPtr			m_bindings[MAX_BINDGROUPS];
+	CNVRHIComputePipelinePtr	m_pipeline;
 
 	nvrhi::CommandListHandle	m_rhiCommandList{ nullptr };
-	IGPUBuffer*					m_lastIndirectBuffer{ nullptr };
+	CNVRHIBuffer*				m_lastIndirectBuffer{ nullptr };
 	EqString					m_dbgName;
 	void*						m_userData{ nullptr };
 	int							m_cmdListIdx{ -1 };

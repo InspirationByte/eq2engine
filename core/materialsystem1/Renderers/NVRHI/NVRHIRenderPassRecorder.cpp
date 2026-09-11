@@ -117,13 +117,13 @@ void CNVRHIRenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)
 			m_bindings[i] = nullptr;
 	}
 
-	m_pipeline.Assign(pipeline);
+	m_pipeline.Assign(static_cast<CNVRHIRenderPipeline*>(pipeline));
 }
 
 void CNVRHIRenderPassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup)
 {
 	m_graphicsStateDirty = m_graphicsStateDirty || m_bindings[groupIndex] != bindGroup;
-	m_bindings[groupIndex].Assign(bindGroup);
+	m_bindings[groupIndex].Assign(static_cast<CNVRHIBindGroup*>(bindGroup));
 }
 
 void CNVRHIRenderPassRecorder::SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset, int64 size)
@@ -233,7 +233,7 @@ void CNVRHIRenderPassRecorder::DrawIndexedIndirect(IGPUBuffer* indirectBuffer, i
 
 	// since indirect buffer is part of state, we need to update it
 	m_graphicsStateDirty = m_graphicsStateDirty || indirectBuffer != m_lastIndirectBuffer;
-	m_lastIndirectBuffer = indirectBuffer;
+	m_lastIndirectBuffer = indirectBufferImpl;
 
 	CommitGraphicsState(indirectBufferImpl->GetNVRHIBufferHandle());
 
@@ -257,7 +257,7 @@ void CNVRHIRenderPassRecorder::DrawIndirect(IGPUBuffer* indirectBuffer, int indi
 
 	// since indirect buffer is part of state, we need to update it
 	m_graphicsStateDirty = m_graphicsStateDirty || indirectBuffer != m_lastIndirectBuffer;
-	m_lastIndirectBuffer = indirectBuffer;
+	m_lastIndirectBuffer = indirectBufferImpl;
 
 	CommitGraphicsState(indirectBufferImpl->GetNVRHIBufferHandle());
 

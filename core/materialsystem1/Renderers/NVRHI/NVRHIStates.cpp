@@ -176,59 +176,63 @@ void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInf
 void CNVRHIBindingLayout::FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, nvrhi::BindingSetDesc& rhiBindingSetDesc) const
 {
 #if 1
+	int bindingsToResolve = 0;
+	uint usedShaderBindings[bitArray2Dword(2048)]{ 0 };
+
 	ASSERT(rhiBindingSetDesc.bindings.empty());
 	rhiBindingSetDesc.bindings.reserve(bindGroupDesc.entries.numElem());
 
 	const BindGroupLayoutOrder& layoutOrder = m_layoutOrder[bindGroupDesc.groupIdx];
-	for (const CNVRHIBindingLayout::EntryId entryId : layoutOrder)
+
+	// find binding in shader module
+	for (const int moduleIdx : shaderModuleIdxs)
 	{
-		const int idx = arrayFindIndexF(bindGroupDesc.entries, [&](const BindGroupDesc::Entry& entry) {
-			return entry.binding == entryId.nameId;
-		});
-		if (idx == -1) 
-		{
-			MsgError("Bindroup missing binding");
+		if (moduleIdx < 0)
 			continue;
-		}
 
-		int bindingIdx = -1;
+		const ShaderInfo::Module& shaderModule = shaderInfo.modules[moduleIdx];
 
-		// find binding in shader module
-		for (const int moduleIdx : shaderModuleIdxs)
+		ArrayCRef<int> bindingIds = shaderInfo.GetBindingIds(shaderModule);
+		for (int i = 0; i < bindingIds.numElem(); ++i)
 		{
-			if (moduleIdx < 0)
+			if (!shaderModule.usedBindings[i])
 				continue;
 
-			const ShaderInfo::Module& shaderModule = shaderInfo.modules[moduleIdx];
-			if ((entryId.visibility & shaderModule.kind) == 0)
+			const int bindingIdx = bindingIds[i];
+			if (BitArrayImpl::isTrue(usedShaderBindings, 2048, bindingIdx))
 				continue;
 
-			ArrayCRef<int> bindingIds = shaderInfo.GetBindingIds(shaderModule);
-			for (int i = 0; i < bindingIds.numElem(); ++i)
-			{
-				if (!shaderModule.usedBindings[i])
-					continue;
+			const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIdx];
+			if (binding.descriptorSetIdx != bindGroupDesc.groupIdx)
+				continue;
 
-				const ShaderInfo::Binding& binding = shaderInfo.bindings[bindingIds[i]];
-				if (binding.descriptorSetIdx != bindGroupDesc.groupIdx)
-					continue;
+			const int layoutBindingIdx = arrayFindIndexF(layoutOrder, [&](const CNVRHIBindingLayout::EntryId& entryId) {
+				return binding.nameId == entryId.nameId;
+			});
 
-				if (binding.nameId == entryId.nameId)
-				{
-					bindingIdx = bindingIds[i]; 
-					break;
-				}
-			}
+			if (layoutBindingIdx == -1)
+				continue;
 
-			if (bindingIdx != -1)
-				break;
+			++bindingsToResolve;
+
+			if ((layoutOrder[layoutBindingIdx].visibility & shaderModule.kind) == 0)
+				continue;
+
+			const int entryIdx = arrayFindIndexF(bindGroupDesc.entries, [&](const BindGroupDesc::Entry& entry) {
+				return entry.binding == binding.nameId;
+			});
+
+			if (entryIdx == -1)
+				continue;
+
+			BitArrayImpl::setTrue(usedShaderBindings, 2048, bindingIdx);
+			nvrhiFillBindingDesc(bindGroupDesc.entries[entryIdx], shaderInfo.bindings[bindingIdx], rhiBindingSetDesc);
 		}
-
-		if (bindingIdx == -1)
-			continue;	// binding not found for this shader - skip
-
-		nvrhiFillBindingDesc(bindGroupDesc.entries[idx], shaderInfo.bindings[bindingIdx], rhiBindingSetDesc);
 	}
+
+	ASSERT_MSG(bindGroupDesc.entries.numElem() >= bindingsToResolve, "Bad binding entry count: %d, expected %d", bindGroupDesc.entries.numElem(), bindingsToResolve);
+	ASSERT_MSG(BitArrayImpl::numTrue(usedShaderBindings, 2048) == bindingsToResolve, "Incorrect binding ids, resolved: %d, expected %d", BitArrayImpl::numTrue(usedShaderBindings, 2048), bindingsToResolve);
+
 #else
 	nvrhiFillBindingSetDesc(bindGroupDesc, shaderInfo, shaderModuleIdxs, rhiSamplers, rhiBindingSetDesc);
 #endif
@@ -269,7 +273,7 @@ static void nvrhiAddBindingToLayout(nvrhi::BindingLayoutDesc& layoutDesc, const 
 	}
 }
 
-void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const IGPUBindingLayout* bindingLayout, ArrayCRef<int> shaderModuleIdxs, nvrhi::ShaderType rhiShaderType, NVRHIBindingLayoutList& rhiBindingLayouts)
+void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const CNVRHIBindingLayout* bindingLayout, ArrayCRef<int> shaderModuleIdxs, nvrhi::ShaderType rhiShaderType, NVRHIBindingLayoutList& rhiBindingLayouts)
 {
 	uint usedShaderBindings[bitArray2Dword(2048)] {0};
 	FixedArray<short, 128> usedShaderBindingIdxs;
@@ -344,11 +348,10 @@ void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const IGPUBindingLa
 			}
 		}
 
-		const CNVRHIBindingLayout* bindingLayoutImpl = static_cast<const CNVRHIBindingLayout*>(bindingLayout);
-		if (bindingLayoutImpl)
+		if (bindingLayout)
 		{
 			// validate provided binding layout and order bindings in it's way
-			for (ArrayCRef<CNVRHIBindingLayout::EntryId> layoutOrder : bindingLayoutImpl->m_layoutOrder)
+			for (ArrayCRef<CNVRHIBindingLayout::EntryId> layoutOrder : bindingLayout->m_layoutOrder)
 			{
 				for (const CNVRHIBindingLayout::EntryId entryId : layoutOrder)
 				{
@@ -379,34 +382,33 @@ void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const IGPUBindingLa
 	}
 }
 
-void nvrhiFillBindingSets(const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, ArrayCRef<IGPUBindGroupPtr> bindings, const uint pipelineId, ArrayCRef<nvrhi::BindingLayoutHandle> rhiBindingLayouts, nvrhi::BindingSetVector& rhiBindingSets)
+void nvrhiFillBindingSets(const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, ArrayCRef<CNVRHIBindGroupPtr> bindings, const uint pipelineId, ArrayCRef<nvrhi::BindingLayoutHandle> rhiBindingLayouts, nvrhi::BindingSetVector& rhiBindingSets)
 {
 	nvrhi::IDevice* nvrhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
-	for (IGPUBindGroup* bindGroup : bindings)
+	for (CNVRHIBindGroup* bindGroup : bindings)
 	{
-		CNVRHIBindGroup* bindGroupImpl = static_cast<CNVRHIBindGroup*>(bindGroup);
-		if (!bindGroupImpl)
+		if (!bindGroup)
 			continue;
 
-		auto bindingSetIt = bindGroupImpl->m_rhiBindingSets.begin();
-		if (bindGroupImpl->m_bindingLayout)
+		auto bindingSetIt = bindGroup->m_rhiBindingSets.begin();
+		if (bindGroup->m_bindingLayout)
 		{
-			bindingSetIt = bindGroupImpl->m_rhiBindingSets.find(pipelineId);
+			bindingSetIt = bindGroup->m_rhiBindingSets.find(pipelineId);
 			if (!bindingSetIt)
 			{
-				const BindGroupDesc& bindGroupDesc = bindGroupImpl->m_bindGroupDesc;
+				const BindGroupDesc& bindGroupDesc = bindGroup->m_bindGroupDesc;
 
 				// we need to create binding set for this shader using provided layout
 				auto rhiBindingSetDesc = nvrhi::BindingSetDesc();
-				bindGroupImpl->m_bindingLayout->FillBindingSetDescByLayoutMap(bindGroupDesc, shaderInfo, shaderModuleIdxs, rhiBindingSetDesc);
-
+				bindGroup->m_bindingLayout->FillBindingSetDescByLayoutMap(bindGroupDesc, shaderInfo, shaderModuleIdxs, rhiBindingSetDesc);
+				
 				nvrhi::BindingSetHandle rhiBindSet = nvrhiDevice->createBindingSet(rhiBindingSetDesc, rhiBindingLayouts[bindGroupDesc.groupIdx]);
 				if (!rhiBindSet)
 				{
 					ASSERT_FAIL("Failed to create binding set for shared bind group %s\n", bindGroupDesc.name.ToCString());
 					continue;
 				}
-				bindingSetIt = bindGroupImpl->m_rhiBindingSets.insert(pipelineId, rhiBindSet);
+				bindingSetIt = bindGroup->m_rhiBindingSets.insert(pipelineId, rhiBindSet);
 			}
 		}
 

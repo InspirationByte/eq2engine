@@ -1060,7 +1060,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	};
 
 	NVRHIBindingLayoutList rhiBindingLayouts;
-	nvrhiCreateBindingLayouts(shaderInfo, bindingLayout, shaderModuleIdxs, nvrhi::ShaderType::Vertex | nvrhi::ShaderType::Pixel, rhiBindingLayouts);
+	nvrhiCreateBindingLayouts(shaderInfo, static_cast<const CNVRHIBindingLayout*>(bindingLayout), shaderModuleIdxs, nvrhi::ShaderType::Vertex | nvrhi::ShaderType::Pixel, rhiBindingLayouts);
 	for (nvrhi::BindingLayoutHandle rhiLayout : rhiBindingLayouts)
 		rhiGraphicsPipelineDesc.addBindingLayout(rhiLayout);
 
@@ -1180,7 +1180,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[layoutIdx].name.ToCString());
 
 	NVRHIBindingLayoutList rhiBindingLayouts;
-	nvrhiCreateBindingLayouts(shaderInfo, bindingLayout, ArrayCRef(&computeShaderModuleIdx, 1), nvrhi::ShaderType::Compute, rhiBindingLayouts);
+	nvrhiCreateBindingLayouts(shaderInfo, static_cast<const CNVRHIBindingLayout*>(bindingLayout), ArrayCRef(&computeShaderModuleIdx, 1), nvrhi::ShaderType::Compute, rhiBindingLayouts);
 	for (nvrhi::BindingLayoutHandle rhiLayout : rhiBindingLayouts)
 		rhiComputePipelineDesc.addBindingLayout(rhiLayout);
 
