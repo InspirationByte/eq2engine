@@ -3,6 +3,10 @@
 #include "renderers/ShaderAPI_defs.h"
 #include "core/IPackFileReader.h"
 
+#if defined(_DEBUG)
+#define DEBUG_SHADER_BINDINGS
+#endif
+
 enum EShaderModuleType
 {
 	SHADERMODULE_SPIRV,		// Vulkan & WGPU
