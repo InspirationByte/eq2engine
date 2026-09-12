@@ -19,12 +19,19 @@
 #include "GrimInstanceAllocator.h"
 #include "materialsystem1/IMaterialSystem.h"
 
+// in development
+// #define GRIM_MULTI_DRAW_SUPPORT
+
 using namespace Threading;
 
 DECLARE_CVAR(grim_dbgSoftwareMode, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbgOnlyMaterial, "", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbgLogArchetypes, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbgValidate, "0", nullptr, CV_CHEAT);
+
+#ifdef GRIM_MULTI_DRAW_SUPPORT
+DECLARE_CVAR(grim_dbgMultiDrawOff, "0", nullptr, CV_CHEAT);
+#endif
 
 static constexpr char SHADERNAME_FILTER_INSTANCES[] = "InstanceFilter";
 static constexpr char SHADERNAME_CULL_INSTANCES[] = "InstancesCull";
@@ -1339,8 +1346,8 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 		else
 			materialId += reinterpret_cast<uint64>(material);
 		materialId *= 31;
-#if 0
-		if (caps.multiDrawIndirectSupport)
+#ifdef GRIM_MULTI_DRAW_SUPPORT
+		if (caps.multiDrawIndexedIndirectSupport && !grim_dbgMultiDrawOff.GetBool())
 		{
 			materialId += drawInfo.ownerArchetype;
 		}
@@ -1373,8 +1380,8 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 
 		if (!g_matSystem->SetupMaterialPipeline(setupDrawInfo.material, nullptr, setupDrawInfo.primTopology, setupArchetypeInfo.meshInstFormat, renderPassCtx, this))
 			continue;
-#if 0
-		if (caps.multiDrawIndirectSupport)
+#ifdef GRIM_MULTI_DRAW_SUPPORT
+		if (caps.multiDrawIndexedIndirectSupport && !grim_dbgMultiDrawOff.GetBool())
 		{
 			for (int vsi = 0; vsi < setupArchetypeInfo.vertexBuffers.numElem(); ++vsi)
 				renderPassCtx.recorder->SetVertexBuffer(vsi, (setupArchetypeInfo.instanceStreamId == vsi) ? renderState.instanceIdsBuffer : setupArchetypeInfo.vertexBuffers[vsi]);
@@ -1382,9 +1389,9 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 
 			for (; litem.id != USHRT_MAX; litem = renderState.drawInfoLinkList[litem.next])
 			{
+				const DrawInfo& drawInfo = m_drawInfos[litem.id];
 				ASSERT_MSG(drawInfo.archetypeInfo == setupDrawInfo.archetypeInfo, "Mismatching archetype for draw infos");
 
-				const DrawInfo& drawInfo = m_drawInfos[litem.id];
 #ifdef GRIM_INSTANCES_DEBUG_ENABLED
 				if (validationOn)
 					renderPassCtx.recorder->DbgAddMarker(EqString::Format("draw arch %d (mtl %s) (lod %d) (cnt %d)", drawInfo.ownerArchetype, drawInfo.material->GetName(), drawInfo.lodNumber, m_instAllocator.GetInstanceCount(drawInfo.ownerArchetype)));
