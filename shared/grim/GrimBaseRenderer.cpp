@@ -1010,12 +1010,13 @@ void GRIMBaseRenderer::UpdateIndirectInstances_Software(IntermediateState& inter
 	// Output:
 	//		drawInvocations		: buffer<GPUDrawIndexedIndirectCmd[]>
 
-
 	FixedArray<int, GRIM_MAX_INSTANCE_LODS> lodInfos;
 
-	const int archetypeCount = drawInstanceBounds.numElem() / GRIM_MAX_INSTANCE_LODS;
-	for (int archetypeIdx = 0; archetypeIdx < archetypeCount; ++archetypeIdx)//(const auto [i, bound] : arrayEnumerate(drawInstanceBounds))
+	for (int archetypeIdx = 0; archetypeIdx < m_drawLodsList.NumSlots(); ++archetypeIdx)
 	{
+		if (!m_drawLodsList(archetypeIdx))
+			continue;
+
 		const GPULodList& lodList = m_drawLodsList[archetypeIdx];
 		if (lodList.firstLodInfo == -1)
 			continue;
