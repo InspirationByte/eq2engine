@@ -244,6 +244,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		caps.maxComputeWorkgroupSizeZ = supLimits.maxComputeWorkgroupSizeZ;
 		caps.maxComputeWorkgroupsPerDimension = supLimits.maxComputeWorkgroupsPerDimension;
 		caps.multiDrawIndirectSupport = wgpuAdapterHasFeature(m_rhiAdapter, WGPUFeatureName_MultiDrawIndirect);
+		caps.multiDrawIndexedIndirectSupport = caps.multiDrawIndirectSupport;
 
 		caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED
 									| SHADER_CAPS_PIXEL_SUPPORTED

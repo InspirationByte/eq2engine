@@ -41,7 +41,7 @@ void CNVRHIRenderPassRecorder::DbgAddMarker(const char* label) const
 #endif
 }
 
-void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffer)
+void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffer, nvrhi::IBuffer* indirectCountBuffer)
 {
 	if (!m_graphicsStateDirty)
 		return;
@@ -53,6 +53,9 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 	if(indirectBuffer)
 		m_rhiCommandList->setBufferState(indirectBuffer, nvrhi::ResourceStates::IndirectArgument);
 
+	if(indirectCountBuffer)
+		m_rhiCommandList->setBufferState(indirectBuffer, nvrhi::ResourceStates::IndirectArgument);
+
 	// FIXME: should be same count as render targets?
 	auto rhiViewportState = nvrhi::ViewportState()
 		.addViewport(m_rhiViewport)
@@ -62,7 +65,8 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 		.setPipeline(pipelineImpl->m_rhiRenderPipeline)
 		.setFramebuffer(m_rhiFramebuffer)
 		.setViewport(rhiViewportState)
-		.setIndirectParams(indirectBuffer);
+		.setIndirectParams(indirectBuffer)
+		.setIndirectCountBuffer(indirectCountBuffer);
 
 	CNVRHIBuffer* indexBufferImpl = static_cast<CNVRHIBuffer*>(m_indexBuffer.buffer.Ptr());
 	if (indexBufferImpl)
@@ -234,6 +238,7 @@ void CNVRHIRenderPassRecorder::DrawIndexedIndirect(IGPUBuffer* indirectBuffer, i
 	// since indirect buffer is part of state, we need to update it
 	m_graphicsStateDirty = m_graphicsStateDirty || indirectBuffer != m_lastIndirectBuffer;
 	m_lastIndirectBuffer = indirectBufferImpl;
+	m_lastDrawCountBuffer = nullptr;
 
 	CommitGraphicsState(indirectBufferImpl->GetNVRHIBufferHandle());
 
@@ -258,6 +263,7 @@ void CNVRHIRenderPassRecorder::DrawIndirect(IGPUBuffer* indirectBuffer, int indi
 	// since indirect buffer is part of state, we need to update it
 	m_graphicsStateDirty = m_graphicsStateDirty || indirectBuffer != m_lastIndirectBuffer;
 	m_lastIndirectBuffer = indirectBufferImpl;
+	m_lastDrawCountBuffer = nullptr;
 
 	CommitGraphicsState(indirectBufferImpl->GetNVRHIBufferHandle());
 
@@ -269,12 +275,36 @@ void CNVRHIRenderPassRecorder::DrawIndirect(IGPUBuffer* indirectBuffer, int indi
 
 void CNVRHIRenderPassRecorder::MultiDrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset)
 {
-	ASSERT_FAIL("Unsupported on this RHI");
+	CNVRHIBuffer* indirectBufferImpl = static_cast<CNVRHIBuffer*>(indirectBuffer);
+	ASSERT(indirectBufferImpl);
+	ASSERT_MSG(indirectBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDIRECT, "buffer doesn't have Indirect buffer usage bit");
+
+	CNVRHIBuffer* drawCountBufferImpl = static_cast<CNVRHIBuffer*>(drawCountBuffer);
+	ASSERT(drawCountBufferImpl);
+	ASSERT_MSG(drawCountBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDIRECT, "buffer doesn't have Indirect buffer usage bit");
+
+	if (!IsViewportAndScissorValid())
+	{
+		DbgAddMarker("DrawIndexedIndirect skip");
+		return;
+	}
+
+	// since indirect buffer is part of state, we need to update it
+	m_graphicsStateDirty = m_graphicsStateDirty || indirectBuffer != m_lastIndirectBuffer || drawCountBuffer != m_lastDrawCountBuffer;
+	m_lastIndirectBuffer = indirectBufferImpl;
+	m_lastDrawCountBuffer = drawCountBufferImpl;
+
+	CommitGraphicsState(indirectBufferImpl->GetNVRHIBufferHandle(), drawCountBufferImpl->GetNVRHIBufferHandle());
+
+	m_rhiCommandList->drawIndexedIndirectCount(indirectOffset, drawCountBufferOffset, maxDrawCount);
+
+	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
+	Atomic::Increment(stats.indirectDrawCount);
 }
 
 void CNVRHIRenderPassRecorder::MultiDrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset)
 {
-	ASSERT_FAIL("Unsupported on this RHI");
+	ASSERT_FAIL("Unsupported on this RHI - consider using MultiDrawIndexedIndirect");
 }
 
 static void NVRHIBeginRenderPass(const RenderPassDesc& renderPassDesc, nvrhi::CommandListHandle rhiCmdList, nvrhi::FramebufferDesc& rhiFramebufferDesc)

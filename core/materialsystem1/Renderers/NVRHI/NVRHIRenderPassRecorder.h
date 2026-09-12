@@ -59,13 +59,14 @@ public:
 	void*					GetUserData() const { return m_userData; }
 	void					InternalBeginRenderPass(const RenderPassDesc& renderPassDesc);
 
-	void					CommitGraphicsState(nvrhi::IBuffer* indirectBuffer = nullptr);
+	void					CommitGraphicsState(nvrhi::IBuffer* indirectBuffer = nullptr, nvrhi::IBuffer* indirectCountBuffer = nullptr);
 	bool					IsViewportAndScissorValid() const;
 
 	GPUBufferView				m_rhiVertexBuffers[MAX_VERTEXSTREAM];
 	CNVRHIBindGroupPtr			m_bindings[MAX_BINDGROUPS];
 	GPUBufferView				m_indexBuffer;
 	CNVRHIBuffer*				m_lastIndirectBuffer{ nullptr };
+	CNVRHIBuffer*				m_lastDrawCountBuffer{ nullptr };
     nvrhi::FramebufferHandle	m_rhiFramebuffer;
     nvrhi::Viewport				m_rhiViewport;
 	nvrhi::Rect					m_rhiScissor;

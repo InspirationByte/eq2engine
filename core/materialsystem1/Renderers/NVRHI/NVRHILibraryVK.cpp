@@ -364,7 +364,8 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 		caps.maxComputeWorkgroupSizeY = 1024;
 		caps.maxComputeWorkgroupSizeZ = 64;
 		caps.maxComputeWorkgroupsPerDimension = 65535;
-		caps.multiDrawIndirectSupport = false;	// NVRHI doesn't support this currently
+		caps.multiDrawIndirectSupport = false;
+		caps.multiDrawIndexedIndirectSupport = true;
 
 		caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED
 			| SHADER_CAPS_PIXEL_SUPPORTED
