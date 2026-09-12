@@ -184,9 +184,9 @@ void DemoGRIMRenderer::VisibilityCullInstances_Software(IntermediateState& inter
 		}
 
 		// find suitable lod idx
-		const int lodIndex = (instInfo.packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
-		int drawLod = (lodIndex == GPUInstanceInfo::LOD_MASK) ? -1 : lodIndex;
-		if (drawLod == -1)
+		int lodIndex = (instInfo.packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
+		lodIndex = (lodIndex == GPUInstanceInfo::LOD_MASK) ? -1 : lodIndex;
+		if (lodIndex == -1)
 		{
 			int lodIdx = lodList.firstLodInfo;
 			for (int i = 0; i < GRIM_MAX_INSTANCE_LODS; ++i)
@@ -194,16 +194,16 @@ void DemoGRIMRenderer::VisibilityCullInstances_Software(IntermediateState& inter
 				if (lodIdx == -1 || distFromCameraSqr < sqr(m_drawLodInfos[lodIdx].distance))
 					break;
 
-				++drawLod;
+				++lodIndex;
 				lodIdx = m_drawLodInfos[lodIdx].next;
 			}
 		}
 
 		// update instance
-		instInfo.packedArchetypeId = archetypeId | (drawLod << GPUInstanceInfo::ARCHETYPE_BITS);
+		instInfo.packedArchetypeId = archetypeId | (lodIndex << GPUInstanceInfo::ARCHETYPE_BITS);
 
 		// count instances and put their counts per archetypes
-		const int boundIdx = archetypeId * GRIM_MAX_INSTANCE_LODS + drawLod;
+		const int boundIdx = archetypeId * GRIM_MAX_INSTANCE_LODS + lodIndex;
 		++drawInstanceBounds[boundIdx].last;
 
 		// set visible
