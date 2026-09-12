@@ -41,6 +41,7 @@ void DemoGRIMRenderer::Init()
 		.Group(Builder<BindGroupLayoutDesc>()
 			.Buffer(StringIdConst24("culledInstances"), 0, SHADERKIND_COMPUTE, BUFFERBIND_STORAGE)
 			.Buffer(StringIdConst24("culledInstanceCount"), 1, SHADERKIND_COMPUTE, BUFFERBIND_STORAGE)
+			.Buffer(StringIdConst24("drawInstanceBounds"), 2, SHADERKIND_COMPUTE, BUFFERBIND_STORAGE)
 			.End())
 		.End();
 	FillBindGroupLayoutDesc(cullLayoutDesc.bindGroups.append());
@@ -103,7 +104,7 @@ void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& interm
 	cullView.viewPos = Vector4D(renderState.viewPos, 1.0f);
 	intermediate.cmdRecorder->WriteBuffer(viewParamsBuffer, &cullView, sizeof(cullView), 0);
 
-	intermediate.cmdRecorder->ClearBuffer(renderState.sortedInstanceIdsBuffer, 0, sizeof(int));
+	intermediate.cmdRecorder->ClearBuffer(renderState.culledInstanceCountBuffer, 0, sizeof(int));
 
 	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("CullInstances");
 	computeRecorder->SetPipeline(m_cullInstancesPipeline);
@@ -120,7 +121,8 @@ void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& interm
 		Builder<BindGroupDesc>()
 		.GroupIndex(2)
 		.Buffer(StringIdConst24("culledInstances"), renderState.culledInstanceInfosBuffer)
-		.Buffer(StringIdConst24("culledInstanceCount"), renderState.sortedInstanceIdsBuffer)
+		.Buffer(StringIdConst24("culledInstanceCount"), renderState.culledInstanceCountBuffer)
+		.Buffer(StringIdConst24("drawInstanceBounds"), renderState.drawInstanceBoundsBuffer)
 		.End())
 	);
 
@@ -202,7 +204,7 @@ void DemoGRIMRenderer::VisibilityCullInstances_Software(IntermediateState& inter
 		// update instance
 		instInfo.packedArchetypeId = archetypeId | (lodIndex << GPUInstanceInfo::ARCHETYPE_BITS);
 
-		// count instances and put their counts per archetypes
+		// account instance in bound
 		const int boundIdx = archetypeId * GRIM_MAX_INSTANCE_LODS + lodIndex;
 		++drawInstanceBounds[boundIdx].last;
 

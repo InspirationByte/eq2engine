@@ -8,15 +8,10 @@
 #pragma once
 #include "GrimDefs.h"
 #include "GrimSynchronizedPool.h"
-#include "render/ComputeSort.h"
-#include "materialsystem1/IMatSysShader.h"
-#include "materialsystem1/IMaterial.h"
-#include "materialsystem1/RenderDefs.h"
+#include "materialsystem1/IMaterialSystem.h"
 
 class GRIMBaseInstanceAllocator;
 class CEqStudioGeom;
-class ComputeSortShader;
-using ComputeSortShaderPtr = CRefPtr<ComputeSortShader>;
 struct RenderPassContext;
 
 struct GRIMDrawSettings
@@ -51,12 +46,13 @@ struct GRIMRenderState
 	uint					instBindGroupUpdateToken{ 0 };
 	IGPUBindGroupPtr		instBindGroup;
 
-	IGPUBufferPtr			sortedInstanceIdsBuffer;
+	IGPUBufferPtr			filterParamsBuffer;
 	IGPUBufferPtr			filteredInstancesBuffer;
 	IGPUBufferPtr			filteredInstancesCountBuffer;	// D3D11 HACK
 	IGPUBufferPtr			culledInstanceInfosBuffer;
+	IGPUBufferPtr			culledInstanceCountBuffer;
 	IGPUBufferPtr			drawInstanceBoundsBuffer;
-	IGPUBufferPtr			filterParamsBuffer;
+	IGPUBufferPtr			boundFirstIdxBuffer;
 
 	struct ListItm
 	{
@@ -121,8 +117,6 @@ protected:
 	virtual void	VisibilityCullInstances_Compute(IntermediateState& intermediate) = 0;
 	virtual void	VisibilityCullInstances_Software(IntermediateState& intermediate) = 0;
 
-	void			SortInstances_Compute(IntermediateState& intermediate);
-
 	void			UpdateInstanceBounds_Compute(IntermediateState& intermediate);
 	void			UpdateInstanceBounds_Software(IntermediateState& intermediate);
 
@@ -172,17 +166,16 @@ protected:
 	int							m_dbgStatsDrawnInstances{ 0 };
 #endif
 
-	ComputeSortShaderPtr		m_sortShader;
-
 	IGPUBufferPtr				m_updDataBuffer;
 	IGPUBufferPtr				m_updIdxsBuffer;
 
-	IGPUComputePipelinePtr		m_instCalcBoundsPipeline;
-	IGPUComputePipelinePtr		m_instPrepareDrawIndirectPipeline;
 	IGPUComputePipelinePtr		m_filterInstancesPipeline;
 	IGPUComputePipelinePtr		m_filterCalcWorkGroupsPipeline;
 	IGPUComputePipelinePtr		m_cullInstancesPipeline;
 	IGPUBindingLayoutPtr		m_cullInstancesBindingLayout;
+	IGPUComputePipelinePtr		m_initBoundsPipeline;
+	IGPUComputePipelinePtr		m_fillInstanceIdsPipeline;
+	IGPUComputePipelinePtr		m_prepareDrawIndirectPipeline;
 
 	IGPUBindGroupPtr			m_cullBindGroup0;
 	IGPUBindGroupPtr			m_updateBindGroup0;
@@ -220,8 +213,6 @@ struct GRIMBaseRenderer::GPUInstanceBound
 {
 	int		first{ 0 };
 	int		last{ 0 };
-	int		archIdx{ -1 };	// GRIMArchetype
-	int		lodIndex{ -1 };
 };
 
 struct GRIMBaseRenderer::IntermediateState
