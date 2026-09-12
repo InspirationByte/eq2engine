@@ -79,14 +79,18 @@ void CNVRHISwapChainVK::UpdateBackbufferView()
 		vk::Fence(),
 		&m_swapChainBufferIndex);
 
-	ASSERT_MSG(res == vk::Result::eSuccess || res == vk::Result::eSuboptimalKHR, "Aquire Next Image failure");
-
-	if (!m_rhiSwapChainTextures.inRange(m_swapChainBufferIndex))
+	// not sure if this is fine
+	if (res != vk::Result::eNotReady)
 	{
-		m_textureRef->m_rhiTexture = nullptr;
-		return;
+		ASSERT_MSG(res == vk::Result::eSuccess || res == vk::Result::eSuboptimalKHR, "Aquire Next Image failure (%d)", res);
+
+		if (!m_rhiSwapChainTextures.inRange(m_swapChainBufferIndex))
+		{
+			m_textureRef->m_rhiTexture = nullptr;
+			return;
+		}
+		m_textureRef->m_rhiTexture = m_rhiSwapChainTextures[m_swapChainBufferIndex];
 	}
-	m_textureRef->m_rhiTexture = m_rhiSwapChainTextures[m_swapChainBufferIndex];
 
 	nvrhiDevice->queueSignalSemaphore(nvrhi::CommandQueue::Graphics, m_vkCurrentPresentSemaphore, 0);
 	nvrhiDevice->queueWaitForSemaphore(nvrhi::CommandQueue::Graphics, m_vkCurrentPresentSemaphore, 0);
