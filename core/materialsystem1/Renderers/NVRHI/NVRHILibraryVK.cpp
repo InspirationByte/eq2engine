@@ -131,6 +131,7 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 		m_enabledExtensions.device.append(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 		m_enabledExtensions.device.append(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
 		m_enabledExtensions.device.append(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+		m_enabledExtensions.device.append(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 #if defined(__APPLE__) && defined( VK_KHR_portability_subset )
 		// This is required for using the MoltenVK portability subset implementation on macOS
 		m_enabledExtensions.device.append(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
@@ -175,7 +176,6 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 #if defined( VK_KHR_format_feature_flags2 )
 		m_optionalExtensions.device.append(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME);
 #endif
-		m_optionalExtensions.device.append(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 		m_optionalExtensions.device.append(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
 	}
 
