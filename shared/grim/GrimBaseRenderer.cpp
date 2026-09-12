@@ -1036,6 +1036,8 @@ void GRIMBaseRenderer::UpdateIndirectInstances_Software(IntermediateState& inter
 		for (auto const [lodIndex, lodInfoIdx] : arrayEnumerate(lodInfos))
 		{
 			const GPUInstanceBound& bound = drawInstanceBounds[archetypeIdx * GRIM_MAX_INSTANCE_LODS + lodIndex];
+			if (bound.last <= bound.first)
+				continue;
 
 			// walk over batches
 			const GPULodInfo& lodInfo = m_drawLodInfos[lodInfoIdx];
