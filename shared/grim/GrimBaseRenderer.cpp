@@ -1444,10 +1444,16 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 
 
 static GRIMArchetype s_highlightArchetype = -1;
+static GRIMBaseRenderer* s_inspectedRenderer = nullptr;
 
 GRIMArchetype GRIMInstanceDebug::GetHighlightArchetype()
 {
 	return s_highlightArchetype;
+}
+
+GRIMBaseRenderer* GRIMInstanceDebug::GetInspectedRenderer()
+{
+	return s_inspectedRenderer;
 }
 
 EqString GRIMInstanceDebug::GetInstanceDebugText(GRIMBaseRenderer& renderer, int instanceId)
@@ -1470,6 +1476,8 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 {
 #if defined(IMGUI_ENABLED) && defined(GRIM_INSTANCES_DEBUG_ENABLED)
 	CScopedMutex m(s_grimRendererMutex);
+
+	s_inspectedRenderer = &renderer;
 
 	GRIMBaseInstanceAllocator& instances = renderer.m_instAllocator;
 	BitArray& hiddenArchetypes = renderer.m_dbgHiddenArchetypes;

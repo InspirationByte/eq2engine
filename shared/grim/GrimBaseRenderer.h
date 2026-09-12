@@ -269,6 +269,7 @@ class GRIMInstanceDebug
 {
 public:
 	static void 			DrawUI(GRIMBaseRenderer& renderer);
+	static GRIMBaseRenderer*	GetInspectedRenderer();
 	static GRIMArchetype	GetHighlightArchetype();
 	static EqString			GetInstanceDebugText(GRIMBaseRenderer& renderer, int instanceId);
 };
