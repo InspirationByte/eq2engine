@@ -31,6 +31,7 @@ class CDPKFileStream : public IPackFileStream
 	friend class CDPKFileReader;
 	friend class CFileSystem;
 public:
+	~CDPKFileStream();
 	CDPKFileStream(const char* filename, const DPKFileHdr& info, COSFile& osFile);
 
 	// reads data from virtual stream
@@ -65,11 +66,12 @@ protected:
 
 	COSFile&			m_osFile;
 	CDPKFileReader*		m_host{ nullptr };
+
 	void*				m_blockData{ nullptr };
 	void*				m_tmpDecompressData{ nullptr };
-
-	int					m_curPos;
-	int					m_curBlockIdx;
+ 
+	int					m_curPos{ 0 };
+	int					m_curBlockIdx{ -1 };
 };
 
 //------------------------------------------------------------------------------------------

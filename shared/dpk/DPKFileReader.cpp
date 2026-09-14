@@ -25,24 +25,12 @@ struct CDPKFileStream::BlockInfo : dpkblock_t
 	uint64 offset;
 };
 
-struct DPKDecompressTempData
-{
-	ubyte data[DPK_BLOCK_DECOMPRESS_SIZE];
-};
-
-static thread_local DPKDecompressTempData s_dpkBlockDataTls;
-static thread_local DPKDecompressTempData s_dpkTmpDataTls;
-
 CDPKFileStream::CDPKFileStream(const char* filename, const DPKFileHdr& info, COSFile& osFile)
 	: m_name(filename)
 	, m_ice(0)
 	, m_osFile(osFile)
+	, m_info(info)
 {
-	m_info = info;
-	m_curPos = 0;
-
-	m_curBlockIdx = -1;
-
 	bool hasCompressedBlocks = false;
 
 	m_blockInfo.setNum(m_info.numBlocks);
@@ -64,8 +52,14 @@ CDPKFileStream::CDPKFileStream(const char* filename, const DPKFileHdr& info, COS
 		startOffset += sizeof(dpkblock_t) + (compressed ? blockInfo.compressedSize : blockInfo.size);
 	}
 
-	m_blockData = s_dpkBlockDataTls.data;
-	m_tmpDecompressData = hasCompressedBlocks ? s_dpkTmpDataTls.data : nullptr;
+	m_blockData = PPAlloc(DPK_BLOCK_DECOMPRESS_SIZE);// s_dpkDataTls.blockData;
+	m_tmpDecompressData = hasCompressedBlocks ? PPAlloc(DPK_BLOCK_DECOMPRESS_SIZE)/*s_dpkDataTls.tmpDecompressData*/ : nullptr;
+}
+
+CDPKFileStream::~CDPKFileStream()
+{
+	PPFree(m_blockData);
+	PPFree(m_tmpDecompressData);
 }
 
 CBasePackageReader* CDPKFileStream::GetHostPackage() const
@@ -107,7 +101,7 @@ bool CDPKFileStream::DecodeBlock(int blockIdx)
 		{
 			m_ice.decrypt(tmpBlockPtr, iceTempBlock);
 
-			// copy encrypted block
+			// copy decrypted block
 			memcpy(tmpBlockPtr, iceTempBlock, iceBlockSize);
 
 			tmpBlockPtr += iceBlockSize;
@@ -118,7 +112,7 @@ bool CDPKFileStream::DecodeBlock(int blockIdx)
 	// then decompress
 	if (compressed)
 	{
-		// decompress readMem to 'm_blockData'
+		// decompress readMem
 		const int decompressedSize = LZ4_decompress_safe((char*)readMem, (char*)m_blockData, newBlock.compressedSize, DPK_BLOCK_DECOMPRESS_SIZE);
 		ASSERT_MSG(decompressedSize == newBlock.size, "unable to decompress DPK block %d (compressedSize: %d, decompressedSize: %d, blockSize: %d)", 
 			blockIdx, newBlock.compressedSize, decompressedSize, newBlock.size);
@@ -166,15 +160,16 @@ VSSize CDPKFileStream::Read(void* dest, VSSize count, VSSize size)
 
 			bytesToReadCnt -= blockBytesToRead;
 
-		} while (bytesToReadCnt);
+		} while (bytesToReadCnt > 0);
 
 		m_curPos = curPos;
 	}
 	else
 	{
 		// read file straight
-		m_osFile.ReadWithOffset(dest, bytesToRead, m_info.offset + m_curPos);
-		m_curPos += bytesToRead;
+		const int64 readBytes = m_osFile.ReadWithOffset(dest, bytesToRead, m_info.offset + m_curPos);
+		m_curPos += readBytes;
+		return static_cast<VSSize>(readBytes / size);
 	}
 
 	return static_cast<VSSize>(bytesToRead / size);
@@ -302,13 +297,13 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* name, const c
 bool CDPKFileReader::InitPackageInternal(const VSSize startOffset, const char* mountPath /*= nullptr*/)
 {
 	dpkheader_t header{};
-	m_osFile.ReadWithOffset(&header, sizeof(dpkheader_t), 0);
+	m_osFile.ReadWithOffset(&header, sizeof(dpkheader_t), startOffset);
 	if (!CheckValidHeader(header, m_packagePath))
 		return false;
 
 	// read mount path
 	char dpkMountPath[DPK_STRING_SIZE]{};
-	m_osFile.ReadWithOffset(dpkMountPath, DPK_STRING_SIZE, sizeof(dpkheader_t));
+	m_osFile.ReadWithOffset(dpkMountPath, DPK_STRING_SIZE, startOffset + sizeof(dpkheader_t));
 
 	m_version = header.version;
 	m_mountPath = mountPath ? mountPath : dpkMountPath;
