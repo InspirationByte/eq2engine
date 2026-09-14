@@ -68,36 +68,22 @@ void CBaseShader::Init(IShaderAPI* renderAPI)
 	MatStringProxy texFilter = m_material->FindMaterialVar("Filtering");
 	if(texFilter.IsValid()) m_texFilter = ResolveFilterType(texFilter.Get());
 
+#define MATERIAL_FLAG_PARAM(Name, Flag, DefVal, ...) if (GetMaterialValue(Name, DefVal) __VA_ARGS__) materialFlags |= Flag
+
 	int materialFlags = 0;
-	if (GetMaterialValue("NoDraw", false))
-		materialFlags |= MATERIAL_FLAG_INVISIBLE;
+	MATERIAL_FLAG_PARAM("NoDraw", MATERIAL_FLAG_INVISIBLE, false);
+	MATERIAL_FLAG_PARAM("ReceiveShadows", MATERIAL_FLAG_RECEIVESHADOWS, true);
+	MATERIAL_FLAG_PARAM("CastShadows", MATERIAL_FLAG_CASTSHADOWS, true);
+	MATERIAL_FLAG_PARAM("Wireframe", MATERIAL_FLAG_WIREFRAME, false);
+	MATERIAL_FLAG_PARAM("Decal", MATERIAL_FLAG_DECAL, false);
+	MATERIAL_FLAG_PARAM("NoCull", MATERIAL_FLAG_NO_CULL, false);
+	MATERIAL_FLAG_PARAM("ReverseCull", MATERIAL_FLAG_REVERSE_CULL, false);
+	MATERIAL_FLAG_PARAM("AlphaTest", MATERIAL_FLAG_ALPHATESTED, false);
+	MATERIAL_FLAG_PARAM("ZOnly", MATERIAL_FLAG_ONLY_Z, false);
+	MATERIAL_FLAG_PARAM("ZTest", MATERIAL_FLAG_NO_Z_TEST, true, == false);
+	MATERIAL_FLAG_PARAM("ZWrite", MATERIAL_FLAG_NO_Z_WRITE, true, == false);
 
-	if (GetMaterialValue("ReceiveShadows", true))
-		materialFlags |= MATERIAL_FLAG_RECEIVESHADOWS;
-
-	if (GetMaterialValue("CastShadows", true))
-		materialFlags |= MATERIAL_FLAG_CASTSHADOWS;
-
-	if (GetMaterialValue("Wireframe", false))
-		materialFlags |= MATERIAL_FLAG_WIREFRAME;
-
-	if (GetMaterialValue("Decal", false))
-		materialFlags |= MATERIAL_FLAG_DECAL;
-
-	if (GetMaterialValue("NoCull", false)) 
-		materialFlags |= MATERIAL_FLAG_NO_CULL;
-
-	if (GetMaterialValue("AlphaTest", false))
-		materialFlags |= MATERIAL_FLAG_ALPHATESTED;
-
-	if (GetMaterialValue("ZOnly", false))
-		materialFlags |= MATERIAL_FLAG_ONLY_Z;
-
-	if (GetMaterialValue("ZTest", true) == false)
-		materialFlags |= MATERIAL_FLAG_NO_Z_TEST;
-
-	if (GetMaterialValue("ZWrite", true) == false)
-		materialFlags |= MATERIAL_FLAG_NO_Z_WRITE;
+#undef MATERIAL_FLAG_PARAM
 
 	EShaderBlendMode blendMode = SHADER_BLEND_NONE;
 
@@ -183,12 +169,15 @@ uint CBaseShader::GetRenderPipelineId(const PipelineInputParams& inputParams) co
 	const int flags = m_flags;
 	const bool translucentZWrite = !inputParams.depthReadOnly && ((flags & MATERIAL_FLAG_TRANSPARENT) ? inputParams.colorTargetFormat.numElem() > 0 : true);
 
+	ECullMode cullMode = (flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
+	if ((flags & MATERIAL_FLAG_REVERSE_CULL) && inputParams.cullMode != CULL_NONE)
+		cullMode = inputParams.cullMode == CULL_FRONT ? CULL_BACK : CULL_FRONT;
+
 	const bool onlyZ = inputParams.skipFragmentPipeline || (flags & MATERIAL_FLAG_ONLY_Z);
 	const bool depthTestEnable = (flags & MATERIAL_FLAG_NO_Z_TEST) == 0;
 	const bool depthWriteEnable = translucentZWrite && (flags & MATERIAL_FLAG_NO_Z_WRITE) == 0;
 	const bool polyOffsetEnable = (flags & MATERIAL_FLAG_DECAL);
 	const bool withMeshInstProvider = inputParams.meshInstProvider ? true : false;
-	const ECullMode cullMode = (flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
 
 	const uint pipelineFlags = 
 		  static_cast<uint>(cullMode)
@@ -225,11 +214,14 @@ void CBaseShader::FillRenderPipelineDesc(const PipelineInputParams& inputParams,
 	const int flags = m_flags;
 	const bool translucentZWrite = !inputParams.depthReadOnly && ((flags & MATERIAL_FLAG_TRANSPARENT) ? inputParams.colorTargetFormat.numElem() > 0 : true);
 
+	ECullMode cullMode = (flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
+	if ((flags & MATERIAL_FLAG_REVERSE_CULL) && inputParams.cullMode != CULL_NONE)
+		cullMode = inputParams.cullMode == CULL_FRONT ? CULL_BACK : CULL_FRONT;
+
 	const bool onlyZ = inputParams.skipFragmentPipeline || (flags & MATERIAL_FLAG_ONLY_Z);
 	const bool depthTestEnable = (flags & MATERIAL_FLAG_NO_Z_TEST) == 0;
 	const bool depthWriteEnable = translucentZWrite && (flags & MATERIAL_FLAG_NO_Z_WRITE) == 0;
 	const bool polyOffsetEnable = (flags & MATERIAL_FLAG_DECAL);
-	const ECullMode cullMode = (flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
 
 	// TODO: variant
 	const bool isStripIdx = inputParams.primitiveTopology == PRIM_TRIANGLE_STRIP || inputParams.primitiveTopology == PRIM_LINE_STRIP;

@@ -77,7 +77,7 @@ protected:
 enum EMaterialFlags : int
 {
 	MATERIAL_FLAG_NO_CULL			= (1 << 0),		// no culling (two sided)
-	MATERIAL_FLAG_WIREFRAME			= (1 << 1),
+	MATERIAL_FLAG_REVERSE_CULL		= (1 << 1),		// reverse culling (draw back faces instead of front faces)
 	MATERIAL_FLAG_NO_Z_TEST			= (1 << 2),
 	MATERIAL_FLAG_NO_Z_WRITE		= (1 << 3),
 	MATERIAL_FLAG_ONLY_Z			= (1 << 4),		// material is only used for Z test and write. No color map writes (and no fragment shader)
@@ -86,16 +86,17 @@ enum EMaterialFlags : int
 	MATERIAL_FLAG_RECEIVESHADOWS	= (1 << 6),		// this material receives shadows
 	MATERIAL_FLAG_CASTSHADOWS		= (1 << 7),		// this material occludes light
 	MATERIAL_FLAG_INVISIBLE			= (1 << 8),		// invisible in standart scene mode. Shadows can be casted if MATERIAL_FLAG_CASTSHADOWS set
+	MATERIAL_FLAG_WIREFRAME			= (1 << 9),
 
-	MATERIAL_FLAG_SKINNED			= (1 << 9),		// this material can be applied on skinned mesh, using vertex shaders
-	MATERIAL_FLAG_VERTEX_BLEND		= (1 << 10),	// this material is uses vertex blending
-	MATERIAL_FLAG_VERTEX_TRANSITION = (1 << 11),	// transits textures to create painting effect (vertex transition)
+	MATERIAL_FLAG_SKINNED			= (1 << 10),	// this material can be applied on skinned mesh, using vertex shaders
+	MATERIAL_FLAG_VERTEX_BLEND		= (1 << 11),	// this material is uses vertex blending
+	MATERIAL_FLAG_VERTEX_TRANSITION = (1 << 12),	// transits textures to create painting effect (vertex transition)
 
-	MATERIAL_FLAG_ALPHATESTED		= (1 << 12),	// has alphatesting
-	MATERIAL_FLAG_TRANSPARENT		= (1 << 13),	// has transparency
+	MATERIAL_FLAG_ALPHATESTED		= (1 << 13),	// has alphatesting
+	MATERIAL_FLAG_TRANSPARENT		= (1 << 14),	// has transparency
 
-	MATERIAL_FLAG_SKY				= (1 << 14),	// used for skybox
-	MATERIAL_FLAG_WATER				= (1 << 15),	// this is water material
+	MATERIAL_FLAG_SKY				= (1 << 15),	// used for skybox
+	MATERIAL_FLAG_WATER				= (1 << 16),	// this is water material
 };
 
 enum EMaterialLoadingState : int

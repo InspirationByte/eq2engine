@@ -110,7 +110,7 @@ public:
 		const MeshInstanceFormatRef&		meshInstFormat;
 		const IShaderMeshInstanceProvider*	meshInstProvider{ nullptr };
 		EPrimTopology						primitiveTopology{ (EPrimTopology)0 };
-		ECullMode							cullMode{ (EPrimTopology)0 };
+		ECullMode							cullMode{ (ECullMode)0 };
 
 		int									multiSampleCount{ 1 };
 		uint32								multiSampleMask{ 0xffffffff };
