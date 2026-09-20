@@ -95,19 +95,19 @@ struct ArgsSignature<First, Rest...>
 {
 	using IsScriptState = std::is_same<BaseRefType<First>, ScriptState>;
 
-	static const char* Get()
+	static const char* Get() 
 	{
 		static EqString result = []() {
 			const char* restStr = ArgsSignature<Rest...>::Get();
 			if constexpr (IsScriptState::value)
-				return EqString(*restStr ? "," : "") + restStr;
+				return restStr;
 			else
-				return EqString(LuaBaseTypeAlias<First>::value) + (*restStr ? "," : "") + restStr;
-		}();
+				return EqStringRef(LuaBaseTypeAlias<First>::value) + (*restStr ? "," : "") + restStr;
+			}();
+
 		return result;
 	}
 };
-
 
 template<typename T, typename... Args>
 T& New(lua_State* L, Args&&... args)
@@ -442,6 +442,62 @@ struct ObjPtrGetter
 	}
 };
 
+template<bool SilentTypeCheck>
+struct TypeChecker
+{
+	lua_State* L;
+	int index;
+
+	int argType;	// only for SilentTypeCheck
+
+	TypeChecker(lua_State* L, int index)
+		: L(L)
+		, index(index)
+	{
+		if constexpr (SilentTypeCheck)
+		{
+			argType = lua_type(L, index);
+		}
+	}
+
+	bool operator()(int type) const
+	{
+		if constexpr (SilentTypeCheck)
+		{
+			if (argType != type)
+				return false;
+		}
+		else
+		{
+			luaL_checktype(L, index, type);
+		}
+		return true;
+	};
+};
+
+template<typename T, typename Result, bool SilentTypeCheck>
+struct TypeCheckerWithArgError : public TypeChecker<SilentTypeCheck>
+{
+	TypeCheckerWithArgError(lua_State* L, int index)
+		: TypeChecker(L, index)
+	{
+	}
+
+	Result ArgError(EqString&& err) const
+	{
+		if constexpr (!SilentTypeCheck)
+		{
+			if (argType == LUA_TNIL)
+			{
+				if constexpr (!std::is_pointer_v<T>)
+					luaL_argerror(L, index, err);
+			}
+			else
+				luaL_argerror(L, index, err);
+		}
+		return Result::Failure(std::move(err));
+	};
+};
 
 // Lua type getters
 template<typename T, bool SilentTypeCheck, bool AllowUpcasting>
@@ -456,25 +512,13 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	}
 
 	const int argType = lua_type(L, index);
-	auto CheckType = [argType](lua_State* L, int index, int type) -> bool
-	{
-		if constexpr (SilentTypeCheck)
-		{
-			if (argType != type)
-				return false;
-		}
-		else
-		{
-			luaL_checktype(L, index, type);
-		}
-		return true;
-	};
+	TypeChecker<SilentTypeCheck> typeChecker{ L, index };
 
 	if constexpr (std::is_same_v<T, bool>) 
 	{
 		using Result = ResultWithValue<bool>;
 
-		if (!CheckType(L, index, LUA_TBOOLEAN))
+		if (!typeChecker(LUA_TBOOLEAN))
 			return Result::Failure(EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
 
 		return Result{ {}, true, {}, lua_toboolean(L, index) != 0 };
@@ -496,7 +540,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	{
 		using Result = ResultWithValue<BaseType<T>>;
 
-		if (!CheckType(L, index, LUA_TNUMBER))
+		if (!typeChecker(LUA_TNUMBER))
 			return Result::Failure(EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
 
 		return Result{ {}, true, {}, static_cast<T>(lua_tointeger(L, index)) };
@@ -507,7 +551,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	{
 		using Result = ResultWithValue<BaseType<T>>;
 
-		if (!CheckType(L, index, LUA_TNUMBER))
+		if (!typeChecker(LUA_TNUMBER))
 			return Result::Failure(EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
 
 		return Result{ {}, true, {}, static_cast<T>(lua_tonumber(L, index)) };
@@ -518,7 +562,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	{
 		using Result = ResultWithValue<T>;
 
-		if (!CheckType(L, index, LUA_TLIGHTUSERDATA))
+		if (!typeChecker(LUA_TLIGHTUSERDATA))
 			return Result::Failure(EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
 
 		void* udPtr = lua_touserdata(L, index);
@@ -533,7 +577,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	{
 		using Result = ResultWithValue<BaseType<T>>;
 
-		if (argType != LUA_TNIL && !CheckType(L, index, LUA_TFUNCTION))
+		if (argType != LUA_TNIL && !typeChecker(LUA_TFUNCTION))
 			return Result::Failure();
 
 		return Result{ {}, true, {}, BaseType<T>(L, index) };
@@ -544,7 +588,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	{
 		using Result = ResultWithValue<BaseType<T>>;
 
-		if (argType != LUA_TNIL && !CheckType(L, index, LUA_TTABLE))
+		if (argType != LUA_TNIL && !typeChecker(LUA_TTABLE))
 			return Result::Failure();
 
 		return Result{ {}, true, {}, BaseType<T>(L, index) };
@@ -633,22 +677,11 @@ static decltype(auto) GetValue(lua_State* L, int index)
 
 		static_assert(std::is_integral_v<BaseType<T>> == false, "GetValue<Class> cannot be used on integral types");
 
-		auto EmitArgError = [L, index, argType](EqString&& err) {
-			if constexpr (!SilentTypeCheck)
-			{
-				if (argType == LUA_TNIL)
-				{
-					if constexpr (!std::is_pointer_v<T>)
-						luaL_argerror(L, index, err);
-				}
-				else
-					luaL_argerror(L, index, err);
-			}
-			return Result::Failure(std::move(err));
-		};
+		// shadow
+		TypeCheckerWithArgError<T, Result, SilentTypeCheck> typeChecker{ L, index };
 
 		if (argType != LUA_TUSERDATA)
-			return EmitArgError(EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
+			return typeChecker.ArgError(EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
 
 		// retrieve userdata name which is class name
 		const char* className = nullptr;
@@ -680,13 +713,13 @@ static decltype(auto) GetValue(lua_State* L, int index)
 			if constexpr (!std::is_const_v<BaseTypeWithCv<UT>>)
 			{
 				if(isConst)
-					return EmitArgError(EqString::Format("got const %s for non-const argument", LuaBaseTypeAlias<T>::value));
+					return typeChecker.ArgError(EqString::Format("got const %s for non-const argument", LuaBaseTypeAlias<T>::value));
 			}
 
 			if constexpr (std::is_reference_v<UT>)
 			{
 				if(!objPtr)
-					return EmitArgError(EqString::Format("%s weak pointer is nil", LuaBaseTypeAlias<T>::value));
+					return typeChecker.ArgError(EqString::Format("%s weak pointer is nil", LuaBaseTypeAlias<T>::value));
 
 				return Result{ {}, true, {}, reinterpret_cast<UT>(*objPtr) };
 			}
