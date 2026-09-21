@@ -65,68 +65,68 @@ enum ESplineTangent : int
 	TANGENT_COUNT,
 };
 
-struct Spline3dPoint
-{
-	//Quaternion	rotation;
-	Vector3D	position{ vec3_zero };
-	Vector3D	tangents[TANGENT_COUNT]{ -vec3_forward, vec3_forward };
-	float		time{ -1.0f };
-
-	const Vector3D& GetTangentBefore() const { return tangents[TANGENT_BEFORE]; }
-	void			SetTangentBefore(const Vector3D& tangent) { tangents[TANGENT_BEFORE] = tangent; }
-
-	const Vector3D& GetTangentAfter() const { return tangents[TANGENT_AFTER]; }
-	void			SetTangentAfter(const Vector3D& tangent) { tangents[TANGENT_AFTER] = tangent; }
-};
-
-class CSpline3d
+class CSpline3D
 {
 public:
-	CSpline3d() = default;
-	void					Clear();
+	struct Point
+	{
+		//Quaternion	rotation;
+		Vector3D	position{ vec3_zero };
+		Vector3D	tangents[TANGENT_COUNT]{ -vec3_forward, vec3_forward };
+		float		time{ -1.0f };
 
-	void					SetLooped(bool loop) { m_loop = loop; }
-	bool					IsLooped() const { return m_loop; }
+		const Vector3D& GetTangentBefore() const { return tangents[TANGENT_BEFORE]; }
+		void			SetTangentBefore(const Vector3D& tangent) { tangents[TANGENT_BEFORE] = tangent; }
 
-	float					GetDuration() const { return m_duration; }
-	void					SetDuration(float duration) { m_duration = duration; }
-	float					GetLength() const { return m_distances.numElem() ? m_distances.back().y : 0.0f; }
+		const Vector3D& GetTangentAfter() const { return tangents[TANGENT_AFTER]; }
+		void			SetTangentAfter(const Vector3D& tangent) { tangents[TANGENT_AFTER] = tangent; }
+	};
+
+	CSpline3D() = default;
+	void				Clear();
+
+	void				SetLooped(bool loop) { m_loop = loop; }
+	bool				IsLooped() const { return m_loop; }
+
+	float				GetDuration() const { return m_duration; }
+	void				SetDuration(float duration) { m_duration = duration; }
+	float				GetLength() const { return m_distances.numElem() ? m_distances.back().y : 0.0f; }
 
 	// raw points
-	ArrayCRef<Spline3dPoint>	GetPoints() const { return m_points; }
+	ArrayCRef<Point>	GetPoints() const { return m_points; }
 
-	int						GetPointsCount() const { return m_points.numElem(); }
-	const Spline3dPoint&	GetPoint(int idx) const { return m_points[idx]; }
-	float					GetPointTime(int idx) const { return m_points[idx].time; }
-	float					GetPointDistance(int idx) const { return m_distances[idx * m_stepsPerSegment].y; }
-	const Vector3D&			GetTangent(int idx, ESplineTangent tangentId) const { return m_points[idx].tangents[tangentId]; }
+	int					GetPointsCount() const { return m_points.numElem(); }
+	const Point&		GetPoint(int idx) const { return m_points[idx]; }
+	float				GetPointTime(int idx) const { return m_points[idx].time; }
+	float				GetPointDistance(int idx) const { return m_distances[idx * m_stepsPerSegment].y; }
+	const Vector3D&		GetTangent(int idx, ESplineTangent tangentId) const { return m_points[idx].tangents[tangentId]; }
 
 	// spline samplers
-	Vector3D				PositionAtTime(float time) const;
-	Vector3D				TangentAtTime(float time) const;
-	float					DistanceAtTime(float time) const;
-	float					TimeAtDistance(float time) const;
+	Vector3D			GetPositionAtTime(float time) const;
+	Vector3D			GetTangentAtTime(float time) const;
+	float				GetDistanceAtTime(float time) const;
+	float				GetTimeAtDistance(float time) const;
 
 	// distance utils
-	void					UpdateDistances();
-	Vector3D				PositionAtDistance(float dist) const;
-	Vector3D				TangentAtDistance(float dist) const;
+	void				UpdateDistances();
+	Vector3D			PositionAtDistance(float dist) const;
+	Vector3D			TangentAtDistance(float dist) const;
 
 	// segments
-	float					GetSegmentLength(int segIdx) const;
-	int						SegmentIndexByLocalTime(float time) const;
-	int						SegmentIndexByDistance(float dist) const;
+	float				GetSegmentLength(int segIdx) const;
+	int					SegmentIndexByLocalTime(float time) const;
+	int					SegmentIndexByDistance(float dist) const;
 
-	Array<Spline3dPoint>	m_points{ PP_SL };
-	bool					m_loop{ false };
+	Array<Point>		m_points{ PP_SL };
+	bool				m_loop{ false };
 
 protected:
-	int						GetSegmentIndexAndLocalTime(float time, float& localTime) const;
+	int					GetSegmentIndexAndLocalTime(float time, float& localTime) const;
 protected:
-	Array<Vector2D>			m_distances{ PP_SL };
-	float					m_duration{ 0.0f };
-	int						m_stepsPerSegment{ 5 };
+	Array<Vector2D>		m_distances{ PP_SL };
+	float				m_duration{ 0.0f };
+	int					m_stepsPerSegment{ 5 };
 };
 
-Vector3D Spline3DPositionAtLocalTime(ArrayCRef<Spline3dPoint> points, int startPtIdx, float t);
-Vector3D Spline3DTangentAtLocalTime(ArrayCRef<Spline3dPoint> points, int startPtIdx, float t);
+Vector3D Spline3DPositionAtLocalTime(ArrayCRef<CSpline3D::Point> points, int startPtIdx, float t);
+Vector3D Spline3DTangentAtLocalTime(ArrayCRef<CSpline3D::Point> points, int startPtIdx, float t);

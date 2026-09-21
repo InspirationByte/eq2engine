@@ -11,7 +11,9 @@
 #include "sys_esl.h"
 #include "sys_esl_math_utils.h"
 
-EQSCRIPT_TYPE_BEGIN(Spline3dPoint)
+EQSCRIPT_BIND_TYPE_NO_PARENT(CSpline3D::Point, "Spline3DPoint", esl::BY_REF)
+
+EQSCRIPT_TYPE_BEGIN(CSpline3D::Point)
 	EQSCRIPT_BIND_CONSTRUCTOR()
 	EQSCRIPT_BIND_VAR(position)
 	EQSCRIPT_BIND_VAR_EX_GET_SET(tangentBefore, GetTangentBefore, SetTangentBefore)
@@ -19,21 +21,21 @@ EQSCRIPT_TYPE_BEGIN(Spline3dPoint)
 	EQSCRIPT_BIND_VAR(time)
 EQSCRIPT_TYPE_END
 
-static int CSpline3d_AddPoint(CSpline3d& spline, const Spline3dPoint& point)
+static int CSpline3d_AddPoint(CSpline3D& spline, const CSpline3D::Point& point)
 {
 	return spline.m_points.append(point);
 }
 
-static int CSpline3d_RemovePoint(CSpline3d& spline, int idx)
+static int CSpline3d_RemovePoint(CSpline3D& spline, int idx)
 {
 	return spline.m_points.removeIndex(idx);
 }
 
 // stores object in keyvalues
-static void	CSpline3d_ToKeyValues(const CSpline3d& spline, KVSection& section)
+static void	CSpline3d_ToKeyValues(const CSpline3D& spline, KVSection& section)
 {
 	KVSection& points = section.CreateSection("points");
-	for (const Spline3dPoint& splinePt : spline.m_points)
+	for (const CSpline3D::Point& splinePt : spline.m_points)
 	{
 		KVSection& pointSec = points.CreateSection("point");
 		pointSec.SetKey("position", Vector4D(splinePt.position, splinePt.time));
@@ -42,11 +44,11 @@ static void	CSpline3d_ToKeyValues(const CSpline3d& spline, KVSection& section)
 	}
 }
 
-static bool	CSpline3d_FromKeyValues(CSpline3d& spline, const KVSection& section)
+static bool	CSpline3d_FromKeyValues(CSpline3D& spline, const KVSection& section)
 {
 	for (const KVSection& pointSec : section.Get("points").Keys())
 	{
-		Spline3dPoint& splinePt = spline.m_points.append();
+		CSpline3D::Point& splinePt = spline.m_points.append();
 
 		const KVSection& posSec = pointSec.Get("position");
 		posSec.GetValues(splinePt.position, splinePt.time);
@@ -58,7 +60,7 @@ static bool	CSpline3d_FromKeyValues(CSpline3d& spline, const KVSection& section)
 	return true;
 }
 
-EQSCRIPT_TYPE_BEGIN(CSpline3d)
+EQSCRIPT_TYPE_BEGIN(CSpline3D)
 	EQSCRIPT_BIND_CONSTRUCTOR()
 
 	EQSCRIPT_BIND_STATIC_FUNC("AddPoint", CSpline3d_AddPoint)
@@ -81,10 +83,10 @@ EQSCRIPT_TYPE_BEGIN(CSpline3d)
 	EQSCRIPT_BIND_FUNC(GetPointDistance)
 	EQSCRIPT_BIND_FUNC(GetTangent)
 
-	EQSCRIPT_BIND_FUNC(PositionAtTime)
-	EQSCRIPT_BIND_FUNC(TangentAtTime)
-	EQSCRIPT_BIND_FUNC(DistanceAtTime)
-	EQSCRIPT_BIND_FUNC(TimeAtDistance)
+	EQSCRIPT_BIND_FUNC(GetPositionAtTime)
+	EQSCRIPT_BIND_FUNC(GetTangentAtTime)
+	EQSCRIPT_BIND_FUNC(GetDistanceAtTime)
+	EQSCRIPT_BIND_FUNC(GetTimeAtDistance)
 
 	EQSCRIPT_BIND_FUNC(UpdateDistances)
 	EQSCRIPT_BIND_FUNC(PositionAtDistance)
@@ -134,8 +136,8 @@ static esl::Any<2> L_LineSegIntersectsCircle2D(const esl::ScriptState& state, co
 
 bool eslSysMathUtilsInit(const esl::ScriptState& state)
 {
-	state.RegisterClass<Spline3dPoint>();
-	state.RegisterClass<CSpline3d>();
+	state.RegisterClass<CSpline3D::Point>();
+	state.RegisterClass<CSpline3D>();
 
 	state.SetGlobal("LineIntersectsLine2D", EQSCRIPT_CFUNC(L_LineIntersectsLine2D));
 	state.SetGlobal("LineSegIntersectsLineSeg2D", EQSCRIPT_CFUNC(L_LineSegIntersectsLineSeg2D));
