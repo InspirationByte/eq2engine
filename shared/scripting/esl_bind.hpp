@@ -479,7 +479,7 @@ template<typename T, typename Result, bool SilentTypeCheck>
 struct TypeCheckerWithArgError : public TypeChecker<SilentTypeCheck>
 {
 	TypeCheckerWithArgError(lua_State* L, int index)
-		: TypeChecker(L, index)
+		: TypeChecker<SilentTypeCheck>(L, index)
 	{
 	}
 
@@ -512,7 +512,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	}
 
 	const int argType = lua_type(L, index);
-	TypeChecker<SilentTypeCheck> typeChecker{ L, index };
+	TypeChecker<SilentTypeCheck> typeChecker(L, index);
 
 	if constexpr (std::is_same_v<T, bool>) 
 	{
@@ -678,7 +678,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		static_assert(std::is_integral_v<BaseType<T>> == false, "GetValue<Class> cannot be used on integral types");
 
 		// shadow
-		TypeCheckerWithArgError<T, Result, SilentTypeCheck> typeChecker{ L, index };
+		TypeCheckerWithArgError<T, Result, SilentTypeCheck> typeChecker(L, index);
 
 		if (argType != LUA_TUSERDATA)
 			return typeChecker.ArgError(EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
