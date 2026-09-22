@@ -85,8 +85,8 @@ void nvrhiFillBindingDesc(const BindGroupDesc::Entry& bindGroupEntry, const Shad
 	case BINDENTRY_STORAGETEXTURE:
 	case BINDENTRY_TEXTURE:
 	{
-		ASSERT(binding.type == BINDENTRY_STORAGETEXTURE || binding.type == BINDENTRY_TEXTURE);
 		// TODO: check texture usage
+		
 		CNVRHITexture* texture = static_cast<CNVRHITexture*>(bindGroupEntry.texture.ptr);
 		ASSERT_MSG(texture, "NULL texture for binding %d", bindGroupEntry.binding);
 		ASSERT_MSG(texture->GetNVRHITextureViewCount(), "Texture '%s' has no views", texture->GetName());
@@ -175,7 +175,6 @@ void nvrhiFillBindingSetDesc(const BindGroupDesc& bindGroupDesc, const ShaderInf
 
 void CNVRHIBindingLayout::FillBindingSetDescByLayoutMap(const BindGroupDesc& bindGroupDesc, const ShaderInfo& shaderInfo, ArrayCRef<int> shaderModuleIdxs, nvrhi::BindingSetDesc& rhiBindingSetDesc) const
 {
-#if 1
 	int bindingsToResolve = 0;
 	uint usedShaderBindings[bitArray2Dword(2048)]{ 0 };
 
@@ -232,10 +231,6 @@ void CNVRHIBindingLayout::FillBindingSetDescByLayoutMap(const BindGroupDesc& bin
 
 	ASSERT_MSG(bindGroupDesc.entries.numElem() >= bindingsToResolve, "Bad binding entry count: %d, expected %d", bindGroupDesc.entries.numElem(), bindingsToResolve);
 	ASSERT_MSG(BitArrayImpl::numTrue(usedShaderBindings, 2048) == bindingsToResolve, "Incorrect binding ids, resolved: %d, expected %d", BitArrayImpl::numTrue(usedShaderBindings, 2048), bindingsToResolve);
-
-#else
-	nvrhiFillBindingSetDesc(bindGroupDesc, shaderInfo, shaderModuleIdxs, rhiSamplers, rhiBindingSetDesc);
-#endif
 }
 
 static void nvrhiAddBindingToLayout(nvrhi::BindingLayoutDesc& layoutDesc, const ShaderInfo::Binding& binding)

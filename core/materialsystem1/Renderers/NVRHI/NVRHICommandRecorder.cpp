@@ -38,7 +38,7 @@ void CNVRHICommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, in
 		bufferImpl->OnUpdated();
 	}
 	else
-	{
+	{		
 		//MsgInfo("NVRHI: un-tracked write to buffer %s with %lld bytes (%s cmd)\n", bufferImpl->GetDbgName(), writeDataSize, m_dbgName.ToCString());
 		m_rhiCommandList->writeBuffer(rhiBuffer, data, writeDataSize, offset);
 	}
