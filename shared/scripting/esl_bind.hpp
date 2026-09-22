@@ -448,7 +448,7 @@ struct TypeChecker
 	lua_State* L;
 	int index;
 
-	int argType;	// only for SilentTypeCheck
+	int argType = LUA_TNIL;	// only for SilentTypeCheck
 
 	TypeChecker(lua_State* L, int index)
 		: L(L)
@@ -487,13 +487,14 @@ struct TypeCheckerWithArgError : public TypeChecker<SilentTypeCheck>
 	{
 		if constexpr (!SilentTypeCheck)
 		{
-			if (argType == LUA_TNIL)
-			{
-				if constexpr (!std::is_pointer_v<T>)
-					luaL_argerror(L, index, err);
-			}
+			bool luaError = false;
+			if constexpr (std::is_pointer_v<T>)
+				luaError = (this->argType != LUA_TNIL);
 			else
-				luaL_argerror(L, index, err);
+				luaError = true;
+
+			if (luaError)
+				luaL_argerror(this->L, this->index, err);
 		}
 		return Result::Failure(std::move(err));
 	};
