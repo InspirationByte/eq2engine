@@ -109,13 +109,13 @@ public:
 
 	// distance utils
 	void				UpdateDistances();
-	Vector3D			PositionAtDistance(float dist) const;
-	Vector3D			TangentAtDistance(float dist) const;
+	Vector3D			GetPositionAtDistance(float dist) const;
+	Vector3D			GetTangentAtDistance(float dist) const;
 
 	// segments
 	float				GetSegmentLength(int segIdx) const;
-	int					SegmentIndexByLocalTime(float time) const;
-	int					SegmentIndexByDistance(float dist) const;
+	int					GetSegmentIndexByLocalTime(float time) const;
+	int					GetSegmentIndexByDistance(float dist) const;
 
 	Array<Point>		m_points{ PP_SL };
 	bool				m_loop{ false };

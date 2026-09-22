@@ -73,7 +73,7 @@ void CSpline3D::Clear()
 
 int CSpline3D::GetSegmentIndexAndLocalTime(float time, float& localTime) const
 {
-	const int fromPt = SegmentIndexByLocalTime(time);
+	const int fromPt = GetSegmentIndexByLocalTime(time);
 	if (fromPt == m_points.numElem() - 1)
 	{
 		localTime = 0.0f;
@@ -170,7 +170,7 @@ void CSpline3D::UpdateDistances()
 	m_distances.append(Vector2D(numPoints, length));
 }
 
-Vector3D CSpline3D::PositionAtDistance(float distance) const
+Vector3D CSpline3D::GetPositionAtDistance(float distance) const
 {
 	const float t = GetTimeAtDistance(distance);
 
@@ -180,7 +180,7 @@ Vector3D CSpline3D::PositionAtDistance(float distance) const
 	return Spline3DPositionAtLocalTime(m_points, startPtIdx, localTime);
 }
 
-Vector3D CSpline3D::TangentAtDistance(float distance) const
+Vector3D CSpline3D::GetTangentAtDistance(float distance) const
 {
 	const float t = GetTimeAtDistance(distance);
 
@@ -202,7 +202,7 @@ float CSpline3D::GetSegmentLength(int segIdx) const
 	return m_distances[np].y - m_distances[cp].y;
 }
 
-int CSpline3D::SegmentIndexByLocalTime(float time) const
+int CSpline3D::GetSegmentIndexByLocalTime(float time) const
 {
 	ASSERT(time >= 0.0f);
 	if (time > m_duration)
@@ -220,7 +220,7 @@ int CSpline3D::SegmentIndexByLocalTime(float time) const
 	return m_points.numElem() - 1;
 }
 
-int CSpline3D::SegmentIndexByDistance(float dist) const
+int CSpline3D::GetSegmentIndexByDistance(float dist) const
 {
 	ASSERT(dist >= 0.0f);
 	const float splineLen = GetLength();

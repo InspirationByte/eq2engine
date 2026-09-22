@@ -89,12 +89,12 @@ EQSCRIPT_TYPE_BEGIN(CSpline3D)
 	EQSCRIPT_BIND_FUNC(GetTimeAtDistance)
 
 	EQSCRIPT_BIND_FUNC(UpdateDistances)
-	EQSCRIPT_BIND_FUNC(PositionAtDistance)
-	EQSCRIPT_BIND_FUNC(TangentAtDistance)
+	EQSCRIPT_BIND_FUNC(GetPositionAtDistance)
+	EQSCRIPT_BIND_FUNC(GetTangentAtDistance)
 
 	EQSCRIPT_BIND_FUNC(GetSegmentLength)
-	EQSCRIPT_BIND_FUNC(SegmentIndexByLocalTime)
-	EQSCRIPT_BIND_FUNC(SegmentIndexByDistance)
+	EQSCRIPT_BIND_FUNC(GetSegmentIndexByLocalTime)
+	EQSCRIPT_BIND_FUNC(GetSegmentIndexByDistance)
 EQSCRIPT_TYPE_END
 
 
