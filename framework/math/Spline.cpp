@@ -8,7 +8,7 @@
 #include "core/core_common.h"
 #include "Spline.h"
 
-static Vector3D BezierCubicPoint(const Vector3D& p0, const Vector3D& p1, const Vector3D& p2, const Vector3D& p3, float t)
+Vector3D BezierCubicPoint(const Vector3D& p0, const Vector3D& p1, const Vector3D& p2, const Vector3D& p3, float t)
 {
 	const float t_2 = sqr(t);
 	const float t_3 = t_2 * t;
@@ -21,7 +21,7 @@ static Vector3D BezierCubicPoint(const Vector3D& p0, const Vector3D& p1, const V
 		+ t_3 * p3;
 }
 
-static Vector3D BezierCubicTangent(const Vector3D& d0, const Vector3D& d1, const Vector3D& d2, float t)
+Vector3D BezierCubicTangent(const Vector3D& d0, const Vector3D& d1, const Vector3D& d2, float t)
 {
 	const float t_2 = sqr(t);
 	const float oneMinusT = 1.0f - t;

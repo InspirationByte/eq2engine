@@ -128,5 +128,8 @@ protected:
 	int					m_stepsPerSegment{ 5 };
 };
 
+Vector3D BezierCubicPoint(const Vector3D& p0, const Vector3D& p1, const Vector3D& p2, const Vector3D& p3, float t);
+Vector3D BezierCubicTangent(const Vector3D& d0, const Vector3D& d1, const Vector3D& d2, float t);
+
 Vector3D Spline3DPositionAtLocalTime(ArrayCRef<CSpline3D::Point> points, int startPtIdx, float t);
 Vector3D Spline3DTangentAtLocalTime(ArrayCRef<CSpline3D::Point> points, int startPtIdx, float t);
