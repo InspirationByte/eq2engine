@@ -71,7 +71,8 @@ public:
 	bool					Initialize(const StudioPhysData& physData, int objIdx);				///< Studio data with physics object id
 	bool					Initialize(const StudioPhyObjData& physObject);						///< Studio physics object
 	bool					Initialize(CEqBulletIndexedMesh* mesh, bool internalEdges);			///< Triangle mesh shape TODO: different container
-	bool					Initialize(const FVector3D& boxMins, const FVector3D& boxMaxs);		///< bounding box
+	bool					Initialize(const Vector3D& boxMins, const Vector3D& boxMaxs);		///< bounding box
+	bool					Initialize(ArrayCRef<Vector3D> points, float margin = 0.0f);				///< convex shape
 	bool					Initialize(float radius);											///< sphere
 	bool					Initialize(float radius, float height);								///< cylinder
 

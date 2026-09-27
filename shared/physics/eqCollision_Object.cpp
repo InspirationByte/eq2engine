@@ -178,7 +178,7 @@ bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh, bool internalEd
 	return true;
 }
 
-bool CEqCollisionObject::Initialize(const FVector3D& boxMins, const FVector3D& boxMaxs)
+bool CEqCollisionObject::Initialize(const Vector3D& boxMins, const Vector3D& boxMaxs)
 {
 	using namespace EqBulletUtils;
 
@@ -189,7 +189,7 @@ bool CEqCollisionObject::Initialize(const FVector3D& boxMins, const FVector3D& b
 	
 	ConvertDKToBulletVectors(vecHalfExtents, ext);
 
-	m_center = (boxMins+boxMaxs)*0.5f;
+	m_center = (boxMins + boxMaxs) * 0.5f;
 
 	btBoxShape* box = new btBoxShape( vecHalfExtents );
 	box->initializePolyhedralFeatures();
@@ -250,6 +250,27 @@ bool CEqCollisionObject::Initialize(float radius, float height)
 	m_collObject->setCollisionShape(m_shape);
 
 	m_shape->setMargin(ph_margin.GetFloat());
+
+	InitAABB();
+
+	m_collObject->setUserPointer(this);
+
+	return true;
+}
+
+bool CEqCollisionObject::Initialize(ArrayCRef<Vector3D> points, float margin)
+{
+	ASSERT(!m_shape);
+
+	m_numShapes = 1;
+	m_shapeList = nullptr;
+
+	m_shape = new btConvexHullShape(reinterpret_cast<const float*>(points.ptr()), points.numElem(), sizeof(points[0]));
+	m_shape->setMargin(margin == 0.0f ? ph_margin.GetFloat() : margin);
+	m_shapeOwning = OWNS_SHAPE;
+
+	m_collObject = new btCollisionObject();
+	m_collObject->setCollisionShape(m_shape);
 
 	InitAABB();
 
