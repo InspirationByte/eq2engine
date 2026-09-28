@@ -179,7 +179,7 @@ EQSCRIPT_TYPE_BEGIN( Vector2D )
 	EQSCRIPT_BIND_STATIC_FUNC_OVERLOAD("clamp",clamp, Vector2D, (const Vector2D&, const Vector2D&, const Vector2D&))
 
 	EQSCRIPT_BIND_STATIC_FUNC_OVERLOAD("distance", distance, float, (const Vector2D&, const Vector2D&))
-	EQSCRIPT_BIND_STATIC_FUNC_OVERLOAD("distanceSqr", distance, float, (const Vector2D&, const Vector2D&))
+	EQSCRIPT_BIND_STATIC_FUNC_OVERLOAD("distanceSqr", distanceSqr, float, (const Vector2D&, const Vector2D&))
 	EQSCRIPT_BIND_STATIC_FUNC_OVERLOAD("length", length, float, (const Vector2D&))
 	EQSCRIPT_BIND_STATIC_FUNC_OVERLOAD("lengthSqr", lengthSqr, float, (const Vector2D&))
 	EQSCRIPT_BIND_STATIC_FUNC_OVERLOAD("dot", dot, float, (const Vector2D&, const Vector2D&))
