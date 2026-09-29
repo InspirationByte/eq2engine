@@ -31,6 +31,7 @@ TODO:
 #pragma once
 #include "eqPhysics_Defs.h"
 #include "core/IEqParallelJobs.h"
+#include "ds/event.h"
 
 struct btDispatcherInfo;
 class btCollisionWorld;
@@ -48,7 +49,7 @@ class CEqPhysicsBroadphase;
 class IEqPhysicsConstraint;
 class IEqPhysController;
 
-typedef void (*FNSIMULATECALLBACK)(float fDt, int iterNum);
+using PhysIntegrateEvent = Event<void(float delta, int iterNum)>;
 
 //--------------------------------------------------------------------------------------------------------------
 
@@ -77,6 +78,9 @@ public:
 	const int						FindSurfaceParamID(const char* name) const;
 	const eqPhysSurfParam*			FindSurfaceParam(const char* name) const;
 	const eqPhysSurfParam*			GetSurfaceParamByID(int id) const;
+
+	PhysIntegrateEvent&				GetPreIntegrateEvent() { return m_preIntegrateEvt; }
+	PhysIntegrateEvent&				GetPostIntegrateEvent() { return m_postIntegrateEvt; }
 
 	void							AddToMoveableList( CEqRigidBody* body );			///< adds object to moveable list
 	void							RemoveFromMoveableList( CEqRigidBody* body );
@@ -144,7 +148,7 @@ public:
 	void							DebugDrawBodies(int mode);
 
 	///< Simulates physics
-	void							SimulateStep( float deltaTime, int iteration, FNSIMULATECALLBACK preIntegrFunc);	///< simulates physics
+	void							SimulateStep( float deltaTime, int iteration);	///< simulates physics
 
 
 	// checks collision (made especially for rays, but could be used in other situations)
@@ -170,6 +174,9 @@ protected:
 
 	class PreSimulateJob;
 	class CollisionDetectionJob;
+
+	PhysIntegrateEvent				m_preIntegrateEvt{ PP_SL };
+	PhysIntegrateEvent				m_postIntegrateEvt{ PP_SL };
 
 	CEqJobManager&					m_jobMng;
 	PreSimulateJob*					m_preSimJob{ nullptr };

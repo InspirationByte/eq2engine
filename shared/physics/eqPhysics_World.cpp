@@ -1225,7 +1225,7 @@ void CEqPhysicsWorld::ProcessContactPair(eqContactPair& pair)
 //
 //----------------------------------------------------------------------------------------------------
 
-void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK preIntegrFunc)
+void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration)
 {
 	if(!m_broadphase)
 		return;
@@ -1251,7 +1251,7 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 			contr->Update(m_fDt);
 		}
 	}
-	
+
 	m_simMovingMoveables.clear();
 	m_simMovingMoveables.reserve(m_moveable.numElem());
 
@@ -1288,8 +1288,7 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 
 	m_fDt = deltaTime;
 
-	if(preIntegrFunc)
-		preIntegrFunc(m_fDt, iteration);
+	m_preIntegrateEvt(m_fDt, iteration);
 
 	if(m_collDetJob)
 	{
@@ -1323,6 +1322,8 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 				callbacks->PostSimulate(m_fDt);
 		}
 	}
+	
+	m_postIntegrateEvt(m_fDt, iteration);
 
 	{
 		PROF_EVENT("Constraits apply");
