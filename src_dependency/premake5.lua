@@ -18,6 +18,7 @@ end
 include "stb"
 include "lz4"
 include "cv_sdk"
+include "tracy"
 include "LivePP"
 
 include "imgui"

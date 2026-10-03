@@ -2,8 +2,7 @@ group "Framework"
 
 -- eqCore essentials
 project "coreLib"
-    kind "StaticLib"
-	properties { "unitybuild", "concurrency_vis" }
+	properties { "staticlib", "unitybuild", "concurrency_vis" }
 	uses { "public" }
     files {
 		"core/**",
@@ -13,8 +12,7 @@ project "coreLib"
 
 -- Framework (Data Structure, Maths, Imaging, Utilities)
 project "frameworkLib"
-    kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses { "public", "stb" }
 
     files {

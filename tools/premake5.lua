@@ -5,7 +5,7 @@ group "Tools"
 
 project "fcompress"
     kind "ConsoleApp"
-	properties { "unitybuild", "tools", "app" }
+	properties { "tools", "app", "unitybuild",  }
     uses {
 		"corelib", "frameworkLib", 
 		"e2Core", 
@@ -24,7 +24,7 @@ project "fcompress"
 
 project "egfca"
     kind "ConsoleApp"
-	properties { "unitybuild", "tools", "app" }
+	properties { "tools", "app", "unitybuild" }
     uses {
 		"corelib", "frameworkLib",
 		"e2Core",
@@ -40,7 +40,7 @@ project "egfca"
 
 project "animca"
     kind "ConsoleApp"
-	properties { "unitybuild", "tools" }
+	properties { "tools", "app", "unitybuild" }
     uses {
 		"corelib", "frameworkLib",
 		"e2Core", "egfLib", "studioLib"
@@ -55,7 +55,7 @@ project "animca"
 
 project "texcooker"
     kind "ConsoleApp"
-	properties { "unitybuild", "tools", "app" }
+	properties { "tools", "app", "unitybuild" }
     uses {
 		"corelib", "frameworkLib",
 		"e2Core"
@@ -69,7 +69,7 @@ project "texcooker"
 -- Shader cooker
 project "shadercooker"
 	kind "ConsoleApp"
-	properties { "unitybuild", "tools", "app" }
+	properties { "tools", "app", "unitybuild" }
 	uses {
 		"corelib", "frameworkLib",
 		"e2Core",
@@ -86,7 +86,7 @@ if ENABLE_GUI_TOOLS then
 -- Equilibrium Graphics File manager (EGFMan)
 project "egfman"
     kind "WindowedApp"
-	properties { "unitybuild", "tools", "app" }
+	properties { "tools", "app", "unitybuild" }
     uses {
 		"corelib", "frameworkLib", "e2Core",
 		"fontLib", "physicsLib", "dkPhysicsLib", "renderUtilLib", "animatingLib",

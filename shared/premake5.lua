@@ -2,8 +2,7 @@ group "Components"
 
 -- Package File Lib
 project "dpkLib"
-	kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses { 
 		"public", "shared",
 		"lz4", "zlib"
@@ -14,8 +13,7 @@ project "dpkLib"
 
 -- Font Loader and Renderer
 project "fontLib"
-    kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses { "public", "shared" }
     files {
 		"font/**",
@@ -28,8 +26,7 @@ project "fontLib"
 
 -- Render Utility and Debug Drawing
 project "renderUtilLib"
-    kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses { "public", "shared" }
     files {
 		"render/**",
@@ -42,8 +39,7 @@ project "renderUtilLib"
 	
 -- GPU Rendering Instance Manager (GRIM)
 project "grimLib"
-    kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses { 
 		"public", "shared",
 		"renderUtilLib",
@@ -55,8 +51,7 @@ project "grimLib"
 	
 -- EGF file loadder
 project "studioFileLib"
-    kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses {
 		"public", "shared",
 		"bullet2", "zlib"
@@ -67,8 +62,7 @@ project "studioFileLib"
 	
 -- Studio EGF geometry
 project "studioLib"
-    kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses { 
 		"public", "shared",
 		"studioFileLib"
@@ -79,8 +73,7 @@ project "studioLib"
 	
 -- Equilibrium User Interface (EqUI) library
 project "equiLib"
-	kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses { 
 		"public", "shared",
 		"fontLib",
@@ -92,8 +85,7 @@ project "equiLib"
 	
 -- ImGui backend library
 project "imguiBackendLib"
-	kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses { 
 		"public", "shared",
 		"imgui"
@@ -105,8 +97,7 @@ project "imguiBackendLib"
 
 -- Network lib
 project "networkLib"
-	kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses {
 		"public", "shared",
 		"zlib" 
@@ -124,8 +115,7 @@ project "networkLib"
 
 -- Sound System
 project "soundSystemLib"
-	kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses { 
 		"public", "shared",
 		"minivorbis", "openal-soft", "imgui"
@@ -141,8 +131,7 @@ project "soundSystemLib"
 
 -- Physics Engine Library
 project "physicsLib"
-	kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses { 
 		"public", "shared",
 		"bullet2"
@@ -158,8 +147,7 @@ project "physicsLib"
 	
 -- Movie Player library
 project "movieLib"
-	kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses { 
 		"public", "shared",
 		"ffmpeg"
@@ -174,8 +162,7 @@ project "movieLib"
 		
 -- Eq Script Library (ESL)
 project "scriptLib"
-	kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses { 
 		"public", "shared",
 		"lua",
@@ -186,8 +173,7 @@ project "scriptLib"
 		
 -- Engine System Library (Host, Input, States)
 project "sysLib"
-	kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses { 
 		"public", "shared", "scriptLib",
 		"renderUtilLib", "equiLib", "movieLib",
@@ -209,8 +195,7 @@ project "sysLib"
 if ENABLE_TOOLS then
 	-- EGF generator
 	project "egfLib"
-		kind "StaticLib"
-		properties { "unitybuild" }
+		properties { "staticlib", "unitybuild" }
 		uses {
 			"public", "shared",
 			"studioFileLib",
@@ -227,8 +212,7 @@ if ENABLE_TOOLS then
 
 	-- Equilibrium 1 Darktech Physics (Deprecated but kept for egfMan)
 	project "dkPhysicsLib"
-		kind "StaticLib"
-		properties { "unitybuild" }
+		properties { "staticlib", "unitybuild" }
 		uses {
 			"public", "shared",
 			"studioLib", "animatingLib", 
@@ -246,8 +230,7 @@ end
 
 -- Animating Game Library
 project "animatingLib"
-    kind "StaticLib"
-	properties { "unitybuild" }
+	properties { "staticlib", "unitybuild" }
 	uses {
 		"public", "shared",
 		"studioLib"

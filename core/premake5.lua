@@ -5,10 +5,12 @@ group "Core"
 
 project "e2Core"
 	properties { 
-		"sharedlib", "unitybuild", "live_pp", "concurrency_vis"
+		"sharedlib", "unitybuild", 
+		"live_pp", "concurrency_vis"
 	}
     uses {
-		"coreLib", "frameworkLib", "dpkLib"
+		"coreLib", "frameworkLib", "dpkLib",
+		"tracy_client"
 	}
     files {
         "e2core/**",
@@ -42,7 +44,7 @@ group "MatSystem"
 
 -- Base Shader
 project "BaseShader"
-    kind "StaticLib"
+    properties { "staticlib" }
 	uses { "public" }
     files {
 		PUBLIC_DIR.."/materialsystem1/BaseShader*",
