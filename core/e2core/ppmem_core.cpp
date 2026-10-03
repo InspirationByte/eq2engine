@@ -15,6 +15,11 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
+#if !defined(_RETAIL)
+#define TRACY_ENABLE
+#endif
+#include <tracy/Tracy.hpp>
+
 #include "core/core_common.h"
 #include "core/ppmem.h"
 
@@ -362,6 +367,8 @@ static void* PPInitAllocInternal(void* alloc, size_t size, size_t alignment, con
 	if( ppmem_breakOnAlloc.GetInt() != -1 && allocInfo->id == (uint)ppmem_breakOnAlloc.GetInt())
 		ASSERT_FAIL("PPDAlloc: Break on allocation id=%d", allocInfo->id);
 
+	TracyAlloc(userPtr, size);
+
 	return userPtr;
 }
 #endif // !PPMEM_DISABLED
@@ -372,6 +379,7 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 #ifdef PPMEM_DISABLED
 	void* mem = PPInternalMalloc(size);
 	ASSERT_MSG(mem, "No mem left");
+	TracyAlloc(mem, size);
 	return mem;
 #else
 
@@ -379,6 +387,7 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 	{
 		void* mem = PPInternalMalloc(size);
 		ASSERT_MSG(mem, "alloc: no mem left");
+		TracyAlloc(mem, size);
 		return mem;
 	}
 
@@ -392,6 +401,7 @@ void* PPDAlignedAlloc(size_t size, size_t alignment, const PPSourceLine& sl)
 #ifdef PPMEM_DISABLED
 	void* mem = PPInternalMalloc(size);
 	ASSERT_MSG(mem, "No mem left");
+	TracyAlloc(mem, size);
 	return mem;
 #else
 
@@ -399,6 +409,7 @@ void* PPDAlignedAlloc(size_t size, size_t alignment, const PPSourceLine& sl)
 	{
 		void* mem = PPInternalAlignedMalloc(size, alignment);
 		ASSERT_MSG(mem, "alloc: no mem left");
+		TracyAlloc(mem, size);	
 		return mem;
 	}
 
@@ -425,8 +436,14 @@ static int PPMemCmpTailCheckmarks(const ubyte* x)
 void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 {
 #ifdef PPMEM_DISABLED
+	if(ptr)
+		TracyFree(ptr);
+
 	void* mem = realloc(ptr, size);
 	ASSERT_MSG(mem, "alloc: no mem left");
+
+	TracyAlloc(mem, size);
+
 	return mem;
 #else
 	PPAllocInfo* r_alloc = (PPAllocInfo*)ptr - 1;
@@ -446,6 +463,8 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 		const int diff = PPMemCmpTailCheckmarks((ubyte*)tailCheckMark);
 		ASSERT_MSG(r_alloc->checkMark == PPMEM_CHECKMARK, "buffer underflow of %s:%d, investigate with ASAN", r_alloc->sl.GetFileName(), r_alloc->sl.GetLine());
 		ASSERT_MSG(diff == 0, "buffer overflow by %d bytes of %s:%d, investigate with ASAN", diff, r_alloc->sl.GetFileName(), r_alloc->sl.GetLine());
+
+		TracyFree(actualPtr);
 	}
 
 	// decrement allocInfo counters
@@ -469,6 +488,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 	}
 
 	st.OnAlloc(alloc->size, sl);
+	TracyAlloc(newUserPtr, size);
 
 	return newUserPtr;
 #endif // PPMEM_DISABLED
@@ -521,11 +541,14 @@ static void PPFreeAllocInternal(PPAllocInfo* alloc)
 void PPFree(void* ptr)
 {
 #ifdef PPMEM_DISABLED
+	TracyFree(ptr);
 	PPInternalFree(ptr);
 #else
 
 	if(ptr == nullptr)
 		return;
+
+	TracyFree(ptr);
 
 	PPAllocInfo* allocInfo = reinterpret_cast<PPAllocInfo*>(ptr) - 1;
 	if(allocInfo->checkMark != PPMEM_CHECKMARK)
@@ -547,11 +570,14 @@ void PPFree(void* ptr)
 void PPAlignedFree(void* ptr)
 {
 #ifdef PPMEM_DISABLED
+	TracyFree(ptr);
 	PPInternalAlignedFree(ptr);
 #else
 
 	if(ptr == nullptr)
 		return;
+
+	TracyFree(ptr);
 
 	PPAllocInfo* allocInfo = (PPAllocInfo*)ptr - 1;
 	if(allocInfo->checkMark != PPMEM_CHECKMARK)

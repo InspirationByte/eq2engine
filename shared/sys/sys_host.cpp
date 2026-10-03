@@ -778,6 +778,8 @@ void CGameHost::SetCursorShow(bool bShow)
 
 bool CGameHost::Frame()
 {
+	PROF_FRAME_MARK;
+
 	m_prevMousePos = m_mousePos;
 
 	// Engine frames status
