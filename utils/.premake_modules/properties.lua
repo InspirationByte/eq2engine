@@ -1,5 +1,4 @@
 local p = premake
-local m = p.validation
 
 --
 -- 'property' container
@@ -48,7 +47,7 @@ local m = p.validation
 			local newBlock = table.deepcopy(propertyBlock)
 
 			-- attach fat references after deepcopy
-			newBlock._origin   = propertyOrigin
+			newBlock._origin = propertyOrigin
 			propertyBlock._origin = propertyOrigin
 
 			newBlock._criteria.patterns = table.join( newBlock._criteria.patterns, targetBlock._criteria.patterns )
@@ -109,7 +108,7 @@ local m = p.validation
 -- Before baking a workspaces and projects, resolve all the 'properties'
 --
 
-	premake.override(p.workspace, "bake", function(base, self)	
+	local function bakeProperties(base, self)
 		-- Keep the list stable while we iterate and modify it
 		local blocks = {}
 		for k, v in pairs(self.blocks) do
@@ -121,21 +120,10 @@ local m = p.validation
 		end
 	
 		return base(self)
-	end)
+	end
 
-	premake.override(p.project, "bake", function(base, self)	
-		-- Keep the list stable while we iterate and modify it
-		local blocks = {}
-		for k, v in pairs(self.blocks) do
-			blocks[k] = v
-		end
-		
-		for _, block in pairs(blocks) do
-			resolveAllPropsInBlock(self, block)
-		end
-	
-		return base(self)
-	end)
+	premake.override(p.workspace, "bake", bakeProperties)
+	premake.override(p.project, "bake", bakeProperties)
 	
 
 --

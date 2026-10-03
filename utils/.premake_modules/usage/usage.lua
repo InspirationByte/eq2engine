@@ -50,7 +50,6 @@
 	require 'stack'
 
 	local p = premake
-	local oven = p.oven
 	local context = p.context
 
 	local keyLinks 		= "links"
@@ -516,31 +515,30 @@ p.api.register {
 --
 
 	function bakeProjectUsage( prj )
-
 		-- do not resolve "uses" twice
 		if prj.resolvedUses == nil then
 			-- create table of already resolved uses for this projects
 			prj.resolvedUses = {}
-
-			stashStack()
-
-			local blocks = {}
-			for k, v in pairs(prj.blocks) do
-				blocks[k] = v
-			end
-			pushUsage( prj.name, '"bake"' )
-			for _, block in pairs(blocks) do
-				if block.uses then
-					block.resolvedUsesLinks = {}
-					resolveAllUsesInBlock(prj, block)
-					-- When referring to a project, 'uses' acts like 'links' too.
-					block[keyLinks] = field.store( fieldLinks, block[keyLinks], fixOrder( block.resolvedUsesLinks ) )
-				end
-			end
-			popUsage()		
-
-			unstashStack()	
 		end	
+
+		stashStack()
+
+		local blocks = {}
+		for k, v in pairs(prj.blocks) do
+			blocks[k] = v
+		end
+		pushUsage( prj.name, '"bake"' )
+		for _, block in pairs(blocks) do
+			if block.uses then
+				block.resolvedUsesLinks = {}
+				resolveAllUsesInBlock(prj, block)
+				-- When referring to a project, 'uses' acts like 'links' too.
+				block[keyLinks] = field.store( fieldLinks, block[keyLinks], fixOrder( block.resolvedUsesLinks ) )
+			end
+		end
+		popUsage()		
+
+		unstashStack()	
 	end
 	
 --
