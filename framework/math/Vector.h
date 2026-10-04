@@ -712,7 +712,9 @@ static const TVec3D<float> vec3_unit = TVec3D<float>(1.0f);
 static const TVec4D<float> vec4_unit = TVec4D<float>(1.0f);
 
 static const TVec3D<float> vec3_undef = TVec3D<float>(F_UNDEF);
+static const TVec4D<float> vec4_undef = TVec4D<float>(F_UNDEF);
 static const TVec3D<float> vec3_infinity = TVec3D<float>(F_INFINITY);
+static const TVec4D<float> vec4_infinity = TVec4D<float>(F_INFINITY);
 
 static const TVec3D<float> vec3_right = TVec3D<float>(1.0f, 0.0f, 0.0f);
 static const TVec3D<float> vec3_up = TVec3D<float>(0.0f, 1.0f, 0.0f);
