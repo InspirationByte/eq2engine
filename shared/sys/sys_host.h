@@ -117,6 +117,7 @@ protected:
 
 	CEqTimer			m_timer;
 	double				m_accumTime{ 0.0 };
+	uint32				m_frameNmb{ 0 };
 
 	int					m_quitState{ QUIT_NOTQUITTING };
 

@@ -223,9 +223,19 @@ static void OpenDebugger(lua_State* L)
 
 		esl::runtime::SetErrorHandler(DbgRuntimeError);
 		s_coreAssertHandler = SetAssertHandler(DbgAssertHandler);
-	}
-
+	}	
 #endif // !_RETAIL
+
+	// register profiler runtime
+	tracy::LuaRegister(L);
+
+#ifdef TRACY_ENABLE
+	// hook profiler
+	if (!IsLuaDebuggerPresent())
+	{
+		lua_sethook(L, tracy::LuaHook, LUA_MASKCALL | LUA_MASKRET, 0);
+	}
+#endif
 }
 
 static void OnUnhandledExceptionCallback(lua_State* L)

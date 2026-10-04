@@ -778,8 +778,6 @@ void CGameHost::SetCursorShow(bool bShow)
 
 bool CGameHost::Frame()
 {
-	PROF_FRAME_MARK;
-
 	m_prevMousePos = m_mousePos;
 
 	// Engine frames status
@@ -797,15 +795,21 @@ bool CGameHost::Frame()
 	accTime += elapsedTime;
 	nFrames++;
 
-	eqAppStateMng::g_onBeginFrame(elapsedTime);
-
 	if (!FilterTime(elapsedTime))
 		return false;
 
-	PROF_EVENT("Host Frame");
+	PROF_FRAME_MARK;
 
-	double gameFrameTime = m_accumTime;
 
+#ifdef PROFILE_ENABLE
+	static char frameNmbStr[256];
+	CString::PrintF(frameNmbStr, sizeof(frameNmbStr), "Host Frame %u", m_frameNmb);
+#endif
+	PROF_FRAME_BEGIN(frameNmbStr);
+
+	eqAppStateMng::g_onBeginFrame(elapsedTime);
+
+	const double gameFrameTime = m_accumTime;
 	CEqGameControllerSDL::RepeatEvents(gameFrameTime);
 
 	UpdateCursorState();
@@ -961,6 +965,9 @@ bool CGameHost::Frame()
 
 	eqAppStateMng::g_onEndFrame(gameFrameTime);
 	m_accumTime = 0.0f;
+
+	PROF_FRAME_END(frameNmbStr);
+	++m_frameNmb;
 
 	return true;
 }

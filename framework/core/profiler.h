@@ -34,6 +34,8 @@ IEXPORTS void ProfReleaseCurrentThreadMarkers();
 #define PROF_RELEASE_THREAD_MARKERS()	ProfReleaseCurrentThreadMarkers()
 
 #define PROF_FRAME_MARK					FrameMark; ProfAddMarker("FRAME")
+#define PROF_FRAME_BEGIN(name)			FrameMarkStart(name); ProfEventWrp _profEvt(name)
+#define PROF_FRAME_END(name)			FrameMarkEnd(name)
 
 inline ProfEventWrp::ProfEventWrp(const char* name)	{ eventId = ProfBeginMarker(name); }
 inline ProfEventWrp::~ProfEventWrp()				{ ProfEndMarker(eventId); }
@@ -46,6 +48,8 @@ inline ProfEventWrp::~ProfEventWrp()				{ ProfEndMarker(eventId); }
 #define PROF_RELEASE_THREAD_MARKERS()
 
 #define PROF_FRAME_MARK
+#define PROF_FRAME_BEGIN(name)
+#define PROF_FRAME_END(name)
 
 inline ProfEventWrp::ProfEventWrp(const char* name) {};
 inline ProfEventWrp::~ProfEventWrp() = default;
