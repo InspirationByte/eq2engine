@@ -272,6 +272,11 @@ bool CDkCore::Init(const CoreAppInitParameters& initParams)
 		}
 	}
 
+	// Tracy setup
+	{
+		TracySetProgramName(m_szApplicationName);
+	}
+
 #ifdef HAS_LIVEPP_SUPPORT
 	{
 		EqString livePPPath = "Tools/LivePP";
