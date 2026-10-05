@@ -27,10 +27,16 @@ struct RangeFor : RangeForMixin<RangeFor>
 {
 	int from;
 	int to;
+	int step;
 
-	RangeFor(int from, int to) : from(from), to(to) {}
+	RangeFor(int from, int to)
+		: from(from)
+		, to(to)
+		, step(from <= to ? 1 : -1)
+	{
+	}
 
-	bool AtEnd() const { return from >= to; }
-	int operator*() { return from; }
-	void operator++() { ++to; }
+	bool AtEnd() const { return from == to + step; }
+	int operator*() const { return from; }
+	void operator++() { from += step; }
 };
