@@ -26,23 +26,28 @@ extern void SetVariable(const char* key, const char* value);
 
 int main(int argc, char* argv[])
 {
+	Install_SpewFunction();
+
 	CoreAppInitParameters appInitParams;
 	appInitParams.appName = "shaderCooker";
 	appInitParams.commandLine = ArrayCRef(argv, argc);
 	g_eqCore->Init(appInitParams);
 
-	Install_SpewFunction();
+	MsgInfo("ShaderCooker - Eq2 offline shader compiler\n\n\n");
+	MsgWarning("Copyright (c) Inspiration Byte 2009-2026\n");
 
 	if(!g_fileSystem->Init(false))
 		return -1;
-
-	MsgInfo("ShaderCooker - Eq2 offline shader compiler\n\n\n");
 
 	g_cmdLine->ExecuteCommandLine();
 
 	ArrayCRef<EqString> args = g_cmdLine->GetParameters();
 	if (args.numElem() <= 1)
+	{
 		Usage();
+		getchar();
+		return 0;
+	}
 
 	SetVariable("ENGINE_DIR", g_fileSystem->GetCurrentDataDirectory());
 	SetVariable("GAME_DIR", g_fileSystem->GetCurrentGameDirectory());
@@ -54,6 +59,9 @@ int main(int argc, char* argv[])
 		for (int i = 0; i < args.numElem(); i++)
 		{
 			EqStringRef argStr = args[i];
+			if(argStr[0] == '+')
+				continue;
+
 			if (!argStr.CompareCaseIns("-target"))
 				CookTarget(jobMng, g_cmdLine->GetArgumentsOf(i), shaderFilter);
 			else if (!argStr.CompareCaseIns("-filter"))

@@ -573,16 +573,6 @@ static void CookPackageTarget(const char* targetName)
 
 int main(int argc, char **argv)
 {
-	//Only set debug info when connecting dll
-#ifdef _DEBUG
-	int flag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG); // Get current flag
-	flag |= _CRTDBG_LEAK_CHECK_DF; // Turn on leak-checking bit
-	flag |= _CRTDBG_CHECK_ALWAYS_DF; // Turn on CrtCheckMemory
-	flag |= _CRTDBG_ALLOC_MEM_DF;
-	_CrtSetDbgFlag(flag); // Set flag to the new value
-	_CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_DEBUG );
-#endif
-
 	Install_SpewFunction();
 
 	CoreAppInitParameters appInitParams;
@@ -590,8 +580,8 @@ int main(int argc, char **argv)
 	appInitParams.commandLine = ArrayCRef(argv, argc);
 	g_eqCore->Init(appInitParams);
 
-	Msg("FCompress - Equilibrium PakFile generator\n");
-	Msg(" Version 2.0\n");
+	MsgInfo("FCompress - Equilibrium Package File creation utility\n");
+	MsgWarning("Copyright (c) Inspiration Byte 2009-2026\n");
 
 	// initialize file system
 	if(!g_fileSystem->Init(false))
@@ -603,8 +593,7 @@ int main(int argc, char **argv)
 	if (args.numElem() <= 1)
 	{
 		Usage();
-
-		g_eqCore->Shutdown();
+		getchar();
 		return 0;
 	}
 

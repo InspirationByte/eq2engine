@@ -18,21 +18,9 @@ class IShaderAPI* g_renderAPI = nullptr;
 class IMaterialSystem* g_matSystem = nullptr;
 
 DECLARE_CVAR(__cheats, "1", "Enable cheats", CV_PROTECTED | CV_INVISIBLE);
-DECLARE_CVAR_RENAME(c_filename, "filename", "none", "script file name", 0);
 
 int main(int argc, char **argv)
 {
-	//Only set debug info when connecting dll
-	#ifdef CRT_DEBUG_ENABLED
-		#define _CRTDBG_MAP_ALLOC
-		int flag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG); // Get current flag
-		flag |= _CRTDBG_LEAK_CHECK_DF; // Turn on leak-checking bit
-		flag |= _CRTDBG_CHECK_ALWAYS_DF; // Turn on CrtCheckMemory
-		flag |= _CRTDBG_ALLOC_MEM_DF;
-		_CrtSetDbgFlag(flag); // Set flag to the new value
-		_CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_DEBUG );
-	#endif
-
 	Install_SpewFunction();
 
 	CoreAppInitParameters appInitParams;
@@ -40,39 +28,38 @@ int main(int argc, char **argv)
 	appInitParams.commandLine = ArrayCRef(argv, argc);
 	g_eqCore->Init(appInitParams);
 
-	MsgWarning("ANIMCA, a command-line utility to compile motion packages for EGF models\n");
-	MsgWarning("Copyright � Inspiration Byte 2009-2014\n");
-	MsgWarning("Only used on EGF version %d\n", EQUILIBRIUM_MODEL_VERSION);
+	Install_SpewFunction();
+
+	MsgInfo("ANIMCA, a command-line utility to compile motion packages for EGF models\n");
+	MsgWarning("Copyright (c) Inspiration Byte 2009-2026\n");
 
 	// Filesystem is first!
 	if(!g_fileSystem->Init(false))
-	{
-		g_eqCore->Shutdown();
-		return 0;
-	}
-
-	//Sleep(5000); //wait 5 seconds
+		return -1;
 
 	g_cmdLine->ExecuteCommandLine();
 
-	if(!CString::CompareCaseIns("none", c_filename.GetString()))
+	ArrayCRef<EqString> args = g_cmdLine->GetParameters();
+	if (args.numElem() <= 1)
 	{
-		MsgError("example: animca +filename <asc_script.asc>\n");
+		MsgError("example: animca <asc_script.asc> <asc_script2.asc> [<...>]\n");
+		getchar();
+		return 0;
 	}
-	else
+
+	for (EqStringRef argStr : args)
 	{
+		if(argStr[0] == '+')
+			continue;
+
 		CMotionPackageGenerator generator;
-
-		if(generator.CompileScript(c_filename.GetString()))
+		if(!generator.CompileScript(argStr))
 		{
-			MsgAccept("Compilation success\n");
-		}
-		else
-		{
-			MsgError("Compilation failed\n  Please run with +developer 1\n");
+			getchar();
+			break;
 		}
 	}
-
+	
 	g_eqCore->Shutdown();
 	return 0;
 }

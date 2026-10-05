@@ -18,9 +18,8 @@ class IShaderAPI* g_renderAPI = nullptr;
 class IMaterialSystem* g_matSystem = nullptr;
 
 DECLARE_CVAR(__cheats, "1", "Enable cheats", CV_PROTECTED | CV_INVISIBLE);
-DECLARE_CVAR_RENAME(c_filename, "filename", "none", "script file name", 0);
 
-bool CompileESCScript(const char* filename)
+static bool CompileESCScript(const char* filename)
 {
 	CEGFGenerator generator;
 
@@ -41,17 +40,6 @@ bool CompileESCScript(const char* filename)
 
 int main(int argc, char **argv)
 {
-	//Only set debug info when connecting dll
-	#ifdef CRT_DEBUG_ENABLED
-		#define _CRTDBG_MAP_ALLOC
-		int flag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG); // Get current flag
-		flag |= _CRTDBG_LEAK_CHECK_DF; // Turn on leak-checking bit
-		flag |= _CRTDBG_CHECK_ALWAYS_DF; // Turn on CrtCheckMemory
-		flag |= _CRTDBG_ALLOC_MEM_DF;
-		_CrtSetDbgFlag(flag); // Set flag to the new value
-		_CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_DEBUG );
-	#endif
-
 	Install_SpewFunction();
 
 	CoreAppInitParameters appInitParams;
@@ -59,32 +47,32 @@ int main(int argc, char **argv)
 	appInitParams.commandLine = ArrayCRef(argv, argc);
 	g_eqCore->Init(appInitParams);
 
-	MsgWarning("EGFCA, a command-line utility to compile  model scripts (esc)\n");
-	MsgWarning("Copyright � Inspiration Byte 2009-2014\n");
-	MsgWarning("Generates EGF of version %d\n", EQUILIBRIUM_MODEL_VERSION);
+	MsgInfo("EGFCA, a command-line utility to compile  model scripts (esc)\n");
+	MsgInfo("Generates EGF of version %d\n", EQUILIBRIUM_MODEL_VERSION);
+	MsgWarning("Copyright (c) Inspiration Byte 2009-2026\n");
 
-	// Filesystem is first!
 	if(!g_fileSystem->Init(false))
-	{
-		g_eqCore->Shutdown();
-		return 0;
-	}
+		return -1;
 
 	g_cmdLine->ExecuteCommandLine();
 
-	if(!CString::CompareCaseIns("none", c_filename.GetString()))
+	ArrayCRef<EqString> args = g_cmdLine->GetParameters();
+	if (args.numElem() <= 1)
 	{
-		MsgError("example: egfca +filename <esc_script.esc>\n");
+		MsgError("example: egfca <esc_script.esc> <esc_script2.asc> [<...>]\n");
+		getchar();
+		return 0;
 	}
-	else
+
+	for (EqStringRef argStr : args)
 	{
-		if( CompileESCScript( c_filename.GetString() ) )
+		if(argStr[0] == '+')
+			continue;
+
+		if(!CompileESCScript(argStr))
 		{
-			MsgAccept("Compilation success\n");
-		}
-		else
-		{
-			MsgError("Compilation failed\n  Please run with +developer 1 for additional information\n");
+			getchar();
+			break;
 		}
 	}
 
