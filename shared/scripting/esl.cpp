@@ -10,7 +10,7 @@ namespace esl
 {
 void ScriptState::GCStop() const
 {
-	lua_gc(m_state, LUA_GCRESTART);
+	lua_gc(m_state, LUA_GCSTOP);
 }
 
 void ScriptState::GCRestart() const
