@@ -862,7 +862,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 				if(ext == "asc")
 				{
-					EqString cmdLine(EqString::Format("animca.exe -devAddon \"%s\" +filename \"%s\"", devAddonDir, fname.GetData()));
+					EqString cmdLine(EqString::Format("animca.exe -devAddon \"%s\" \"%s\"", devAddonDir, fname.GetData()));
 
 					Msg("***Starting egfCa: %s\n", cmdLine.ToCString());
 					if (system(cmdLine.ToCString()) != 0)
@@ -880,7 +880,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 						if(pPair)
 						{
 							model_path = KV_GetValueString(pPair);
-							EqString cmdLine = EqString::Format("egfca.exe -devAddon \"%s\" +filename \"%s\"", devAddonDir, fname.GetData());
+							EqString cmdLine = EqString::Format("egfca.exe -devAddon \"%s\" \"%s\"", devAddonDir, fname.GetData());
 
 							Msg("***Starting egfCa: '%s'\n", cmdLine.ToCString());
 							if (system(cmdLine.ToCString()) != 0)
