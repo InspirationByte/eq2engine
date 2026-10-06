@@ -3,8 +3,7 @@ project "tracy_client"
 	kind "StaticLib"
 	targetname "tracy"
 	
-	targetdir "%{_MAIN_SCRIPT_DIR}/build/bin/%{cfg.platform}/%{cfg.buildcfg}"
-	--properties	{ "thirdpartylib" }
+	properties { "thirdpartylib" }
 	includedirs { "public" }
 
 	files { "public/TracyClient.cpp" }
@@ -14,7 +13,7 @@ project "tracy_client"
 		"TRACY_ONLY_LOCALHOST",	-- we only allow localhost debugging atm
 	}
 
-	filter { "configurations:not Retail" }
+	filter { "configurations:not Retail", "configurations:not Debug" }
 		defines { "TRACY_ENABLE" }
 	
 property "tracy"
@@ -24,5 +23,5 @@ property "tracy"
 		"TRACY_ON_DEMAND",	-- profile only when debugger is connected
 		"TRACY_ONLY_LOCALHOST",	-- we only allow localhost debugging atm
 	}
-	filter { "configurations:not Retail" }
+	filter { "configurations:not Retail", "configurations:not Debug" }
 		defines { "TRACY_ENABLE" }
