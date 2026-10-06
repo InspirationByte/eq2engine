@@ -186,14 +186,11 @@ property "unitybuild"
 	
 property "sharedlib"
 	kind "SharedLib"
-	uses { "tracy" }
 	
 property "staticlib"
 	kind "StaticLib"
-	uses { "tracy" }
 	
 property "app"
-	uses { "tracy" }
 	filter "platforms:*64"
 		debugdir "%{wks.location}../../build/Bin64"
 		debugenvs "PATH=%{wks.location}../../build/Bin64"

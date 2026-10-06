@@ -1,7 +1,6 @@
 #pragma once
 
 #include <lua.hpp>
-#include <tracy/TracyLua.hpp>
 
 //#define ESL_TRACE
 

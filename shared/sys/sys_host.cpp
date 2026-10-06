@@ -798,9 +798,6 @@ bool CGameHost::Frame()
 	if (!FilterTime(elapsedTime))
 		return false;
 
-	PROF_FRAME_MARK;
-
-
 #ifdef PROFILE_ENABLE
 	static char frameNmbStr[256];
 	CString::PrintF(frameNmbStr, sizeof(frameNmbStr), "Host Frame %u", m_frameNmb);

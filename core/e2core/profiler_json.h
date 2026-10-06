@@ -20,7 +20,7 @@ enum ETraceEvtType
 	EVT_DURATION_BEGIN_END,
 };
 
-struct CVTraceEvent
+struct JSONTraceEvent
 {
 	EqString 		name;
 	uintptr_t 		threadId{ 0 };
@@ -31,25 +31,25 @@ struct CVTraceEvent
 	uint64			id{ 0 };
 };
 
-class EqCVTracerJSON
+class EqJSONTracer
 {
-	friend class EqCVTracerDumperJob;
+	friend class EqJSONTracerDumperJob;
 public:
 	bool 			Start(const char* fileName);
 	void			Stop();
 
-	void			WriteEvent(const CVTraceEvent& evt);
+	void			WriteEvent(const JSONTraceEvent& evt);
 
 	bool			IsCapturing() const { return Atomic::Load(m_captureInProgress); }
 	uint64			AllocEventId();
 private:	
 	void			FlushTempBuffer();
-	void			EventToString(EqString& out, const CVTraceEvent& evt);
+	void			EventToString(EqString& out, const JSONTraceEvent& evt);
 
 	EqString			m_batchPrefix;
-	Array<CVTraceEvent>	m_tmpBuffer{ PP_SL };
+	Array<JSONTraceEvent>	m_tmpBuffer{ PP_SL };
 	Set<uintptr_t>		m_threadMaskData{ PP_SL };
-	IFileStreamPtr	m_outFile{ nullptr };
+	IFileStreamPtr		m_outFile{ nullptr };
 	uint64				m_eventId{ 0 };
 	int					m_captureInProgress{ 0 };
 };

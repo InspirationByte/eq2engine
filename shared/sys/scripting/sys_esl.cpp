@@ -5,6 +5,9 @@
 // Description: Lua binding
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <lua.hpp>
+#include <tracy/TracyLua.hpp>
+
 #include "core/core_common.h"
 #include "core/IDkCore.h"
 #include "core/IFileSystem.h"

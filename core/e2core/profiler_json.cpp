@@ -17,23 +17,23 @@ using namespace Threading;
 
 static constexpr const int bufferThreshold = 1000;
 
-class EqCVTracerDumperJob : public IParallelJob
+class EqJSONTracerDumperJob : public IParallelJob
 {
 public:
-	EqCVTracerDumperJob(EqCVTracerJSON& tracer, IFileStreamPtr outFile) 
-		: IParallelJob("CVTracerDumperJob")
+	EqJSONTracerDumperJob(EqJSONTracer& tracer, IFileStreamPtr outFile)
+		: IParallelJob("JSONTracerDumperJob")
 		, m_tracer(tracer)
 		, m_outFile(outFile)
 	{}
 	void Execute() override;
 
-	Array<CVTraceEvent> m_writeBuffer{ PP_SL };
-	EqCVTracerJSON&		m_tracer;
-	IFileStreamPtr	m_outFile;
+	Array<JSONTraceEvent> m_writeBuffer{ PP_SL };
+	EqJSONTracer&		m_tracer;
+	IFileStreamPtr		m_outFile;
 	bool				m_initialStart{ false };
 };
 
-void EqCVTracerDumperJob::Execute()
+void EqJSONTracerDumperJob::Execute()
 {
 	s_jsonTracerWriteCompleted.Wait();	// wait for another if it was started already
 
@@ -43,7 +43,7 @@ void EqCVTracerDumperJob::Execute()
 	bool initialStart = m_initialStart;
 
 	EqString str;
-	for(CVTraceEvent& traceEvt : m_writeBuffer)
+	for(const JSONTraceEvent& traceEvt : m_writeBuffer)
 	{
 		if(!initialStart)
 			m_outFile->Write(m_tracer.m_batchPrefix.GetData(), 1, m_tracer.m_batchPrefix.Length());
@@ -58,7 +58,7 @@ void EqCVTracerDumperJob::Execute()
 	s_jsonTracerWriteCompleted.Raise();
 }
 
-bool EqCVTracerJSON::Start(const char* fileName)
+bool EqJSONTracer::Start(const char* fileName)
 {
 	if(Atomic::Load(m_captureInProgress) != 0)
 		return false;
@@ -89,7 +89,7 @@ bool EqCVTracerJSON::Start(const char* fileName)
 	return true;
 }
 
-void EqCVTracerJSON::Stop()
+void EqJSONTracer::Stop()
 {
 	if(Atomic::Load(m_captureInProgress) == 0)
 		return;
@@ -109,7 +109,7 @@ void EqCVTracerJSON::Stop()
     Msg("----- PERF TRACE COMPLETED -----\n");
 }
 
-void EqCVTracerJSON::WriteEvent(const CVTraceEvent& evt)
+void EqJSONTracer::WriteEvent(const JSONTraceEvent& evt)
 {
 	if(Atomic::Load(m_captureInProgress) == 0)
 		return;
@@ -134,7 +134,7 @@ void EqCVTracerJSON::WriteEvent(const CVTraceEvent& evt)
 	// need to put thread name event
 	{
 		CScopedMutex m(s_jsonTracerMutex);
-		CVTraceEvent& metaDataEvt = m_tmpBuffer.append();
+		JSONTraceEvent& metaDataEvt = m_tmpBuffer.append();
 		
 		metaDataEvt.type = EVT_THREAD_NAME;
 		metaDataEvt.pid = evt.pid;
@@ -143,17 +143,17 @@ void EqCVTracerJSON::WriteEvent(const CVTraceEvent& evt)
 	}
 }
 
-uint64 EqCVTracerJSON::AllocEventId()
+uint64 EqJSONTracer::AllocEventId()
 {
 	return Atomic::Increment(m_eventId);
 }
 
-void EqCVTracerJSON::FlushTempBuffer()
+void EqJSONTracer::FlushTempBuffer()
 {
 	if(Atomic::Load(m_captureInProgress) == 0)
 		return;
 
-	EqCVTracerDumperJob* dumpJob = PPNew EqCVTracerDumperJob(*this, m_outFile);
+	EqJSONTracerDumperJob* dumpJob = PPNew EqJSONTracerDumperJob(*this, m_outFile);
 	dumpJob->DeleteOnFinish();
 
 	// swap write buffer and start dump job
@@ -172,7 +172,7 @@ void EqCVTracerJSON::FlushTempBuffer()
 	g_parallelJobs->GetJobMng()->InitStartJob(dumpJob);
 }
 
-void EqCVTracerJSON::EventToString(EqString& out, const CVTraceEvent& evt)
+void EqJSONTracer::EventToString(EqString& out, const JSONTraceEvent& evt)
 {
 	EqString evtName = evt.name;
 	EqString evtArgs;

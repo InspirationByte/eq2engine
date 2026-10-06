@@ -5,6 +5,8 @@
 // NOTENOTE: Linux does not showing russian language that was written in VC
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <tracy/Tracy.hpp>
+
 #include "core/core_common.h"
 
 #ifdef _WIN32
@@ -158,7 +160,6 @@ static void SetupBinPath()
 	// TODO: POSIX implementation
 #endif
 }
-
 
 // Definition that we can't see or change throught console
 bool CDkCore::Init(const CoreAppInitParameters& initParams)

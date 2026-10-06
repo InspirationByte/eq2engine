@@ -173,12 +173,16 @@ project "scriptLib"
 		
 -- Engine System Library (Host, Input, States)
 project "sysLib"
-	properties { "staticlib", "unitybuild" }
+	properties {
+		"staticlib", "unitybuild",
+		"tracy"
+	}
 	uses { 
 		"public", "shared", "scriptLib",
 		"renderUtilLib", "equiLib", "movieLib",
 		"SDL2", "imguiBackendLib", "imgui_lua"
 	}
+	defines { "TRACY_IMPORTS" }
     files {
 		"sys/**",
 		"input/**",

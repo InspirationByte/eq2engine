@@ -6,39 +6,49 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "ds/stringref.h"
 
 #if !defined(_RETAIL)
 #define PROFILE_ENABLE
 #endif
-#include <tracy/Tracy.hpp>
+
+#ifdef PROFILE_ENABLE
+
+IEXPORTS void ProfAddMarker(EqStringRef file, int line, EqStringRef name);
+IEXPORTS int ProfBeginMarker(EqStringRef file, int line, EqStringRef name);
+IEXPORTS void ProfEndMarker(int depth);
+
+IEXPORTS void ProfBeginFrameMark(EqStringRef name);
+IEXPORTS void ProfEndFrameMark(EqStringRef name);
+
+IEXPORTS void ProfReleaseCurrentThreadMarkers();
+
+#define PROF_EVENT(name)				ProfEventWrp _profEvt(__FILE__, __LINE__, name)
+#define PROF_EVENT_F()					ProfEventWrp _profEvt(__FILE__, __LINE__, __func__)	
+#define PROF_MARKER(name)				ProfAddMarker(__FILE__, __LINE__, name)
+#define PROF_RELEASE_THREAD_MARKERS()	ProfReleaseCurrentThreadMarkers()
+
+#define PROF_FRAME_BEGIN(name)			ProfBeginFrameMark(name)
+#define PROF_FRAME_END(name)			ProfEndFrameMark(name)
 
 struct ProfEventWrp
 {
 public:
-	ProfEventWrp(const char* name);
+	ProfEventWrp(EqStringRef file, int line, EqStringRef name);
 	~ProfEventWrp();
 private:
-	int eventId{ -1 };
+	int depth{-1};
 };
 
-#ifdef PROFILE_ENABLE
+inline ProfEventWrp::ProfEventWrp(EqStringRef file, int line, EqStringRef name)
+{
+	depth = ProfBeginMarker(file, line, name);
+}
 
-IEXPORTS void ProfAddMarker(const char* text);
-IEXPORTS int ProfBeginMarker(const char* text);
-IEXPORTS void ProfEndMarker(int eventId);
-IEXPORTS void ProfReleaseCurrentThreadMarkers();	
-
-#define PROF_EVENT(name)				ZoneTransientN(___tracy_scoped_zone, name, true); ProfEventWrp _profEvt(name)
-#define PROF_EVENT_F()					ZoneScoped; ProfEventWrp _profEvt(__func__)	
-#define PROF_MARKER(name)				ZoneText(name); ProfAddMarker(name)
-#define PROF_RELEASE_THREAD_MARKERS()	ProfReleaseCurrentThreadMarkers()
-
-#define PROF_FRAME_MARK					FrameMark; ProfAddMarker("FRAME")
-#define PROF_FRAME_BEGIN(name)			FrameMarkStart(name); ProfEventWrp _profEvt(name)
-#define PROF_FRAME_END(name)			FrameMarkEnd(name)
-
-inline ProfEventWrp::ProfEventWrp(const char* name)	{ eventId = ProfBeginMarker(name); }
-inline ProfEventWrp::~ProfEventWrp()				{ ProfEndMarker(eventId); }
+inline ProfEventWrp::~ProfEventWrp()
+{
+	ProfEndMarker(depth);
+}
 
 #else
 
@@ -50,8 +60,5 @@ inline ProfEventWrp::~ProfEventWrp()				{ ProfEndMarker(eventId); }
 #define PROF_FRAME_MARK
 #define PROF_FRAME_BEGIN(name)
 #define PROF_FRAME_END(name)
-
-inline ProfEventWrp::ProfEventWrp(const char* name) {};
-inline ProfEventWrp::~ProfEventWrp() = default;
 
 #endif // PROFILE_ENABLE

@@ -6,11 +6,10 @@ group "Core"
 project "e2Core"
 	properties { 
 		"sharedlib", "unitybuild", 
-		"live_pp", "concurrency_vis"
+		"live_pp", "concurrency_vis", "tracy"
 	}
     uses {
-		"coreLib", "frameworkLib", "dpkLib",
-		"tracy_client"
+		"coreLib", "frameworkLib", "dpkLib"
 	}
     files {
         "e2core/**",
@@ -21,7 +20,7 @@ project "e2Core"
 		["Public Headers"] = PUBLIC_DIR.."/core/*.h",
 	}
 	
-	defines { "CORE_INTERFACE_EXPORT", "COREDLL_EXPORT" }
+	defines { "CORE_INTERFACE_EXPORT", "COREDLL_EXPORT", "TRACY_EXPORTS" }
 
 	filter "system:Windows"
 		linkoptions { "-IGNORE:4217,4286" }	-- disable few linker warnings
