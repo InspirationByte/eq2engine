@@ -235,6 +235,7 @@ struct DDPoly : DDNodeBase
 	void Dispatch();
 
 	DDPoly& Point(const Vector3D& v) { verts.append(v); return *this; }
+	DDPoly& ClipPlane(const Plane& pl, const Vector3D& origin, float size);
 	DDPoly& Points(const ArrayCRef<Vector3D> _verts) { verts.append(_verts.ptr(), _verts.numElem()); return *this; }
 	DDPoly& Color(const MColor& v) { color = v.pack(); return *this; }
 	DDPoly& Fill(bool v = true) { fill = v; return *this; }
@@ -355,6 +356,24 @@ inline void DDLine::Dispatch()
 inline void DDPoly::Dispatch()
 {
 	dispatch = true; debugoverlay->Add(*this);
+}
+
+inline DDPoly& DDPoly::ClipPlane(const Plane& plane, const Vector3D& origin, float size)
+{
+	Vector3D vRight, vUp;
+	VectorVectors(plane.normal, vRight, vUp);
+
+	const Vector3D org = origin - plane.Distance(origin) * plane.normal;
+	vRight *= size;
+	vUp *= size;
+
+	verts.clear();
+	verts.append(org - vRight + vUp);
+	verts.append(org + vRight + vUp);
+	verts.append(org + vRight - vUp);
+	verts.append(org - vRight - vUp);
+
+	return *this;
 }
 
 inline void DDVolume::Dispatch()
