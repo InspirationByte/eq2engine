@@ -124,7 +124,7 @@ T& New(lua_State* L, Args&&... args)
 	{
 		T* newObj = PPNew T{ std::forward<Args>(args)... };
 
-		BoxUD* ud = GetBoxUD(L, newObj, BOX_UD_FLAG_OWNED, LuaBaseTypeAlias<T>::value);
+		BoxUD* ud = AllocBoxUD(L, newObj, BOX_UD_FLAG_OWNED, LuaBaseTypeAlias<T>::value);
 		if constexpr (GetPushType<T>() == REF_PTR)
 			newObj->Ref_Grab();
 
@@ -199,7 +199,7 @@ struct PushGetImpl
 		}
 		else
 		{
-			BoxUD* ud = GetBoxUD(L, const_cast<void*>(reinterpret_cast<const void*>(&obj)), flags, LuaBaseTypeAlias<T>::value);
+			BoxUD* ud = AllocBoxUD(L, const_cast<void*>(reinterpret_cast<const void*>(&obj)), flags, LuaBaseTypeAlias<T>::value);
 
 			if constexpr (GetPushType<BaseUType>() == REF_PTR)
 				const_cast<BaseUType*>(&obj)->Ref_Grab();
@@ -489,7 +489,7 @@ struct TypeCheckerWithArgError : public TypeChecker<SilentTypeCheck>
 		{
 			bool luaError = false;
 			if constexpr (std::is_pointer_v<T>)
-				luaError = (this->argType != LUA_TNIL);
+				luaError = (lua_type(this->L, this->index) != LUA_TNIL);
 			else
 				luaError = true;
 

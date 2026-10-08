@@ -638,17 +638,7 @@ void Init(lua_State* L)
 	state.SetGlobal("toraw", &ToRawUserData);
 }
 
-static void PushCacheKey(lua_State* L, const char* metaType, void* objPtr, int flags) 
-{
-	uintptr_t key = (uintptr_t)objPtr;
-	key *= 31;
-	key += (uintptr_t)metaType;
-	key *= 31;
-	key += (uintptr_t)flags;
-	lua_pushlightuserdata(L, reinterpret_cast<void*>(key));
-}
-
-BoxUD* GetBoxUD(lua_State* L, void* objPtr, int flags, const char* metaType)
+BoxUD* AllocBoxUD(lua_State* L, void* objPtr, int flags, const char* metaType)
 {
 	ASSERT(objPtr);
 

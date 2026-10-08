@@ -22,6 +22,6 @@ struct PushGet
 bool	CheckUserdataCanBeUpcasted(lua_State* L, int index, const char* typeName);
 
 void	Init(lua_State* L);
-BoxUD*	GetBoxUD(lua_State* L, void* objPtr, int flags, const char* metaType);
+BoxUD*	AllocBoxUD(lua_State* L, void* objPtr, int flags, const char* metaType);
 
 }
