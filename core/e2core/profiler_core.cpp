@@ -256,9 +256,10 @@ IEXPORTS void ProfAddMarker(EqStringRef file, int line, EqStringRef name)
 
 IEXPORTS int ProfBeginMarker(EqStringRef file, int line, EqStringRef name)
 {
-	const int depth = CVBeginMarker(name);
+	int depth = CVBeginMarker(name);
 
 #ifdef TRACY_ENABLE
+	depth = tlsTracy_events.stack.numElem();
 	//uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int32_t depth, bool is_active = true
 	tlsTracy_events.stack.appendEmplace((uint32_t)TracyLine, file.ToCString(), (size_t)file.Length(), TracyFunction, strlen(TracyFunction), name.ToCString(), (size_t)name.Length(), TRACY_CALLSTACK, true);
 #endif
