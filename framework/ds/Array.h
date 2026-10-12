@@ -106,9 +106,7 @@ public:
 		if (newCapacityWithGranularity == m_size)
 			return;
 
-		T* temp = m_data;
 		m_size = newCapacityWithGranularity;
-
 		if (m_size < numOfElements)
 			numOfElements = m_size;
 
@@ -189,6 +187,73 @@ public:
 protected:
 	RawItem<T, alignof(T)>		m_data[SIZE];
 	static_assert(sizeof(T) * SIZE == sizeof(m_data));
+};
+
+//--------------------------------------------------------
+
+template< typename T, int SIZE >
+class BufferedArrayStorage : FixedArrayStorage<T, SIZE>
+{
+	using FixedStorage = FixedArrayStorage<T, SIZE>;
+public:
+	BufferedArrayStorage(const PPSourceLine& sl, int granularity)
+		: m_dynamicStorage(sl, granularity)
+	{
+	}
+
+	BufferedArrayStorage(const BufferedArrayStorage& other)
+		: m_dynamicStorage(other.m_dynamicStorage)
+	{
+	}
+
+	BufferedArrayStorage(BufferedArrayStorage&& other)
+		: m_dynamicStorage(std::move(other.m_dynamicStorage))
+	{
+		memmove(FixedStorage::m_data, other.m_data, SIZE * sizeof(T));
+	}
+
+	void free()
+	{
+		m_dynamicStorage.free();
+	}
+
+	void resize(int newCapacity, int& numOfElements)
+	{
+		const bool wasFixedStorage = m_dynamicStorage.m_data == nullptr;
+		if(newCapacity > SIZE)
+		{
+			m_dynamicStorage.resize(newCapacity, numOfElements);
+			
+			// copy data from fixed storage
+			if(!wasFixedStorage)
+				memmove(m_dynamicStorage.m_data, FixedStorage::m_data, SIZE * sizeof(T));
+		}
+	}
+
+	void swap(BufferedArrayStorage& other)
+	{
+		FixedStorage::swap(other);
+		m_dynamicStorage.swap(other.m_dynamicStorage);
+	}
+
+	void swap(T*& other, int& otherNumElem)
+	{
+		ASSERT_FAIL("BufferedArrayStorage: swap unsupported");
+	}
+
+	int					getSize() const						{ return max(SIZE, m_dynamicStorage.m_size); }
+	int					getGranularity() const				{ return m_dynamicStorage.m_granularity;}
+	void				setGranularity(int newGranularity)	{ m_dynamicStorage.m_granularity = newGranularity; }
+
+	T*					getData()							{ return m_dynamicStorage.m_data ? m_dynamicStorage.m_data : FixedStorage::m_data; }
+	const T*			getData() const						{ return m_dynamicStorage.m_data ? m_dynamicStorage.m_data : FixedStorage::m_data; }
+	const PPSourceLine	getSL() const 						{ return m_dynamicStorage.m_sl; }
+
+	DynamicArrayStorage<T>&			getDynamicStorage()			{ return m_dynamicStorage; }
+	const DynamicArrayStorage<T>&	getDynamicStorage() const	{ return m_dynamicStorage; }
+
+protected:
+	DynamicArrayStorage<T>		m_dynamicStorage;
 };
 
 //----------------------------------------------
@@ -1160,6 +1225,9 @@ using Array = ArrayBase<T, DynamicArrayStorage<T>>;
 
 template< typename T, int SIZE >
 using FixedArray = ArrayBase<T, FixedArrayStorage<T, SIZE>>;
+
+template< typename T, int SIZE >
+using BufferedArray = ArrayBase<T, BufferedArrayStorage<T, SIZE>>;
 
 //-------------------------------------------
 
