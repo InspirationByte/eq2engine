@@ -50,7 +50,7 @@ public:
 	ArrayRef(std::nullptr_t) {}
 
 	ArrayRef(T* elemPtr, int numElem)
-		: m_pListPtr(elemPtr), m_nNumElem(numElem)
+		: m_data(elemPtr), m_numElem(numElem)
 	{
 	}
 
@@ -59,87 +59,87 @@ public:
 	{
 		if constexpr (std::is_array<ARRAY_TYPE>::value)
 		{
-			m_pListPtr = otherArray;
-			m_nNumElem = elementsOf(otherArray);
+			m_data = otherArray;
+			m_numElem = elementsOf(otherArray);
 		}
 		else
 		{
-			m_pListPtr = otherArray.ptr();
-			m_nNumElem = otherArray.numElem();
+			m_data = otherArray.ptr();
+			m_numElem = otherArray.numElem();
 		}
 	}
 
 	template<int N>
 	ArrayRef(T(&otherArray)[N])
-		: m_pListPtr(otherArray), m_nNumElem(N)
+		: m_data(otherArray), m_numElem(N)
 	{
 	}
 
 	ArrayRef<T>& operator=(std::nullptr_t)
 	{
-		m_pListPtr = nullptr;
-		m_nNumElem = 0;
+		m_data = nullptr;
+		m_numElem = 0;
 		return *this;
 	}
 
 	template<typename ARRAY_TYPE>
 	ArrayRef<T>& operator=(const ARRAY_TYPE& other)
 	{
-		m_pListPtr = other.m_pListPtr;
-		m_nNumElem = other.m_nNumElem;
+		m_data = other.m_data;
+		m_numElem = other.m_numElem;
 		return *this;
 	}
 
 	ArrayRef<T>& operator=(const ArrayRef<T>& other)
 	{
-		m_pListPtr = const_cast<T*>(other.m_pListPtr);
-		m_nNumElem = other.m_nNumElem;
+		m_data = const_cast<T*>(other.m_data);
+		m_numElem = other.m_numElem;
 		return *this;
 	}
 
 	T& operator[](int index)
 	{
-		ASSERT_MSG(index >= 0 && index < m_nNumElem, "ArrayRef<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
-		return m_pListPtr[index];
+		ASSERT_MSG(index >= 0 && index < m_numElem, "ArrayRef<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_numElem);
+		return m_data[index];
 	}
 
 	const T& operator[](int index) const
 	{
-		ASSERT_MSG(index >= 0 && index < m_nNumElem, "ArrayRef<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
-		return m_pListPtr[index];
+		ASSERT_MSG(index >= 0 && index < m_numElem, "ArrayRef<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_numElem);
+		return m_data[index];
 	}
 
 	Iterator		begin() const { return Iterator(*const_cast<SelfType*>(this), 0); }
-	Iterator		end() const { return Iterator(*const_cast<SelfType*>(this), m_nNumElem); }
+	Iterator		end() const { return Iterator(*const_cast<SelfType*>(this), m_numElem); }
 
 	// returns number of elements in list
-	int				numElem() const { return m_nNumElem; }
+	int				numElem() const { return m_numElem; }
 
 	// returns true if empty
 	bool			isEmpty() const { return numElem() == 0; }
 
 	// returns a pointer to the list
-	T*				ptr() { return m_pListPtr; }
-	const T*		ptr() const { return m_pListPtr; }
+	T*				ptr() { return m_data; }
+	const T*		ptr() const { return m_data; }
 
 	// returns true if index is in range
-	bool			inRange(int index) const { return index >= 0 && index < m_nNumElem; }
+	bool			inRange(int index) const { return index >= 0 && index < m_numElem; }
 
 	// returns front item
-	T&				front() { ASSERT(m_nNumElem > 0); return m_pListPtr[0]; }
+	T&				front() { ASSERT(m_numElem > 0); return m_data[0]; }
 
 	// returns front item
-	const T&		front() const { ASSERT(m_nNumElem > 0); return m_pListPtr[0]; }
+	const T&		front() const { ASSERT(m_numElem > 0); return m_data[0]; }
 
 	// returns back item
-	T&				back() { ASSERT(m_nNumElem > 0); return m_pListPtr[m_nNumElem - 1]; }
+	T&				back() { ASSERT(m_numElem > 0); return m_data[m_numElem - 1]; }
 
 	// returns back item
-	const T&		back() const { ASSERT(m_nNumElem > 0); return m_pListPtr[m_nNumElem - 1]; }
+	const T&		back() const { ASSERT(m_numElem > 0); return m_data[m_numElem - 1]; }
 
 protected:
-	T*				m_pListPtr{ nullptr };
-	int				m_nNumElem{ 0 };
+	T*				m_data{ nullptr };
+	int				m_numElem{ 0 };
 };
 
 // const array ref
@@ -170,7 +170,7 @@ public:
 	ArrayCRef(std::nullptr_t) {}
 
 	ArrayCRef(const T* elemPtr, int numElem)
-		: m_pListPtr(elemPtr), m_nNumElem(numElem)
+		: m_data(elemPtr), m_numElem(numElem)
 	{
 	}
 
@@ -179,81 +179,81 @@ public:
 	{
 		if constexpr (std::is_array<ARRAY_TYPE>::value)
 		{
-			m_pListPtr = otherArray;
-			m_nNumElem = elementsOf(otherArray);
+			m_data = otherArray;
+			m_numElem = elementsOf(otherArray);
 		}
 		else
 		{
 			static_assert(IsArray<ARRAY_TYPE>::value, "Not Array or ArrayCRef");
-			m_pListPtr = otherArray.ptr();
-			m_nNumElem = otherArray.numElem();
+			m_data = otherArray.ptr();
+			m_numElem = otherArray.numElem();
 		}
 	}
 
 	template<int N>
 	ArrayCRef(T(&otherArray)[N])
-		: m_pListPtr(otherArray), m_nNumElem(N)
+		: m_data(otherArray), m_numElem(N)
 	{
 	}
 
 	ArrayRef<T>& operator=(std::nullptr_t)
 	{
-		m_pListPtr = nullptr;
-		m_nNumElem = 0;
+		m_data = nullptr;
+		m_numElem = 0;
 		return *this;
 	}
 
 	template<typename ARRAY_TYPE>
 	ArrayCRef<T>& operator=(const ARRAY_TYPE& other)
 	{
-		m_pListPtr = other.ptr();
-		m_nNumElem = other.numElem();
+		m_data = other.ptr();
+		m_numElem = other.numElem();
 		return *this;
 	}
 
 	ArrayCRef<T>& operator=(const ArrayRef<T>& other)
 	{
-		m_pListPtr = other.m_pListPtr;
-		m_nNumElem = other.m_nNumElem;
+		m_data = other.m_data;
+		m_numElem = other.m_numElem;
 		return *this;
 	}
 
 	ArrayCRef<T>& operator=(const ArrayCRef<T>& other)
 	{
-		m_pListPtr = other.m_pListPtr;
-		m_nNumElem = other.m_nNumElem;
+		m_data = other.m_data;
+		m_numElem = other.m_numElem;
 		return *this;
 	}
 
 	const T& operator[](int index) const
 	{
-		ASSERT_MSG(index >= 0 && index < m_nNumElem, "ArrayCRef<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
+		ASSERT_MSG(index >= 0 && index < m_numElem, "ArrayCRef<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_numElem);
 
-		return m_pListPtr[index];
+		return m_data[index];
 	}
 
 	Iterator		begin() const { return Iterator(*const_cast<SelfType*>(this), 0); }
-	Iterator		end() const { return Iterator(*const_cast<SelfType*>(this), m_nNumElem); }
+	Iterator		end() const { return Iterator(*const_cast<SelfType*>(this), m_numElem); }
 
 	// returns number of elements in list
-	int				numElem() const { return m_nNumElem; }
+	int				numElem() const { return m_numElem; }
 
 	// returns true if empty
 	bool			isEmpty() const { return numElem() == 0; }
 
 	// returns a pointer to the list
-	const T*		ptr() const { return m_pListPtr; }
+	const T*		ptr() const { return m_data; }
 
 	// returns true if index is in range
-	bool			inRange(int index) const { return index >= 0 && index < m_nNumElem; }
+	bool			inRange(int index) const { return index >= 0 && index < m_numElem; }
 
 	// returns front item
-	const T&		front() const { ASSERT(m_nNumElem > 0); return m_pListPtr[0]; }
+	const T&		front() const { ASSERT(m_numElem > 0); return m_data[0]; }
 
 	// returns back item
-	const T&		back() const { ASSERT(m_nNumElem > 0); return m_pListPtr[m_nNumElem - 1]; }
+	const T&		back() const { ASSERT(m_numElem > 0); return m_data[m_numElem - 1]; }
 
 protected:
-	const T*		m_pListPtr{ nullptr };
-	int				m_nNumElem{ 0 };
+	const T*		m_data{ nullptr };
+	int				m_numElem{ 0 };
 };

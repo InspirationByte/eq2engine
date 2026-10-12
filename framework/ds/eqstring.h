@@ -36,12 +36,12 @@ public:
 
 	bool		IsValid() const;
 	const CH*	GetData() const { return StrPtr(); }
-	CH*			GetData() { return m_pszString; }
+	CH*			GetData() { return m_data; }
 	const CH*	ToCString() const { return GetData(); }
 	StrRef		Ref() const { return StrRef(GetData(), Length()); }
 
-	ushort		Length() const { return m_nLength; }
-	ushort		GetSize() const { return m_nAllocated; }
+	ushort		Length() const { return m_length; }
+	ushort		GetSize() const { return m_size; }
 	
 	// comparison operations
 	int			Compare(StrRef strRef) const { return Ref().Compare(strRef); }
@@ -111,10 +111,10 @@ protected:
 	bool		MakeInsertSpace(int startPos, int count);
 
 	const CH*	StrPtr() const;
-	CH*			m_pszString{ nullptr };
+	CH*			m_data{ nullptr };
 
-	int			m_nLength{ 0 };			// length of string
-	int			m_nAllocated{ 0 };		// allocation size
+	int			m_length{ 0 };			// length of string
+	int			m_size{ 0 };		// allocation size
 };
 
 template<typename CH>

@@ -298,7 +298,7 @@ public:
 	void					resize(int newBitCount, bool newBitsValue = false);
 
 	// returns total number of bits
-	int						numBits() const { return m_nSize; }
+	int						numBits() const { return m_size; }
 
 	// returns total number of bits that are set to true
 	int						numTrue() const;
@@ -315,14 +315,14 @@ public:
 	void					setTrue(int index);
 	void					setFalse(int index);
 
-	STORAGE_TYPE*			ptr() { return m_pListPtr; }
-	const STORAGE_TYPE*		ptr() const { return m_pListPtr; }
+	STORAGE_TYPE*			ptr() { return m_data; }
+	const STORAGE_TYPE*		ptr() const { return m_data; }
 
 private:
 
 	const PPSourceLine		m_sl;
-	STORAGE_TYPE*			m_pListPtr{ nullptr };
-	int						m_nSize{ 0 };
+	STORAGE_TYPE*			m_data{ nullptr };
+	int						m_size{ 0 };
 	bool					m_ownData{ false };
 };
 
@@ -335,8 +335,8 @@ inline BitArray::BitArray(PPSourceLine sl, int bitCount)
 }
 
 inline BitArray::BitArray(STORAGE_TYPE* storage, int bitCount)
-	: m_pListPtr(storage)
-	, m_nSize(bitCount)
+	: m_data(storage)
+	, m_size(bitCount)
 	, m_ownData(false)
 {
 }
@@ -345,18 +345,18 @@ inline BitArray::BitArray(const BitArray& other)
 	: m_sl(other.m_sl)
 	, m_ownData(true)
 {
-	resize(other.m_nSize);
+	resize(other.m_size);
 
-	const int typeSize = bitArray2Dword(m_nSize);
+	const int typeSize = bitArray2Dword(m_size);
 	for (int i = 0; i < typeSize; i++)
-		m_pListPtr[i] = other.m_pListPtr[i];
+		m_data[i] = other.m_data[i];
 }
 
 inline BitArray::BitArray(BitArray&& other)
 	: m_sl(other.m_sl)
 	, m_ownData(other.m_ownData)
-	, m_nSize(other.m_nSize)
-	, m_pListPtr(other.m_pListPtr)
+	, m_size(other.m_size)
+	, m_data(other.m_data)
 {
 	other.m_ownData = false;
 }
@@ -364,16 +364,16 @@ inline BitArray::BitArray(BitArray&& other)
 inline BitArray::~BitArray()
 {
 	if(m_ownData)
-		PPFree(m_pListPtr);
+		PPFree(m_data);
 }
 
 inline BitArray& BitArray::operator=(const BitArray& other)
 {
-	resize(other.m_nSize);
+	resize(other.m_size);
 
-	const int typeSize = bitArray2Dword(m_nSize);
+	const int typeSize = bitArray2Dword(m_size);
 	for (int i = 0; i < typeSize; i++)
-		m_pListPtr[i] = other.m_pListPtr[i];
+		m_data[i] = other.m_data[i];
 
 	return *this;
 }
@@ -381,16 +381,16 @@ inline BitArray& BitArray::operator=(const BitArray& other)
 // resets all bits to specified value
 inline void BitArray::reset(bool value)
 {
-	const int listSize = bitArray2Dword(m_nSize);
+	const int listSize = bitArray2Dword(m_size);
 	for(int i = 0; i < listSize; ++i)
-		m_pListPtr[i] = value ? COM_UINT_MAX : 0;
+		m_data[i] = value ? COM_UINT_MAX : 0;
 }
 
 // resizes the list
 inline void BitArray::resize(int newBitCount, bool newBitsValue)
 {
 	// not changing the elemCount, so just exit
-	if (newBitCount == m_nSize)
+	if (newBitCount == m_size)
 		return;
 
 	if(!m_ownData)
@@ -401,37 +401,37 @@ inline void BitArray::resize(int newBitCount, bool newBitsValue)
 
 	ASSERT_MSG(newBitCount >= 0, "newBitCount (%d) must be positive", newBitCount);
 
-	const int oldTypeSize = bitArray2Dword(m_nSize);
+	const int oldTypeSize = bitArray2Dword(m_size);
 	const int newTypeSize = bitArray2Dword(newBitCount);
 	if(oldTypeSize != newTypeSize)
 	{
 		if(newTypeSize)
 		{
-			m_pListPtr = (STORAGE_TYPE*)PPDReAlloc(m_pListPtr, newTypeSize * sizeof(STORAGE_TYPE), m_sl);
+			m_data = (STORAGE_TYPE*)PPDReAlloc(m_data, newTypeSize * sizeof(STORAGE_TYPE), m_sl);
 
 			// new data must be reset to zero
 			for (int i = oldTypeSize; i < newTypeSize; ++i)
-				m_pListPtr[i] = newBitsValue ? COM_UINT_MAX : 0;
+				m_data[i] = newBitsValue ? COM_UINT_MAX : 0;
 		}
 		else
 		{
-			PPFree(m_pListPtr);
-			m_pListPtr = nullptr;
+			PPFree(m_data);
+			m_data = nullptr;
 		}
 	}
-	m_nSize = newBitCount;
+	m_size = newBitCount;
 }
 
 // returns total number of bits that are set to true
 inline int BitArray::numTrue() const
 {
-	return BitArrayImpl::numTrue(m_pListPtr, m_nSize);
+	return BitArrayImpl::numTrue(m_data, m_size);
 }
 
 // returns total number of bits that are set to false
 inline int BitArray::numFalse() const
 {
-	return BitArrayImpl::numFalse(m_pListPtr, m_nSize);
+	return BitArrayImpl::numFalse(m_data, m_size);
 }
 
 // set the bit value
@@ -446,20 +446,20 @@ inline void BitArray::set(int index, bool value)
 // set bit range
 inline void BitArray::setRange(int startIndex, int count, bool value)
 {
-	BitArrayImpl::setRange(m_pListPtr, m_nSize, startIndex, count, true);
+	BitArrayImpl::setRange(m_data, m_size, startIndex, count, true);
 }
 
 inline void BitArray::setTrue(int index)
 {
-	BitArrayImpl::setTrue(m_pListPtr, m_nSize, index);
+	BitArrayImpl::setTrue(m_data, m_size, index);
 }
 
 inline void BitArray::setFalse(int index)
 {
-	BitArrayImpl::setFalse(m_pListPtr, m_nSize, index);
+	BitArrayImpl::setFalse(m_data, m_size, index);
 }
 
 inline const bool BitArray::operator[](int index) const
 {
-	return BitArrayImpl::isTrue(m_pListPtr, m_nSize, index);
+	return BitArrayImpl::isTrue(m_data, m_size, index);
 }

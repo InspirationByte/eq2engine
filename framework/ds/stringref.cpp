@@ -410,9 +410,9 @@ EqTStr<CH>& EqTStrRef<CH>::GetTempString(const EqTStrRef<CH>& str, int len)
 template<typename CH>
 int EqTStrRef<CH>::Length() const
 {
-	if (!m_pszString)
+	if (!m_data)
 		return 0;
-	return (m_nLength == -1) ? m_nLength = CString::Length(m_pszString) : m_nLength; 
+	return (m_length == -1) ? m_length = CString::Length(m_data) : m_length; 
 }
 
 template<typename CH>
@@ -421,7 +421,7 @@ int EqTStrRef<CH>::Compare(EqTStrRef otherStr) const
 	if (!IsValid() || !otherStr.IsValid())
 		return -1;
 
-	return CString::Compare(m_pszString, otherStr.ToCString());
+	return CString::Compare(m_data, otherStr.ToCString());
 }
 
 template<typename CH>
@@ -430,7 +430,7 @@ int EqTStrRef<CH>::CompareCaseIns(EqTStrRef otherStr) const
 	if (!IsValid() || !otherStr.IsValid())
 		return -1;
 
-	return CString::CompareCaseIns(m_pszString, otherStr.ToCString());
+	return CString::CompareCaseIns(m_data, otherStr.ToCString());
 }
 
 template<typename CH>
@@ -439,7 +439,7 @@ int EqTStrRef<CH>::GetMathingChars(EqTStrRef otherStr) const
 	if (!IsValid() || !otherStr.IsValid())
 		return 0;
 
-	const CH* s1 = m_pszString;
+	const CH* s1 = m_data;
 	const CH* s2 = otherStr;
 
 	int matching = 0;
@@ -454,7 +454,7 @@ int EqTStrRef<CH>::GetMathingCharsCaseIns(EqTStrRef otherStr) const
 	if (!IsValid() || !otherStr.IsValid())
 		return 0;
 
-	const CH* s1 = m_pszString;
+	const CH* s1 = m_data;
 	const CH* s2 = otherStr;
 
 	int matching = 0;
@@ -469,12 +469,12 @@ int EqTStrRef<CH>::Find(EqTStrRef subStr, bool bCaseSensetive, int nStart) const
 	if (!IsValid() || !subStr.IsValid() || nStart < 0)
 		return -1;
 
-	const CH* strStart = const_cast<CH*>(m_pszString) + min(nStart, Length());
+	const CH* strStart = const_cast<CH*>(m_data) + min(nStart, Length());
 	const CH* subStrPtr = bCaseSensetive ? CString::SubString(strStart, subStr.ToCString()) : CString::SubStringCaseIns(strStart, subStr.ToCString());
 	if (!subStrPtr)
 		return -1;
 
-	return (subStrPtr - m_pszString);
+	return (subStrPtr - m_data);
 }
 
 template<typename CH>
@@ -525,7 +525,7 @@ EqTStrRef<CH> EqTStrRef<CH>::Mid(int nStart, int nCount) const
 	if (nStart < 0 || nStart + nCount > Length())
 		return EqTStr<CH>::EmptyStr;
 
-	return GetTempString(&m_pszString[nStart], nCount);
+	return GetTempString(&m_data[nStart], nCount);
 }
 
 template<typename CH>
@@ -535,7 +535,7 @@ EqTStrRef<CH> EqTStrRef<CH>::EatWhiteSpaces() const
 		return EqTStr<CH>::EmptyStr;
 
 	EqTStr<CH> out;
-	const CH* cc = m_pszString;
+	const CH* cc = m_data;
 	while (cc)
 	{
 		if (!CType::IsSpace(*cc))
@@ -551,7 +551,7 @@ EqTStrRef<CH> EqTStrRef<CH>::TrimSpaces(bool left, bool right) const
 	if (!IsValid())
 		return EqTStr<CH>::EmptyStr;
 
-	const CH* begin = m_pszString;
+	const CH* begin = m_data;
 
 	// trim whitespace from left
 	while (*begin && CType::IsSpace(*begin))
@@ -566,7 +566,7 @@ EqTStrRef<CH> EqTStrRef<CH>::TrimSpaces(bool left, bool right) const
 	while (end > begin && CType::IsSpace(*end))
 		end--;
 
-	return Mid(begin - m_pszString, end - begin + 1);
+	return Mid(begin - m_data, end - begin + 1);
 }
 
 template<typename CH>
@@ -575,7 +575,7 @@ EqTStrRef<CH> EqTStrRef<CH>::TrimChar(const CH* ch, bool left, bool right) const
 	if (!IsValid())
 		return EqTStr<CH>::EmptyStr;
 
-	const CH* begin = m_pszString;
+	const CH* begin = m_data;
 
 	auto ischr = [](const CH* ch, CH c) -> bool {
 		while (*ch) { if (*ch++ == c) return true; }
@@ -595,7 +595,7 @@ EqTStrRef<CH> EqTStrRef<CH>::TrimChar(const CH* ch, bool left, bool right) const
 	while (right && end > begin && ischr(ch, *end))
 		--end;
 
-	return Mid(begin - m_pszString, end - begin + 1);
+	return Mid(begin - m_data, end - begin + 1);
 }
 
 template<typename CH>
@@ -609,7 +609,7 @@ template<typename CH>
 CH EqTStrRef<CH>::operator[](int idx) const
 {
 	ASSERT(idx >= 0 && idx <= Length());
-	return m_pszString[idx];
+	return m_data[idx];
 }
 
 // define implementations below

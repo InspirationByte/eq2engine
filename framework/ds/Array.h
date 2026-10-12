@@ -15,63 +15,80 @@ class ArrayStorageBase
 {
 public:
 	/*
-		Any array storage class must be implemented with those methods:
+	Any array storage class must be implemented with those methods:
 
-	void		free() = 0;
+	void				free();
+	void				resize(int newSize, int& numOfElements);
+	void				swap(ArrayStorageBase& other);
+	void 				swap(T*& other, int& otherNumElem);
 
-	int			calculateGranulatedCapacity(int capacity);
-	void		resize(int newSize, int& numOfElements) = 0;
+	int					getSize() const;
+	int					getGranularity() const;
+	void				setGranularity(int newGranularity);
 
-	int			getSize() const = 0;
-	int			getGranularity() const { return 1; }
-	void		setGranularity(int newGranularity) {}
-
-	T*			getData() = 0;
-	const T*	getData() const = 0;
+	T*					getData();
+	const T*			getData() const;
+	const PPSourceLine	getSL() const;
 	*/
-	static void			destructElements(T* dest, int count);
+	static void	destructElements(T* dest, int count);
 };
+
+template< typename T>
+void ArrayStorageBase<T>::destructElements(T* dest, int count)
+{
+	ASSERT(count >= 0);
+	while (count--)
+	{
+		dest->~T();
+		++dest;
+	}
+}
+
+//--------------------------------------------------------
 
 template< typename T >
 class DynamicArrayStorage
 {
 public:
 	DynamicArrayStorage(const PPSourceLine& sl, int granularity)
-		: m_sl(sl), m_nGranularity(granularity)
+		: m_sl(sl)
+		, m_granularity(granularity)
 	{
+		ASSERT(m_granularity > 0); 
 	}
 
 	DynamicArrayStorage(const DynamicArrayStorage& other)
-		: m_sl(other.m_sl), m_nGranularity(other.m_nGranularity)
+		: m_sl(other.m_sl)
+		, m_granularity(other.m_granularity)
 	{
+		ASSERT(m_granularity > 0); 
+
 		int numElem = 0;
-		resize(other.m_nSize, numElem);
+		resize(other.m_size, numElem);
 	}
 
 	DynamicArrayStorage(DynamicArrayStorage&& other)
-		: m_sl(other.m_sl), m_nGranularity(other.m_nGranularity)
+		: m_sl(other.m_sl)
+		, m_granularity(other.m_granularity)
 	{
-		m_pListPtr = other.m_pListPtr;
-		m_nSize = other.m_nSize;
-		other.m_pListPtr = nullptr;
-		other.m_nSize = 0;
+		ASSERT(m_granularity > 0); 
+
+		m_data = other.m_data;
+		m_size = other.m_size;
+		other.m_data = nullptr;
+		other.m_size = 0;
 	}
 
 	~DynamicArrayStorage()
 	{
-		delete[] reinterpret_cast<ubyte*>(m_pListPtr);
+		delete[] reinterpret_cast<ubyte*>(m_data);
 	}
 
 	void free()
 	{
-		delete[] reinterpret_cast<ubyte*>(m_pListPtr);
-		m_pListPtr = nullptr;
-		m_nSize = 0;
-	}
-
-	int calculateGranulatedCapacity(int capacity)
-	{
-		return (capacity + m_nGranularity - 1) / m_nGranularity * m_nGranularity;
+		delete[] reinterpret_cast<ubyte*>(m_data);
+		m_data = nullptr;
+		m_size = 0;
 	}
 
 	void resize(int newCapacity, int& numOfElements)
@@ -85,49 +102,49 @@ public:
 			return;
 		}
 
-		const int newCapacityWithGranularity = calculateGranulatedCapacity(newCapacity);
-		if (newCapacityWithGranularity == m_nSize)
+		const int newCapacityWithGranularity = (newCapacity + m_granularity - 1) / m_granularity * m_granularity;
+		if (newCapacityWithGranularity == m_size)
 			return;
 
-		T* temp = m_pListPtr;
-		m_nSize = newCapacityWithGranularity;
+		T* temp = m_data;
+		m_size = newCapacityWithGranularity;
 
-		const int oldNumOfElems = numOfElements;
-		if (m_nSize < numOfElements)
-			numOfElements = m_nSize;
+		if (m_size < numOfElements)
+			numOfElements = m_size;
 
-		m_pListPtr = reinterpret_cast<T*>(PPDReAlloc(m_pListPtr, m_nSize * sizeof(T), m_sl));
+		m_data = reinterpret_cast<T*>(PPDReAlloc(m_data, m_size * sizeof(T), m_sl));
 	}
-
-	int			getSize() const						{ return m_nSize; }
-	int			getGranularity() const				{ return m_nGranularity;}
-	void		setGranularity(int newGranularity)	{ m_nGranularity = newGranularity; }
-
-	T*			getData()							{ return m_pListPtr; }
-	const T*	getData() const						{ return m_pListPtr; }
 
 	void swap(DynamicArrayStorage& other)
 	{
-		QuickSwap(m_nSize, other.m_nSize);
-		QuickSwap(m_nGranularity, other.m_nGranularity);
-		QuickSwap(m_pListPtr, other.m_pListPtr);
+		QuickSwap(m_size, other.m_size);
+		QuickSwap(m_granularity, other.m_granularity);
+		QuickSwap(m_data, other.m_data);
 	}
 
 	void swap(T*& other, int& otherNumElem)
 	{
-		QuickSwap(m_pListPtr, other);
-		m_nSize = otherNumElem;
+		QuickSwap(m_data, other);
+		m_size = otherNumElem;
 	}
 
-	const PPSourceLine	getSL() const { return m_sl; }
+	int					getSize() const						{ return m_size; }
+	int					getGranularity() const				{ return m_granularity;}
+	void				setGranularity(int newGranularity)	{ ASSERT(newGranularity > 0); m_granularity = newGranularity; }
+
+	T*					getData()							{ return m_data; }
+	const T*			getData() const						{ return m_data; }
+	const PPSourceLine	getSL() const						{ return m_sl; }
 
 protected:
 	const PPSourceLine	m_sl;
-	T* 					m_pListPtr{ nullptr };
+	T* 					m_data{ nullptr };
 
-	int					m_nSize{ 0 };
-	int					m_nGranularity{ 16 };
+	int					m_size{ 0 };
+	int					m_granularity{ 16 };
 };
+
+//--------------------------------------------------------
 
 template< typename T, int SIZE >
 class FixedArrayStorage
@@ -141,26 +158,12 @@ public:
 		memmove(m_data, other.m_data, SIZE * sizeof(T));
 	}
 
-	void free()
-	{
-	}
-
-	int calculateGranulatedCapacity(int capacity)
-	{
-		return capacity;
-	}
+	void free() {}
 
 	void resize(int newSize, int& numOfElements)
 	{
 		ASSERT_MSG(newSize <= SIZE, "FixedArrayStorage<%s> capacity is %d, required %d", typeid(T).name(), getSize(), newSize);
 	}
-
-	int			getSize() const						{ return SIZE; }
-	int			getGranularity() const				{ return 1; }
-	void		setGranularity(int newGranularity)	{}
-
-	T*			getData()							{ return (T*)(&m_data[0]); }
-	const T*	getData() const						{ return (T*)(&m_data[0]); }
 
 	void swap(FixedArrayStorage& other)
 	{
@@ -176,25 +179,19 @@ public:
 			QuickSwap(getData()[i], getData()[i]);
 	}
 
-	const PPSourceLine	getSL() const { return PPSourceLine::Empty(); }
+	int					getSize() const						{ return SIZE; }
+	int					getGranularity() const				{ return 1; }
+	void				setGranularity(int newGranularity)	{}
+
+	T*					getData()							{ return (T*)(&m_data[0]); }
+	const T*			getData() const						{ return (T*)(&m_data[0]); }
+	const PPSourceLine	getSL() const 						{ return PPSourceLine::Empty(); }
 protected:
 	RawItem<T, alignof(T)>		m_data[SIZE];
 	static_assert(sizeof(T) * SIZE == sizeof(m_data));
 };
 
-template< typename T>
-void ArrayStorageBase<T>::destructElements(T* dest, int count)
-{
-	ASSERT(count >= 0);
-	while (count--)
-	{
-		dest->~T();
-		++dest;
-	}
-}
-
 //----------------------------------------------
-
 
 template< typename T, typename STORAGE_TYPE >
 class ArrayBase : STORAGE_TYPE
@@ -234,7 +231,7 @@ public:
 	SelfType&		operator=(const SelfType& other);
 
 	Iterator		begin() const	{ return Iterator(*const_cast<SelfType*>(this), 0); }
-	Iterator		end() const		{ return Iterator(*const_cast<SelfType*>(this), m_nNumElem); }
+	Iterator		end() const		{ return Iterator(*const_cast<SelfType*>(this), m_numElem); }
 
 	// cleans list
 	void			clear(bool deallocate = false);
@@ -384,7 +381,7 @@ protected:
 	// ensures that the array is allocated to the capacity of numElem() + newElementCount
 	void			ensureCapacity(int newElementCount);
 
-	int				m_nNumElem{ 0 };
+	int				m_numElem{ 0 };
 };
 
 template< typename T, typename STORAGE_TYPE >
@@ -403,14 +400,14 @@ template< typename T, typename STORAGE_TYPE >
 inline ArrayBase<T, STORAGE_TYPE>::ArrayBase(const ArrayBase& other)
 	: STORAGE_TYPE(other)
 {
-	m_nNumElem = other.m_nNumElem;
+	m_numElem = other.m_numElem;
 
 	T* listPtr = STORAGE_TYPE::getData();
 	const T* otherListPtr = other.STORAGE_TYPE::getData();
 
 	if (STORAGE_TYPE::getSize())
 	{
-		for (int i = 0; i < m_nNumElem; i++)
+		for (int i = 0; i < m_numElem; i++)
 			new(&listPtr[i]) T(otherListPtr[i]);
 	}
 }
@@ -419,8 +416,8 @@ template< typename T, typename STORAGE_TYPE >
 inline ArrayBase<T, STORAGE_TYPE>::ArrayBase(ArrayBase&& other)
 	: STORAGE_TYPE(std::move(other))
 {
-	m_nNumElem = other.m_nNumElem;
-	other.m_nNumElem = 0;
+	m_numElem = other.m_numElem;
+	other.m_numElem = 0;
 }
 
 template< typename T, typename STORAGE_TYPE >
@@ -436,7 +433,7 @@ template< typename T, typename STORAGE_TYPE >
 inline ArrayBase<T, STORAGE_TYPE>::~ArrayBase()
 {
 	T* listPtr = STORAGE_TYPE::getData();
-	ArrayStorageBase<T>::destructElements(listPtr, m_nNumElem);
+	ArrayStorageBase<T>::destructElements(listPtr, m_numElem);
 }
 
 // -----------------------------------------------------------------
@@ -445,8 +442,8 @@ inline ArrayBase<T, STORAGE_TYPE>::~ArrayBase()
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::clear(bool deallocate)
 {
-	const int oldNumElem = m_nNumElem;
-	m_nNumElem = 0;
+	const int oldNumElem = m_numElem;
+	m_numElem = 0;
 
 	T* listPtr = STORAGE_TYPE::getData();
 	ArrayStorageBase<T>::destructElements(listPtr, oldNumElem);
@@ -462,7 +459,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::clear(bool deallocate)
 template< typename T, typename STORAGE_TYPE >
 inline int ArrayBase<T, STORAGE_TYPE>::numElem() const
 {
-	return m_nNumElem;
+	return m_numElem;
 }
 
 // -----------------------------------------------------------------
@@ -475,7 +472,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::numElem(COMPAREFUNC comparator) const
 	int theCount = 0;
 	const T* listPtr = STORAGE_TYPE::getData();
 
-	for (int i = 0; i < m_nNumElem; i++)
+	for (int i = 0; i < m_numElem; i++)
 	{
 		if (comparator(listPtr[i]))
 			theCount++;
@@ -524,7 +521,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::getGranularity() const
 template< typename T, typename STORAGE_TYPE >
 inline const T& ArrayBase<T, STORAGE_TYPE>::operator[](int index) const
 {
-	ASSERT_MSG(inRange(index), "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
+	ASSERT_MSG(inRange(index), "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_numElem);
 
 	return STORAGE_TYPE::getData()[index];
 }
@@ -536,7 +533,7 @@ inline const T& ArrayBase<T, STORAGE_TYPE>::operator[](int index) const
 template< typename T, typename STORAGE_TYPE >
 inline T& ArrayBase<T, STORAGE_TYPE>::operator[](int index)
 {
-	ASSERT_MSG(inRange(index), "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
+	ASSERT_MSG(inRange(index), "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_numElem);
 
 	return STORAGE_TYPE::getData()[index];
 }
@@ -551,14 +548,14 @@ inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=(const A
 
 	reserve(other.STORAGE_TYPE::getSize());
 
-	m_nNumElem = other.m_nNumElem;
+	m_numElem = other.m_numElem;
 
 	T* listPtr = STORAGE_TYPE::getData();
 	const T* otherListPtr = other.STORAGE_TYPE::getData();
 
 	if (STORAGE_TYPE::getSize())
 	{
-		for (int i = 0; i < m_nNumElem; i++)
+		for (int i = 0; i < m_numElem; i++)
 			new(&listPtr[i]) T(otherListPtr[i]);
 	}
 
@@ -572,13 +569,13 @@ inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=(const A
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::resize(int newSize)
 {
-	if (newSize < m_nNumElem)
+	if (newSize < m_numElem)
 	{
 		T* listPtr = STORAGE_TYPE::getData();
-		ArrayStorageBase<T>::destructElements(listPtr + newSize, m_nNumElem - newSize);
+		ArrayStorageBase<T>::destructElements(listPtr + newSize, m_numElem - newSize);
 	}
 
-	STORAGE_TYPE::resize(newSize, m_nNumElem);
+	STORAGE_TYPE::resize(newSize, m_numElem);
 }
 
 // -----------------------------------------------------------------
@@ -588,7 +585,7 @@ template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::reserve(int requiredSize)
 {
 	if (requiredSize > STORAGE_TYPE::getSize())
-		STORAGE_TYPE::resize(requiredSize, m_nNumElem);
+		STORAGE_TYPE::resize(requiredSize, m_numElem);
 }
 
 // -----------------------------------------------------------------
@@ -599,10 +596,10 @@ inline void ArrayBase<T, STORAGE_TYPE>::setNum(int newNum, bool shrinkResize)
 {
 	ASSERT(newNum >= 0);
 
-	if (newNum < m_nNumElem)
+	if (newNum < m_numElem)
 	{
 		T* listPtr = STORAGE_TYPE::getData();
-		ArrayStorageBase<T>::destructElements(listPtr + newNum, m_nNumElem - newNum);
+		ArrayStorageBase<T>::destructElements(listPtr + newNum, m_numElem - newNum);
 	}
 	else
 	{
@@ -611,13 +608,13 @@ inline void ArrayBase<T, STORAGE_TYPE>::setNum(int newNum, bool shrinkResize)
 
 		// initialize new elements
 		T* listPtr = STORAGE_TYPE::getData();
-		for (int i = m_nNumElem; i < newNum; ++i)
+		for (int i = m_numElem; i < newNum; ++i)
 		{
 			PPSLPlacementNew<T>(std::addressof(listPtr[i]), STORAGE_TYPE::getSL());
 		}
 	}
 
-	m_nNumElem = newNum;
+	m_numElem = newNum;
 }
 
 // -----------------------------------------------------------------
@@ -647,7 +644,7 @@ inline const T* ArrayBase<T, STORAGE_TYPE>::ptr() const
 template< typename T, typename STORAGE_TYPE >
 inline T& ArrayBase<T, STORAGE_TYPE>::front()
 {
-	ASSERT(m_nNumElem > 0);
+	ASSERT(m_numElem > 0);
 
 	return *STORAGE_TYPE::getData();
 }
@@ -658,7 +655,7 @@ inline T& ArrayBase<T, STORAGE_TYPE>::front()
 template< typename T, typename STORAGE_TYPE >
 inline const T& ArrayBase<T, STORAGE_TYPE>::front() const
 {
-	ASSERT(m_nNumElem > 0);
+	ASSERT(m_numElem > 0);
 
 	return *STORAGE_TYPE::getData();
 }
@@ -669,9 +666,9 @@ inline const T& ArrayBase<T, STORAGE_TYPE>::front() const
 template< typename T, typename STORAGE_TYPE >
 inline T& ArrayBase<T, STORAGE_TYPE>::back()
 {
-	ASSERT(m_nNumElem > 0);
+	ASSERT(m_numElem > 0);
 
-	return STORAGE_TYPE::getData()[m_nNumElem - 1];
+	return STORAGE_TYPE::getData()[m_numElem - 1];
 }
 
 // -----------------------------------------------------------------
@@ -680,9 +677,9 @@ inline T& ArrayBase<T, STORAGE_TYPE>::back()
 template< typename T, typename STORAGE_TYPE >
 inline const T& ArrayBase<T, STORAGE_TYPE>::back() const
 {
-	ASSERT(m_nNumElem > 0);
+	ASSERT(m_numElem > 0);
 
-	return STORAGE_TYPE::getData()[m_nNumElem - 1];
+	return STORAGE_TYPE::getData()[m_numElem - 1];
 }
 
 // -----------------------------------------------------------------
@@ -691,7 +688,7 @@ inline const T& ArrayBase<T, STORAGE_TYPE>::back() const
 template< typename T, typename STORAGE_TYPE >
 inline T ArrayBase<T, STORAGE_TYPE>::popFront()
 {
-	ASSERT(m_nNumElem > 0);
+	ASSERT(m_numElem > 0);
 
 	T item = STORAGE_TYPE::getData()[0];
 	removeIndex(0);
@@ -704,7 +701,7 @@ inline T ArrayBase<T, STORAGE_TYPE>::popFront()
 template< typename T, typename STORAGE_TYPE >
 inline T ArrayBase<T, STORAGE_TYPE>::fastPopFront()
 {
-	ASSERT(m_nNumElem > 0);
+	ASSERT(m_numElem > 0);
 
 	T item = STORAGE_TYPE::getData()[0];
 	fastRemoveIndex(0);
@@ -717,10 +714,10 @@ inline T ArrayBase<T, STORAGE_TYPE>::fastPopFront()
 template< typename T, typename STORAGE_TYPE >
 inline T ArrayBase<T, STORAGE_TYPE>::popBack()
 {
-	ASSERT(m_nNumElem > 0);
+	ASSERT(m_numElem > 0);
 	T* listPtr = STORAGE_TYPE::getData();
 
-	const int lastItemIdx = --m_nNumElem;
+	const int lastItemIdx = --m_numElem;
 
 	// copy item
 	T item = listPtr[lastItemIdx];
@@ -732,7 +729,7 @@ inline T ArrayBase<T, STORAGE_TYPE>::popBack()
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::ensureCapacity(int newElementCount)
 {
-	reserve(m_nNumElem + newElementCount);
+	reserve(m_numElem + newElementCount);
 }
 
 // -----------------------------------------------------------------
@@ -746,7 +743,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::append(const T& obj)
 
 	T* listPtr = STORAGE_TYPE::getData();
 
-	const int index = m_nNumElem++;
+	const int index = m_numElem++;
 	new(&listPtr[index]) T(obj);
 	return index;
 }
@@ -762,7 +759,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::append(T&& obj)
 
 	T* listPtr = STORAGE_TYPE::getData();
 
-	const int index = m_nNumElem++;
+	const int index = m_numElem++;
 	new(&listPtr[index]) T(std::move(obj));
 	return index;
 }
@@ -779,7 +776,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::appendEmplace(Args&&... args)
 
 	T* listPtr = STORAGE_TYPE::getData();
 
-	const int index = m_nNumElem++;
+	const int index = m_numElem++;
 	new(&listPtr[index]) T{ std::forward<Args>(args)... };
 	return index;
 }
@@ -794,7 +791,7 @@ inline T& ArrayBase<T, STORAGE_TYPE>::append()
 
 	T* listPtr = STORAGE_TYPE::getData();
 
-	T& newItem = listPtr[m_nNumElem++];
+	T& newItem = listPtr[m_numElem++];
 	PPSLPlacementNew<T>(std::addressof(newItem), STORAGE_TYPE::getSL());
 
 	return newItem;
@@ -875,18 +872,18 @@ template< typename T, typename STORAGE_TYPE >
 inline int ArrayBase<T, STORAGE_TYPE>::insert(T const& obj, int index)
 {
 	ASSERT(index >= 0);
-	ASSERT(index <= m_nNumElem);
+	ASSERT(index <= m_numElem);
 	
 	ensureCapacity(1);
 
 	T* listPtr = STORAGE_TYPE::getData();
 
 	T* dstPtr = listPtr + index;
-	const int rest = m_nNumElem - index;
+	const int rest = m_numElem - index;
 	if(rest > 0)
 		memmove(dstPtr + 1, dstPtr, rest * sizeof(T));
 
-	++m_nNumElem;
+	++m_numElem;
 
 	new(&listPtr[index]) T(obj);
 
@@ -901,18 +898,18 @@ template< typename T, typename STORAGE_TYPE >
 inline int ArrayBase<T, STORAGE_TYPE>::insert(T&& obj, int index)
 {
 	ASSERT(index >= 0);
-	ASSERT(index <= m_nNumElem);
+	ASSERT(index <= m_numElem);
 	
 	ensureCapacity(1);
 
 	T* listPtr = STORAGE_TYPE::getData();
 
 	T* dstPtr = listPtr + index;
-	const int rest = m_nNumElem - index;
+	const int rest = m_numElem - index;
 	if(rest > 0)
 		memmove(dstPtr + 1, dstPtr, rest * sizeof(T));
 
-	++m_nNumElem;
+	++m_numElem;
 
 	new(&listPtr[index]) T(std::move(obj));
 
@@ -927,18 +924,18 @@ template< typename T, typename STORAGE_TYPE >
 inline T& ArrayBase<T, STORAGE_TYPE>::insert(int index)
 {
 	ASSERT(index >= 0);
-	ASSERT(index <= m_nNumElem);
+	ASSERT(index <= m_numElem);
 	
 	ensureCapacity(1);
 
 	T* listPtr = STORAGE_TYPE::getData();
 
 	T* dstPtr = listPtr + index;
-	const int rest = m_nNumElem - index;
+	const int rest = m_numElem - index;
 	if(rest > 0)
 		memmove(dstPtr + 1, dstPtr, rest * sizeof(T));
 
-	++m_nNumElem;
+	++m_numElem;
 
 	PPSLPlacementNew<T>(std::addressof(listPtr[index]), STORAGE_TYPE::getSL());
 
@@ -946,7 +943,7 @@ inline T& ArrayBase<T, STORAGE_TYPE>::insert(int index)
 }
 
 // -----------------------------------------------------------------
-// Adds the data to the m_pListPtr if it doesn't already exist.  Returns the index of the data in the m_pListPtr.
+// Adds the data to the m_data if it doesn't already exist.  Returns the index of the data in the m_data.
 // -----------------------------------------------------------------
 
 template< typename T, typename STORAGE_TYPE >
@@ -961,7 +958,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::addUnique(T const& obj)
 
 
 // -----------------------------------------------------------------
-// Adds the data to the m_pListPtr if it doesn't already exist.  Returns the index of the data in the m_pListPtr.
+// Adds the data to the m_data if it doesn't already exist.  Returns the index of the data in the m_data.
 // -----------------------------------------------------------------
 
 template< typename T, typename STORAGE_TYPE >
@@ -976,7 +973,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::addUnique(T const& obj, CMP comparator)
 }
 
 // -----------------------------------------------------------------
-// Searches for the specified data in the m_pListPtr and returns iterator.
+// Searches for the specified data in the m_data and returns iterator.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
 inline typename ArrayBase<T, STORAGE_TYPE>::Iterator ArrayBase<T, STORAGE_TYPE>::find(T const& obj) const
@@ -986,7 +983,7 @@ inline typename ArrayBase<T, STORAGE_TYPE>::Iterator ArrayBase<T, STORAGE_TYPE>:
 }
 
 // -----------------------------------------------------------------
-// Searches for the specified data in the m_pListPtr and returns iterator.
+// Searches for the specified data in the m_data and returns iterator.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
 template< typename CMP >
@@ -1009,8 +1006,8 @@ inline typename ArrayBase<T, STORAGE_TYPE>::Iterator ArrayBase<T, STORAGE_TYPE>:
 
 // -----------------------------------------------------------------
 // Removes the element at the specified index and moves all data following the element down to fill in the gap.
-// The number of elements in the m_pListPtr is reduced by one.  Returns false if the index is outside the bounds of the m_pListPtr.
-// Note that the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
+// The number of elements in the m_data is reduced by one.  Returns false if the index is outside the bounds of the m_data.
+// Note that the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_data.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
 inline bool ArrayBase<T, STORAGE_TYPE>::removeIndex(int index)
@@ -1020,16 +1017,16 @@ inline bool ArrayBase<T, STORAGE_TYPE>::removeIndex(int index)
 
 // -----------------------------------------------------------------
 // Removes specified count of elements from specified index and moves all data following the element down to fill in the gap.
-// The number of elements in the m_pListPtr is reduced by count. Returns false if no items has been removed
+// The number of elements in the m_data is reduced by count. Returns false if no items has been removed
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
 inline bool ArrayBase<T, STORAGE_TYPE>::removeRange(int index, int count)
 {
 	ASSERT(index >= 0);
-	ASSERT(index + count <= m_nNumElem);
+	ASSERT(index + count <= m_numElem);
 
-	count = min(index + count, m_nNumElem) - index;
-	if (index >= m_nNumElem || count <= 0)
+	count = min(index + count, m_numElem) - index;
+	if (index >= m_numElem || count <= 0)
 		return false;
 
 	T* listPtr = STORAGE_TYPE::getData();
@@ -1037,32 +1034,32 @@ inline bool ArrayBase<T, STORAGE_TYPE>::removeRange(int index, int count)
 	ArrayStorageBase<T>::destructElements(listPtr + index, count);
 
 	const int last = index + count;
-	const int rest = m_nNumElem - last;
+	const int rest = m_numElem - last;
 	if(rest > 0)
 		memmove(&listPtr[index], &listPtr[last], rest * sizeof(T));
 
-	m_nNumElem -= count;
+	m_numElem -= count;
 	return true;
 }
 
 // -----------------------------------------------------------------
 // Removes the element at the specified index, without data movement (only last element will be placed at the removed element's position)
-// The number of elements in the m_pListPtr is reduced by one.  Returns false if the index is outside the bounds of the m_pListPtr.
-// Note that the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
+// The number of elements in the m_data is reduced by one.  Returns false if the index is outside the bounds of the m_data.
+// Note that the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_data.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
 inline bool ArrayBase<T, STORAGE_TYPE>::fastRemoveIndex(int index)
 {
 	ASSERT(index >= 0);
-	ASSERT(index < m_nNumElem);
+	ASSERT(index < m_numElem);
 
-	if (index < 0 || index >= m_nNumElem)
+	if (index < 0 || index >= m_numElem)
 		return false;
 
 	T* listPtr = STORAGE_TYPE::getData();
 	listPtr[index].~T();
 
-	const int lastItemIdx = --m_nNumElem;
+	const int lastItemIdx = --m_numElem;
 	if (lastItemIdx > 0)
 		memcpy(&listPtr[index], &listPtr[lastItemIdx], sizeof(T));
 
@@ -1071,9 +1068,9 @@ inline bool ArrayBase<T, STORAGE_TYPE>::fastRemoveIndex(int index)
 
 
 // -----------------------------------------------------------------
-// Removes the element if it is found within the m_pListPtr and moves all data following the element down to fill in the gap.
-// The number of elements in the m_pListPtr is reduced by one.  Returns false if the data is not found in the m_pListPtr.  Note that
-// the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
+// Removes the element if it is found within the m_data and moves all data following the element down to fill in the gap.
+// The number of elements in the m_data is reduced by one.  Returns false if the data is not found in the m_data.  Note that
+// the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_data.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
 inline bool ArrayBase<T, STORAGE_TYPE>::remove(T const& obj)
@@ -1086,9 +1083,9 @@ inline bool ArrayBase<T, STORAGE_TYPE>::remove(T const& obj)
 
 
 // -----------------------------------------------------------------
-// Removes the element if it is found within the m_pListPtr without data movement (only last element will be placed at the removed element's position)
-// The number of elements in the m_pListPtr is reduced by one.  Returns false if the data is not found in the m_pListPtr.  Note that
-// the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
+// Removes the element if it is found within the m_data without data movement (only last element will be placed at the removed element's position)
+// The number of elements in the m_data is reduced by one.  Returns false if the data is not found in the m_data.  Note that
+// the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_data.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
 inline bool ArrayBase<T, STORAGE_TYPE>::fastRemove(T const& obj)
@@ -1105,7 +1102,7 @@ inline bool ArrayBase<T, STORAGE_TYPE>::fastRemove(T const& obj)
 template< typename T, typename STORAGE_TYPE >
 inline bool ArrayBase<T, STORAGE_TYPE>::inRange(int index) const
 {
-	return index >= 0 && index < m_nNumElem;
+	return index >= 0 && index < m_numElem;
 }
 
 // -----------------------------------------------------------------
@@ -1114,7 +1111,7 @@ inline bool ArrayBase<T, STORAGE_TYPE>::inRange(int index) const
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::swap(ArrayBase<T, STORAGE_TYPE>& other)
 {
-	QuickSwap(m_nNumElem, other.m_nNumElem);
+	QuickSwap(m_numElem, other.m_numElem);
 	STORAGE_TYPE::swap(other);
 }
 
@@ -1124,7 +1121,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::swap(ArrayBase<T, STORAGE_TYPE>& other)
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::swap(T*& other, int& otherNumElem)
 {
-	QuickSwap(m_nNumElem, otherNumElem);
+	QuickSwap(m_numElem, otherNumElem);
 	STORAGE_TYPE::swap(other, otherNumElem);
 }
 
@@ -1135,7 +1132,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::swap(T*& other, int& otherNumElem)
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::assureSize(int newSize)
 {
-	m_nNumElem = newSize;
+	m_numElem = newSize;
 	ensureCapacity(0);
 }
 
@@ -1146,8 +1143,8 @@ template< typename T, typename STORAGE_TYPE >
 template<typename... Args>
 inline void ArrayBase<T, STORAGE_TYPE>::assureSizeEmplace(int newSize, Args&&... args)
 {
-	const int oldSize = m_nNumElem;
-	m_nNumElem = newSize;
+	const int oldSize = m_numElem;
+	m_numElem = newSize;
 
 	ensureCapacity(0);
 

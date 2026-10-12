@@ -179,37 +179,37 @@ public:
 	static EqTStr<CH>&	GetTempString(const EqTStrRef<CH>& str, int len = -1);
 
 	constexpr EqTStrRef()
-		: m_pszString(nullptr)
-		, m_nLength(-1)
+		: m_data(nullptr)
+		, m_length(-1)
 	{
 	}
 
 	constexpr EqTStrRef(std::nullptr_t)
-		: m_pszString(nullptr)
-		, m_nLength(-1)
+		: m_data(nullptr)
+		, m_length(-1)
 	{
 	}
 
 	constexpr EqTStrRef(const CH* str)
-		: m_pszString(str)
-		, m_nLength(-1)
+		: m_data(str)
+		, m_length(-1)
 	{
 	}
 
 	EqTStrRef(const CH* str, int length)
-		: m_pszString(str)
-		, m_nLength(length == -1 ? -1 : length)
+		: m_data(str)
+		, m_length(length == -1 ? -1 : length)
 	{
 	}
 
 	EqTStrRef(const EqTStrRef& other)
-		: m_pszString(other.m_pszString)
-		, m_nLength(other.m_nLength)
+		: m_data(other.m_data)
+		, m_length(other.m_length)
 	{
 	}
 	
-	bool		IsValid() const { return m_pszString != nullptr; }
-	const CH*	GetData() const { return m_pszString; }
+	bool		IsValid() const { return m_data != nullptr; }
+	const CH*	GetData() const { return m_data; }
 	const CH*	ToCString() const { return GetData(); }
 
 	int			Length() const;
@@ -243,6 +243,6 @@ public:
 	operator 	const CH* () const { return ToCString(); }
 
 private:
-	const CH*	m_pszString{ nullptr };
-	mutable int	m_nLength{ 0 };
+	const CH*	m_data{ nullptr };
+	mutable int	m_length{ 0 };
 };
