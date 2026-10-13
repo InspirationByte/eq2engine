@@ -1035,18 +1035,13 @@ void CEqConsoleInput::DrawAutoCompletion(float x, float y, float w, IGPURenderPa
 void CEqConsoleInput::SetLastLine()
 {
 	CScopedMutex m(s_conInputMutex);
-	int totalLines = s_spewMessages.numElem();
-
-	m_logScrollPosition = totalLines - m_maxLines;
-	m_logScrollPosition = max(0,m_logScrollPosition);
+	m_logScrollPosition = clamp(s_spewMessages.numElem() - m_maxLines, 0, s_spewMessages.numElem());
 }
 
 void CEqConsoleInput::AddToLinePos(int num)
 {
 	CScopedMutex m(s_conInputMutex);
-	int totalLines = s_spewMessages.numElem();
-	m_logScrollPosition += num;
-	m_logScrollPosition = min(totalLines,m_logScrollPosition);
+	m_logScrollPosition = clamp(m_logScrollPosition + num, 0, s_spewMessages.numElem());
 }
 
 void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
@@ -1071,7 +1066,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 #ifdef EXTENDED_DEVELOPER_CONSOLE
 	if(m_logScrollDir != 0)
 	{
-		const int maxScroll = s_spewMessages.numElem() - 1;
+		const int maxScroll = max(0, s_spewMessages.numElem() - 1);
 		m_logScrollAccumTime += frameTime;
 		m_logScrollTime += frameTime;
 
