@@ -40,14 +40,14 @@ public:
 	VSSize				Seek(int64 nOffset, EFileStreamSeek seekType);
 
 	VSSize				Tell() const;
-	VSSize				GetSize();
+	VSSize				GetSize() const;
 	bool				Flush();
 
 	// returns stream type
 	EFileStreamType		GetType() const { return FS_TYPE_FILE_PACKAGE; }
 
 	// returns CRC32 checksum of stream
-	uint32				GetCRC32();
+	uint32				GetCRC32() const;
 
 	const char*			GetName() const { return m_name; }
 

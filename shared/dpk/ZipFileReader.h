@@ -22,11 +22,11 @@ public:
 	VSSize				Write(const void *src, VSSize count, VSSize size);
 	VSSize				Seek(int64 nOffset, EFileStreamSeek seekType);
 	VSSize				Tell() const;
-	VSSize				GetSize() { return static_cast<VSSize>(m_uncompressedSize); }
+	VSSize				GetSize() const { return static_cast<VSSize>(m_uncompressedSize); }
 	bool				Flush() { return false; }
 
 	EFileStreamType	GetType() const { return FS_TYPE_FILE_PACKAGE; }
-	uint32				GetCRC32() { return m_crc; }
+	uint32				GetCRC32() const { return m_crc; }
 
 	const char*			GetName() const { return m_name; }
 

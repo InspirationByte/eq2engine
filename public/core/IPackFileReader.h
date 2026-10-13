@@ -3,7 +3,6 @@
 class IFileStream;
 using IFileStreamPtr = CRefPtr<IFileStream>;
 
-using IFileStream = IFileStream; // pretty same
 using IFileStreamPtr = IFileStreamPtr; // pretty same
 
 class IPackFileReader

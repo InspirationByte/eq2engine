@@ -84,7 +84,7 @@ public:
 	virtual VSSize		Tell() const = 0;
 
 	// returns memory allocated for this stream
-	virtual VSSize		GetSize() = 0;
+	virtual VSSize		GetSize() const = 0;
 
 	// flushes stream from memory
 	virtual bool		Flush() = 0;
@@ -93,7 +93,7 @@ public:
 	virtual EFileStreamType	GetType() const = 0;
 
 	// returns CRC32 checksum of stream
-	virtual uint32		GetCRC32() = 0;
+	virtual uint32		GetCRC32() const = 0;
 
 	// returns name of stream or file
 	virtual const char*	GetName() const = 0;

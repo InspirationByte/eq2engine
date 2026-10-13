@@ -36,10 +36,10 @@ public:
 	VSSize			Seek(int64 offset, EFileStreamSeek seekType);
 
 	VSSize			Tell() const;
-	VSSize			GetSize();
+	VSSize			GetSize() const;
 
 	bool			Flush();
-	uint32			GetCRC32();
+	uint32			GetCRC32() const;
 
 	EFileStreamType	GetType() const { return FS_TYPE_MEMORY; }
 	const char*		GetName() const { return m_sl.GetFileName(); }
@@ -48,7 +48,7 @@ public:
 	bool			AppendStream(IFileStream* pStream, VSSize maxSize = 0);
 
 	// writes constents of this stream into the other stream
-	void			WriteToStream(IFileStream* pStream, VSSize maxSize = 0);
+	void			WriteToStream(IFileStream* pStream, VSSize maxSize = 0) const;
 
 	// resizes buffer to specified size (finalize buffer for reading)
 	void			ShrinkBuffer(VSSize size);

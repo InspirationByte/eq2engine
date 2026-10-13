@@ -229,7 +229,7 @@ VSSize CDPKFileStream::Tell() const
 }
 
 // returns memory allocated for this stream
-VSSize CDPKFileStream::GetSize()
+VSSize CDPKFileStream::GetSize() const
 {
 	return static_cast<VSSize>(m_info.size);
 }
@@ -241,7 +241,7 @@ bool CDPKFileStream::Flush()
 }
 
 // returns CRC32 checksum of stream
-uint32 CDPKFileStream::GetCRC32()
+uint32 CDPKFileStream::GetCRC32() const
 {
 	return m_info.crc;
 }

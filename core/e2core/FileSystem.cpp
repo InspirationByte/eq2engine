@@ -136,25 +136,25 @@ bool COSFileStream::Flush()
 	return m_osFile.Flush();
 }
 
-VSSize COSFileStream::GetSize()
+VSSize COSFileStream::GetSize() const
 {
 	const VSSize currentPos = Tell();
-	Seek(0, FS_SEEK_END);
+	m_osFile.Seek(0, COSFile::ESeekPos::END);
 
 	const VSSize size = Tell();
-	Seek(currentPos, FS_SEEK_SET);
+	m_osFile.Seek(currentPos, COSFile::ESeekPos::SET);
 
 	return size;
 }
 
-uint32 COSFileStream::GetCRC32()
+uint32 COSFileStream::GetCRC32() const
 {
 	const VSSize pos = Tell();
 	const VSSize fileSize = GetSize();
 
 	ubyte* fileData = (ubyte*)PPAlloc(fileSize + 16);
-	Read(fileData, 1, fileSize);
-	Seek(pos, FS_SEEK_SET);
+	m_osFile.Read(fileData, fileSize);
+	m_osFile.Seek(pos, COSFile::ESeekPos::SET);
 
 	const uint32 crc = CRC32_BlockChecksum(fileData, fileSize);
 	PPFree(fileData);

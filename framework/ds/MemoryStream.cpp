@@ -155,7 +155,7 @@ VSSize CMemoryStream::Tell() const
 	return m_currentPtr - m_start;
 }
 
-VSSize CMemoryStream::GetSize()
+VSSize CMemoryStream::GetSize() const
 {
 	return m_writeTop;
 }
@@ -269,7 +269,7 @@ void CMemoryStream::ShrinkBuffer(VSSize size)
 }
 
 // writes constents of this stream into the other stream
-void CMemoryStream::WriteToStream(IFileStream* stream, VSSize maxSize)
+void CMemoryStream::WriteToStream(IFileStream* stream, VSSize maxSize) const
 {
 	ASSERT(stream);
 	stream->Write(m_start, 1, min(maxSize > 0 ? maxSize : std::numeric_limits<VSSize>::max(), m_writeTop));
@@ -296,7 +296,7 @@ bool CMemoryStream::AppendStream(IFileStream* stream, VSSize maxSize)
 	return true;
 }
 
-uint32 CMemoryStream::GetCRC32()
+uint32 CMemoryStream::GetCRC32() const
 {
 	return CRC32_BlockChecksum(m_start, m_writeTop);
 }

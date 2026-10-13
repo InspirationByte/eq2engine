@@ -30,15 +30,15 @@ public:
 
     bool				Flush();
 
-	uint32				GetCRC32();
-	VSSize				GetSize();
+	uint32				GetCRC32() const;
+	VSSize				GetSize() const;
 
 	EFileStreamType	GetType() const { return FS_TYPE_FILE; }
 
 	const char*			GetName() const { return m_name; }
 protected:
 	EqString			m_name;
-	COSFile				m_osFile;
+	mutable COSFile		m_osFile;
 };
 
 //------------------------------------------------------------------------------
