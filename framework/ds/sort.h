@@ -210,6 +210,12 @@ void arraySort(ARRAY_TYPE& arr, const CMP& comparator)
 	arraySort(arr.ptr(), arr.ptr() + arr.numElem(), comparator);
 }
 
+template<typename T, int N, typename CMP>
+void arraySort(const T(&arr)[N], const CMP& comparator)
+{
+	arraySort(arr.ptr(), arr.ptr() + arr.numElem(), comparator);
+}
+
 // -----------------------------------------------------------------
 // Search in arrays
 // -----------------------------------------------------------------
@@ -230,6 +236,12 @@ template<typename ARRAY_TYPE, typename K>
 int arrayFindIndex(const ARRAY_TYPE& arr, const K& key)
 {
 	return arrayFindIndex(arr.ptr(), arr.ptr() + arr.numElem(), key);
+}
+
+template<typename T, int N, typename K>
+int arrayFindIndex(const T(&arr)[N], const K& key)
+{
+	return arrayFindIndex(arr, arr + N, key);
 }
 
 // finds the index for the given element
@@ -268,6 +280,12 @@ int arrayFindIndexF(const ARRAY_TYPE& arr, const CMP& comparator)
 	return arrayFindIndexF(arr.ptr(), arr.ptr() + arr.numElem(), comparator);
 }
 
+template<typename T, int N, typename CMP>
+int arrayFindIndexF(const T(&arr)[N], const CMP& comparator)
+{
+	return arrayFindIndexF(arr, arr + N, comparator);
+}
+
 // reverses the order of array
 template< typename T >
 void arrayReverse(T* arr, int start = 0, int count = 0)
@@ -282,6 +300,12 @@ void arrayReverse(ARRAY_TYPE& arr, int start = 0, int count = -1)
 	if (start == 0 && count == -1)
 		count = arr.numElem();
 	arrayReverse(arr.ptr(), start, count);
+}
+
+template<typename T, int N>
+void arrayReverse(const T(&arr)[N])
+{
+	arrayReverse(arr, 0, N);
 }
 
 // TODO: non-Array(base/ref) support
@@ -388,4 +412,10 @@ template<ESortedFind FIND, typename ARRAY_TYPE, typename K, typename CMP>
 int arraySortedFindIndexExt(const ARRAY_TYPE& arr, const K& key, const CMP& comparator)
 {
 	return arraySortedFindIndexExt<FIND>(arr.ptr(), arr.numElem(), key, comparator);
+}
+
+template<ESortedFind FIND, typename T, int N, typename K, typename CMP>
+int arraySortedFindIndexExt(const T(&arr)[N], const K& key, const CMP& comparator)
+{
+	return arraySortedFindIndexExt<FIND>(arr, N, key, comparator);
 }
