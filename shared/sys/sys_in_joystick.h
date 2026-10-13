@@ -10,7 +10,6 @@
 static constexpr int MAX_CONTROLLERS = 4;
 
 union SDL_Event;
-typedef struct _SDL_Haptic SDL_Haptic;
 typedef struct _SDL_GameController SDL_GameController;
 typedef signed int SDL_JoystickID;
 
@@ -37,7 +36,7 @@ public:
 private:
 
 	SDL_GameController* m_gameCont{ nullptr };
-	_SDL_Haptic*		m_haptic{ nullptr };
+	//_SDL_Haptic*		m_haptic{ nullptr };
 	SDL_JoystickID		m_instanceId{ -1 };
 
 	BitArray			m_stateChanged{ PP_SL };

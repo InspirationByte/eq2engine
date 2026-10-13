@@ -14,8 +14,6 @@
 #include "sys_in_joystick.h"
 
 #include "input/in_keys_ident.h"
-
-#include <SDL_haptic.h>
 #include <SDL_events.h>
 
 DECLARE_CVAR(in_joy_debug, "0", "Joystick debug messages", 0);
@@ -114,10 +112,8 @@ void CEqGameControllerSDL::Init()
 
 void CEqGameControllerSDL::Shutdown()
 {
-	for (int i = 0; i < MAX_CONTROLLERS; i++)
+	for (CEqGameControllerSDL& jc : s_controllers)
 	{
-		CEqGameControllerSDL& jc = s_controllers[i];
-
 		if (!jc.IsConnected())
 			continue;
 
@@ -127,9 +123,8 @@ void CEqGameControllerSDL::Shutdown()
 
 CEqGameControllerSDL* CEqGameControllerSDL::GetFreeController()
 {
-	for (int i = 0; i < MAX_CONTROLLERS; i++)
+	for (CEqGameControllerSDL& jc : s_controllers)
 	{
-		CEqGameControllerSDL& jc = s_controllers[i];
 		if (!jc.IsConnected())
 			return &jc;
 	}
@@ -140,9 +135,8 @@ CEqGameControllerSDL* CEqGameControllerSDL::GetFreeController()
 GameControllerList CEqGameControllerSDL::GetControllers()
 {
 	GameControllerList list;
-	for (int i = 0; i < MAX_CONTROLLERS; i++)
+	for (CEqGameControllerSDL& jc : s_controllers)
 	{
-		CEqGameControllerSDL& jc = s_controllers[i];
 		if (jc.IsConnected())
 			list.append(&jc);
 	}
@@ -164,11 +158,9 @@ void CEqGameControllerSDL::Open(int device)
 	char* mapping = SDL_GameControllerMappingForDeviceIndex(device);
 	if (!mapping)
 	{
-		SDL_Joystick* j = SDL_GameControllerGetJoystick(m_gameCont);
-		const int joyDevId = SDL_JoystickInstanceID(j);
 		SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(device);
 		SDL_JoystickGetGUIDString(guid, guidStr, 64);
-		MsgWarning("   '%s':%s - no controller mapping available!\n", SDL_JoystickNameForIndex(joyDevId), guidStr);
+		MsgWarning("   '%s':%s - no controller mapping available!\n", SDL_JoystickNameForIndex(device), guidStr);
 		return;
 	}
 
@@ -181,29 +173,8 @@ void CEqGameControllerSDL::Open(int device)
 		return;
 	}
 
-	SDL_Joystick *j = SDL_GameControllerGetJoystick(m_gameCont);
+	SDL_Joystick* j = SDL_GameControllerGetJoystick(m_gameCont);
 	m_instanceId = SDL_JoystickInstanceID(j);
-
-	if (SDL_JoystickIsHaptic(j)) 
-	{
-		m_haptic = SDL_HapticOpenFromJoystick(j);
-
-		MsgInfo("Haptic - effects: %d, query: %d\n", SDL_HapticNumEffects(m_haptic), SDL_HapticQuery(m_haptic));
-		if (SDL_HapticRumbleSupported(m_haptic)) 
-		{
-			if (SDL_HapticRumbleInit(m_haptic) != 0)
-			{
-				MsgError("Haptic Rumble Init: %s\n", SDL_GetError());
-				SDL_HapticClose(m_haptic);
-				m_haptic = nullptr;
-			}
-		}
-		else
-		{
-			SDL_HapticClose(m_haptic);
-			m_haptic = nullptr;
-		}
-	}
 
 	JoySetValidControllerId();
 
@@ -214,6 +185,21 @@ void CEqGameControllerSDL::Open(int device)
 		m_pressed[i] = -1.0f;
 
 	Msg("* Controller connected: '%s' dev=%d inst=%d\n", GetName(), device, m_instanceId);
+
+	const SDL_SensorType sensorsToQuery[] = {
+		SDL_SENSOR_ACCEL,
+		SDL_SENSOR_GYRO,
+		SDL_SENSOR_ACCEL_L,
+		SDL_SENSOR_GYRO_L,
+		SDL_SENSOR_ACCEL_R,
+		SDL_SENSOR_GYRO_R 
+	};
+	for(SDL_SensorType type : sensorsToQuery)
+	{
+		if(SDL_GameControllerHasSensor(m_gameCont, type))
+			Msg("*  sensor supported: %d\n", type);
+	}
+
 }
 
 void CEqGameControllerSDL::Close()
@@ -221,14 +207,10 @@ void CEqGameControllerSDL::Close()
 	if (m_instanceId == -1)
 		return;
 
-	if (m_haptic)
-		SDL_HapticClose(m_haptic);
-
 	Msg("* Controller disconnected: '%s'\n", GetName());
 
 	SDL_GameControllerClose(m_gameCont);
 	m_gameCont = nullptr;
-	m_haptic = nullptr;
 	m_instanceId = -1;
 
 	JoySetValidControllerId();
@@ -236,52 +218,39 @@ void CEqGameControllerSDL::Close()
 
 int CEqGameControllerSDL::GetControllerIndex(CEqGameControllerSDL* controller)
 {
-	for (int i = 0; i < MAX_CONTROLLERS; ++i)
-	{
-		if (&s_controllers[i] == controller)
-			return i;
-	}
-
-	return -1;
+	return arrayFindIndexF(s_controllers, [controller](const CEqGameControllerSDL& gc){ return &gc == controller; });
 }
 
 int CEqGameControllerSDL::GetControllerIndex(SDL_JoystickID instance)
 {
-	for (int i = 0; i < MAX_CONTROLLERS; ++i)
-	{
-		if (s_controllers[i].m_instanceId == instance)
-			return i;
-	}
-
-	return -1;
+	return arrayFindIndexF(s_controllers, [instance](const CEqGameControllerSDL& gc){ return gc.m_instanceId == instance; });
 }
 
 void CEqGameControllerSDL::RepeatEvents(float fDt)
 {
-	for (int i = 0; i < MAX_CONTROLLERS; ++i)
+	for (CEqGameControllerSDL& gc : s_controllers)
 	{
-		CEqGameControllerSDL& jc = s_controllers[i];
-		if (!jc.IsConnected())
+		if (!gc.IsConnected())
 			continue;
 
-		for(int button = 0; button < jc.m_pressed.numElem(); ++button)
+		for(int button = 0; button < gc.m_pressed.numElem(); ++button)
 		{
-			if (jc.m_stateChanged[button])
-				g_pHost->JoyButton_Event(button, jc.m_pressed[button] >= 0);
+			if (gc.m_stateChanged[button])
+				g_pHost->JoyButton_Event(button, gc.m_pressed[button] >= 0);
 
-			jc.m_stateChanged.setFalse(button);
+			gc.m_stateChanged.setFalse(button);
 
-			if(jc.m_pressed[button] < 0)
+			if(gc.m_pressed[button] < 0)
 				continue; // repeater inactive
 
 			// repeater active
-			float timeLeft = jc.m_pressed[button] - fDt;
+			float timeLeft = gc.m_pressed[button] - fDt;
 			if (timeLeft < 0)
 			{
 				g_pHost->JoyButton_Event(button, true);
 				timeLeft = in_joy_repeatDelay.GetFloat();
 			}
-			jc.m_pressed[button] = timeLeft;
+			gc.m_pressed[button] = timeLeft;
 		}
 	}
 }
@@ -301,16 +270,12 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 					KeyCodeToString(JOYSTICK_START_AXES + axis), event->caxis.value);
 			}
 
+			// handle axis motion
 			const int cIndex = GetControllerIndex(event->cdevice.which);
 			if (cIndex >= 0)
 			{
 				if (in_joy_id.GetInt() == cIndex)
-				{
-					CEqGameControllerSDL& jc = s_controllers[cIndex];
-
-					// handle axis motion
 					g_pHost->JoyAxis_Event((short)axis, event->caxis.value);
-				}
 			}
 
 			break;
