@@ -342,7 +342,25 @@ static int UserTypeCompareBoxedPointers(lua_State* L)
 	return 1;
 }
 
-static bool UserTypeIndexImplBasic(lua_State* L, void* thisPtr, const EqFunction<bool(void* thisPtr, const Member*)>& onUserDataIndex)
+struct UserTypeIndexFunc
+{
+	using Func = bool(UserTypeIndexFunc::*)(void*, const Member*) const;
+
+	UserTypeIndexFunc(Func func, lua_State* L, const char* className)
+		: func(func)
+		, state(L)
+		, className(className)
+	{
+	}
+
+	bool operator()(void* thisPtr, const Member* mem) const { return (this->*func)(thisPtr, mem); }
+
+	Func		func;
+	lua_State*	state;
+	const char* className;
+};
+
+static bool UserTypeIndexImplBasic(lua_State* L, void* thisPtr, const UserTypeIndexFunc& onUserDataIndex)
 {
 	using CLS = bindings::BaseClassStorage;
 
@@ -400,6 +418,29 @@ static bool UserTypeIndexImplBasic(lua_State* L, void* thisPtr, const EqFunction
 	return false;
 }
 
+struct UserTypeIndex : public UserTypeIndexFunc
+{
+	UserTypeIndex(lua_State* L, const char* className)
+		: UserTypeIndexFunc(static_cast<Func>(&UserTypeIndex::Index), L, className)
+	{
+	}
+
+	bool Index(void* thisPtr, const esl::Member* mem) const
+	{
+		ASSERT(mem->type == esl::MEMB_VAR);
+		if (!thisPtr)
+		{
+			luaL_error(state, "self is 'nil' while accessing %s.%s", className, mem->name);
+			return false;
+		}
+
+		lua_settop(state, 1);
+		esl::ScriptBind bindObj{ thisPtr };
+		(bindObj.*(mem->getFunc))(state);
+		return true;
+	}
+};
+
 static int UserTypeIndexImpl(lua_State* L)
 {
 	// upvalues:
@@ -414,21 +455,7 @@ static int UserTypeIndexImpl(lua_State* L)
 	bool isConstRef = false;
 	void* thisPtr = thisGetter(L, isConstRef);
 
-	auto onUserDataIndex = [&](void* thisPtr, const esl::Member* mem) -> bool{
-		ASSERT(mem->type == esl::MEMB_VAR);
-		if (!thisPtr)
-		{
-			luaL_error(L, "self is 'nil' while accessing %s.%s", className, mem->name);
-			return false;
-		}
-
-		lua_settop(L, 1);
-		esl::ScriptBind bindObj{ thisPtr };
-		(bindObj.*(mem->getFunc))(L);
-		return true;
-	};
-
-	if (!UserTypeIndexImplBasic(L, thisPtr, onUserDataIndex))
+	if (!UserTypeIndexImplBasic(L, thisPtr, UserTypeIndex(L, className)))
 	{
 		if (thisPtr)
 		{
@@ -439,6 +466,39 @@ static int UserTypeIndexImpl(lua_State* L)
 
 	return 1;
 }
+
+struct UserTypeNewIndex : public UserTypeIndexFunc
+{
+	bool isConstRef;
+
+	UserTypeNewIndex(lua_State* L, const char* className, bool isConstRef)
+		: UserTypeIndexFunc(static_cast<Func>(&UserTypeNewIndex::NewIndex), L, className)
+		, isConstRef(isConstRef)
+	{
+	}
+
+	bool NewIndex(void* thisPtr, const esl::Member* mem) const
+	{
+		ASSERT(mem->type == esl::MEMB_VAR);
+		if (!thisPtr)
+		{
+			luaL_error(state, "self is nil while accessing property %s.%s", className, mem->name);
+			return false;
+		}
+
+		if (isConstRef)
+		{
+			luaL_error(state, "trying to set %s.%s on constant reference", className, mem->name);
+			return false;
+		}
+
+		// ensure that value is at index 2.
+		lua_replace(state, 2);
+		esl::ScriptBind bindObj{ thisPtr };
+		(bindObj.*(mem->func))(state);
+		return true;
+	}
+};
 
 static int UserTypeNewIndexImpl(lua_State* L)
 {
@@ -455,28 +515,7 @@ static int UserTypeNewIndexImpl(lua_State* L)
 	bool isConstRef = false;
 	void* thisPtr = thisGetter(L, isConstRef);
 
-	auto onUserDataIndex = [&](void* thisPtr, const esl::Member* mem) -> bool {
-		ASSERT(mem->type == esl::MEMB_VAR);
-		if (!thisPtr)
-		{
-			luaL_error(L, "self is nil while accessing property %s.%s", className, mem->name);
-			return false;
-		}
-
-		if (isConstRef)
-		{
-			luaL_error(L, "trying to set %s.%s on constant reference", className, mem->name);
-			return false;
-		}
-
-		// ensure that value is at index 2.
-		lua_replace(L, 2);
-		esl::ScriptBind bindObj{ thisPtr }; 
-		(bindObj.*(mem->func))(L);
-		return true;
-	};
-
-	UserTypeIndexImplBasic(L, thisPtr, onUserDataIndex);	
+	UserTypeIndexImplBasic(L, thisPtr, UserTypeNewIndex(L, className, isConstRef));
 	return 1;
 }
 
