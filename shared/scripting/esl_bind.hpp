@@ -178,6 +178,15 @@ static int DestroyImpl(lua_State* L)
 	return 0;
 }
 
+template<typename T>
+auto CloneImpl(const T& self)
+{
+	if constexpr (GetPushType<T>() == BY_VALUE)
+		return self;
+	else
+		return PPNew T(self);
+}
+
 // Push pull is essential when you want to send or get values from Lua
 template<typename T>
 struct PushGetImpl
@@ -689,7 +698,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		// shadow
 		TypeCheckerWithArgError<T, Result, SilentTypeCheck> typeChecker(L, index);
 
-		if (argType != LUA_TUSERDATA)
+		if (argType != LUA_TUSERDATA && argType != LUA_TLIGHTUSERDATA)
 			return typeChecker.ArgError(EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
 
 		// retrieve userdata name which is class name
@@ -1364,6 +1373,15 @@ Member ClassBinder<T>::MakeOperator(F f, const char* name)
 	m.name = name;
 	m.staticFunc = f;
 	return m;
+}
+
+template<typename T>
+auto ClassBinder<T>::MakeCloneFunc(const char* name)
+{
+	if constexpr (GetPushType<T>() == BY_VALUE)
+		return MakeStaticFunction<T&, const T&>(runtime::CloneImpl<T>, name);
+	else
+		return MakeStaticFunction<ToLua<T*>, const T&>(runtime::CloneImpl<T>, name);
 }
 
 template <typename Base, typename Derived>

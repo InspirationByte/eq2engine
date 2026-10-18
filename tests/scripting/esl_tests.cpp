@@ -145,6 +145,100 @@ struct TerrainSpline : public Spline
 	bool saveOverloadCalled = false;
 };
 
+template<typename T, esl::binder::EOpType OpType>
+int VectorOperatorsFunc(lua_State* L)
+{
+	esl::ScriptState state(L);
+	
+	constexpr int opIdxA = 1;
+	constexpr int opIdxB = 2;
+
+	bool isConst;
+	if constexpr (OpType == esl::binder::OP_unm)
+	{
+		// NOTE: not performing additional type checking
+		esl::runtime::New<T>(state, -*esl::runtime::PushGet<T>::Get(state, opIdxA, false, isConst, {}));
+		return 1;
+	}
+	else if constexpr (OpType == esl::binder::OP_not)
+	{
+		// NOTE: not performing additional type checking
+		lua_pushboolean(state, !*esl::runtime::PushGet<T>::Get(state, opIdxA, false, isConst, {}));
+		return 1;
+	}
+	else
+	{
+		T tmpLhs;
+		T tmpRhs;
+		const T* lhs = &tmpLhs;
+		const T* rhs = &tmpRhs;
+		const int lhsType = state.GetStackType(opIdxA);
+		const int rhsType = state.GetStackType(opIdxB);
+
+		if (lhsType == LUA_TNUMBER)
+		{
+			tmpLhs = lua_tonumber(state, opIdxA);
+		}
+		else
+		{
+			auto valResult = esl::runtime::GetValue<const T*, true, false>(state, opIdxA);
+			if (!valResult) state.ThrowError(valResult.errorMessage);
+			lhs = *valResult;
+		}
+
+		if(rhsType == LUA_TNUMBER)
+		{
+			tmpRhs = lua_tonumber(state, opIdxB);
+		}
+		else
+		{
+			auto valResult = esl::runtime::GetValue<const T*, true, false>(state, opIdxB);
+			if (!valResult) state.ThrowError(valResult.errorMessage);
+			rhs = *valResult;
+		}
+
+		if constexpr (OpType == esl::binder::OP_add)
+			esl::runtime::New<T>(state, *lhs + *rhs);
+		else if constexpr (OpType == esl::binder::OP_sub)
+			esl::runtime::New<T>(state, *lhs - *rhs);
+		else if constexpr (OpType == esl::binder::OP_mul)
+			esl::runtime::New<T>(state, *lhs * *rhs);
+		else if constexpr (OpType == esl::binder::OP_div)
+			esl::runtime::New<T>(state, *lhs / *rhs);
+		else if constexpr (OpType == esl::binder::OP_mod)
+			esl::runtime::New<T>(state, *lhs % *rhs);
+		else if constexpr (OpType == esl::binder::OP_band)
+			esl::runtime::New<T>(state, *lhs & *rhs);
+		else if constexpr (OpType == esl::binder::OP_bor)
+			esl::runtime::New<T>(state, *lhs | *rhs);
+		else if constexpr (OpType == esl::binder::OP_xor)
+			esl::runtime::New<T>(state, *lhs ^ *rhs);
+		else if constexpr (OpType == esl::binder::OP_shl)
+			esl::runtime::New<T>(state, *lhs << *rhs);
+		else if constexpr (OpType == esl::binder::OP_shr)
+			esl::runtime::New<T>(state, *lhs >> *rhs);
+		else if constexpr (OpType == esl::binder::OP_eq)
+			lua_pushboolean(state, *lhs == *rhs);
+		else if constexpr (OpType == esl::binder::OP_lt)
+			lua_pushboolean(state, *lhs < *rhs);
+		else if constexpr (OpType == esl::binder::OP_le)
+			lua_pushboolean(state, *lhs <= *rhs);
+		else
+			static_assert(sizeof(T) > 0, "Unsupported operator type");
+		return 1;
+	}
+}
+
+#define BIND_VECTOR_OPERATORS() \
+	EQSCRIPT_BIND_OP_CUSTOM(VectorOperatorsFunc, eq)  \
+	EQSCRIPT_BIND_OP_CUSTOM(VectorOperatorsFunc, lt)  \
+	EQSCRIPT_BIND_OP_CUSTOM(VectorOperatorsFunc, le)  \
+	EQSCRIPT_BIND_OP_CUSTOM(VectorOperatorsFunc, unm) \
+	EQSCRIPT_BIND_OP_CUSTOM(VectorOperatorsFunc, add) \
+	EQSCRIPT_BIND_OP_CUSTOM(VectorOperatorsFunc, sub) \
+	EQSCRIPT_BIND_OP_CUSTOM(VectorOperatorsFunc, mul) \
+	EQSCRIPT_BIND_OP_CUSTOM(VectorOperatorsFunc, div)
+
 EQSCRIPT_BIND_TYPE_NO_PARENT(Vector2D, "Vector2D", esl::BY_VALUE)
 EQSCRIPT_TYPE_BEGIN(Vector2D)
 	EQSCRIPT_BIND_CONSTRUCTOR(float)
@@ -153,10 +247,13 @@ EQSCRIPT_TYPE_BEGIN(Vector2D)
 
 	EQSCRIPT_BIND_VAR(x)
 	EQSCRIPT_BIND_VAR(y)
+
+	BIND_VECTOR_OPERATORS()
 EQSCRIPT_TYPE_END
 
 EQSCRIPT_BIND_TYPE_NO_PARENT(Vector3D, "Vector3D", esl::BY_VALUE)
 EQSCRIPT_TYPE_BEGIN(Vector3D)
+	EQSCRIPT_CLONE_FUNC()
 	EQSCRIPT_BIND_CONSTRUCTOR(float)
 	EQSCRIPT_BIND_CONSTRUCTOR(float, float, float)
 	EQSCRIPT_BIND_CONSTRUCTOR(const Vector2D&, float)
@@ -170,6 +267,8 @@ EQSCRIPT_TYPE_BEGIN(Vector3D)
 	EQSCRIPT_BIND_VAR(x)
 	EQSCRIPT_BIND_VAR(y)
 	EQSCRIPT_BIND_VAR(z)
+
+	BIND_VECTOR_OPERATORS()
 EQSCRIPT_TYPE_END
 
 EQSCRIPT_BIND_TYPE_NO_PARENT(KVSection, "KVSection", esl::BY_REF)
@@ -1150,6 +1249,8 @@ TEST(EQSCRIPT_TESTS, TestNativeEvent)
 struct OperatorTests
 {
 	int value;
+	Vector3D vecValue{ 0.0f, -4.0f, 8.0f };
+	Vector3D& GetVecValue() { return vecValue; }
 };
 
 static void ToStringTest(const OperatorTests& v, char* dest, const int destSize)
@@ -1166,6 +1267,8 @@ EQSCRIPT_TYPE_BEGIN(OperatorTests)
 	// implementation is completely user-defined, ESL does not handle anything.
 
 	EQSCRIPT_BIND_VAR(value)
+	EQSCRIPT_BIND_VAR(vecValue)
+	EQSCRIPT_BIND_FUNC(GetVecValue)
 EQSCRIPT_TYPE_END
 
 TEST(EQSCRIPT_TESTS, TestOperatorBinding)
@@ -1176,6 +1279,14 @@ TEST(EQSCRIPT_TESTS, TestOperatorBinding)
 	state.RegisterClass<OperatorTests>();
 
 	LUA_GTEST_CHUNK("test = TestOperators.new(); test.value = 545999");
+
+	LUA_GTEST_CHUNK("valueCopy = test.vecValue:Clone()");
+	LUA_GTEST_CHUNK("test.vecValue = test.vecValue + Vector3D.new(1.0, 4.0, 8.0)");
+
+	LUA_GTEST_CHUNK("EXPECT_EQ(valueCopy.x, 0.0)");
+	LUA_GTEST_CHUNK("EXPECT_EQ(test.vecValue.x, 1.0)");
+	LUA_GTEST_CHUNK("EXPECT_EQ(test.vecValue.y, 0.0)");
+	LUA_GTEST_CHUNK("EXPECT_EQ(test.vecValue.z, 16.0)");
 
 	// TEST: tostring operator
 	LUA_GTEST_CHUNK("EXPECT_EQ(tostring(test), 'current value: 545999')");

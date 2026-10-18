@@ -92,6 +92,8 @@ struct ClassBinder
 
 	template<typename F>
 	static Member	MakeOperator(F func, const char* name);
+
+	static auto MakeCloneFunc(const char* name);
 };
 }
 
@@ -288,7 +290,7 @@ NOTE on weak pointers:
 	MakeConstructor<__VA_ARGS__>(),
 
 #define EQSCRIPT_CLONE_FUNC() \
-	MakeStaticFunction<ToLua<BindClass*>, const BindClass&>(+[](const BindClass& self) -> BindClass* { return PPNew BindClass(self); }, "Clone"),
+	MakeCloneFunc("Clone"),
 
 #define EQSCRIPT_BIND_STATIC_FUNC(FuncName, Func, ...) \
 	MakeStaticFunction<__VA_ARGS__>(Func, FuncName),
