@@ -429,6 +429,55 @@ TEST(EQSCRIPT_TESTS, TestVariables)
 	LUA_GTEST_CHUNK("EXPECT_EQ(spl.flags, 12345)");
 }
 
+struct NestedVariable
+{
+	NestedVariable()
+	{
+		nestedByRef.name = "name_must_change";
+		nestedByRef.numLanes = 666;
+		nestedByValue = 888.888;
+	}
+
+	// they both must behave equally inside Lua
+	Vector2D nestedByValue;
+	Spline nestedByRef;
+};
+
+EQSCRIPT_BIND_TYPE_NO_PARENT(NestedVariable, "NestedVariable", esl::BY_VALUE)
+EQSCRIPT_TYPE_BEGIN(NestedVariable)
+	EQSCRIPT_BIND_CONSTRUCTOR()
+	EQSCRIPT_BIND_VAR(nestedByValue)
+	EQSCRIPT_BIND_VAR(nestedByRef)
+EQSCRIPT_TYPE_END
+
+TEST(EQSCRIPT_TESTS, TestNestedVariables)
+{
+	LuaStateTest stateTest;
+	esl::ScriptState state(stateTest);
+
+	state.RegisterClass<Spline>();
+	state.RegisterClass<NestedVariable>();
+
+	LUA_GTEST_CHUNK("obj = NestedVariable.new()");
+
+	// TODO: state.GetGlobal<esl::Object<T>>
+	lua_getglobal(state, "obj");
+	esl::Object<NestedVariable> obj = *esl::runtime::GetValue<esl::Object<NestedVariable>, true>(state, -1);
+
+	NestedVariable& objRef = *obj;
+
+	// BY_VALUE behaviour should not affect this assignment and work directly
+	LUA_GTEST_CHUNK("obj.nestedByValue.x = 555.0");				// BY_VALUE_FLAG_NO_COPY is used, activated by ByValueVarRef
+	ASSERT_EQ(objRef.nestedByValue.x, 555.0);
+
+	objRef.nestedByValue.x = 333.0;
+	LUA_GTEST_CHUNK("EXPECT_EQ(obj.nestedByValue.x, 333.0)");	// passing this confirms that object has the same reference
+
+	// check BY_REF just in case
+	LUA_GTEST_CHUNK("obj.nestedByRef.numLanes = 555");
+	ASSERT_EQ(objRef.nestedByRef.numLanes, 555);
+}
+
 TEST(EQSCRIPT_TESTS, TestAddingToMetatable)
 {
 	LuaStateTest stateTest;
@@ -1192,7 +1241,7 @@ TEST(EQSCRIPT_TESTS, TestByValue)
 	// copy to Lua
 	state.SetGlobal("testByValue", testValue);
 
-	// this is safe for BY_VALUE types
+	// this must be safe for BY_VALUE types
 	delete testValue;
 
 	// TEST: should copy object

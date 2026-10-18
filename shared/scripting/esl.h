@@ -84,12 +84,16 @@ struct LuaTypeAlias<T, true>
 // parameter trait 
 template <typename T> struct ToCpp {};	// input value ownership is given to native/c++
 template <typename T> struct ToLua {};	// input value ownership is given to Lua
+template <typename T> struct ByValueRefVar {};	// BY_VALUE objects given to Lua as reference (no copy, light user data)
 
 template<typename T> struct HasToCppParamTrait : std::false_type {};
 template<typename T> struct HasToCppParamTrait<ToCpp<T>> : std::true_type {};
 
 template<typename T> struct HasToLuaReturnTrait : std::false_type {};
 template<typename T> struct HasToLuaReturnTrait<ToLua<T>> : std::true_type {};
+
+template<typename T> struct HasByValueVarRefTrait : std::false_type {};
+template<typename T> struct HasByValueVarRefTrait<ByValueRefVar<T>> : std::true_type {};
 
 //------------------------
 
@@ -475,10 +479,12 @@ private:
 
 namespace esl::runtime
 {
-enum EBoxUDFlags : int
+enum EPushFlags : int
 {
-	BOX_UD_FLAG_CONST	= (1 << 0),		// a 'const' qualified object
-	BOX_UD_FLAG_OWNED	= (1 << 1),		// owned and managed by script
+	BOX_UD_FLAG_CONST		= (1 << 0),		// a 'const' qualified object
+	BOX_UD_FLAG_OWNED		= (1 << 1),		// owned and managed by script
+
+	BY_VALUE_FLAG_NO_COPY	= (1 << 2),		// don't copy value of object (used for member variables)
 };
 
 // boxed userdata
@@ -486,7 +492,7 @@ struct BoxUD
 {
 	void*		objPtr{ nullptr };
 	void*		weakRefHandle{ nullptr };
-	uint		flags{ 0 };	// EBoxUDFlags
+	uint		flags{ 0 };	// EPushFlags
 };
 
 struct BaseClassInfo

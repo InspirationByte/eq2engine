@@ -190,11 +190,17 @@ struct PushGetImpl
 		ASSERT_MSG(&obj, "NULL object passed as Ref or Box, use pushnil");
 
 		static_assert(std::is_fundamental_v<BaseUType> == false, "PushObject used for fundamental type");
-
 		if constexpr (GetPushType<BaseUType>() == BY_VALUE)
 		{
-			BaseUType* ud = static_cast<BaseUType*>(lua_newuserdatauv(L, sizeof(BaseUType), 0));
-			new(ud) BaseUType(obj);
+			if (flags & BY_VALUE_FLAG_NO_COPY)
+			{
+				lua_pushlightuserdata(L, (void*)&obj);
+			}
+			else
+			{
+				BaseUType* ud = static_cast<BaseUType*>(lua_newuserdatauv(L, sizeof(BaseUType), 0));
+				new(ud) BaseUType(obj);
+			}
 			luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
 		}
 		else
@@ -372,7 +378,9 @@ static void PushValue(lua_State* L, const T& value)
 
 		using UT = BaseType<StripWeakPtrT<T>>;
 
-		constexpr int retTraitFlag = (HasToLuaReturnTrait<WT>::value ? BOX_UD_FLAG_OWNED : 0) | (std::is_const_v<BaseTypeWithCv<WT>> ? BOX_UD_FLAG_CONST : 0);
+		constexpr int retTraitFlag = (HasToLuaReturnTrait<WT>::value ? BOX_UD_FLAG_OWNED : 0)
+								   | (std::is_const_v<BaseTypeWithCv<WT>> ? BOX_UD_FLAG_CONST : 0)
+								   | (HasByValueVarRefTrait<WT>::value ? BY_VALUE_FLAG_NO_COPY : 0);
 		if constexpr (std::is_pointer_v<T>)
 		{
 			if (value != nullptr)
@@ -742,6 +750,11 @@ template<typename T>
 static decltype(auto) GetGlobal(lua_State* L, const char* fieldName)
 {
 	lua_getglobal(L, fieldName);
+	/* 
+	TODO:
+		support esl::Object<T>
+		it must have LuaRawRef for this case
+	*/
 	defer{
 		lua_pop(L, 1);
 	};
@@ -1092,7 +1105,7 @@ struct MemberVariableBinder<T, MemberVar> : public esl::ScriptBind
 	int GetterFunc(lua_State* L)
 	{
 		T* thisPtr = static_cast<T*>(this->thisPtr);
-		runtime::PushValue<V>(L, thisPtr->*MemberVar);
+		runtime::PushValue<V, ByValueRefVar<V>>(L, thisPtr->*MemberVar);
 		return 1;
 	}
 

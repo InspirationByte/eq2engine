@@ -10,7 +10,7 @@ int main(int argc, char** argv)
 	testing::InitGoogleTest(&argc, argv);
 
 	// you can specify flags before running
-	//::testing::FLAGS_gtest_filter = "EQSCRIPT_TESTS.ShouldFailToModifyConstVars";
+	//::testing::FLAGS_gtest_filter = "EQSCRIPT_TESTS.TestNestedVariables";
 
 	return RUN_ALL_TESTS();
 }
