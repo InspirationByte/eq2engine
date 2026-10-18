@@ -189,10 +189,12 @@ bool CheckUserdataCanBeUpcasted(lua_State* L, int index, const char* targetClass
 	return baseInfo.IsValid();
 }
 
-static EqString GetCallSignatureString(lua_State* L)
+// needed only for error handling
+static EqStringRef GetCallSignatureString(lua_State* L)
 {
 	const int numArgs = lua_gettop(L);
-	EqString argSignature;
+	static EqString argSignature;
+	argSignature.Empty();
 	for (int i = 1; i <= numArgs; ++i)
 	{
 		const int argType = lua_type(L, i);

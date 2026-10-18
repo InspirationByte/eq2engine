@@ -271,6 +271,41 @@ EQSCRIPT_TYPE_BEGIN(Vector3D)
 	BIND_VECTOR_OPERATORS()
 EQSCRIPT_TYPE_END
 
+EQSCRIPT_BIND_TYPE_NO_PARENT(Quaternion, "Quaternion", esl::BY_VALUE)
+EQSCRIPT_TYPE_BEGIN(Quaternion)
+	EQSCRIPT_CLONE_FUNC()
+	EQSCRIPT_BIND_CONSTRUCTOR()
+	EQSCRIPT_BIND_CONSTRUCTOR(float, float, float, float)
+	EQSCRIPT_BIND_CONSTRUCTOR(float, const Vector3D&)
+	
+	EQSCRIPT_BIND_OP(unm)
+	EQSCRIPT_BIND_OP(add)
+	EQSCRIPT_BIND_OP(sub)
+	EQSCRIPT_BIND_OP(mul)
+
+	EQSCRIPT_BIND_VAR(x)
+	EQSCRIPT_BIND_VAR(y)
+	EQSCRIPT_BIND_VAR(z)
+	EQSCRIPT_BIND_VAR(w)
+
+	EQSCRIPT_BIND_FUNC(normalize)
+	EQSCRIPT_BIND_FUNC(fastNormalize)
+
+	EQSCRIPT_BIND_FUNC(isValid)
+EQSCRIPT_TYPE_END
+
+EQSCRIPT_BIND_TYPE_NO_PARENT(Transform3D, "Transform3D", esl::BY_VALUE)
+EQSCRIPT_TYPE_BEGIN(Transform3D)
+	EQSCRIPT_CLONE_FUNC()
+	EQSCRIPT_BIND_CONSTRUCTOR()
+	EQSCRIPT_BIND_CONSTRUCTOR(const Vector3D&, const Quaternion&, const Vector3D&)
+	EQSCRIPT_BIND_CONSTRUCTOR(const Vector3D&, const Vector3D&, const Vector3D&)
+
+	EQSCRIPT_BIND_VAR(t)
+	EQSCRIPT_BIND_VAR(r)
+	EQSCRIPT_BIND_VAR(s)
+EQSCRIPT_TYPE_END
+
 EQSCRIPT_BIND_TYPE_NO_PARENT(KVSection, "KVSection", esl::BY_REF)
 EQSCRIPT_TYPE_BEGIN(KVSection)
 	EQSCRIPT_BIND_CONSTRUCTOR()
@@ -318,6 +353,8 @@ LuaStateTest::LuaStateTest()
 
 	state.RegisterClass<Vector2D>();
 	state.RegisterClass<Vector3D>();
+	state.RegisterClass<Quaternion>();
+	state.RegisterClass<Transform3D>();
 	state.RegisterClass<KVSection>();
 
 	// setup stuff for tests
@@ -566,7 +603,7 @@ TEST(EQSCRIPT_TESTS, TestNestedVariables)
 	NestedVariable& objRef = *obj;
 
 	// BY_VALUE behaviour should not affect this assignment and work directly
-	LUA_GTEST_CHUNK("obj.nestedByValue.x = 555.0");				// BY_VALUE_FLAG_NO_COPY is used, activated by ByValueVarRef
+	LUA_GTEST_CHUNK("obj.nestedByValue.x = 555.0");				// BY_VALUE_FLAG_COPY must not be used, activated by ByValueRef trait
 	ASSERT_EQ(objRef.nestedByValue.x, 555.0);
 
 	objRef.nestedByValue.x = 333.0;
@@ -1258,6 +1295,23 @@ static void ToStringTest(const OperatorTests& v, char* dest, const int destSize)
 	snprintf(dest, destSize, "current value: %d", v.value);
 }
 
+static Transform3D GetTransformValueTest()
+{
+	return Transform3D(Vector3D(1.0f, 4.0f, 10.0f), qidentity);
+}
+
+static const Transform3D& GetTransformRefTest()
+{
+	static Transform3D trs(Vector3D(2.0f, 6.0f, 8.0f), qidentity);
+	return trs;
+}
+
+static const Transform3D& GetTransformRefTest2()
+{
+	static Transform3D trs2(Vector3D(2.0f, 6.0f, 8.0f), qidentity);
+	return trs2;
+}
+
 EQSCRIPT_BIND_TYPE_NO_PARENT(OperatorTests, "TestOperators", esl::BY_VALUE)
 EQSCRIPT_TYPE_BEGIN(OperatorTests)
 	EQSCRIPT_BIND_CONSTRUCTOR()
@@ -1273,23 +1327,52 @@ EQSCRIPT_TYPE_END
 
 TEST(EQSCRIPT_TESTS, TestOperatorBinding)
 {
-	LuaStateTest stateTest;
-	esl::ScriptState state(stateTest);
+	{
+		LuaStateTest stateTest;
+		esl::ScriptState state(stateTest);
 
-	state.RegisterClass<OperatorTests>();
+		state.RegisterClass<OperatorTests>();
 
-	LUA_GTEST_CHUNK("test = TestOperators.new(); test.value = 545999");
+		LUA_GTEST_CHUNK("test = TestOperators.new(); test.value = 545999");
 
-	LUA_GTEST_CHUNK("valueCopy = test.vecValue:Clone()");
-	LUA_GTEST_CHUNK("test.vecValue = test.vecValue + Vector3D.new(1.0, 4.0, 8.0)");
+		LUA_GTEST_CHUNK("valueCopy = test.vecValue:Clone()");
+		LUA_GTEST_CHUNK("test.vecValue = test.vecValue + Vector3D.new(1.0, 4.0, 8.0)");
 
-	LUA_GTEST_CHUNK("EXPECT_EQ(valueCopy.x, 0.0)");
-	LUA_GTEST_CHUNK("EXPECT_EQ(test.vecValue.x, 1.0)");
-	LUA_GTEST_CHUNK("EXPECT_EQ(test.vecValue.y, 0.0)");
-	LUA_GTEST_CHUNK("EXPECT_EQ(test.vecValue.z, 16.0)");
+		LUA_GTEST_CHUNK("EXPECT_EQ(valueCopy.x, 0.0)");
+		LUA_GTEST_CHUNK("EXPECT_EQ(test.vecValue.x, 1.0)");
+		LUA_GTEST_CHUNK("EXPECT_EQ(test.vecValue.y, 0.0)");
+		LUA_GTEST_CHUNK("EXPECT_EQ(test.vecValue.z, 16.0)");
 
-	// TEST: tostring operator
-	LUA_GTEST_CHUNK("EXPECT_EQ(tostring(test), 'current value: 545999')");
+		// TEST: tostring operator
+		LUA_GTEST_CHUNK("EXPECT_EQ(tostring(test), 'current value: 545999')");
+	}
+
+	// TEST: value consistency matching (as bug appeared with BY_VALUE references)
+	{
+		LuaStateTest stateTest;
+		esl::ScriptState state(stateTest);
+
+		state.SetGlobal("GetTransformValueTest", EQSCRIPT_CFUNC(GetTransformValueTest));
+		state.SetGlobal("GetTransformRefTest", EQSCRIPT_CFUNC(GetTransformRefTest));
+		state.SetGlobal("GetTransformRefTest2", EQSCRIPT_CFUNC(GetTransformRefTest2));
+		
+		LUA_GTEST_CHUNK("trs = GetTransformValueTest()");
+		LUA_GTEST_CHUNK("trsRef = GetTransformRefTest()");
+		LUA_GTEST_CHUNK("trsRef2 = GetTransformRefTest2()");
+
+		LUA_GTEST_CHUNK("newPos = Vector3D.new(1.0, 4.0, 10.0)");
+		LUA_GTEST_CHUNK("storedPos = trs.t");
+		LUA_GTEST_CHUNK("storedRot = trs.r");	// this should not affect line above
+		LUA_GTEST_CHUNK("local resultPos = storedPos + newPos") << " - assigning trs.r value to storedRot should not affect storedPos";
+
+		LUA_GTEST_CHUNK("newPos2 = Vector3D.new(1.0, 4.0, 10.0)");
+		LUA_GTEST_CHUNK("storedPos2 = trsRef.t");
+		LUA_GTEST_CHUNK("storedRot2 = trsRef.r");	// this should not affect line above
+		LUA_GTEST_CHUNK("local resultPos2 = storedPos + newPos2") << " - assigning trs.r value to storedRot2 should not affect storedPos2";
+
+		// __eq operator test
+		LUA_GTEST_CHUNK("EXPECT_EQ(trsRef.t, trsRef2.t)");
+	}
 }
 
 struct ByValueTests
@@ -1392,7 +1475,6 @@ TEST(EQSCRIPT_TESTS, TestByValue)
 		EXPECT_FALSE(ptr->usedCopyConstructor);
 	}));
 
-
 	state.SetGlobal("ByValueBypassFunc", EQSCRIPT_CFUNC(ByValueBypassFunc));
 	state.SetGlobal("ByValueBypassFuncObj", EQSCRIPT_CFUNC(ByValueBypassFuncObj));
 
@@ -1400,10 +1482,10 @@ TEST(EQSCRIPT_TESTS, TestByValue)
 	LUA_GTEST_CHUNK("TestRefArgument(test4, 888666)");
 	LUA_GTEST_CHUNK("TestPtrArgument(test2, 4444)");
 
-	// TEST: use copy constructor
+	// TEST: use bypassing same reference, should not use copy constructor
 	LUA_GTEST_CHUNK("testRet = ByValueBypassFunc(test4)");
 	LUA_GTEST_CHUNK("EXPECT_EQ(testRet.isMoved, false)");
-	LUA_GTEST_CHUNK("EXPECT_EQ(testRet.usedCopyConstructor, true)");
+	LUA_GTEST_CHUNK("EXPECT_EQ(testRet.usedCopyConstructor, false)");
 
 	// TEST: use bypass reference, must be the same object
 	LUA_GTEST_CHUNK("testRet = ByValueBypassFuncObj(test4, 4)");

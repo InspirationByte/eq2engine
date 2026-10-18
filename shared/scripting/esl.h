@@ -66,6 +66,9 @@ using BasePtrType = typename std::remove_cv<typename std::remove_pointer<T>::typ
 template<typename T>
 using BaseRefType = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
 
+template<typename T>
+using BaseNonConstType = typename std::remove_cv<T>::type;
+
 template <typename T, bool isEnum>
 struct LuaTypeAlias;
 
@@ -84,7 +87,8 @@ struct LuaTypeAlias<T, true>
 // parameter trait 
 template <typename T> struct ToCpp {};	// input value ownership is given to native/c++
 template <typename T> struct ToLua {};	// input value ownership is given to Lua
-template <typename T> struct ByValueRefVar {};	// BY_VALUE objects given to Lua as reference (no copy, light user data)
+template <typename T> struct ByValueRef {};	// BY_VALUE objects given to Lua as reference (no copy, light user data)
+template <typename T> struct ByValueCopy {};	// BY_VALUE objects given to Lua as copy
 
 template<typename T> struct HasToCppParamTrait : std::false_type {};
 template<typename T> struct HasToCppParamTrait<ToCpp<T>> : std::true_type {};
@@ -92,8 +96,11 @@ template<typename T> struct HasToCppParamTrait<ToCpp<T>> : std::true_type {};
 template<typename T> struct HasToLuaReturnTrait : std::false_type {};
 template<typename T> struct HasToLuaReturnTrait<ToLua<T>> : std::true_type {};
 
-template<typename T> struct HasByValueVarRefTrait : std::false_type {};
-template<typename T> struct HasByValueVarRefTrait<ByValueRefVar<T>> : std::true_type {};
+template<typename T> struct HasByValueRefTrait : std::false_type {};
+template<typename T> struct HasByValueRefTrait<ByValueRef<T>> : std::true_type {};
+
+template<typename T> struct HasByValueCopyTrait : std::false_type {};
+template<typename T> struct HasByValueCopyTrait<ByValueCopy<T>> : std::true_type {};
 
 //------------------------
 
@@ -209,15 +216,15 @@ enum EMemberType : int
 
 enum EPushType : uint8
 {
-	BY_VALUE			= 0,
+	BY_VALUE		= 0,
 	BY_REF,
 	REF_PTR,
 	WEAK_REF,
 
-	PUSH_TYPE_MASK 		= 0x3,
+	PUSH_TYPE_MASK 	= 0x3,
 
 	// flags start
-	ABSTRACT			= (1 << 3),
+	ABSTRACT		= (1 << 3),
 };
 
 
@@ -484,7 +491,7 @@ enum EPushFlags : int
 	BOX_UD_FLAG_CONST		= (1 << 0),		// a 'const' qualified object
 	BOX_UD_FLAG_OWNED		= (1 << 1),		// owned and managed by script
 
-	BY_VALUE_FLAG_NO_COPY	= (1 << 2),		// don't copy value of object (used for member variables)
+	BY_VALUE_FLAG_COPY		= (1 << 2),		// copy value of object (used in ByValue)
 };
 
 // boxed userdata

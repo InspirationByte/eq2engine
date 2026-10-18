@@ -77,7 +77,8 @@ int VectorOperatorsFunc(lua_State* L)
 		else
 		{
 			auto valResult = esl::runtime::GetValue<const T*, true, false>(state, opIdxA);
-			if (!valResult) state.ThrowError(valResult.errorMessage);
+			if (!valResult)
+				state.ThrowError("op %d (lhs): %s", OpType, valResult.errorMessage.ToCString());
 			lhs = *valResult;
 		}
 
@@ -88,7 +89,8 @@ int VectorOperatorsFunc(lua_State* L)
 		else
 		{
 			auto valResult = esl::runtime::GetValue<const T*, true, false>(state, opIdxB);
-			if (!valResult) state.ThrowError(valResult.errorMessage);
+			if (!valResult)
+				state.ThrowError("op %d (rhs): %s", OpType, valResult.errorMessage.ToCString());
 			rhs = *valResult;
 		}
 

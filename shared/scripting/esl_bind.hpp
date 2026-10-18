@@ -142,8 +142,11 @@ static int DestroyImpl(lua_State* L)
 	if constexpr (GetPushType<T>() == BY_VALUE)
 	{
 		ESL_VERBOSE_LOG("destroy val %s", LuaBaseTypeAlias<T>::value);
-		T* ud = static_cast<T*>(lua_touserdata(L, 1));
-		ud->~T();
+		if (lua_rawlen(L, 1) > 0)
+		{
+			T* ud = static_cast<T*>(lua_touserdata(L, 1));
+			ud->~T();
+		}
 	}
 	else
 	{
@@ -201,14 +204,19 @@ struct PushGetImpl
 		static_assert(std::is_fundamental_v<BaseUType> == false, "PushObject used for fundamental type");
 		if constexpr (GetPushType<BaseUType>() == BY_VALUE)
 		{
-			if (flags & BY_VALUE_FLAG_NO_COPY)
-			{
-				lua_pushlightuserdata(L, (void*)&obj);
-			}
-			else
+			if (flags & BY_VALUE_FLAG_COPY)
 			{
 				BaseUType* ud = static_cast<BaseUType*>(lua_newuserdatauv(L, sizeof(BaseUType), 0));
 				new(ud) BaseUType(obj);
+			}
+			else
+			{
+				// full userdata with zero size is created to 'box' the lightuserdata
+				// because lightuserdata can't have it's own metatable so refs
+				// can have the metatable info
+				void* udPtr = lua_newuserdata(L, 0);
+				lua_pushlightuserdata(L, (void*)&obj);
+				lua_setuservalue(L, -2);
 			}
 			luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
 		}
@@ -236,14 +244,24 @@ struct PushGetImpl
 		static_assert(std::is_fundamental_v<BaseUType> == false, "GetObject used for fundamental type");
 		ASSERT(upcastBaseInfo.offset == 0);
 
-		void* objPtr = lua_touserdata(L, index);
-
 		if constexpr (GetPushType<BaseUType>() == BY_VALUE)
 		{
+			void* objPtr = nullptr;
+			if (lua_rawlen(L, index) == 0)
+			{
+				const int t = lua_getuservalue(L, index);
+				ASSERT(t == LUA_TLIGHTUSERDATA);
+				objPtr = lua_touserdata(L, -1);
+				lua_pop(L, 1);
+			}
+			else
+				objPtr = lua_touserdata(L, index);
+
 			return reinterpret_cast<UT*>(reinterpret_cast<uintptr_t>(objPtr) + upcastBaseInfo.offset);
 		}
 		else
 		{
+			void* objPtr = lua_touserdata(L, index);
 			BoxUD* ud = static_cast<BoxUD*>(objPtr);
 			if (!ud)
 				return static_cast<BaseUType*>(nullptr);
@@ -268,18 +286,29 @@ struct PushGetImpl
 
 	static void* GetThis(lua_State* L, bool& isConst)
 	{
+		constexpr int index = 1;
 		isConst = false;
 
 		static_assert(std::is_fundamental_v<BaseUType> == false, "ThisGetter used for fundamental type");
 
-		void* objPtr = lua_touserdata(L, 1);
-
 		if constexpr (GetPushType<BaseUType>() == BY_VALUE)
 		{
+			void* objPtr = nullptr;
+			if (lua_rawlen(L, index) == 0)
+			{
+				const int t = lua_getuservalue(L, index);
+				ASSERT(t == LUA_TLIGHTUSERDATA);
+				objPtr = lua_touserdata(L, -1);
+				lua_pop(L, 1);
+			}
+			else
+				objPtr = lua_touserdata(L, index);
+
 			return objPtr;
 		}
 		else
 		{
+			void* objPtr = lua_touserdata(L, index);
 			BoxUD* ud = static_cast<BoxUD*>(objPtr);
 			if (!ud)
 				return nullptr;
@@ -387,9 +416,10 @@ static void PushValue(lua_State* L, const T& value)
 
 		using UT = BaseType<StripWeakPtrT<T>>;
 
+		constexpr bool isValueCopy = !std::is_pointer_v<T> && !std::is_reference_v<T> && !HasByValueRefTrait<WT>::value || HasByValueCopyTrait<WT>::value;
 		constexpr int retTraitFlag = (HasToLuaReturnTrait<WT>::value ? BOX_UD_FLAG_OWNED : 0)
 								   | (std::is_const_v<BaseTypeWithCv<WT>> ? BOX_UD_FLAG_CONST : 0)
-								   | (HasByValueVarRefTrait<WT>::value ? BY_VALUE_FLAG_NO_COPY : 0);
+								   | (isValueCopy ? BY_VALUE_FLAG_COPY : 0);
 		if constexpr (std::is_pointer_v<T>)
 		{
 			if (value != nullptr)
@@ -583,8 +613,18 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		if (!typeChecker(LUA_TLIGHTUSERDATA))
 			return Result::Failure(EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
 
-		void* udPtr = lua_touserdata(L, index);
-		return Result{ {}, true, {}, udPtr };
+		void* objPtr = nullptr;
+		if (lua_rawlen(L, index) == 0)
+		{
+			const int t = lua_getuservalue(L, index);
+			ASSERT(t == LUA_TLIGHTUSERDATA);
+			objPtr = lua_touserdata(L, -1);
+			lua_pop(L, 1);
+		}
+		else
+			objPtr = lua_touserdata(L, index);
+
+		return Result{ {}, true, {}, objPtr };
 	}
 	else if constexpr (std::is_same_v<BaseType<T>, LuaRawRef>)
 	{
@@ -698,7 +738,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		// shadow
 		TypeCheckerWithArgError<T, Result, SilentTypeCheck> typeChecker(L, index);
 
-		if (argType != LUA_TUSERDATA && argType != LUA_TLIGHTUSERDATA)
+		if (argType != LUA_TUSERDATA)
 			return typeChecker.ArgError(EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
 
 		// retrieve userdata name which is class name
@@ -780,7 +820,7 @@ static void SetGlobal(lua_State* L, const char* fieldName, const T& value)
 template<typename T>
 static void SetGlobal(lua_State* L, const char* fieldName, T& value)
 {
-	runtime::PushValue(L, value);
+	runtime::PushValue<T, ByValueCopy<T>>(L, value);
 	lua_setglobal(L, fieldName);
 }
 
@@ -1114,7 +1154,7 @@ struct MemberVariableBinder<T, MemberVar> : public esl::ScriptBind
 	int GetterFunc(lua_State* L)
 	{
 		T* thisPtr = static_cast<T*>(this->thisPtr);
-		runtime::PushValue<V, ByValueRefVar<V>>(L, thisPtr->*MemberVar);
+		runtime::PushValue<V, ByValueRef<V>>(L, thisPtr->*MemberVar);
 		return 1;
 	}
 
@@ -1379,7 +1419,7 @@ template<typename T>
 auto ClassBinder<T>::MakeCloneFunc(const char* name)
 {
 	if constexpr (GetPushType<T>() == BY_VALUE)
-		return MakeStaticFunction<T&, const T&>(runtime::CloneImpl<T>, name);
+		return MakeStaticFunction<T, const T&>(runtime::CloneImpl<T>, name);
 	else
 		return MakeStaticFunction<ToLua<T*>, const T&>(runtime::CloneImpl<T>, name);
 }
