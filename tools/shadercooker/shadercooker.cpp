@@ -56,9 +56,8 @@ int main(int argc, char* argv[])
 		EqString shaderFilter;
 
 		CEqJobManager jobMng("shadersJobs", max(4, g_cpuCaps->GetCPUCount() * 2), 16384);
-		for (int i = 0; i < args.numElem(); i++)
+		for (auto [i, argStr] : arrayEnumerate(args))
 		{
-			EqStringRef argStr = args[i];
 			if(argStr[0] == '+')
 				continue;
 

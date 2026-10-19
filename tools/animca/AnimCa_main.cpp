@@ -52,6 +52,9 @@ int main(int argc, char **argv)
 		if(argStr[0] == '+')
 			continue;
 
+		if (fnmPathExtractExt(argStr) != "asc")
+			continue;
+
 		CMotionPackageGenerator generator;
 		if(!generator.CompileScript(argStr))
 		{

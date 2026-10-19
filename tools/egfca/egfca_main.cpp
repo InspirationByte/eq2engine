@@ -69,6 +69,9 @@ int main(int argc, char **argv)
 		if(argStr[0] == '+')
 			continue;
 
+		if (fnmPathExtractExt(argStr) != "esc")
+			continue;
+
 		if(!CompileESCScript(argStr))
 		{
 			getchar();

@@ -599,9 +599,8 @@ int main(int argc, char **argv)
 
 	EqString outFileName = "";
 
-	for (int i = 0; i < args.numElem(); i++)
+	for (auto [i, argStr] : arrayEnumerate(args))
 	{
-		EqStringRef argStr = args[i];
 		if (!argStr.CompareCaseIns("-target"))
 		{
 			CookPackageTarget(g_cmdLine->GetArgumentsOf(i));
