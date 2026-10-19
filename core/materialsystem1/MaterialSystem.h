@@ -170,6 +170,8 @@ public:
 
 private:
 
+	IVector2D					GetScaledBackbufferSize() const;
+
 	void						LoadShaderPackages();
 
 	void						CreateMaterialInternal(CRefPtr<CMaterial> material, const KVSection* params);

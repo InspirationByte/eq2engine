@@ -69,6 +69,7 @@ DECLARE_CVAR(r_showPipelineCacheMisses, "0", "Show warning messages about shader
 
 DECLARE_CVAR_CLAMP(r_loadmiplevel, "0", 0, 3, "Mipmap level to load, needs texture reloading", CV_ARCHIVE);
 DECLARE_CVAR_CLAMP(r_anisotropic, "4", 1, 16, "Mipmap anisotropic filtering quality, needs texture reloading", CV_ARCHIVE);
+DECLARE_CVAR_CLAMP(r_renderScale, "1", 0.25, 2.0, "Render framebuffer scale", CV_ARCHIVE);
 
 DECLARE_CVAR(r_depthBias, "-0.000001", nullptr, CV_CHEAT);
 DECLARE_CVAR(r_slopeDepthBias, "-1.5", nullptr, CV_CHEAT);
@@ -1173,7 +1174,10 @@ bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 
 	// reset viewport and scissor
 	if (!swapChain)
-		m_shaderAPI->ResizeRenderTarget(m_defaultDepthTexture, { m_backbufferSize.x, m_backbufferSize.y, 1 });
+	{
+		IVector2D backbufferSize = GetScaledBackbufferSize();
+		m_shaderAPI->ResizeRenderTarget(m_defaultDepthTexture, { backbufferSize.x, backbufferSize.y, 1 });
+	}
 
 	if(!prevDeviceState && deviceState)
 	{
@@ -1289,6 +1293,11 @@ ITexturePtr CMaterialSystem::GetDefaultDepthBuffer() const
 bool CMaterialSystem::CaptureScreenshot(CImage &img)
 {
 	return m_renderLibrary->CaptureScreenshot( img );
+}
+
+IVector2D CMaterialSystem::GetScaledBackbufferSize() const
+{
+	return IVector2D(float(m_backbufferSize.x) * r_renderScale.GetFloat(), float(m_backbufferSize.y) * r_renderScale.GetFloat());
 }
 
 // resizes device back buffer. Must be called if window resized
