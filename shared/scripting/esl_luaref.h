@@ -181,7 +181,7 @@ void LuaTable::Set(const K& key, const V& value)
 	Push();
 
 	runtime::PushValue(m_state, key);
-	runtime::PushValue(m_state, value);
+	runtime::PushValue<V, ByValueCopy<V>>(m_state, value);
 	lua_settable(m_state, -3);
 }
 
