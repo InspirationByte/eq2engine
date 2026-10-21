@@ -34,7 +34,7 @@ RefCountPtr<IDXGIAdapter> CNVRHIRenderLibDXGIBase::FindAdapter(const wchar_t* ta
 	RefCountPtr<IDXGIAdapter> rhiTargetAdapter;
 	RefCountPtr<IDXGIFactory1> rhiDxgiFactory;
 	HRESULT result = CreateDXGIFactory1(IID_PPV_ARGS(&rhiDxgiFactory));
-	if (result != S_OK)
+	if (FAILED(result))
 	{
 		MsgError("CreateDXGIFactory failed (%x)", result);
 		return rhiTargetAdapter;

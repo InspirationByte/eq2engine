@@ -100,26 +100,23 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	AnsiUnicodeConverter(adapterName, d3d12_adapter.GetString());
 
 	RefCountPtr<IDXGIAdapter> rhiAdapter = FindAdapter(adapterName);
-
-	DXGI_ADAPTER_DESC rhiAdapterDesc;
-	rhiAdapter->GetDesc(&rhiAdapterDesc);
-
 	{
+		DXGI_ADAPTER_DESC rhiAdapterDesc;
+		rhiAdapter->GetDesc(&rhiAdapterDesc);
+
 		EqString descAdapterName;
 		AnsiUnicodeConverter(descAdapterName, rhiAdapterDesc.Description);
 		Msg("* NVRHI D3D12 Adapter: %s\n", descAdapterName.ToCString());
 	}
 
-	HRESULT hr;
 	UINT dxgiFactoryFlags = 0;
 
 #ifdef NVRHI_WITH_VALIDATION
-	const bool debugRuntimeLayer = d3d12_validation.GetBool();
-
+	const bool debugRuntimeLayer = d3d12_validation.GetBool() && s_d3d12GetDebugInterfaceFnPtr;
 	if (debugRuntimeLayer)
 	{
 		RefCountPtr<ID3D12Debug> pDebug;
-		hr = s_d3d12GetDebugInterfaceFnPtr(IID_PPV_ARGS(&pDebug));
+		HRESULT hr = s_d3d12GetDebugInterfaceFnPtr(IID_PPV_ARGS(&pDebug));
 		if (hr == S_OK && pDebug)
 			pDebug->EnableDebugLayer();
 
@@ -127,20 +124,21 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	}
 #endif
 
+	HRESULT hr;
 	hr = CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_dxgiFactory));
 	HR_ASSERT(hr, "Cannot create IDXGIFactory2 interface");
 
 	hr = s_d3d12CreateDeviceFnPtr(
 		rhiAdapter,
 		D3D_FEATURE_LEVEL_11_1,
-		IID_PPV_ARGS(&m_rhiDevice12));
+		IID_PPV_ARGS(&m_rhiDevice));
 	HR_RETURN(hr, "Failed to create D3D12 device");
 
 #ifdef NVRHI_WITH_VALIDATION
 	if (debugRuntimeLayer)
 	{
 		RefCountPtr<ID3D12InfoQueue> rhiInfoQueue;
-		m_rhiDevice12->QueryInterface(&rhiInfoQueue);
+		m_rhiDevice->QueryInterface(&rhiInfoQueue);
 
 		if (rhiInfoQueue)
 		{
@@ -166,27 +164,27 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	}
 #endif // NVRHI_WITH_VALIDATION
 	{
-		RefCountPtr<IDXGIFactory5> pDxgiFactory5;
-		if (SUCCEEDED(m_dxgiFactory->QueryInterface(IID_PPV_ARGS(&pDxgiFactory5))))
+		RefCountPtr<IDXGIFactory5> dxgiFactory5;
+		if (SUCCEEDED(m_dxgiFactory->QueryInterface(IID_PPV_ARGS(&dxgiFactory5))))
 		{
 			BOOL supported = 0;
-			if (SUCCEEDED(pDxgiFactory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &supported, sizeof(supported))))
+			if (SUCCEEDED(dxgiFactory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &supported, sizeof(supported))))
 			{
 				m_dxgiTearingSupported = (supported != 0);
 			}
 		}
 	}
 
-
-	rhiAdapter->QueryInterface(IID_PPV_ARGS(&m_dxgiAdapter));
-
 	D3D12_COMMAND_QUEUE_DESC rhiQueueDesc;
 	ZeroMemory(&rhiQueueDesc, sizeof(rhiQueueDesc));
+
 	rhiQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	rhiQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 	rhiQueueDesc.NodeMask = 1;
-	hr = m_rhiDevice12->CreateCommandQueue(&rhiQueueDesc, IID_PPV_ARGS(&m_rhiGraphicsQueue));
+
+	hr = m_rhiDevice->CreateCommandQueue(&rhiQueueDesc, IID_PPV_ARGS(&m_rhiGraphicsQueue));
 	HR_RETURN(hr, "Can't create D3D12 graphics queue");
+
 	m_rhiGraphicsQueue->SetName(L"Graphics Queue");
 
 	// TODO: ShaderAPIParams
@@ -195,7 +193,7 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	if (enableComputeQueue)
 	{
 		rhiQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-		hr = m_rhiDevice12->CreateCommandQueue(&rhiQueueDesc, IID_PPV_ARGS(&m_rhiComputeQueue));
+		hr = m_rhiDevice->CreateCommandQueue(&rhiQueueDesc, IID_PPV_ARGS(&m_rhiComputeQueue));
 		HR_RETURN(hr, "Can't create D3D12 compute queue");
 		m_rhiComputeQueue->SetName(L"Compute Queue");
 	}
@@ -203,7 +201,7 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 	if (enableCopyQueue)
 	{
 		rhiQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
-		hr = m_rhiDevice12->CreateCommandQueue(&rhiQueueDesc, IID_PPV_ARGS(&m_rhiCopyQueue));
+		hr = m_rhiDevice->CreateCommandQueue(&rhiQueueDesc, IID_PPV_ARGS(&m_rhiCopyQueue));
 		HR_RETURN(hr, "Can't create D3D12 copy queue");
 		m_rhiCopyQueue->SetName(L"Copy Queue");
 	}
@@ -256,9 +254,12 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 		caps.textureFormatsSupported[FORMAT_ATI1N] = false;
 	}
 
+	hr = rhiAdapter->QueryInterface(IID_PPV_ARGS(&m_dxgiAdapter));
+	HR_ASSERT(hr, "QueryInterface for IDXGIAdapter1 failed");
+
 	nvrhi::d3d12::DeviceDesc deviceDesc;
 	deviceDesc.errorCB = &CNVRHIMessageCallback::Instance;
-	deviceDesc.pDevice = m_rhiDevice12;
+	deviceDesc.pDevice = m_rhiDevice;
 	deviceDesc.pAdapter = m_dxgiAdapter;
 	deviceDesc.pGraphicsCommandQueue = m_rhiGraphicsQueue;
 	deviceDesc.pComputeCommandQueue = m_rhiComputeQueue;

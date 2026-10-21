@@ -56,7 +56,7 @@ protected:
 	bool							IsMainThread(uintptr_t threadId) const;
 
 	RefCountPtr<IDXGIFactory2>		m_dxgiFactory;
-	RefCountPtr<IDXGIAdapter3>		m_dxgiAdapter;
+	RefCountPtr<IDXGIAdapter1>		m_dxgiAdapter;
 	nvrhi::DeviceHandle				m_nvrhiDevice;
 	nvrhi::EventQueryHandle			m_nvrhiFrameWaitQuery;
 
