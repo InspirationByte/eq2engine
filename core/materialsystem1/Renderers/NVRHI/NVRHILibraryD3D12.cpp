@@ -387,7 +387,7 @@ void CNVRHIRenderLibD3D12::ExitAPI()
 
 	CNVRHIRenderLibDXGIBase::ExitAPI();
 
-	m_rhiDevice12 = nullptr;
+	m_rhiDevice = nullptr;
 	m_rhiGraphicsQueue = nullptr;
 	m_rhiComputeQueue = nullptr;
 	m_rhiCopyQueue = nullptr;
