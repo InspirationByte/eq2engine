@@ -15,6 +15,12 @@ Related documents:
 | [framework_multithreading.md](framework_multithreading.md) | Threads, locks, signals, TLS, atomics |
 | [framework_job_manager.md](framework_job_manager.md) | Job manager and `g_parallelJobs` |
 | [keyvalues.md](keyvalues.md) | KeyValues format and API (`framework/utils/KeyValues.h`) |
+| [public_core.md](public_core.md) | Core interfaces: interface mechanism, `g_eqCore`, logging, CPU info |
+| [public_filesystem.md](public_filesystem.md) | File system: search paths, files, packages, file search |
+| [public_localization.md](public_localization.md) | Localization: language files, tokens, helpers |
+| [public_rendering_overview.md](public_rendering_overview.md) | Material system overview: materials, variables, proxies, textures, debug drawing, fonts |
+| [public_egf_overview.md](public_egf_overview.md) | EGF (Entity Geometry Format): models, motion packages, physics models |
+| [tools_overview.md](tools_overview.md) | Content tools: egfCA, animCA, EGFMan, FCompress, ShaderCooker, TexCooker, localization tool |
 
 ## Overview
 
@@ -59,7 +65,7 @@ Public interfaces are declared in `public/` and implemented in `core/` or `share
 | `core/materialsystem1/` | Material system: materials, material vars and proxies, dynamic mesh, texture loader |
 | `core/materialsystem1/Renderers/` | Render manager/worker and RHI backends: `Shared/` (common ShaderAPI code), `Empty/` (null), `NVRHI/` (D3D12/Vulkan), `WGPU/` (WebGPU) |
 | `core/materialsystem1/Shaders/` | Material shader definitions: `Base/` (built into `eqBaseShaders`), `Engine/` |
-| `public/core/` | Core interfaces: `IDkCore`, `IFileSystem`, `IConsoleCommands`, `ICommandLine`, `ILocalize`, `IEqParallelJobs`, `IEqCPUServices`, `InterfaceManager` |
+| `public/core/` | Core interfaces: `IDkCore`, `IFileSystem`, `IConsoleCommands`, `ICommandLine`, `ILocalize`, `IEqParallelJobs`, `IEqCPUServices`, `InterfaceManager` — see [public_core.md](public_core.md) |
 | `public/materialsystem1/` | Material system interfaces, `BaseShader`, `MeshBuilder`, render definitions; `renderers/` holds RHI interfaces (`IShaderAPI`, `ITexture`, `IGPUBuffer`, ...) |
 | `public/{audio,font,input,physics,render,egf,dkphysics}/` | Public headers of the corresponding `shared/` libraries |
 | `shared/dpk/` | DPK package and ZIP readers/writer |
