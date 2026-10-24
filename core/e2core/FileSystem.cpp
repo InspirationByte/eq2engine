@@ -12,7 +12,7 @@
 #include <Windows.h>
 #include <direct.h>	// _mkdir()
 #else
-#include <unistd.h> // rmdir()
+#include <unistd.h> // rmdir(), getcwd()
 #define USE_PATH_TO_FILE_MAPPING
 #endif
 
@@ -682,6 +682,70 @@ EqStringRef CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFi
 	}
 
 	return fullPath;
+}
+
+EqStringRef CFileSystem::GetAbsoluteFullPath(ESearchPath search, const char* dirOrFileName) const
+{
+	constexpr int MAX_PATH_LEN = 1024;
+
+	EqString fullPath = GetAbsolutePath(search, dirOrFileName);
+
+#ifdef _WIN32
+
+	EqWString fullWPath;
+	AnsiUnicodeConverter(fullWPath, fullPath);
+
+	wchar_t fullAbsWPath[MAX_PATH_LEN]{ 0 };
+	GetFullPathNameW(fullWPath, MAX_PATH_LEN, fullAbsWPath, nullptr);
+
+	AnsiUnicodeConverter(fullPath, fullAbsWPath);
+#else
+	// like GetFullPathName: lexical normalization, path does not have to exist
+	if (fullPath.Length() && fullPath[0] != CORRECT_PATH_SEPARATOR)
+	{
+		char cwdPath[MAX_PATH_LEN];
+		if (getcwd(cwdPath, sizeof(cwdPath)))
+			fullPath = fnmPathCombine(cwdPath, fullPath);
+	}
+
+	Array<EqStringRef> pathParts(PP_SL);
+	int partStart = 0;
+	for (int i = 0; i <= fullPath.Length(); ++i)
+	{
+		if (i < fullPath.Length() && fullPath[i] != CORRECT_PATH_SEPARATOR)
+			continue;
+
+		const EqStringRef part(fullPath.ToCString() + partStart, i - partStart);
+		partStart = i + 1;
+
+		if (part.Length() == 0 || part == ".")
+			continue;
+
+		if (part == "..")
+		{
+			if (pathParts.numElem())
+				pathParts.popBack();
+			continue;
+		}
+
+		pathParts.append(part);
+	}
+
+	EqString normalizedPath;
+	for (const EqStringRef part : pathParts)
+	{
+		normalizedPath.Append(CORRECT_PATH_SEPARATOR);
+		normalizedPath.Append(part);
+	}
+
+	if (!normalizedPath.Length())
+		normalizedPath.Append(CORRECT_PATH_SEPARATOR);
+
+	fullPath = normalizedPath;
+#endif
+
+	// fullPath is local, return it from temp string storage
+	return EqStringRef::GetTempString(fullPath.ToCString(), fullPath.Length());
 }
 
 bool CFileSystem::FileRemove(const char* filename, ESearchPath search ) const

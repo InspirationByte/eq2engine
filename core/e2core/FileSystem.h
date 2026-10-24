@@ -133,6 +133,7 @@ protected:
 	bool						InitNextPath(FSFindData* findData) const;
 	
 	EqStringRef					GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const;
+	EqStringRef					GetAbsoluteFullPath(ESearchPath search, const char* dirOrFileName) const;
 	EqStringRef					GetSearchPath(ESearchPath search, int directoryId = -1) const;
 	
 	using SPWalkFunc = EqFunction<bool(EqStringRef filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags)>;
