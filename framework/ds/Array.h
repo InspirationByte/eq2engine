@@ -98,6 +98,7 @@ public:
 		// free up the listPtr if no data is being reserved
 		if (newCapacity <= 0)
 		{
+			numOfElements = 0;
 			free();
 			return;
 		}
@@ -160,6 +161,8 @@ public:
 
 	void resize(int newSize, int& numOfElements)
 	{
+		if (newSize < numOfElements)
+			numOfElements = newSize;
 		ASSERT_MSG(newSize <= SIZE, "FixedArrayStorage<%s> capacity is %d, required %d", typeid(T).name(), getSize(), newSize);
 	}
 
@@ -209,7 +212,7 @@ public:
 	BufferedArrayStorage(BufferedArrayStorage&& other)
 		: m_dynamicStorage(std::move(other.m_dynamicStorage))
 	{
-		memmove(FixedStorage::m_data, other.m_data, SIZE * sizeof(T));
+		memmove(FixedStorage::getData(), other.getData(), SIZE * sizeof(T));
 	}
 
 	void free()
@@ -219,14 +222,26 @@ public:
 
 	void resize(int newCapacity, int& numOfElements)
 	{
-		const bool wasFixedStorage = m_dynamicStorage.m_data == nullptr;
+		const bool wasFixedStorage = m_dynamicStorage.getData() == nullptr;
 		if(newCapacity > SIZE)
 		{
 			m_dynamicStorage.resize(newCapacity, numOfElements);
 			
 			// copy data from fixed storage
-			if(!wasFixedStorage)
-				memmove(m_dynamicStorage.m_data, FixedStorage::m_data, SIZE * sizeof(T));
+			if(wasFixedStorage)
+				memmove(m_dynamicStorage.getData(), FixedStorage::getData(), SIZE * sizeof(T));
+		}
+		else
+		{
+			if (newCapacity < numOfElements)
+				numOfElements = newCapacity;
+
+			// fits into fixed storage again, move data back and release dynamic storage
+			if (!wasFixedStorage)
+			{
+				memmove(FixedStorage::getData(), m_dynamicStorage.getData(), numOfElements * sizeof(T));
+				m_dynamicStorage.free();
+			}
 		}
 	}
 
@@ -241,12 +256,12 @@ public:
 		ASSERT_FAIL("BufferedArrayStorage: swap unsupported");
 	}
 
-	int					getSize() const						{ return max(SIZE, m_dynamicStorage.m_size); }
-	int					getGranularity() const				{ return m_dynamicStorage.m_granularity;}
-	void				setGranularity(int newGranularity)	{ m_dynamicStorage.m_granularity = newGranularity; }
+	int					getSize() const						{ return max(SIZE, m_dynamicStorage.getSize()); }
+	int					getGranularity() const				{ return m_dynamicStorage.getGranularity();}
+	void				setGranularity(int newGranularity)	{ m_dynamicStorage.setGranularity(newGranularity); }
 
-	T*					getData()							{ return m_dynamicStorage.m_data ? m_dynamicStorage.m_data : FixedStorage::m_data; }
-	const T*			getData() const						{ return m_dynamicStorage.m_data ? m_dynamicStorage.m_data : FixedStorage::m_data; }
+	T*					getData()							{ return m_dynamicStorage.getData() ? m_dynamicStorage.getData() : FixedStorage::getData(); }
+	const T*			getData() const						{ return m_dynamicStorage.getData() ? m_dynamicStorage.getData() : FixedStorage::getData(); }
 	const PPSourceLine	getSL() const 						{ return m_dynamicStorage.m_sl; }
 
 	DynamicArrayStorage<T>&			getDynamicStorage()			{ return m_dynamicStorage; }
@@ -609,6 +624,11 @@ inline T& ArrayBase<T, STORAGE_TYPE>::operator[](int index)
 template< typename T, typename STORAGE_TYPE >
 inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=(const ArrayBase<T, STORAGE_TYPE>& other)
 {
+	if (this == &other)
+		return *this;
+
+	clear();
+
 	STORAGE_TYPE::setGranularity(other.STORAGE_TYPE::getGranularity());
 
 	reserve(other.STORAGE_TYPE::getSize());
@@ -638,6 +658,9 @@ inline void ArrayBase<T, STORAGE_TYPE>::resize(int newSize)
 	{
 		T* listPtr = STORAGE_TYPE::getData();
 		ArrayStorageBase<T>::destructElements(listPtr + newSize, m_numElem - newSize);
+
+		// storage may keep larger capacity due to granularity, so it would not shrink the count
+		m_numElem = newSize;
 	}
 
 	STORAGE_TYPE::resize(newSize, m_numElem);

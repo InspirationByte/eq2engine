@@ -7,4 +7,9 @@ ENABLE_MATSYSTEM = false
 BUILD_SINGLE_FILE = true
 
 dofile "premake5.lua"
+
+-- PPMem is disabled in tests: an overwritten guard checkmark makes PPFree release a wrong pointer
+workspace(WORKSPACE_NAME)
+	defines { "PPMEM_DISABLED" }
+
 include "tests"
