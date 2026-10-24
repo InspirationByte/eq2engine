@@ -24,6 +24,10 @@ Before editing:
 4. Check whether another agent is modifying the same files. Partition work or coordinate before
    editing overlapping code.
 
+## Commits
+
+- Commit only when the user asks. Write commit messages following `docs/commit_messages.md`.
+
 ## Validation
 
 - TODO
