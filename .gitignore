@@ -20,6 +20,9 @@ android-project/build/
 android-project/.gradle/
 android-project/.idea
 
+build/*
+samples/*/build
+
 src_dependency/wxWidgets/*
 src_dependency/openal-soft/*
 src_dependency/SDL2/*

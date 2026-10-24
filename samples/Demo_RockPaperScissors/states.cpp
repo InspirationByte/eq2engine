@@ -19,6 +19,7 @@
 #ifdef IMGUI_ENABLED
 #include <imgui.h>
 #include "audio/SoundScriptEditorUI.h"
+#include "imgui_backend/imgui_host.h"
 #endif
 
 #include "state_sample_game_demo.h"
@@ -50,7 +51,7 @@ bool InitAppStates()
 	Networking::InitNetworking();
 #endif
 #ifdef IMGUI_ENABLED
-	g_consoleInput->AddDebugMenu("ENGINE/Sound/Script Editor UI", SoundScriptEditorUIDraw);
+	g_imGuiHost->AddDebugMenu("ENGINE/SOUND/SCRIPT EDITOR UI", SoundScriptEditorUIDraw);
 #endif
 
 	eqAppStateMng::SetCurrentStateType(APP_STATE_SAMPLE_GAME_DEMO);

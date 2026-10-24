@@ -120,13 +120,13 @@ CState_SampleGameDemo::CState_SampleGameDemo()
 void CState_SampleGameDemo::OnEnter(CAppStateBase* from)
 {
 	g_sounds->Init(1000.0f, s_soundChannels);
-	g_sounds->PrecacheSound("effect.rock");
-	g_sounds->PrecacheSound("effect.paper");
-	g_sounds->PrecacheSound("effect.scissors");
-
 	g_pfxRender->Init();
 
 	InitMovie();
+
+	g_sounds->PrecacheSound("effect.rock");
+	g_sounds->PrecacheSound("effect.paper");
+	g_sounds->PrecacheSound("effect.scissors");
 
 	{
 		static constexpr const int particlesGroupId = StringIdConst24("particles/translucent");
@@ -152,16 +152,12 @@ void CState_SampleGameDemo::InitMovie()
 		m_moviePlayer->Start();
 		//m_videoPlayer->SetTimeScale(0.5f);
 
-		KVSection soundSec;
-		soundSec.SetName("test.video_stream");
-		soundSec.SetKey("wave", EqString("$") + VIDEO_FILE_NAME);
-		soundSec.SetKey("is2d", true);
-		soundSec.SetKey("loop", true);
-		soundSec.SetKey("channel", "CHAN_STREAM");
-		g_sounds->CreateSoundScript(&soundSec);
-		g_sounds->PrecacheSound(soundSec.GetName());
+		EqStringRef soundName = "test.video_stream";
 
-		EmitParams ep(soundSec.GetName());
+		g_sounds->LoadScriptBank("scripts/EmitterSounds.txt");
+		g_sounds->PrecacheSound(soundName);
+
+		EmitParams ep(soundName);
 		g_sounds->EmitSound(&ep);
 	}
 }
@@ -402,6 +398,8 @@ bool CState_SampleGameDemo::Update(float fDt)
 		}
 	}
 
+	g_sounds->Update();
+
 	int numLost = 0;
 	for (int i = 0; i < static_cast<int>(RPSType::COUNT); ++i)
 	{
@@ -429,8 +427,6 @@ bool CState_SampleGameDemo::Update(float fDt)
 	rendPassRecorder->Complete();
 
 	g_matSystem->QueueCommandBuffer(cmdRecorder->End());
-
-	g_sounds->Update();
 	return true;
 }
 
