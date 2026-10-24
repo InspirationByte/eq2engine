@@ -7,8 +7,7 @@ LIB_PATHS=
 LIB_NAMES_PREFIX=
 DESTINATION_PATH=lib
 
-LIB_PATHS=$LIB_PATHS$(pwd)/eq2engine/src_dependency/ffmpeg/lib
-LIB_NAMES_PREFIX+=(libopenal libav libsw)
+LIB_NAMES_PREFIX+=(libopenal)
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB_PATHS
 
