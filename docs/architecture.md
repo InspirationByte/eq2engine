@@ -220,8 +220,10 @@ Tools are not built in `Profile` and `Retail` configurations.
 
 ### Tests (`premake5-tests.lua`, `tests/premake5.lua`)
 
-Workspace `auto_tests` (tools and material system off, single-file build). Projects:
-`testsCommonLib`, `ds_tests` (`tests/ds/`), `scripting_tests` (`tests/scripting/`), all on GoogleTest.
+Workspace `auto_tests` (tools and material system off, single-file build), generated into
+`build/auto_tests/`. Projects: `testsCommonLib`, `ds_tests` (`tests/ds/`), `ppmem_tests`
+(`tests/ppmem/`), `scripting_tests` (`tests/scripting/`), all on GoogleTest. PPMem is enabled only in
+`Debug`; other configurations define `PPMEM_DISABLED` and `ppmem_tests` skips there.
 
 ### Samples
 
@@ -234,6 +236,11 @@ Options a workspace can set before including the engine (defaults in `premake5.l
 `WORKSPACE_NAME`, `ENGINE_DIR`, `WINSDK_VER`, `BUILD_SINGLE_FILE` (disables unity build),
 `ENABLE_TOOLS`, `ENABLE_GUI_TOOLS`, `ENABLE_MATSYSTEM`, `ENABLE_TESTS`, `ENABLE_LIVEPP`.
 Dependency paths for SDL2 and OpenAL can be overridden with `SDL2_DIR` / `OPENAL_DIR`.
+
+`BUILD_DIR` (default `<main script dir>/build`) holds everything a workspace generates: project files
+(including its own copies of the engine projects), intermediates, libraries and binaries. Each
+workspace therefore builds independently; workspaces sharing a main script folder must set
+different `BUILD_DIR` values, as `premake5-tests.lua` does.
 
 Configurations: `Debug`, `Release` (optimized, asserts and debug UI on), `ReleaseAsan`,
 `Profile` (`_PROFILE`, no asserts, no RTTI), `Retail` (`_RETAIL`, no debug features, no RTTI).
