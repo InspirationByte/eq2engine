@@ -23,6 +23,11 @@ Before editing:
 3. Read `docs/building.md`, `docs/codestyle.md` and the relevant parts of `docs/architecture.md`.
 4. Check whether another agent is modifying the same files. Partition work or coordinate before
    editing overlapping code.
+5. At the start of each new task in a long-running session, and always right before committing,
+   check whether this file or the docs you rely on changed since you read them
+   (`git status --short -- AGENTS.md docs/`, `git log -1 --format=%h -- AGENTS.md docs/`).
+   Re-read any that changed and follow the current version; other agents may update the rules
+   in parallel sessions.
 
 ## Commits
 
