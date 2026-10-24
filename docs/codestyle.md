@@ -133,7 +133,9 @@ The reference shows the general layout; where it disagrees with this document, t
 
   Language-support parts of `std` (`std::move`, `std::forward`, type traits,
   `std::initializer_list`) are fine.
-- Pass the memory-tracking source location to containers: `Array<int> m_items{ PP_SL };`.
+- Pass the memory-tracking source location to containers and allocating constructors:
+  `Array<int> m_items{ PP_SL };`. `PPSourceLine::Empty()` disables allocation tracking — do not
+  use it as a substitute for `PP_SL` (see `framework_ds.md`).
 - All allocations go through PPMem (`core/ppmem.h`) so they are tracked:
   - `PPNew T(...)` instead of `new T(...)` (`delete` stays as is);
   - `PPAlloc(size)` instead of `malloc`, `PPReAlloc(ptr, size)` instead of `realloc`,

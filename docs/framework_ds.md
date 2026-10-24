@@ -32,6 +32,18 @@ Array<EqString> list(PP_SL);
 Nested containers (e.g. `Map<int, Array<int>>`) receive the source line automatically through
 `PPSLValueCtor`.
 
+`PPSourceLine` (`framework/core/ppsourceline.h`) is a compact file + line value:
+
+- `PP_SL` expands to `PPSourceLine::Make(__FILE__, __LINE__)` — the allocation is tracked and
+  attributed to that place in the code (memory statistics, leak reports).
+- `PPSourceLine::Empty()` — no source information: **the allocation is not tracked** by PPMem.
+  Do not pass it instead of `PP_SL` just to satisfy a constructor; use it only where tracking is
+  deliberately not wanted.
+- A function or class that allocates on behalf of its caller can take a `PPSourceLine` parameter
+  and forward it (`MemoryPool(sl)`, `CMemoryStream(sl)`, `PPNewSL(sl)`), so the memory is
+  attributed to the caller's `PP_SL`.
+- With `PPMEM_DISABLED`, `PP_SL` itself becomes `PPSourceLine::Empty()`.
+
 ## Arrays — `Array.h`
 
 | Type | Storage |
