@@ -54,6 +54,17 @@ lines:
   Other trailers (`Signed-off-by`, ...) are not used.
 - Merge commits keep the default git message (`Merge branch 'develop' into ...`).
 
+## Review before committing
+
+Agents never run `git commit` right away. First present for review:
+
+1. the files that will be staged (only files belonging to the task, never unrelated changes in the
+   shared worktree);
+2. the complete commit message, exactly as it will be committed, including trailers.
+
+Commit only after the user approves; if the user requests changes, update the message or file list
+and present it again.
+
 ## Examples
 
 ```

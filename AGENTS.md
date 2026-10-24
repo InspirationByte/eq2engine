@@ -27,6 +27,9 @@ Before editing:
 ## Commits
 
 - Commit only when the user asks. Write commit messages following `docs/commit_messages.md`.
+- Before running `git commit`, show the user the list of files to be committed and the full commit
+  message, and wait for their approval. Apply requested corrections and show the result again;
+  commit only after the user confirms.
 
 ## Validation
 
