@@ -143,7 +143,7 @@ void CState_SampleGameDemo::InitMovie()
 		m_moviePlayer->Rewind();
 	};
 
-	static constexpr const char* VIDEO_FILE_NAME = "resources/video/testvideo.mp4";
+	static constexpr const char* VIDEO_FILE_NAME = "resources/video/testvideo.webm";
 
 	const bool result = m_moviePlayer->Init(VIDEO_FILE_NAME);
 	ASSERT(result);
