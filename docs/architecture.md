@@ -81,7 +81,7 @@ Public interfaces are declared in `public/` and implemented in `core/` or `share
 | `shared/equi/` | EqUI interface library: manager, controls, scheme |
 | `shared/imgui_backend/` | ImGui host and material-system renderer backend |
 | `shared/scripting/` | ESL — Lua binding library |
-| `shared/movie/` | FFmpeg-based movie player |
+| `shared/movie/` | WebM movie player: AV1 video (dav1d), Vorbis audio, YUV to RGBA conversion on GPU (`MovieYUV` shader) |
 | `shared/network/` | UDP networking |
 | `shared/input/` | Input command binder |
 | `shared/sys/` | Application host: main loop, window, states, console, joystick, config loader; `sys/scripting/` exposes engine subsystems to ESL, `sys/imgui/` is the ImGui platform backend |
@@ -204,7 +204,7 @@ All are static libraries using `public` and `shared` include paths.
 | `networkLib` | `network/**` except `NETThread.cpp` | (zlib) |
 | `soundSystemLib` | `audio/**` | (minivorbis, openal-soft, imgui) |
 | `physicsLib` | `physics/**` | (bullet2) |
-| `movieLib` | `movie/**` | (ffmpeg; disabled on Android) |
+| `movieLib` | `movie/**` | (dav1d, nestegg, minivorbis; disabled on Android) |
 | `scriptLib` | `scripting/**` | (lua) |
 | `sysLib` | `sys/**`, `input/**` | scriptLib, renderUtilLib, equiLib, movieLib, imguiBackendLib (SDL2, imgui_lua, tracy) |
 | `egfLib` | `egf/**` | studioFileLib (bullet2, zlib, openfbx, meshoptimizer) — `ENABLE_TOOLS` only |

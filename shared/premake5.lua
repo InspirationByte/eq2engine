@@ -150,7 +150,7 @@ project "movieLib"
 	properties { "staticlib", "unitybuild" }
 	uses { 
 		"public", "shared",
-		"ffmpeg"
+		"dav1d", "nestegg", "minivorbis"
 	}
     files {
 		"movie/**",
