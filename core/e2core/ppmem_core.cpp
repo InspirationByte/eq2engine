@@ -19,6 +19,16 @@
 #include "core/ppmem.h"
 
 #ifndef PPMEM_DISABLED
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#else
+#include <sys/mman.h>
+#include <unistd.h>
+#endif
+#endif
+
+#ifndef PPMEM_DISABLED
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
 #include "core/IFileSystem.h"
@@ -29,7 +39,7 @@ constexpr const uint PPMEM_IDENT_FREED	   = MAKECHAR4('P','P','F','R');
 constexpr const uint PPMEM_CHECKMARK	   = MAKECHAR4('P','P','M','E');
 constexpr const uint PPMEM_CHECKMARK_FREED = MAKECHAR4('F','R','E','E');
 constexpr const uint PPMEM_HEAD_MARKS = 8;
-constexpr const uint PPMEM_EXTRA_MARKS = 20;
+constexpr const uint PPMEM_TAIL_MARKS = 20;
 
 constexpr const uint PPMEM_MAX_STAT_THREADS = 128;
 
@@ -353,40 +363,91 @@ static int PPMemCmpCheckmarks(const ubyte* x, int numMarks)
 	return diff;
 }
 
-static int PPMemCmpTailCheckmarks(const ubyte* x)
-{
-	return PPMemCmpCheckmarks(x, PPMEM_EXTRA_MARKS);
-}
-
-static int PPMemCmpHeadCheckmarks(const PPAllocInfo* alloc)
-{
-	return PPMemCmpCheckmarks(reinterpret_cast<const ubyte*>(alloc->checkMarks), PPMEM_HEAD_MARKS);
-}
-
-static void PPMemSetCheckmarks(uint* marks, int numMarks, uint value)
+static void PPMemFillCheckmarks(uint* marks, int numMarks, uint value)
 {
 	for (int i = 0; i < numMarks; ++i)
 		marks[i] = value;
 }
 
-static void PPMemCheckBlock(const PPAllocInfo* alloc)
+static void PPMemCheckBlock(const PPAllocInfo* allocInfo)
 {
-	const uint* tailCheckMark = reinterpret_cast<const uint*>(reinterpret_cast<const ubyte*>(alloc + 1) + alloc->size);
+	const uint* tailCheckMarks = reinterpret_cast<const uint*>(reinterpret_cast<const ubyte*>(allocInfo + 1) + allocInfo->size);
 
-	const int headDiff = PPMemCmpHeadCheckmarks(alloc);
-	const int tailDiff = PPMemCmpTailCheckmarks(reinterpret_cast<const ubyte*>(tailCheckMark));
-	ASSERT_MSG(headDiff == 0, "buffer underflow by %d bytes of %s:%d, investigate with ASAN", headDiff, alloc->sl.GetFileName(), alloc->sl.GetLine());
-	ASSERT_MSG(tailDiff == 0, "buffer overflow by %d bytes of %s:%d, investigate with ASAN", tailDiff, alloc->sl.GetFileName(), alloc->sl.GetLine());
+	const int headDiff = PPMemCmpCheckmarks(reinterpret_cast<const ubyte*>(allocInfo->checkMarks), PPMEM_HEAD_MARKS);
+	const int tailDiff = PPMemCmpCheckmarks(reinterpret_cast<const ubyte*>(tailCheckMarks), PPMEM_TAIL_MARKS);
+	ASSERT_MSG(headDiff == 0, "buffer underflow by %d bytes of %s:%d, investigate with ASAN", headDiff, allocInfo->sl.GetFileName(), allocInfo->sl.GetLine());
+	ASSERT_MSG(tailDiff == 0, "buffer overflow by %d bytes of %s:%d, investigate with ASAN", tailDiff, allocInfo->sl.GetFileName(), allocInfo->sl.GetLine());
 }
+
+#ifndef PPMEM_DISABLED
+
+// smallest page size of supported platforms, larger pages are aligned to it too
+constexpr const uintptr_t PPMEM_PAGE_SIZE = 4096;
+
+static bool PPMemIsPageReadable(const void* addr)
+{
+#ifdef _WIN32
+	MEMORY_BASIC_INFORMATION memInfo;
+	if (!VirtualQuery(addr, &memInfo, sizeof(memInfo)))
+		return false;
+	return memInfo.State == MEM_COMMIT && !(memInfo.Protect & (PAGE_NOACCESS | PAGE_GUARD));
+#else
+	const uintptr_t pageSize = static_cast<uintptr_t>(sysconf(_SC_PAGESIZE));
+	void* page = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(addr) & ~(pageSize - 1));
+	unsigned char residency = 0;
+	return mincore(page, 1, &residency) == 0;
+#endif
+}
+
+// returns header of tracked block or nullptr for memory allocated without tracking
+static PPAllocInfo* PPMemGetAllocInfo(void* ptr)
+{
+	if (ptr == nullptr)
+		return nullptr;
+
+	PPAllocInfo* allocInfo = reinterpret_cast<PPAllocInfo*>(ptr) - 1;
+
+	// last head mark lies right before user data and is always readable.
+	// If it's not there, block is untracked or damaged by underflow - then the rest of the header
+	// may start on a page untracked block doesn't own, check it before reading ident
+	if (allocInfo->checkMarks[PPMEM_HEAD_MARKS - 1] != PPMEM_CHECKMARK)
+	{
+		const uintptr_t headerPage = reinterpret_cast<uintptr_t>(allocInfo) & ~(PPMEM_PAGE_SIZE - 1);
+		const uintptr_t userPage = (reinterpret_cast<uintptr_t>(ptr) - 1) & ~(PPMEM_PAGE_SIZE - 1);
+		if (headerPage != userPage && !PPMemIsPageReadable(allocInfo))
+			return nullptr;
+	}
+
+	return allocInfo->ident == PPMEM_IDENT ? allocInfo : nullptr;
+}
+
+static void PPBeforeFreeAllocInternal(PPAllocInfo* allocInfo)
+{
+	PPMemCheckBlock(allocInfo);
+
+	if (!PPGetStateList().isEmpty())
+	{
+		PPMemState& st = *allocInfo->state;
+		st.OnFree(allocInfo->size, allocInfo->sl);
+	}
+
+	// set check marks to indicate freed mem regions
+	allocInfo->ident = PPMEM_IDENT_FREED;
+	uint* tailCheckMarks = reinterpret_cast<uint*>(reinterpret_cast<ubyte*>(allocInfo + 1) + allocInfo->size);
+	PPMemFillCheckmarks(allocInfo->checkMarks, PPMEM_HEAD_MARKS, PPMEM_CHECKMARK_FREED);
+	PPMemFillCheckmarks(tailCheckMarks, PPMEM_TAIL_MARKS, PPMEM_CHECKMARK_FREED);
+}
+
+#endif // !PPMEM_DISABLED
 
 IEXPORTS void PPDCheck(void* ptr)
 {
 #ifndef PPMEM_DISABLED
-	PPAllocInfo* alloc = (PPAllocInfo*)ptr - 1;
-	if (ptr == nullptr || alloc->ident != PPMEM_IDENT)
+	PPAllocInfo* allocInfo = PPMemGetAllocInfo(ptr);
+	if (!allocInfo)
 		return;
 
-	PPMemCheckBlock(alloc);
+	PPMemCheckBlock(allocInfo);
 #endif
 }
 
@@ -413,8 +474,9 @@ static void* PPInitAllocInternal(void* alloc, size_t size, size_t alignment, con
 		allocInfo->state = &st;
 
 		allocInfo->ident = PPMEM_IDENT;
-		PPMemSetCheckmarks(allocInfo->checkMarks, PPMEM_HEAD_MARKS, PPMEM_CHECKMARK);
-		PPMemSetCheckmarks((uint*)((ubyte*)userPtr + size), PPMEM_EXTRA_MARKS, PPMEM_CHECKMARK);
+		uint* tailCheckMarks = reinterpret_cast<uint*>(reinterpret_cast<ubyte*>(userPtr) + size);
+		PPMemFillCheckmarks(allocInfo->checkMarks, PPMEM_HEAD_MARKS, PPMEM_CHECKMARK);
+		PPMemFillCheckmarks(tailCheckMarks, PPMEM_TAIL_MARKS, PPMEM_CHECKMARK);
 	}
 
 	st.OnAlloc(allocInfo->size, sl);
@@ -442,11 +504,12 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 	{
 		void* mem = PPInternalMalloc(size);
 		ASSERT_MSG(mem, "alloc: no mem left");
+		
 		//TracyAlloc(mem, size);
 		return mem;
 	}
 
-	void* alloc = PPInternalMalloc(sizeof(PPAllocInfo) + size + sizeof(uint) * PPMEM_EXTRA_MARKS);
+	void* alloc = PPInternalMalloc(sizeof(PPAllocInfo) + size + sizeof(uint) * PPMEM_TAIL_MARKS);
 	return PPInitAllocInternal(alloc, size, 0, sl);
 #endif // PPMEM_DISABLED
 }
@@ -464,13 +527,14 @@ void* PPDAlignedAlloc(size_t size, size_t alignment, const PPSourceLine& sl)
 	{
 		void* mem = PPInternalAlignedMalloc(size, alignment);
 		ASSERT_MSG(mem, "alloc: no mem left");
+		
 		//TracyAlloc(mem, size);	
 		return mem;
 	}
 
 	const size_t alignedAllocInfoSize = max(sizeof(PPAllocInfo), alignment);
 
-	void* alloc = PPInternalAlignedMalloc(alignedAllocInfoSize + size + sizeof(uint) * PPMEM_EXTRA_MARKS, alignment);
+	void* alloc = PPInternalAlignedMalloc(alignedAllocInfoSize + size + sizeof(uint) * PPMEM_TAIL_MARKS, alignment);
 	return PPInitAllocInternal(alloc, size, alignment, sl);
 #endif // PPMEM_DISABLED
 }
@@ -496,71 +560,60 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 	// tracking is a property of the block chosen when it was allocated, reallocation keeps it:
 	// untracked block stays untracked (its size is unknown to copy into tracked one),
 	// tracked block stays tracked even when source line is not provided
-	PPAllocInfo* r_alloc = (PPAllocInfo*)ptr - 1;
-	if (r_alloc->ident != PPMEM_IDENT)
+	PPAllocInfo* oldAllocInfo = PPMemGetAllocInfo(ptr);
+	if (!oldAllocInfo)
 	{
 		void* mem = PPInternalReAlloc(ptr, size);
 		ASSERT_MSG(mem, "realloc: no mem left!");
+		
 		return mem;
 	}
 
-	ASSERT_MSG(r_alloc->alignment == 0, "ReAlloc used on aligned allocation - not supported yet");
+	ASSERT_MSG(oldAllocInfo->alignment == 0, "ReAlloc used on aligned allocation - not supported yet");
 
-	PPMemState& r_st = *r_alloc->state;
-	PPMemCheckBlock(r_alloc);
+	PPMemState& r_st = *oldAllocInfo->state;
 
 	// keep allocation attributed to its original place if caller has no source line
-	const PPSourceLine newSl = sl.data ? sl : r_alloc->sl;
+	const PPSourceLine newSl = sl.data ? sl : oldAllocInfo->sl;
 
 	//TracyFree(ptr);
 
-	// decrement allocInfo counters
+	// treat it as like deallocation
 	// as realloc might change the pointer
-	r_st.OnFree(r_alloc->size, r_alloc->sl);
+	PPBeforeFreeAllocInternal(oldAllocInfo);
 
-	PPAllocInfo* alloc = (PPAllocInfo*)PPInternalReAlloc((void*)r_alloc, sizeof(PPAllocInfo) + size + sizeof(uint) * PPMEM_EXTRA_MARKS);
-	if (!alloc)
+	PPAllocInfo* allocInfo = (PPAllocInfo*)PPInternalReAlloc((void*)oldAllocInfo, sizeof(PPAllocInfo) + size + sizeof(uint) * PPMEM_TAIL_MARKS);
+	if (!allocInfo)
 	{
-		// old block is still valid
 		ASSERT_FAIL("realloc: no mem left!");
-		r_st.OnAlloc(r_alloc->size, r_alloc->sl);
+
+		// old block is still valid
+		r_st.OnAlloc(oldAllocInfo->size, oldAllocInfo->sl);
 		return nullptr;
 	}
 
 	PPMemState& st = PPGetState();
 
 	// actual pointer address
-	void* newUserPtr = alloc + 1;
+	void* newUserPtr = allocInfo + 1;
 	{
-		alloc->id = Atomic::Increment(st.allocIdCounter);
-		alloc->state = &st;
-		alloc->size = size;
-		alloc->sl = newSl;
+		allocInfo->id = Atomic::Increment(st.allocIdCounter);
+		allocInfo->state = &st;
+		allocInfo->size = size;
+		allocInfo->sl = newSl;
+		allocInfo->ident = PPMEM_IDENT;
 
-		// restore head marks in case underflow was reported
-		PPMemSetCheckmarks(alloc->checkMarks, PPMEM_HEAD_MARKS, PPMEM_CHECKMARK);
-		PPMemSetCheckmarks((uint*)((ubyte*)newUserPtr + size), PPMEM_EXTRA_MARKS, PPMEM_CHECKMARK);
+		uint* tailCheckMarks = reinterpret_cast<uint*>(reinterpret_cast<ubyte*>(newUserPtr) + size);
+		PPMemFillCheckmarks(allocInfo->checkMarks, PPMEM_HEAD_MARKS, PPMEM_CHECKMARK);
+		PPMemFillCheckmarks(tailCheckMarks, PPMEM_TAIL_MARKS, PPMEM_CHECKMARK);
 	}
 
-	st.OnAlloc(alloc->size, alloc->sl);
+	st.OnAlloc(allocInfo->size, allocInfo->sl);
+
 	//TracyAlloc(newUserPtr, size);
 
 	return newUserPtr;
 #endif // PPMEM_DISABLED
-}
-
-static void PPFreeAllocInternal(PPAllocInfo* alloc)
-{
-	PPMemState& st = *alloc->state;
-
-	PPMemCheckBlock(alloc);
-
-	// set check marks to indicate freed mem regions
-	alloc->ident = PPMEM_IDENT_FREED;
-	PPMemSetCheckmarks(alloc->checkMarks, PPMEM_HEAD_MARKS, PPMEM_CHECKMARK_FREED);
-	PPMemSetCheckmarks((uint*)((ubyte*)(alloc + 1) + alloc->size), PPMEM_EXTRA_MARKS, PPMEM_CHECKMARK_FREED);
-
-	st.OnFree(alloc->size, alloc->sl);
 }
 
 void PPFree(void* ptr)
@@ -575,18 +628,15 @@ void PPFree(void* ptr)
 
 	//TracyFree(ptr);
 
-	PPAllocInfo* allocInfo = reinterpret_cast<PPAllocInfo*>(ptr) - 1;
-	if(allocInfo->ident != PPMEM_IDENT)
+	PPAllocInfo* allocInfo = PPMemGetAllocInfo(ptr);
+	if(!allocInfo)
 	{
 		PPInternalFree(ptr);
 		return;
 	}
 
 	ASSERT_MSG(allocInfo->alignment == 0, "Misuse of Free on aligned allocation");
-	void* alloc = reinterpret_cast<ubyte*>(ptr) - max(sizeof(PPAllocInfo), size_t(allocInfo->alignment));
-
-	if(!PPGetStateList().isEmpty())
-		PPFreeAllocInternal(allocInfo);
+	PPBeforeFreeAllocInternal(allocInfo);
 
 	PPInternalFree(allocInfo);
 #endif // PPMEM_DISABLED
@@ -604,8 +654,8 @@ void PPAlignedFree(void* ptr)
 
 	//TracyFree(ptr);
 
-	PPAllocInfo* allocInfo = (PPAllocInfo*)ptr - 1;
-	if(allocInfo->ident != PPMEM_IDENT)
+	PPAllocInfo* allocInfo = PPMemGetAllocInfo(ptr);
+	if(!allocInfo)
 	{
 		PPInternalAlignedFree(ptr);
 		return;
@@ -613,10 +663,9 @@ void PPAlignedFree(void* ptr)
 
 	ASSERT_MSG(allocInfo->alignment != 0, "Misuse of Free on unaligned allocation");
 
-	void* alloc = reinterpret_cast<ubyte*>(ptr) - max(sizeof(PPAllocInfo), size_t(allocInfo->alignment));
-	if(!PPGetStateList().isEmpty())
-		PPFreeAllocInternal(allocInfo);
+	void* alignedAlloc = reinterpret_cast<ubyte*>(ptr) - max(sizeof(PPAllocInfo), size_t(allocInfo->alignment));
+	PPBeforeFreeAllocInternal(allocInfo);
 
-	PPInternalAlignedFree(alloc);
+	PPInternalAlignedFree(alignedAlloc);
 #endif // PPMEM_DISABLED
 }

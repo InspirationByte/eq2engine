@@ -10,6 +10,10 @@
 
 #include "core/core_common.h"
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 #ifdef PPMEM_DISABLED
 
 TEST(PPMEM_TESTS, Disabled)
@@ -373,6 +377,37 @@ TEST(PPMEM_TESTS, AlignedOverflowDetected)
 
 	bytes[32] = savedByte;
 	PPAlignedFree(bytes);
+}
+
+//-------------------------------------------------------------------------------------------------
+// untracked memory
+
+#ifdef _WIN32
+TEST(PPMEM_TESTS, UntrackedNearRegionStart)
+{
+	// large heap blocks start close to the beginning of their own pages,
+	// header lookup must not read the page before them
+	ubyte* region = reinterpret_cast<ubyte*>(VirtualAlloc(nullptr, 4096, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+	ASSERT_NE(region, nullptr);
+
+	const int offsets[] = { 4, 16, 48 };
+	for (const int offset : offsets)
+		PPDCheck(region + offset);
+
+	VirtualFree(region, 0, MEM_RELEASE);
+}
+#endif // _WIN32
+
+TEST(PPMEM_TESTS, LargeUntrackedFree)
+{
+	const size_t sizes[] = { 64 * 1024, 1024 * 1024, 16 * 1024 * 1024 };
+	for (const size_t size : sizes)
+	{
+		void* mem = PPDAlloc(size, PPSourceLine::Empty());
+		ASSERT_NE(mem, nullptr);
+		PPDCheck(mem);
+		PPFree(mem);
+	}
 }
 
 #endif // PPMEM_DISABLED
