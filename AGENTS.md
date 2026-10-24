@@ -32,9 +32,10 @@ Before editing:
 ## Commits
 
 - Commit only when the user asks. Write commit messages following `docs/commit_messages.md`.
-- Before running `git commit`, show the user the list of files to be committed and the full commit
-  message, and wait for their approval. Apply requested corrections and show the result again;
-  commit only after the user confirms.
+- Before running `git commit`, prepare the commit following "Review before committing" in
+  `docs/commit_messages.md` (check the index, stage only the task files or use
+  `git commit --only` when others have staged files), show the user the file list and the full
+  commit message, and commit only after the user confirms.
 
 ## Validation
 

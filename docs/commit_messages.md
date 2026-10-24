@@ -56,14 +56,22 @@ lines:
 
 ## Review before committing
 
-Agents never run `git commit` right away. First present for review:
+Agents never run `git commit` right away:
 
-1. the files that will be staged (only files belonging to the task, never unrelated changes in the
-   shared worktree);
-2. the complete commit message, exactly as it will be committed, including trailers.
-
-Commit only after the user approves; if the user requests changes, update the message or file list
-and present it again.
+1. Check the index first: `git diff --cached --name-only`. Never unstage, reset, stash or modify
+   files staged by others — they may be a deliberate partial selection.
+   - **Index is empty** — stage the files of the task with `git add <files>` (never
+     `git add -A` / `git add .`). Review list: `git diff --cached --stat`. Commit: `git commit`.
+   - **Index has files of others that do not overlap with the task** — do not stage the task
+     files. Review list: `git diff HEAD --stat -- <files>`, plus the pre-staged files listed as
+     "not included". Commit: `git commit --only -- <files>`, which commits the listed paths as
+     they are in the working tree and leaves the rest of the index untouched.
+   - **Index overlaps with the task files** — stop and ask the user.
+2. Present for review:
+   - the file list from step 1, so the user can also inspect the diff;
+   - the complete commit message, exactly as it will be committed, including trailers.
+3. Commit only after the user approves. If the user requests changes, update the message or the
+   file list (only the task's own staging) and present it again.
 
 ## Examples
 
