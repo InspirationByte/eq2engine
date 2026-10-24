@@ -42,7 +42,16 @@ lines:
 - No trailing period.
 - Omit the scope only for changes that do not belong to one module (`- fix compile error`,
   `- update readme`).
-- No trailers (`Signed-off-by`, `Co-Authored-By`) — the history does not use them.
+- `Co-Authored-By` trailers are allowed (e.g. for agent-assisted commits). Put them after the
+  change lines, separated by one blank line:
+
+  ```
+  - ds: add BufferedArray (implement storage)
+
+  Co-Authored-By: Name <email>
+  ```
+
+  Other trailers (`Signed-off-by`, ...) are not used.
 - Merge commits keep the default git message (`Merge branch 'develop' into ...`).
 
 ## Examples
