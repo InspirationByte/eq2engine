@@ -23,7 +23,7 @@ const EqTStr<CH> EqTStr<CH>::EmptyStr;
 template<typename CH>
 EqTStr<CH>::~EqTStr()
 {
-	SAFE_DELETE_ARRAY(m_data);
+	PPFree(m_data);
 }
 
 template<typename CH>
@@ -63,7 +63,8 @@ EqTStr<CH>::EqTStr(EqTStr<CH>&& str) noexcept
 	{
 		// copy to the current buffer as it's large enough
 		Assign(str);
-		SAFE_DELETE_ARRAY(str.m_data);
+		PPFree(str.m_data);
+		str.m_data = nullptr;
 	}
 
 	str.m_size = 0;
@@ -93,7 +94,7 @@ EqTStr<CH>& EqTStr<CH>::operator=(EqTStr&& other) noexcept
 	if (other.m_size > m_size)
 	{
 		// move string with pointer as it has larger capacity
-		SAFE_DELETE_ARRAY(m_data);
+		PPFree(m_data);
 		m_size = other.m_size;
 		m_length = other.m_length;
 		m_data = other.m_data;
@@ -104,7 +105,7 @@ EqTStr<CH>& EqTStr<CH>::operator=(EqTStr&& other) noexcept
 	{
 		// copy to the current buffer as it's large enough
 		Assign(other);
-		SAFE_DELETE_ARRAY(other.m_data);
+		PPFree(other.m_data);
 	}
 
 	other.m_size = 0;
@@ -124,7 +125,7 @@ template<typename CH>
 CH EqTStr<CH>::operator[](int idx) const
 {
 	ASSERT(idx >= 0 && idx <= m_length);
-	return m_data[idx];
+	return StrPtr()[idx];
 }
 
 template<typename CH>
@@ -157,6 +158,14 @@ EqTStrRef<CH> EqTStr<CH>::FormatV(const CH* pszFormat, va_list argptr)
 	va_list varg;
 	va_copy(varg, argptr);
 	const int reqSize = CString::PrintFV(newString.m_data, newString.m_size, pszFormat, varg);
+	va_end(varg);
+
+	// formatting error
+	if (reqSize < 0)
+	{
+		newString.Empty();
+		return newString;
+	}
 
 	if (reqSize < newString.m_size)
 	{
@@ -187,7 +196,8 @@ bool EqTStr<CH>::IsValid() const
 template<typename CH>
 void EqTStr<CH>::Clear()
 {
-	SAFE_DELETE_ARRAY(m_data);
+	PPFree(m_data);
+	m_data = nullptr;
 
 	m_length = 0;
 	m_size = 0;
@@ -205,12 +215,12 @@ void EqTStr<CH>::Empty()
 
 // an internal operation of allocation/extend
 template<typename CH>
-bool EqTStr<CH>::ExtendAlloc(int nSize, bool bCopy)
+bool EqTStr<CH>::ExtendAlloc(int nSize, bool keepContents)
 {
 	if(nSize+1 > m_size || m_data == nullptr)
 	{
 		nSize += STR_EXTEND_CHARS;
-		if(!Resize( nSize - nSize % STR_EXTEND_CHARS, bCopy ))
+		if(!Resize( nSize - nSize % STR_EXTEND_CHARS, keepContents))
 			return false;
 	}
 
@@ -219,43 +229,26 @@ bool EqTStr<CH>::ExtendAlloc(int nSize, bool bCopy)
 
 // just a resize
 template<typename CH>
-bool EqTStr<CH>::Resize(int nSize, bool bCopy)
+bool EqTStr<CH>::Resize(int nSize, bool keepContents)
 {
 	const int newSize = max(STR_BASE_BUFFER, nSize + 1);
-
-	// make new and copy
-	CH* pszNewBuffer = PPNewSL(EqStringSL) CH[newSize];
-
-	// allocation error!
-	if (!pszNewBuffer)
-		return false;
-
-	pszNewBuffer[0] = 0;
-
-	// copy and remove old if available
-	if (m_data)
+	if (!keepContents)
 	{
-		// if we have to copy
-		if (bCopy && m_length)
-		{
-			// if string length if bigger, that the new alloc, cut off
-			// for safety
-			if (m_length > newSize)
-				m_data[newSize] = 0;
-
-			memcpy(pszNewBuffer, m_data, min(m_size, newSize) * sizeof(CH));
-		}
-
-		// now it's not needed
-		SAFE_DELETE_ARRAY(m_data);
+		PPFree(m_data);
+		m_data = nullptr;
+		m_length = 0;
+		m_size = 0;
 	}
 
-	// assign
-	m_data = pszNewBuffer;
+	CH* newBuffer = reinterpret_cast<CH*>(PPDReAlloc(m_data, newSize * sizeof(CH), EqStringSL));
+	if (!newBuffer)
+		return false;
+
+	m_data = newBuffer;
 	m_size = newSize;
 
-	if(nSize < m_length)
-		m_length = CString::Length(m_data);
+	m_length = min(m_length, newSize - 1);
+	m_data[m_length] = 0;
 
 	return true;
 }
@@ -283,8 +276,9 @@ void EqTStr<CH>::Assign(const CH* pszStr, int len)
 
 	if( ExtendAlloc(len+1, false ) )
 	{
+		// source may be a part of this string
 		if(pszStr != m_data)
-			memcpy(m_data, pszStr, len * sizeof(CH));
+			memmove(m_data, pszStr, len * sizeof(CH));
 		m_data[len] = 0;
 	}
 	m_length = len;
@@ -307,16 +301,18 @@ void EqTStr<CH>::Assign(StrRef str, int start, int len)
 		return;
 	}
 	const int strLen = str.Length();
-	ASSERT(start >= 0);
-	ASSERT(start + len < strLen);
+	ASSERT(start >= 0 && start <= strLen);
+	ASSERT(len < 0 || start + len <= strLen);
 
-	const int assignLength = (len < 0) ? (strLen - start) : min(len, strLen);
-	if (!ExtendAlloc(assignLength + 1, false))
+	const int maxLength = max(0, strLen - start);
+	const int assignLen = (len < 0) ? maxLength : min(len, maxLength);
+	if (!ExtendAlloc(assignLen + 1, false))
 		return;
 
-	memcpy(m_data, str.GetData() + start, assignLength * sizeof(CH));
-	m_data[assignLength] = 0;
-	m_length = assignLength;
+	// source may be a part of this string
+	memmove(m_data, str.GetData() + start, assignLen * sizeof(CH));
+	m_data[assignLen] = 0;
+	m_length = assignLen;
 }
 
 template<typename CH>
@@ -331,6 +327,16 @@ void EqTStr<CH>::Append(const CH c)
 	m_length = newLength;
 }
 
+// string length limited by maxCount, does not scan further than needed
+template<typename CH>
+static int StrLengthMax(const CH* str, int maxCount)
+{
+	int length = 0;
+	while (length < maxCount && str[length])
+		++length;
+	return length;
+}
+
 // appends another string
 template<typename CH>
 void EqTStr<CH>::Append(const CH* pszStr, int count)
@@ -338,34 +344,33 @@ void EqTStr<CH>::Append(const CH* pszStr, int count)
 	if(pszStr == nullptr || count == 0)
 		return;
 
-	const int strLen = CString::Length(pszStr);
-	const int appendLength = (count < 0) ? strLen : min(count, strLen);
-
-	const int newLength = m_length + appendLength;
-	if (!ExtendAlloc(newLength + 1))
-		return;
-
-	memcpy(m_data + m_length, pszStr, appendLength * sizeof(CH));
-	m_data[newLength] = 0;
-	m_length = newLength;
+	Append(StrRef(pszStr, (count < 0) ? -1 : StrLengthMax(pszStr, count)));
 }
 
 template<typename CH>
 void EqTStr<CH>::Append(const EqTStr<CH>& str)
 {
-	const int newLength = m_length + str.Length();
-	if (!ExtendAlloc(newLength + 1))
-		return;
-
-	memcpy(m_data + m_length, str.GetData(), str.Length() * sizeof(CH));
-	m_data[newLength] = 0;
-	m_length = newLength;
+	Append(str.Ref());
 }
 
 template<typename CH>
 void EqTStr<CH>::Append(StrRef str)
 {
-	Append(str.ToCString(), str.Length());
+	const int appendLength = str.Length();
+	if (appendLength == 0)
+		return;
+
+	const CH* strPtr = str.GetData();
+	if (IsSubstring(strPtr))
+		strPtr = EqTStrRef<CH>::GetTempString(strPtr, appendLength);
+
+	const int newLength = m_length + appendLength;
+	if (!ExtendAlloc(newLength + 1))
+		return;
+
+	memcpy(m_data + m_length, strPtr, appendLength * sizeof(CH));
+	m_data[newLength] = 0;
+	m_length = newLength;
 }
 
 template<typename CH>
@@ -375,23 +380,9 @@ void EqTStr<CH>::AppendV(const CH* pszFormat, va_list argptr)
 	if (!pszFormat)
 		return;
 
-	const int newLength = m_length + CString::Length(pszFormat) + 128;
-	if (!ExtendAlloc(newLength + 1))
-		return;
-
-	va_list varg;
-	va_copy(varg, argptr);
-
-	const int reqSize = CString::PrintFV(m_data + m_length, newLength, pszFormat, varg);
-	if (m_length + reqSize < m_size)
-	{
-		m_length += reqSize;
-		return;
-	}
-
-	if (!ExtendAlloc(reqSize + 1))
-		return;
-	m_length += CString::PrintFV(m_data + m_length, m_size - m_length, pszFormat, argptr);
+	// arguments may point into this string, so it can't be extended or overwritten
+	// while formatting; format into temporary string and append the result
+	Append(FormatV(pszFormat, argptr));
 }
 
 template<typename CH>
@@ -401,9 +392,7 @@ void EqTStr<CH>::AppendF(const CH* pszFormat, ...)
 	if (!pszFormat)
 		return;
 
-	EqTStrRef<CH> newString;
 	va_list argptr;
-
 	va_start(argptr, pszFormat);
 	AppendV(pszFormat, argptr);
 	va_end(argptr);
@@ -435,31 +424,37 @@ void EqTStr<CH>::Insert(const CH* pszStr, int pos, int count)
 	if(pszStr == nullptr || count == 0)
 		return;
 
-	const int strLen = CString::Length(pszStr);
-	ASSERT(pos >= 0);
-	ASSERT(pos <= Length());
-
-	const int insertLength = (count < 0) ? strLen : min(count, strLen);
-	if (!MakeInsertSpace(pos, insertLength))
-		return;
-
-	// copy the inserted string in to the middle
-	memcpy(m_data + pos, pszStr, insertLength * sizeof(CH));
-
-	ASSERT(IsValid());
+	Insert(StrRef(pszStr, (count < 0) ? -1 : StrLengthMax(pszStr, count)), pos);
 }
 
 template<typename CH>
 void EqTStr<CH>::Insert(const EqTStr<CH>&str, int pos)
 {
 	ASSERT(str.IsValid());
-	Insert(str, pos, str.Length());
+	Insert(str.Ref(), pos);
 }
 
 template<typename CH>
 void EqTStr<CH>::Insert(StrRef str, int pos)
 {
-	Insert(str.GetData(), pos, str.Length());
+	const int insertLength = str.Length();
+	if (insertLength == 0)
+		return;
+
+	ASSERT(pos >= 0);
+	ASSERT(pos <= Length());
+
+	const CH* strPtr = str.GetData();
+	if (IsSubstring(strPtr))
+		strPtr = EqTStrRef<CH>::GetTempString(strPtr, insertLength);
+
+	if (!MakeInsertSpace(pos, insertLength))
+		return;
+
+	// copy the inserted string in to the middle
+	memcpy(m_data + pos, strPtr, insertLength * sizeof(CH));
+
+	ASSERT(IsValid());
 }
 
 // removes characters

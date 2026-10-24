@@ -1,3 +1,7 @@
+-- all generated project files, intermediates and binaries go next to the main script,
+-- so every workspace (game, auto_tests, samples) has its own copy of the engine projects
+BUILD_DIR = BUILD_DIR or (_MAIN_SCRIPT_DIR .. "/build")
+
 property "e2_ws_settings"
     language 'C++'
 	cppdialect 'C++17'
@@ -8,21 +12,21 @@ property "e2_ws_settings"
 	floatingpointexceptions  'Off'
 	unsignedchar  'On'
 	
-	objdir "build/obj"
-	targetdir "%{_MAIN_SCRIPT_DIR}/build/bin/%{cfg.platform}/%{cfg.buildcfg}"
+	objdir (BUILD_DIR .. "/obj")
+	targetdir (BUILD_DIR .. "/bin/%{cfg.platform}/%{cfg.buildcfg}")
 	libdirs {
-		 "build/thirdpartylib/",
-		 "build/lib/"
+		 BUILD_DIR .. "/thirdpartylib/",
+		 BUILD_DIR .. "/lib/"
  	}
-	
+
 	location "%{ prj_location(prj, wks) }"
-	
+
 	filter "kind:StaticLib"
-		targetdir "build/lib/%{cfg.platform}/%{cfg.buildcfg}"
+		targetdir (BUILD_DIR .. "/lib/%{cfg.platform}/%{cfg.buildcfg}")
 
 	-- MSVC thing only
 	filter "system:Windows"
-		implibdir "build/lib/%{cfg.platform}/%{cfg.buildcfg}"
+		implibdir (BUILD_DIR .. "/lib/%{cfg.platform}/%{cfg.buildcfg}")
 
 	filter "system:Linux"
 		toolset "clang"
@@ -211,7 +215,7 @@ property "thirdpartylib"
 		["Profile"] = "Retail",
 		["Retail"] = "Retail",
 	}]] -- fookin std annotate_string & annotate_vector
-	targetdir "build/thirdpartylib/%{cfg.platform}/%{cfg.buildcfg}"
+	targetdir (BUILD_DIR .. "/thirdpartylib/%{cfg.platform}/%{cfg.buildcfg}")
 
 function prj_location(prj, wks, def)
 	if _ACTION == "vscode" then
@@ -219,15 +223,15 @@ function prj_location(prj, wks, def)
 	end
 
 	if _ACTION == "gmake2" and wks ~= nil and def == nil then
-		def = _MAIN_SCRIPT_DIR.."/build/"..wks.name..".solution"
+		def = BUILD_DIR .. "/" .. wks.name .. ".solution"
 	else
-		def = _MAIN_SCRIPT_DIR .. "/build/"
+		def = BUILD_DIR .. "/"
 	end
 	if prj ~= nil then
 		if prj.group ~= nil and string.len(prj.group) > 0 then
-			return "build/" .. prj.group .. '/' .. prj.name
+			return BUILD_DIR .. "/" .. prj.group .. '/' .. prj.name
 		end
-		return "build/" .. prj.name
+		return BUILD_DIR .. "/" .. prj.name
 	end
 	return def
 end

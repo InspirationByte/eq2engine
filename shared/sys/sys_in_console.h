@@ -11,9 +11,9 @@ class IEqFont;
 class ConCommandBase;
 class IGPURenderPassRecorder;
 
-struct ConAutoCompletion_t
+struct ConAutoCompletion
 {
-	EqString cmd_name;
+	EqString name;
 	Array<EqString> args{ PP_SL };
 };
 
@@ -61,12 +61,12 @@ public:
 
 	void			MousePos(const Vector2D &pos);
 
-	void			AddAutoCompletion(ConAutoCompletion_t* item);
+	void			AddAutoCompletion(EqStringRef name, EqStringRef commaSeparatedArgs);
 
 protected:
 
 	void			DrawSelf(int width, int height, float frameTime, IGPURenderPassRecorder* rendPassRecorder);
-	void			DrawListBox(const IVector2D& pos, int width, Array<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection, IGPURenderPassRecorder* rendPassRecorder);
+	void			DrawListBox(const IVector2D& pos, int width, ArrayCRef<EqString> items, const char* tooltipText, int maxItems, int startItem, int& selection, IGPURenderPassRecorder* rendPassRecorder);
 
 	void			DrawFastFind(float x, float y, float w, IGPURenderPassRecorder* rendPassRecorder);
 	void			DrawAutoCompletion(float x, float y, float w, IGPURenderPassRecorder* rendPassRecorder);
@@ -75,7 +75,7 @@ protected:
 	void			InsText(const char* text,int pos);
 	void			SetText(const char* text, bool quiet = false);
 
-	void			UpdateCommandAutocompletionList(const EqString& queryStr);
+	void			UpdateCommandAutocompletionList(const EqStringRef queryStr);
 	void			UpdateVariantsList( const EqString& queryStr );
 	void			OnTextUpdate();
 
@@ -142,7 +142,7 @@ private:
 	EqString						m_inputText;
 
 	// custom autocompletion
-	Array<ConAutoCompletion_t*>		m_customAutocompletion{ PP_SL };
+	Array<ConAutoCompletion>		m_customAutocompletion{ PP_SL };
 };
 
 extern CStaticAutoPtr<CEqConsoleInput> g_consoleInput;

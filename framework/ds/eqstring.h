@@ -51,14 +51,14 @@ public:
 	
 	// searches for substring, returns position
 	int			Find(StrRef strSub, bool bCaseSensitive = false, int nStart = 0) const { return Ref().Find(strSub, bCaseSensitive, nStart); }
-	int			Find(CH chr, bool bCaseSensitive = false, int nStart = 0) const { return Ref().Find(EqTStrRef<CH>(&chr, 1), bCaseSensitive, nStart); }
+	int			Find(CH chr, bool bCaseSensitive = false, int nStart = 0) const { return Ref().Find(chr, bCaseSensitive, nStart); }
 
 	// modifying
 	void		Clear();
 	void		Empty();
 
-	bool		ExtendAlloc(int nSize, bool bCopy = true);
-	bool		Resize(int nSize, bool bCopy = true);
+	bool		ExtendAlloc(int nSize, bool keepContents = true);
+	bool		Resize(int nSize, bool keepContents = true);
 
 	void		Assign(const CH* pszStr, int len = -1);
 	void		Assign(const EqTStr& str, int nStart = 0, int len = -1);
@@ -107,6 +107,7 @@ public:
 	operator 	StrRef () const { return Ref(); }
 
 protected:
+	bool		IsSubstring(const CH* str) { return m_data && str >= m_data && str < m_data + m_size; }
 	void		AppendF(const CH* pszFormat, ...);
 	bool		MakeInsertSpace(int startPos, int count);
 

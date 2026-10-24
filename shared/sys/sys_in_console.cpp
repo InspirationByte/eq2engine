@@ -148,13 +148,7 @@ DECLARE_CMD(con_addAutoCompletion,"Adds autocompletion variants", CV_INVISIBLE)
 		Msg("Usage: con_addAutoCompletion <console command/variable> [argument1,argument2,...]\n");
 		return;
 	}
-
-	ConAutoCompletion_t* newItem = PPNew ConAutoCompletion_t;
-	newItem->cmd_name = CMD_ARGV(0);
-
-	StringSplit(CMD_ARGV(1),",",newItem->args);
-
-	g_consoleInput->AddAutoCompletion(newItem);
+	g_consoleInput->AddAutoCompletion(CMD_ARGV(0), CMD_ARGV(1));
 }
 
 DECLARE_CMD(help,"Display the help", 0)
@@ -363,18 +357,28 @@ void CEqConsoleInput::EndFrame(int width, int height, float frameTime)
 	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 }
 
-void CEqConsoleInput::AddAutoCompletion(ConAutoCompletion_t* newItem)
+void CEqConsoleInput::AddAutoCompletion(EqStringRef name, EqStringRef commaSeparatedArgs)
 {
-	for(int i = 0; i < m_customAutocompletion.numElem();i++)
+	const int foundIdx = arrayFindIndexF(m_customAutocompletion, [name](const ConAutoCompletion& comp) {
+		return comp.name.CompareCaseIns(name) == 0;
+	});
+
+	// append
+	if (foundIdx != -1)
 	{
-		if(!m_customAutocompletion[i]->cmd_name.CompareCaseIns(newItem->cmd_name))
-		{
-			delete newItem;
-			return;
-		}
+		Array<EqString> newList(PP_SL);
+		StringSplit(commaSeparatedArgs, ",", newList);
+
+		Array<EqString>& args = m_customAutocompletion[foundIdx].args;
+		args.reserve(args.numElem() + newList.numElem());
+		for(EqString& newStr : newList)
+			args.append(std::move(newStr));
+		return;
 	}
 
-	m_customAutocompletion.append(newItem);
+	ConAutoCompletion& newItem = m_customAutocompletion.append();
+	newItem.name = name;
+	StringSplit(commaSeparatedArgs, ",", newItem.args);
 }
 
 void CEqConsoleInput::DelText(int start, int len)
@@ -434,7 +438,7 @@ void DrawAlphaFilledRectangle(const AARectangle &rect, const ColorRGBA &color1, 
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
-void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection, IGPURenderPassRecorder* rendPassRecorder)
+void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, ArrayCRef<EqString> items, const char* tooltipText, int maxItems, int startItem, int& selection, IGPURenderPassRecorder* rendPassRecorder)
 {
 	FontStyleParam tooltipStyle;
 	tooltipStyle.textColor = s_conHelpTextColor;
@@ -487,10 +491,10 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqStrin
 	// draw lines
 	for (int cnt = 0; cnt < linesToDraw; cnt++)
 	{
-		int itemIdx = cnt + startItem;
-		EqString& item = items[itemIdx];
+		const int itemIdx = cnt + startItem;
+		const EqStringRef item = items[itemIdx];
 
-		int textYPos = itemLineHeight * (cnt + tooltipLines + topDotsLines);
+		const int textYPos = itemLineHeight * (cnt + tooltipLines + topDotsLines);
 
 		if (IsInRectangle(m_mousePosition.x, m_mousePosition.y, pos.x, rect.GetLeftTop().y + textYPos, rect.GetSize().x, itemLineHeight))
 			selection = itemIdx;
@@ -611,18 +615,13 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 		{
 			const ConCommandBase* cmdBase = m_foundCmdList[i];
 
-			bool bHasAutocompletion = cmdBase->HasVariants();
-			if(!bHasAutocompletion)
+			bool hasAutoCompletion = cmdBase->HasVariants();
+			if(!hasAutoCompletion)
 			{
-				// find custom autocompletion
-				for(int j = 0;j < m_customAutocompletion.numElem();j++)
-				{
-					if(!CString::CompareCaseIns(cmdBase->GetName(), m_customAutocompletion[j]->cmd_name.GetData()))
-					{
-						bHasAutocompletion = true;
-						break;
-					}
-				}
+				const int autoCompletionIdx = arrayFindIndexF(m_customAutocompletion, [cmdBase](const ConAutoCompletion& comp) {
+					return comp.name.CompareCaseIns(cmdBase->GetName()) == 0;
+				});
+				hasAutoCompletion = autoCompletionIdx != -1;
 			}
 
 			bool bSelected = false;
@@ -653,17 +652,17 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 			{
 				ConVar *cv = (ConVar*)cmdBase;
 
-				if(bHasAutocompletion)
+				if(hasAutoCompletion)
 					str = EqString::Format("%s [%s] ->", cv->GetName(), cv->GetString());
 				else
 					str = EqString::Format("%s [%s]", cv->GetName(), cv->GetString());
 			}
 			else
 			{
-				if(bHasAutocompletion)
+				if(hasAutoCompletion)
 					str = EqString::Format("%s () ->",cmdBase->GetName());
 				else
-					str = EqString::Format("%s ()",cmdBase->GetName());
+					str = EqString::Format("%s ()", cmdBase->GetName());
 			}
 
 			m_font->SetupRenderText( str, Vector2D(x+5, textYPos),variantsTextParams, rendPassRecorder);
@@ -958,27 +957,23 @@ void CEqConsoleInput::ExecuteCurrentInput()
 		m_commandHistory.append(m_inputText);
 }
 
-void CEqConsoleInput::UpdateCommandAutocompletionList(const EqString& queryStr)
+void CEqConsoleInput::UpdateCommandAutocompletionList(const EqStringRef queryStr)
 {
 	m_foundCmdList.clear();
 	m_cmdSelection = -1;
 
-	const ConCommandListRef cmdList = g_consoleCommands->GetAllCommands();
+	if (queryStr.Length() == 0)
+		return;
 
-	for(int i = 0; i < cmdList.numElem();i++)
+	for(ConCommandBase* cmdBase : g_consoleCommands->GetAllCommands())
 	{
-		ConCommandBase* cmdBase = cmdList[i];
+		if (cmdBase->GetFlags() & CV_INVISIBLE)
+			continue;
 
-		EqString conVarName(cmdBase->GetName());
+		if (_Es(cmdBase->GetName()).Find(queryStr) == -1)
+			continue;
 
-		// find by input text
-		if(conVarName.Find(queryStr) != -1)
-		{
-			if(cmdBase->GetFlags() & CV_INVISIBLE)
-				continue;
-
-			m_foundCmdList.append(cmdBase);
-		}
+		m_foundCmdList.append(cmdBase);
 	}
 }
 
@@ -991,17 +986,12 @@ void CEqConsoleInput::UpdateVariantsList( const EqString& queryStr )
 	m_variantList.clear(false);
 
 	Array<EqString> allAutoCompletion(PP_SL);
-
-	for(int i = 0; i < m_customAutocompletion.numElem(); i++)
+	for(const ConAutoCompletion& comp : m_customAutocompletion)
 	{
-		ConAutoCompletion_t* item = m_customAutocompletion[i];
-
-		if(item->cmd_name.CompareCaseIns(m_fastfind_cmdbase->GetName()))
+		if(comp.name.CompareCaseIns(m_fastfind_cmdbase->GetName()))
 			continue;
 
-		for(int j = 0; j < item->args.numElem(); j++)
-			allAutoCompletion.append( item->args[j] );
-
+		allAutoCompletion.append(comp.args);
 		break;
 	}
 
@@ -1009,10 +999,10 @@ void CEqConsoleInput::UpdateVariantsList( const EqString& queryStr )
 		m_fastfind_cmdbase->GetVariants(allAutoCompletion, queryStr);
 
 	// filter out the list
-	for(int i = 0; i < allAutoCompletion.numElem(); i++)
+	for(EqString& arg : allAutoCompletion)
 	{
-		if(queryStr.Length() == 0 || allAutoCompletion[i].Find(queryStr) != -1)
-			m_variantList.append(allAutoCompletion[i]);
+		if(queryStr.Length() == 0 || arg.Find(queryStr) != -1)
+			m_variantList.append(arg);
 	}
 }
 
@@ -1021,11 +1011,10 @@ void CEqConsoleInput::DrawAutoCompletion(float x, float y, float w, IGPURenderPa
 	if(!(con_suggest.GetBool() && m_fastfind_cmdbase))
 		return;
 
-	if (!m_variantList.numElem())
+	if (m_variantList.isEmpty())
 		return;
 
 	int displayStart = 0;
-
 	while (m_variantSelection - displayStart > CON_SUGGESTIONS_MAX - 1)
 		displayStart += CON_SUGGESTIONS_MAX;
 

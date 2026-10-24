@@ -46,7 +46,10 @@ ISoundSourcePtr ISoundSource::CreateSound( const char* szFilename )
 			pSource = ISoundSourcePtr(CRefPtr_new(CSoundSource_OggCache));
 	}
 	else
-		MsgError( "Unknown audio format: %s\n", szFilename );
+	{
+		MsgError("Unsupported extension for audio '%s'\n", szFilename);
+		return nullptr;
+	}
 
 	pSource->SetFilename(szFilename);
 

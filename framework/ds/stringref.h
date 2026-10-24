@@ -82,6 +82,12 @@ int Compare(const wchar_t* strA, const wchar_t* strB);
 int CompareCaseIns(const char* strA, const char* strB);
 int CompareCaseIns(const wchar_t* strA, const wchar_t* strB);
 
+// compare strings with known length, null terminator is not required
+int Compare(const char* strA, int lenA, const char* strB, int lenB);
+int Compare(const wchar_t* strA, int lenA, const wchar_t* strB, int lenB);
+int CompareCaseIns(const char* strA, int lenA, const char* strB, int lenB);
+int CompareCaseIns(const wchar_t* strA, int lenA, const wchar_t* strB, int lenB);
+
 int PrintFV(char* buffer, int bufferCnt, const char* fmt, va_list argList);
 int PrintFV(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, va_list argList);
 int PrintF(char* buffer, int bufferCnt, const char* fmt, ...);
@@ -106,7 +112,7 @@ struct EMPTY_BASES StringComparisonOpsMixin
 	: public ComparisonEqualsOpsMixin<TStr, TOther>
 {
 	/* (A == B) case-sensitive comparison */
-	friend bool operator==(const TStr& a, const TOther& b) { return CString::Compare(a.ToCString(), b.ToCString()) == 0; }
+	friend bool operator==(const TStr& a, const TOther& b) { return a.Compare(b) == 0; }
 };
 
 template<typename TStr, typename CH>
@@ -114,7 +120,7 @@ struct EMPTY_BASES CStringComparisonOpsMixin
 	: public ComparisonEqualsOpsMixin<TStr, const CH*>
 {
 	/* (A == B) case-sensitive comparison */
-	friend bool operator==(const TStr& a, const CH* b) { return CString::Compare(a.ToCString(), b) == 0; }
+	friend bool operator==(const TStr& a, const CH* b) { return a.Compare(b) == 0; }
 };
 
 //------------------------------------------------------
@@ -222,7 +228,7 @@ public:
 
 	// searches for substring, returns value
 	int			Find(EqTStrRef otherStr, bool caseSensitive = false, int start = 0) const;
-	int			Find(CH chr, bool caseSensitive = false, int start = 0) const { return Find(EqTStrRef(&chr, 1), caseSensitive, start); }
+	int			Find(CH chr, bool caseSensitive = false, int start = 0) const { const CH str[] = { chr, 0 }; return Find(EqTStrRef(str, 1), caseSensitive, start); }
 
 	// converters
 	EqTStrRef	LowerCase() const;
