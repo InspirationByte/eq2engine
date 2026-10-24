@@ -225,12 +225,15 @@ TEST(ARRAY_TESTS, InsertIntoEmpty)
 
 TEST(ARRAY_TESTS, InsertInvalidIndex)
 {
-#ifdef _DEBUG
-	GTEST_SKIP() << "Skipping due to heap corruption message";
+#ifdef PPMEM_DISABLED
+	GTEST_SKIP() << "Insert writes before the buffer, only PPMem guards make it safe to test";
 #endif
 
-	Array<int> arr({ 1, 2 }, PP_SL);
-	EXPECT_FATAL_FAILURE([&]() { arr.insert(5, -1); }, "index >= 0");
+	// array lives in the scope so PPMem reports the damaged guard when it is freed
+	EXPECT_FATAL_FAILURE([&]() {
+		Array<int> arr({ 1, 2 }, PP_SL);
+		EXPECT_FATAL_FAILURE([&]() { arr.insert(5, -1); }, "index >= 0");
+	}, "buffer underflow");
 }
 
 TEST(ARRAY_TESTS, AddUnique)

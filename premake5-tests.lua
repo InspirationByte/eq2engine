@@ -8,8 +8,11 @@ BUILD_SINGLE_FILE = true
 
 dofile "premake5.lua"
 
--- PPMem is disabled in tests: an overwritten guard checkmark makes PPFree release a wrong pointer
+-- PPMem is enabled only in Debug so ppmem_tests can check it;
+-- other configurations test containers on plain CRT allocations
 workspace(WORKSPACE_NAME)
-	defines { "PPMEM_DISABLED" }
+	filter "configurations:not Debug"
+		defines { "PPMEM_DISABLED" }
+	filter {}
 
 include "tests"
