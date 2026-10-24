@@ -73,6 +73,18 @@ Agents never run `git commit` right away:
 3. Commit only after the user approves. If the user requests changes, update the message or the
    file list (only the task's own staging) and present it again.
 
+### Reporting to the user
+
+Follow the procedure above without narrating it; the user expects every step to be done.
+
+- Review request: the line "Ready for review" (in the user's language),
+  then the file list and the full commit message. Nothing else.
+- After committing: a single line `Committed <hash> -> <branch>`.
+- Mention a check only when it found something: the rules or docs changed, the index has files of
+  others, files changed after approval.
+- Do not mention unchanged rules, that nothing is committed yet, line lengths, the git command
+  that will be used, or untracked files left out — the file list already shows what is included.
+
 ## Examples
 
 ```
