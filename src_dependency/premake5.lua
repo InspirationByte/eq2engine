@@ -29,6 +29,8 @@ include "nvrhi"
 include "slang"
 include "minivorbis"
 include "ffmpeg"
+include "dav1d"
+include "nestegg"
 include "lua54"
 
 include "meshoptimizer"
