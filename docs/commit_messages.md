@@ -32,7 +32,7 @@ lines:
   `ds`, `math`, `core`, `framework`, `keyvalues`, `esl`, `sys`, `matsystem`, `rhi`, `nvrhi`,
   `wgpu`, `render`, `grim`, `equi`, `physics`, `dkphysics`, `studio`, `egf`, `audio`, `input`,
   `font`, `dpk`, `network`, `premake`, `deps`, `natvis`, `tests`, `docs`, and tool names
-  (`egfca`, `animca`, `egfman`, `fcompress`, `shadercooker`, `texcooker`). A sub-area may follow
+  (`egfca`, `animca`, `egfman2`, `fcompress`, `shadercooker`, `texcooker`). A sub-area may follow
   the scope: `sys: esl math ...`, `core: filesystem - ...`.
   Exceptions kept from history: `e2Core`, `GpuDriven` (sample) — use the project name as is.
 - `<change>` — short description starting with a lowercase verb: `fix ...`, `add ...`,

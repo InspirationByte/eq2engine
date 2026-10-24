@@ -1,7 +1,7 @@
 # Tools overview — `tools/`
 
 Content tools of the engine. The C++ tools are built when `ENABLE_TOOLS` is on (Windows and Linux;
-`egfman` and `egfMan2` only on Windows with `ENABLE_GUI_TOOLS`) and are not built in `Profile` / `Retail`
+`egfMan2` only on Windows with `ENABLE_GUI_TOOLS`) and are not built in `Profile` / `Retail`
 configurations (see [architecture.md](architecture.md)).
 
 All C++ tools initialize `e2Core` like a regular application: they read `E2.CONFIG` and use the
@@ -13,7 +13,6 @@ commands and ConVars can be passed with `+name value` on the command line.
 |---|---|---|---|
 | `egfca` | console | `.esc` model compile scripts + source models | `.egf` models, `.pod` physics object data |
 | `animca` | console | `.asc` animation compile scripts + source animations | `.mop` motion packages |
-| `egfman` | GUI (wxWidgets, Windows) | `.egf`, `.mop`, `.pod` | — (viewer) |
 | `egfMan2` | GUI (sysLib + ImGui, Windows) | `.egf`, `.mop`, `.pod` | — (viewer) |
 | `fcompress` | console | `PackageCooker.CONFIG` | `.epk` packages |
 | `shadercooker` | console | `ShaderCooker.CONFIG` + Slang shader sources | Shader packages for RHI backends (`.shd`, DPK format) |
@@ -47,17 +46,12 @@ animca <script1.asc> [<script2.asc> ...]
   controllers for a model.
 - Built on `egfLib` (`CMotionPackageGenerator`) and `studioLib`.
 
-## EGFMan — model viewer (`tools/egfman`)
+## EGFMan2 — model viewer (`tools/egfMan2`)
 
-wxWidgets application for inspecting EGF models: geometry, LODs and body groups, materials and
-skins, skeleton, animations and sequences, physics objects. Built on `fontLib`, `physicsLib`,
-`dkPhysicsLib`, `renderUtilLib`, `animatingLib`.
-
-## EGFMan2 — model viewer on sysLib (`tools/egfMan2`)
-
-Replacement for EGFMan under development: the same features on `sysLib` with an ImGui interface
-(registered as an always-shown ImGui debug handler) and native file dialogs from `nfd`
-(`src_dependency/nfd`). Shares `CAnimatedModel` and grid drawing with `tools/egfman`.
+Application for inspecting EGF models: geometry, LODs and body groups, materials and skins,
+skeleton, animations and sequences, physics objects. Built on `sysLib` with an ImGui interface
+(registered as an always-shown ImGui debug handler), `physicsLib`, `dkPhysicsLib`,
+`renderUtilLib`, `animatingLib`; native file dialogs come from `nfd` (`src_dependency/nfd`).
 
 - `-model <path>` opens a model on start.
 - Camera: Shift + left / right / middle mouse button drag rotates, zooms and pans; the cursor wraps

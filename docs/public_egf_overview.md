@@ -22,7 +22,7 @@ Tools:
 |---|---|
 | `tools/egfca` (egfCA) | EGF compiler: builds `.egf` models and `.pod` physics object data from source models and a compile script |
 | `tools/animca` (animCA) | Motion package compiler: builds `.mop` animation packages |
-| `tools/egfman` | Model viewer (Windows, wxWidgets) |
+| `tools/egfMan2` | Model viewer (Windows, sysLib + ImGui) |
 
 Companion files are found by the model name: `models/car.egf` automatically uses
 `models/car.mop` (if it exists) and `models/car.skin`. Skins defined in the `egfca` script are
@@ -112,4 +112,4 @@ In-memory representations filled by the loaders:
 | `shared/studio` (`studioLib`) | `g_studioCache` — model cache (`PrecacheModel`, `GetModel` → `CEqStudioGeom`), motion data cache (`PrecacheMotionData`); GPU geometry |
 | `shared/animating` (`animatingLib`) | Skeleton, sequence playback, pose controllers, events |
 | `shared/physics`, `shared/dkphysics` | Physics shape cache from `.pod` data |
-| `shared/egf` (`egfLib`), `tools/egfca`, `tools/animca`, `tools/egfman` | Building and viewing EGF files |
+| `shared/egf` (`egfLib`), `tools/egfca`, `tools/animca`, `tools/egfMan2` | Building and viewing EGF files |

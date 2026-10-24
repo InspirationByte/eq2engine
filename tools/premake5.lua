@@ -83,25 +83,6 @@ project "shadercooker"
 
 if ENABLE_GUI_TOOLS then
 	
--- Equilibrium Graphics File manager (EGFMan)
-project "egfman"
-    kind "WindowedApp"
-	properties { "tools", "app", "unitybuild" }
-    uses {
-		"corelib", "frameworkLib", "e2Core",
-		"fontLib", "physicsLib", "dkPhysicsLib", "renderUtilLib", "animatingLib",
-		"wxWidgets"
-	}
-    files {
-		"egfman/*.cpp",
-		"egfman/*.h"
-	}
-
-    filter "system:Windows"
-        files {
-			"egfman/**.rc"
-		}
-
 -- Equilibrium Graphics File manager on sysLib and ImGui (EGFMan2)
 project "egfMan2"
 	kind "WindowedApp"
@@ -117,18 +98,12 @@ project "egfMan2"
 	}
 	files {
 		"egfMan2/*.cpp",
-		"egfMan2/*.h",
-		-- shared with EGFMan until it is removed
-		"egfman/CAnimatedModel.*",
-		"egfman/grid.*"
-	}
-	includedirs {
-		"egfman"
+		"egfMan2/*.h"
 	}
 
 	filter "system:Windows"
 		files {
-			"egfman/**.rc"
+			"egfMan2/**.rc"
 		}
 
 end

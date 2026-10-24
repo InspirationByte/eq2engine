@@ -20,7 +20,7 @@ Related documents:
 | [public_localization.md](public_localization.md) | Localization: language files, tokens, helpers |
 | [public_rendering_overview.md](public_rendering_overview.md) | Material system overview: materials, variables, proxies, textures, debug drawing, fonts |
 | [public_egf_overview.md](public_egf_overview.md) | EGF (Entity Geometry Format): models, motion packages, physics models |
-| [tools_overview.md](tools_overview.md) | Content tools: egfCA, animCA, EGFMan, FCompress, ShaderCooker, TexCooker, localization tool |
+| [tools_overview.md](tools_overview.md) | Content tools: egfCA, animCA, EGFMan2, FCompress, ShaderCooker, TexCooker, localization tool |
 
 ## Overview
 
@@ -77,7 +77,7 @@ Public interfaces are declared in `public/` and implemented in `core/` or `share
 | `shared/animating/` | Skeletal animation, bone setup, activities and events |
 | `shared/audio/` | Audio system on OpenAL, sound emitters/scripts/mixer; `source/` holds WAV/OGG sources |
 | `shared/physics/` | EqPhysics engine on top of Bullet collision |
-| `shared/dkphysics/` | Legacy Darktech physics on Jolt (deprecated, kept for EGFMan) |
+| `shared/dkphysics/` | Legacy Darktech physics on Jolt (deprecated, kept for EGFMan2) |
 | `shared/equi/` | EqUI interface library: manager, controls, scheme |
 | `shared/imgui_backend/` | ImGui host and material-system renderer backend |
 | `shared/scripting/` | ESL — Lua binding library |
@@ -214,8 +214,7 @@ All are static libraries using `public` and `shared` include paths.
 
 Console apps: `fcompress` (package compression), `egfca` (model compiler), `animca` (animation
 compiler), `texcooker` (texture cooker), `shadercooker` (Slang shader batch compiler).
-GUI apps (`ENABLE_GUI_TOOLS`, Windows only): `egfman` (model viewer, wxWidgets), `egfMan2` (model
-viewer on `sysLib` + ImGui, uses `nfd`).
+GUI app (`ENABLE_GUI_TOOLS`, Windows only): `egfMan2` (model viewer on `sysLib` + ImGui, uses `nfd`).
 Tools are not built in `Profile` and `Retail` configurations.
 `egfinfo` and `matsys_wxapp_template` have no project.
 
