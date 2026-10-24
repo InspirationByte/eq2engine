@@ -214,7 +214,8 @@ All are static libraries using `public` and `shared` include paths.
 
 Console apps: `fcompress` (package compression), `egfca` (model compiler), `animca` (animation
 compiler), `texcooker` (texture cooker), `shadercooker` (Slang shader batch compiler).
-GUI app (`ENABLE_GUI_TOOLS`, Windows only): `egfman` (model viewer, wxWidgets).
+GUI apps (`ENABLE_GUI_TOOLS`, Windows only): `egfman` (model viewer, wxWidgets), `egfMan2` (model
+viewer on `sysLib` + ImGui, uses `nfd`).
 Tools are not built in `Profile` and `Retail` configurations.
 `egfinfo` and `matsys_wxapp_template` have no project.
 

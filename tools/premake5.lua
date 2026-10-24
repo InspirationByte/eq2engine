@@ -102,4 +102,33 @@ project "egfman"
 			"egfman/**.rc"
 		}
 
+-- Equilibrium Graphics File manager on sysLib and ImGui (EGFMan2)
+project "egfMan2"
+	kind "WindowedApp"
+	properties { "tools", "app", "unitybuild" }
+	uses {
+		"corelib", "frameworkLib", "e2Core",
+		"sysLib",
+		"soundSystemLib", -- required by movieLib through sysLib
+		"physicsLib", "dkPhysicsLib", "renderUtilLib", "animatingLib",
+		"BaseShader",
+		"imgui",
+		"nfd"
+	}
+	files {
+		"egfMan2/*.cpp",
+		"egfMan2/*.h",
+		-- shared with EGFMan until it is removed
+		"egfman/CAnimatedModel.*",
+		"egfman/grid.*"
+	}
+	includedirs {
+		"egfman"
+	}
+
+	filter "system:Windows"
+		files {
+			"egfman/**.rc"
+		}
+
 end
