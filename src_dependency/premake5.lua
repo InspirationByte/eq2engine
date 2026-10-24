@@ -15,6 +15,10 @@ if ENABLE_TESTS then
 	include "gtest"
 end
 
+if ENABLE_GUI_TOOLS then
+	include "nfd"
+end
+
 include "stb"
 include "lz4"
 include "cv_sdk"
