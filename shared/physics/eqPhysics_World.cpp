@@ -874,7 +874,7 @@ void CEqPhysicsWorld::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj,
 		FVector3D addVelToPos = normalize(bodyB->GetLinearVelocity());
 		eqTransB_vel = Matrix4x4(bodyB->GetOrientation());
 		eqTransB_vel.translate(bodyB->GetShapeCenter());
-		eqTransB_vel = transpose(eqTransB_orig);
+		eqTransB_vel = transpose(eqTransB_vel);
 		eqTransB_vel.rows[3] += Vector4D(bodyB->GetPosition() + center + addVelToPos, 1.0f);
 	}
 
@@ -1276,6 +1276,9 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration)
 
 	{
 		PROF_EVENT("Moving Bodies Integrate");
+		for (CEqCollisionObject* ghost : m_ghostObjects)
+			ghost->ClearContacts();
+
 		for (CEqRigidBody* body : m_moveable)
 		{
 			body->ClearContacts();
