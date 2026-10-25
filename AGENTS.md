@@ -44,7 +44,10 @@ Before editing:
 
 ## Documentation
 
-- TODO
+- Before working with an engine system, find its overview in the "Related documents" table of
+  `docs/architecture.md` and read it to learn which systems, classes and entry points to use
+  (for example `docs/physics_overview.md` for `shared/physics`). Check the code when the
+  document and the code disagree.
 
 
 

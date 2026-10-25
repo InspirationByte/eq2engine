@@ -129,7 +129,7 @@ A material's root section selects a shader registered with the material system. 
 `IMatSystemShader`; in practice they derive from `CBaseShader` using the `BEGIN_SHADER_CLASS`,
 `SHADER_INIT_PARAMS`, `SHADER_PARAM_TEXTURE`, ... macros, and are registered through
 `DECLARE_INTERNAL_SHADERS` / `REGISTER_INTERNAL_SHADERS` in a shader library such as
-`eqBaseShaders`. Shader authoring is covered in the rendering documents.
+`eqBaseShaders`. Shader authoring: [rendering_matsystem_shaders_overview.md](rendering_matsystem_shaders_overview.md).
 
 ## Dynamic geometry — `IDynamicMesh.h`, `MeshBuilder.h`
 

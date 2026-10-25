@@ -91,14 +91,16 @@ project "egfMan2"
 		"corelib", "frameworkLib", "e2Core",
 		"sysLib",
 		"soundSystemLib", -- required by movieLib through sysLib
-		"physicsLib", "dkPhysicsLib", "renderUtilLib", "animatingLib",
+		"physicsLib", "bullet2", "renderUtilLib", "animatingLib",
 		"BaseShader",
 		"imgui",
 		"nfd"
 	}
 	files {
 		"egfMan2/*.cpp",
-		"egfMan2/*.h"
+		"egfMan2/*.h",
+		"egfMan2/ragdoll/*.cpp",
+		"egfMan2/ragdoll/*.h"
 	}
 
 	filter "system:Windows"

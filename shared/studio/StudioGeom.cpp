@@ -81,6 +81,7 @@ CEqStudioGeom::CEqStudioGeom()
 
 CEqStudioGeom::~CEqStudioGeom()
 {
+	EGF_LOADING_CRITICAL_SECTION(this);
 	DestroyModel();
 }
 

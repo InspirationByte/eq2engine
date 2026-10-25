@@ -10,9 +10,9 @@
 
 struct AnimSequence;
 struct AnimPoseController;
-class CPhysRagdollData;
+class CPhysicsRagdoll;
 class CEqStudioGeom;
-class IPhysicsObject;
+class CEqRigidBody;
 class IGPURenderPassRecorder;
 
 enum ViewerRenderFlags
@@ -39,7 +39,7 @@ public:
 	void						SetModel(CEqStudioGeom* pModel);
 
 	void						TogglePhysicsState();
-	bool						IsPhysicsEnabled() const { return m_bPhysicsEnable; }
+	bool						IsPhysicsEnabled() const { return m_physicsEnable; }
 	void						ResetPhysics();
 
 	int							GetCurrentAnimationFrame() const;
@@ -51,6 +51,7 @@ protected:
 	void						VisualizeAttachments();
 
 	void						UpdateRagdollBones();
+	void						DestroyPhysics();
 
 	virtual void				HandleAnimatingEvent(AnimationEvent nEvent, const char* options);
 
@@ -58,10 +59,10 @@ protected:
 
 public:
 
-	CEqStudioGeom*				m_pModel;
-	IPhysicsObject*				m_physObj;
-	CPhysRagdollData*			m_pRagdoll;
-	bool						m_bPhysicsEnable;
+	CEqStudioGeom*				m_model;
+	CEqRigidBody*				m_physObj;
+	CPhysicsRagdoll*			m_ragdoll;
+	bool						m_physicsEnable;
 
 	Array<AnimSequence*>		m_sequencesList{ PP_SL };
 

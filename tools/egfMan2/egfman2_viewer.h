@@ -8,7 +8,7 @@
 #pragma once
 #include "sys/sys_state.h"
 
-class IPhysicsObject;
+class CEqRigidBody;
 class IGPURenderPassRecorder;
 
 enum EAppStateType
@@ -78,7 +78,7 @@ private:
 	bool		m_cursorWrapPending{ false };
 
 	// physics object dragging
-	IPhysicsObject*	m_dragObj{ nullptr };
+	CEqRigidBody*	m_dragObj{ nullptr };
 	Vector3D	m_dragObjLocalPoint{ 0.0f };
 	Vector3D	m_dragStartPoint{ 0.0f };
 	Vector3D	m_dragTargetPoint{ 0.0f };

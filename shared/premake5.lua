@@ -213,23 +213,6 @@ if ENABLE_TOOLS then
 			["*"] = "egf/**",
 			["Public Headers"] = PUBLIC_DIR.."/egf/**.h"
 		}
-
-	-- Equilibrium 1 Darktech Physics (Deprecated but kept for egfMan2)
-	project "dkPhysicsLib"
-		properties { "staticlib", "unitybuild" }
-		uses {
-			"public", "shared",
-			"studioLib", "animatingLib", 
-			"jolt"
-		}
-		files {
-			"dkphysics/**",
-			PUBLIC_DIR.."/dkphysics/**"
-		}
-		vpaths {
-			["*"] = "dkphysics/**",
-			["Public Headers"] = PUBLIC_DIR.."/dkphysics/**.h"
-		}
 end
 
 -- Animating Game Library

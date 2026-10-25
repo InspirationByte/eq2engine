@@ -20,7 +20,8 @@
 
 #include "studio/StudioCache.h"
 #include "studio/StudioGeom.h"
-#include "dkphysics/IDkPhysics.h"
+#include "physics/eqPhysics_World.h"
+#include "physics/eqPhysics_Body.h"
 #include "physics/PhysicsCollisionGroup.h"
 
 #include "materialsystem1/IMaterialSystem.h"
@@ -31,16 +32,13 @@
 #include "CAnimatedModel.h"
 #include "grid.h"
 #include "egfman2_filedialog.h"
+#include "egfman2_physics.h"
 
 #include "egfman2_viewer.h"
 
 static constexpr const float s_bottomPanelHeight = 200.0f;
-
-static constexpr const int s_physPlaneSize = 512;
-static constexpr const int s_physPlaneW = 32;
-static constexpr const int s_physPlaneH = 32;
-static constexpr const int s_physPlaneVertCount = s_physPlaneW * s_physPlaneH;
-static constexpr const int s_physPlaneIdxCount = (s_physPlaneW - 1) * (s_physPlaneH - 1) * 6;
+static constexpr const float s_dragSpring = 10.0f;
+static constexpr const float s_dragDamping = 0.5f;
 
 enum EMouseButtonBits
 {
@@ -61,92 +59,7 @@ public:
 static CViewerModel		s_model;
 static CViewParams		s_cameraParams(Vector3D(0, 0, -100), vec3_zero, 70);
 
-// physics keeps pointers to the plane geometry
-static Vector3D			s_physPlaneVertices[s_physPlaneVertCount];
-static uint				s_physPlaneIndices[s_physPlaneIdxCount];
-
 //-------------------------------------------------------------------------------------------------
-
-static void InitPhysicsScene()
-{
-	g_physics->Init(0);
-	g_physics->CreateScene();
-
-	for (int c = 0; c < s_physPlaneH; c++)
-	{
-		for (int r = 0; r < s_physPlaneW; r++)
-		{
-			const int vertexId = r + c * s_physPlaneW;
-
-			const float tcX = static_cast<float>(r) / static_cast<float>(s_physPlaneW - 1);
-			const float tcY = static_cast<float>(c) / static_cast<float>(s_physPlaneH - 1);
-
-			const float posX = (tcX - 0.5f) * 2.0f * s_physPlaneSize;
-			const float posY = (tcY - 0.5f) * 2.0f * s_physPlaneSize;
-
-			s_physPlaneVertices[vertexId] = Vector3D(posX, 0, posY);
-		}
-	}
-
-	// edge turning makes more smoothed terrain
-	bool turnEdge = false;
-	int numTriangles = 0;
-	for (int c = 0; c < s_physPlaneH - 1; c++)
-	{
-		for (int r = 0; r < s_physPlaneW - 1; r++)
-		{
-			const int index1 = r + c * s_physPlaneW;
-			const int index2 = r + (c + 1) * s_physPlaneW;
-			const int index3 = (r + 1) + c * s_physPlaneW;
-			const int index4 = (r + 1) + (c + 1) * s_physPlaneW;
-
-			if (!turnEdge)
-			{
-				s_physPlaneIndices[numTriangles * 3] = index1;
-				s_physPlaneIndices[numTriangles * 3 + 1] = index2;
-				s_physPlaneIndices[numTriangles * 3 + 2] = index3;
-				numTriangles++;
-
-				s_physPlaneIndices[numTriangles * 3] = index3;
-				s_physPlaneIndices[numTriangles * 3 + 1] = index2;
-				s_physPlaneIndices[numTriangles * 3 + 2] = index4;
-				numTriangles++;
-			}
-			else
-			{
-				s_physPlaneIndices[numTriangles * 3] = index1;
-				s_physPlaneIndices[numTriangles * 3 + 1] = index2;
-				s_physPlaneIndices[numTriangles * 3 + 2] = index4;
-				numTriangles++;
-
-				s_physPlaneIndices[numTriangles * 3] = index1;
-				s_physPlaneIndices[numTriangles * 3 + 1] = index4;
-				s_physPlaneIndices[numTriangles * 3 + 2] = index3;
-				numTriangles++;
-			}
-
-			turnEdge = !turnEdge;
-		}
-	}
-
-	physShapeInfo_t collData;
-	collData.pMaterial = nullptr; // default material
-	collData.surfaceprops = "default";
-	collData.indices = s_physPlaneIndices;
-	collData.numIndices = s_physPlaneIdxCount;
-	collData.vertices = s_physPlaneVertices;
-	collData.vertexPosOffset = 0;
-	collData.vertexSize = sizeof(Vector3D);
-	collData.numVertices = s_physPlaneVertCount;
-
-	physObjectInfo_t info;
-	info.isStatic = true;
-	info.flipXAxis = false;
-	info.mass = 0.0f;
-	info.data = &collData;
-
-	g_physics->CreateStaticObject(info, COLLISION_GROUP_WORLD);
-}
 
 static void FlushCache()
 {
@@ -169,7 +82,7 @@ static int MouseButtonBit(int button)
 
 void CState_EGFViewer::OnEnter(CAppStateBase* from)
 {
-	InitPhysicsScene();
+	PhysicsSceneInit();
 
 	FogInfo fog;
 	fog.enableFog = true;
@@ -199,14 +112,13 @@ void CState_EGFViewer::OnLeave(CAppStateBase* to)
 {
 	m_dragObj = nullptr;
 	s_model.SetModel(nullptr);
-	g_physics->DestroyScene();
+	PhysicsSceneShutdown();
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CState_EGFViewer::LoadModel(const char* modelPath)
 {
-	s_model.SetModel(nullptr);
 	m_dragObj = nullptr;
 	FlushCache();
 
@@ -219,7 +131,7 @@ void CState_EGFViewer::LoadModel(const char* modelPath)
 
 void CState_EGFViewer::ReloadModel()
 {
-	CEqStudioGeom* model = s_model.m_pModel;
+	CEqStudioGeom* model = s_model.m_model;
 	if (!model)
 		return;
 
@@ -306,10 +218,10 @@ void CState_EGFViewer::ResetView()
 
 void CState_EGFViewer::SetOptimalCameraDistance()
 {
-	if (!s_model.m_pModel)
+	if (!s_model.m_model)
 		return;
 
-	const BoundingBox& bbox = s_model.m_pModel->GetBoundingBox();
+	const BoundingBox& bbox = s_model.m_model->GetBoundingBox();
 	m_cameraDistance = length(bbox.GetSize()) * 2.0f;
 }
 
@@ -321,10 +233,10 @@ void CState_EGFViewer::RefreshGUI()
 	m_poseControllerSelection = -1;
 	s_model.m_bodyGroupFlags = 0xFFFFFFFF;
 
-	if (!s_model.m_pModel)
+	if (!s_model.m_model)
 		return;
 
-	const studioHdr_t& studio = s_model.m_pModel->GetStudioHdr();
+	const studioHdr_t& studio = s_model.m_model->GetStudioHdr();
 	for (int i = 0; i < studio.numBodyGroups; i++)
 		m_bodyGroupNames.append(studio.pBodyGroups(i)->name);
 
@@ -444,18 +356,22 @@ bool CState_EGFViewer::Update(float fDt)
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 	debugoverlay->SetMatrices(m_projMat, m_viewMat);
 
-	if (s_model.IsPhysicsEnabled() && m_dragObj && m_dragObj->IsDynamic())
+	if (s_model.IsPhysicsEnabled() && m_dragObj)
 	{
-		const Vector3D worldDragPoint = transformPointTransposed(m_dragObjLocalPoint, m_dragObj->GetTransformMatrix());
-		const Vector3D dragForce = (m_dragTargetPoint - worldDragPoint) * m_dragObj->GetMass();
+		const Vector3D worldDragPoint = transformPoint(m_dragObjLocalPoint, m_dragObj->GetTransform());
+
+		// spring with damping towards the target point
+		const Vector3D targetVelocity = (m_dragTargetPoint - worldDragPoint) * s_dragSpring;
+		const Vector3D dragImpulse = (targetVelocity - m_dragObj->GetVelocityAtWorldPoint(worldDragPoint)) * m_dragObj->GetMass() * s_dragDamping;
 
 		DbgSphere().Position(worldDragPoint).Fill(true).Radius(0.05f);
 		DbgLine().Start(worldDragPoint).End(m_dragTargetPoint);
 
-		m_dragObj->ApplyImpulse(dragForce, worldDragPoint - m_dragObj->GetPosition());
+		m_dragObj->Wake();
+		m_dragObj->ApplyWorldImpulse(worldDragPoint, dragImpulse);
 	}
 
-	g_physics->Simulate(fDt, 1);
+	PhysicsSimulate(fDt);
 	s_model.Update(fDt);
 
 	if (s_model.IsSequencePlaying() && m_motionSelection != -1)
@@ -653,13 +569,13 @@ void CState_EGFViewer::ProcessMouse(int x, int y, const Vector2D& moveDelta)
 
 		if (s_model.IsPhysicsEnabled() && m_dragObj == nullptr)
 		{
-			physCast_t tr;
-			g_physics->CastLine(rayStart, rayStart + rayDir * 1000.0f, COLLISION_GROUP_ALL, &tr);
-			if (tr.hitObj)
+			eqCollisionInfo coll;
+			const FVector3D rayEnd = rayStart + rayDir * 1000.0f;
+			if (PhysicsGetWorld().TestLineCollision(rayStart, rayEnd, coll, COLLISION_GROUP_OBJECTS | COLLISION_GROUP_DEBRIS) && coll.hitobject->IsDynamic())
 			{
-				m_dragObj = tr.hitObj;
-				m_dragTargetPoint = m_dragStartPoint = tr.traceEnd;
-				m_dragObjLocalPoint = transformPointTransposed(tr.traceEnd, !m_dragObj->GetTransformMatrix());
+				m_dragObj = static_cast<CEqRigidBody*>(coll.hitobject);
+				m_dragTargetPoint = m_dragStartPoint = coll.position;
+				m_dragObjLocalPoint = transformPointInverse(Vector3D(coll.position), m_dragObj->GetTransform());
 			}
 		}
 

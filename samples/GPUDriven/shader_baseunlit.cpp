@@ -31,7 +31,7 @@ BEGIN_SHADER_CLASS(
 		SHADER_PARAM_TEXTURE(BaseTexture, m_baseTexture);
 	}
 
-	void BuildPipelineShaderQuery(Array<EqString>& shaderQuery) const
+	void BuildPipelineShaderQuery(Array<EqString>& shaderQuery) const override
 	{
 		bool fogEnable = true;
 
@@ -45,7 +45,7 @@ BEGIN_SHADER_CLASS(
 			shaderQuery.append("ALPHATEST");
 	}
 
-	void UpdateProxy(IGPUCommandRecorder* cmdRecorder) const
+	void UpdateProxy(IGPUCommandRecorder* cmdRecorder) const override
 	{
 		Vector4D bufferData[2];
 		Vector4D textureTransform = GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar);
@@ -56,7 +56,7 @@ BEGIN_SHADER_CLASS(
 		cmdRecorder->WriteBuffer(m_materialParamsBuffer, &bufferData, sizeof(bufferData), 0);
 	}
 
-	void FillBindGroupLayout_Constant(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const
+	void FillBindGroupLayout_Constant(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const override
 	{
 		Builder<BindGroupLayoutDesc>(bindGroupLayout)
 			.Buffer(StringIdConst24("materialParams"), 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
@@ -64,13 +64,13 @@ BEGIN_SHADER_CLASS(
 			.Texture(StringIdConst24("BaseTexture"), 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D);
 	}
 
-	void FillBindGroupLayout_RenderPass(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const
+	void FillBindGroupLayout_RenderPass(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const override
 	{
 		Builder<BindGroupLayoutDesc>(bindGroupLayout)
 			.Buffer(StringIdConst24("camera"), 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM);
 	}
 
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const override
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
@@ -126,7 +126,7 @@ BEGIN_SHADER_CLASS(
 		return setupParams.pipelineInfo.bindGroup[bindGroupId];
 	}
 
-	const ITexturePtr& GetBaseTexture(int stage) const
+	const ITexturePtr& GetBaseTexture(int stage) const override
 	{
 		return m_baseTexture.Get();
 	}

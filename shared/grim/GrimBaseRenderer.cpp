@@ -1120,7 +1120,7 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 	{
 		Array<GPUInstanceBound>& drawInstanceBounds = intermediate.drawInstanceBounds;
 		drawInstanceBounds.setNum(numBounds, false);
-		memset(drawInstanceBounds.ptr(), 0, sizeof(drawInstanceBounds.numElem()) * sizeof(drawInstanceBounds[0]));
+		memset(drawInstanceBounds.ptr(), 0, drawInstanceBounds.numElem() * sizeof(drawInstanceBounds[0]));
 
 		FilterInstances_Software(intermediate);
 		VisibilityCullInstances_Software(intermediate);

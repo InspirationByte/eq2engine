@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "ds/SlottedArray.h"
 #include "input/in_keys_ident.h"
 
 class IFileStream;
@@ -40,7 +41,7 @@ struct InputCommand
 
 struct InputBinding : public InputCommand
 {
-	const InputVectorAction*	boundAxisAction{ nullptr };
+	int						boundAxisActionIdx{ -1 };	// slot in axis action list
 	int						modifierIds[2]{ -1, -1 };	// modifier key indices
 	int						keyIdx{ -1 };				// native key index
 };
@@ -97,14 +98,14 @@ public:
 	InputBinding*			FindBindingByCommandName(const char* name, const char* argStr = nullptr, const InputBinding* startFrom = nullptr) const;
 
 	// registers axis action
-	// they will be prefixed as "j_" + name
+	// they will be prefixed as "ax_" + name
 	void					CreateVectorAction( const char* name, InputVectorAction::Func axisFunc, int axisCount = 1, void* userData = nullptr);
 	void					RemoveVectorAction(const char* name);
 
 	// binding list
 	ArrayCRef<InputBinding*>	GetBindingList() const { return m_bindings; }
 	ArrayCRef<InputTouchZone>	GetTouchZoneList() const { return m_touchZones; }
-	ArrayCRef<InputVectorAction>	GetAxisActionList() const { return m_axisActs; }
+	const SlottedArray<InputVectorAction>&	GetAxisActionList() const { return m_axisActs; }
 
 	// lua use
 	void					UnregisterCommand(ConCommandBase* cmdBase);
@@ -121,6 +122,9 @@ public:
 	void					OnTouchEvent( int finger, const Vector2D& position, bool down );
 
 protected:
+	static void				InputExecAxisActionCommand(void* userData, const Vector3D& value);
+	static void				InputExecInputCommand(void* userData, const Vector3D& value);
+
 	InputBinding*			AllocBinding();
 	void					FreeBinding(InputBinding* binding);
 
@@ -133,20 +137,20 @@ protected:
 	bool					CheckModifiersAndDepress(InputBinding& binding, int keyIdent, bool pressed);
 	bool					ResolveCommandBinding(InputBinding& binding, bool quiet);
 
-	InputVectorAction*		FindAxisAction(const char* name) const;
+	int						FindAxisActionIdx(const char* name) const;
 
-	static constexpr int	BITS_BUTTONS = 1024;
+	static constexpr int			BITS_BUTTONS = 1024;
 
-	BIT_STORAGE_TYPE		m_currentButtonBits[bitArray2Dword(BITS_BUTTONS)]{0};	// current keyboard buttons
-	MemoryPool<InputBinding>	m_bindingMemPool{ PP_SL };
+	BIT_STORAGE_TYPE				m_currentButtonBits[bitArray2Dword(BITS_BUTTONS)]{0};	// current keyboard buttons
+	MemoryPool<InputBinding>		m_bindingMemPool{ PP_SL };
 
-	Array<InputBinding*>		m_bindings{ PP_SL };
-	Array<InputTouchZone>		m_touchZones{ PP_SL };
-	Array<InputVectorAction>	m_axisActs{ PP_SL };
+	Array<InputBinding*>			m_bindings{ PP_SL };
+	Array<InputTouchZone>			m_touchZones{ PP_SL };
+	SlottedArray<InputVectorAction>	m_axisActs{ PP_SL };
 
-	EInputDeviceType		m_lastInputDev{ INPUTDEV_KEYBOARD };
+	EInputDeviceType				m_lastInputDev{ INPUTDEV_KEYBOARD };
 
-	bool					m_init{ false };
+	bool							m_init{ false };
 };
 
 int UTIL_GetBindingKeyIds(int keyIds[3], const InputBinding* binding);
