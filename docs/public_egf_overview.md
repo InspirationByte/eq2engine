@@ -106,6 +106,9 @@ In-memory representations filled by the loaders:
 
 ## Where it is used
 
+Runtime details: [rendering_egf_overview.md](rendering_egf_overview.md) (loading, drawing) and
+[animating_egf_overview.md](animating_egf_overview.md) (animation).
+
 | Code | Purpose |
 |---|---|
 | `shared/studiofile` (`studioFileLib`) | `Studio_LoadModel`, `Studio_LoadMotionData`, `Studio_LoadPhysModel` and matching `Studio_Free*` |

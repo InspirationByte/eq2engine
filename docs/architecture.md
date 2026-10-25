@@ -20,6 +20,8 @@ Related documents:
 | [public_localization.md](public_localization.md) | Localization: language files, tokens, helpers |
 | [public_rendering_overview.md](public_rendering_overview.md) | Material system overview: materials, variables, proxies, textures, debug drawing, fonts |
 | [public_egf_overview.md](public_egf_overview.md) | EGF (Entity Geometry Format): models, motion packages, physics models |
+| [rendering_egf_overview.md](rendering_egf_overview.md) | EGF runtime (`shared/studio`): studio cache, model loading, GPU geometry, skins, LODs, drawing |
+| [animating_egf_overview.md](animating_egf_overview.md) | EGF animation (`shared/animating`): sequences, activities, blending, pose controllers, events, IK |
 | [rendering_matsystem_shaders_overview.md](rendering_matsystem_shaders_overview.md) | Material shaders: `CBaseShader`, pipelines, bind groups, `.def` files, overrides, `BaseUnlit` with GRIM |
 | [rendering_grim_overview.md](rendering_grim_overview.md) | GRIM: GPU-driven instance rendering, its shaders, `samples/GPUDriven` |
 | [sound_emitter_system_overview.md](sound_emitter_system_overview.md) | Sound emitter system: script banks, sounding objects, parameter graphs, audio system |
