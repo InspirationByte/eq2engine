@@ -234,10 +234,10 @@ int	CStudioCache::PrecacheMotionData(const char* fileName, const char* requested
 
 void CStudioCache::FreeMotionData(int index)
 {
+	CScopedWriteLocker m(s_studioCacheRWLock);
+
 	if (!m_motionCachedList[index])
 		return;
-
-	CScopedWriteLocker m(s_studioCacheRWLock);
 
 	StudioMotionData& motionData = *m_motionCachedList[index];
 	m_motionCacheIndex.remove(motionData.nameHash);
