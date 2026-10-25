@@ -255,9 +255,6 @@ void CStudioCache::ReleaseCache()
 	{
 		if (!model)
 			continue;
-
-		// wait for loading completion
-		model->GetStudioHdr();
 		delete model;
 	}
 
