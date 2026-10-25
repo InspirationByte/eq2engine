@@ -76,7 +76,7 @@ Public interfaces are declared in `public/` and implemented in `core/` or `share
 | `core/materialsystem1/Shaders/` | Material shader definitions: `Base/` (built into `eqBaseShaders`), `Engine/` |
 | `public/core/` | Core interfaces: `IDkCore`, `IFileSystem`, `IConsoleCommands`, `ICommandLine`, `ILocalize`, `IEqParallelJobs`, `IEqCPUServices`, `InterfaceManager` — see [public_core.md](public_core.md) |
 | `public/materialsystem1/` | Material system interfaces, `BaseShader`, `MeshBuilder`, render definitions; `renderers/` holds RHI interfaces (`IShaderAPI`, `ITexture`, `IGPUBuffer`, ...) |
-| `public/{audio,font,input,physics,render,egf,dkphysics}/` | Public headers of the corresponding `shared/` libraries |
+| `public/{audio,font,input,physics,render,egf}/` | Public headers of the corresponding `shared/` libraries |
 | `shared/dpk/` | DPK package and ZIP readers/writer |
 | `shared/font/` | Font loading, caching and text layout |
 | `shared/render/` | Render utilities: debug overlay, particles, decals, sprites, render lists, blur/sort compute |
@@ -86,7 +86,6 @@ Public interfaces are declared in `public/` and implemented in `core/` or `share
 | `shared/animating/` | Skeletal animation, bone setup, activities and events |
 | `shared/audio/` | Audio system on OpenAL, sound emitters/scripts/mixer; `source/` holds WAV/OGG sources |
 | `shared/physics/` | EqPhysics engine on top of Bullet collision — see [physics_overview.md](physics_overview.md) |
-| `shared/dkphysics/` | Legacy Darktech physics on Jolt (deprecated, kept for EGFMan2) |
 | `shared/equi/` | EqUI interface library: manager, controls, scheme |
 | `shared/imgui_backend/` | ImGui host and material-system renderer backend |
 | `shared/scripting/` | ESL — Lua binding library |
@@ -217,7 +216,6 @@ All are static libraries using `public` and `shared` include paths.
 | `scriptLib` | `scripting/**` | (lua) |
 | `sysLib` | `sys/**`, `input/**` | scriptLib, renderUtilLib, equiLib, movieLib, imguiBackendLib (SDL2, imgui_lua, tracy) |
 | `egfLib` | `egf/**` | studioFileLib (bullet2, zlib, openfbx, meshoptimizer) — `ENABLE_TOOLS` only |
-| `dkPhysicsLib` | `dkphysics/**` | studioLib, animatingLib (jolt) — `ENABLE_TOOLS` only |
 
 ### Tools (`tools/premake5.lua`, `ENABLE_TOOLS`)
 

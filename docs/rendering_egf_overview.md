@@ -148,6 +148,6 @@ For many instances of the same models use GRIM instead of per-object `Draw`.
 |---|---|
 | `shared/animating` | Skeleton and animation on `CEqStudioGeom` ([animating_egf_overview.md](animating_egf_overview.md)) |
 | `shared/grim` | `CreateStudioDrawArchetype` — EGF models as GPU-driven archetypes |
-| `shared/physics`, `shared/dkphysics` | Physics shapes from the model's POD data |
+| `shared/physics` | Physics shapes from the model's POD data |
 | `tools/egfMan2` (`CAnimatedModel`) | Model viewer: animation, LODs, body groups, skins, bones |
 | `samples/GPUDriven` | Loads all models in `models/` and draws them with GRIM |

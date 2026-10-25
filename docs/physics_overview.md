@@ -316,11 +316,3 @@ enabled.
 `DebugDrawBodies(mode)` draws body bounds through the debug overlay, frozen bodies in green.
 Modes 1–3 draw oriented boxes (mode 3 also draws static objects), modes 0 and 4 draw world-space
 AABBs of bodies.
-
-## dkPhysics (legacy)
-
-`shared/dkphysics` (`dkPhysicsLib`, `public/dkphysics`) is the old Equilibrium 1 "DarkTech"
-physics interface, now running on Jolt. It is deprecated and built only with tools
-(`ENABLE_TOOLS`). EGFMan2 no longer uses it (it previews physics models and ragdolls on
-eqPhysics), so it is not linked by any project and will be removed. Do not use it in new code;
-use eqPhysics.

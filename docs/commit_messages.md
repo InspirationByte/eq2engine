@@ -30,7 +30,7 @@ lines:
 - Start every line with `- ` (dash and space).
 - `<scope>` — the module or area changed, lowercase, matching the directory or project name:
   `ds`, `math`, `core`, `framework`, `keyvalues`, `esl`, `sys`, `matsystem`, `rhi`, `nvrhi`,
-  `wgpu`, `render`, `grim`, `equi`, `physics`, `dkphysics`, `studio`, `egf`, `audio`, `input`,
+  `wgpu`, `render`, `grim`, `equi`, `physics`, `studio`, `egf`, `audio`, `input`,
   `font`, `dpk`, `network`, `premake`, `deps`, `natvis`, `tests`, `docs`, and tool names
   (`egfca`, `animca`, `egfman2`, `fcompress`, `shadercooker`, `texcooker`). A sub-area may follow
   the scope: `sys: esl math ...`, `core: filesystem - ...`.
