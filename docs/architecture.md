@@ -24,6 +24,8 @@ Related documents:
 | [animating_egf_overview.md](animating_egf_overview.md) | EGF animation (`shared/animating`): sequences, activities, blending, pose controllers, events, IK |
 | [rendering_matsystem_shaders_overview.md](rendering_matsystem_shaders_overview.md) | Material shaders: `CBaseShader`, pipelines, bind groups, `.def` files, overrides, `BaseUnlit` with GRIM |
 | [rendering_grim_overview.md](rendering_grim_overview.md) | GRIM: GPU-driven instance rendering, its shaders, `samples/GPUDriven` |
+| [sys_application_overview.md](sys_application_overview.md) | Application framework (`shared/sys`): start-up, game loop, app states, console, configs |
+| [input_overview.md](input_overview.md) | Input: key codes, command bindings, vector actions, touch zones, controllers |
 | [sound_emitter_system_overview.md](sound_emitter_system_overview.md) | Sound emitter system: script banks, sounding objects, parameter graphs, audio system |
 | [scripting_esl_overview.md](scripting_esl_overview.md) | ESL (Eq Script Library): Lua bindings, engine Lua state |
 | [tools_overview.md](tools_overview.md) | Content tools: egfCA, animCA, EGFMan2, FCompress, ShaderCooker, TexCooker, localization tool |
