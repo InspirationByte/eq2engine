@@ -26,6 +26,7 @@ Related documents:
 | [rendering_grim_overview.md](rendering_grim_overview.md) | GRIM: GPU-driven instance rendering, its shaders, `samples/GPUDriven` |
 | [sys_application_overview.md](sys_application_overview.md) | Application framework (`shared/sys`): start-up, game loop, app states, console, configs |
 | [input_overview.md](input_overview.md) | Input: key codes, command bindings, vector actions, touch zones, controllers |
+| [physics_overview.md](physics_overview.md) | Physics (`shared/physics`, eqPhysics): world, collision objects, rigid bodies, ray tests, constraints |
 | [sound_emitter_system_overview.md](sound_emitter_system_overview.md) | Sound emitter system: script banks, sounding objects, parameter graphs, audio system |
 | [scripting_esl_overview.md](scripting_esl_overview.md) | ESL (Eq Script Library): Lua bindings, engine Lua state |
 | [tools_overview.md](tools_overview.md) | Content tools: egfCA, animCA, EGFMan2, FCompress, ShaderCooker, TexCooker, localization tool |
@@ -84,7 +85,7 @@ Public interfaces are declared in `public/` and implemented in `core/` or `share
 | `shared/egf/` | EGF/motion package generator and source model loaders (ESM, FBX, OBJ) — tools only |
 | `shared/animating/` | Skeletal animation, bone setup, activities and events |
 | `shared/audio/` | Audio system on OpenAL, sound emitters/scripts/mixer; `source/` holds WAV/OGG sources |
-| `shared/physics/` | EqPhysics engine on top of Bullet collision |
+| `shared/physics/` | EqPhysics engine on top of Bullet collision — see [physics_overview.md](physics_overview.md) |
 | `shared/dkphysics/` | Legacy Darktech physics on Jolt (deprecated, kept for EGFMan2) |
 | `shared/equi/` | EqUI interface library: manager, controls, scheme |
 | `shared/imgui_backend/` | ImGui host and material-system renderer backend |
