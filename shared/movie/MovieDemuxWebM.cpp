@@ -5,6 +5,7 @@
 // Description: WebM (Matroska) demuxer for movie player
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <stddef.h>		// nestegg.h uses size_t without including it
 #include <nestegg/nestegg.h>
 #include "core/core_common.h"
 #include "MovieDemuxWebM.h"

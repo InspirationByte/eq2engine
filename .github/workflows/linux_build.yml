@@ -28,16 +28,23 @@ on:
 
 env:
   PROJECT_NAME: auto_tests
-  BUILD_CONFIGURATION: Release
   BUILD_PLATFORM: x64
+  TESTS: ds_tests ppmem_tests scripting_tests
   
   EXE_SUFFIX:
-  BUILD_CONFIGURATION_LOWER: retail
 
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - configuration: Debug
+            make_config: debug
+          - configuration: Release
+            make_config: release
 
     steps:
     - uses: actions/checkout@v3
@@ -62,6 +69,16 @@ jobs:
       run: ./utils/premake5 --file=premake5-tests.lua gmake2
       
     - name: make
-      working-directory: ./build
-      run: make config=${{env.BUILD_CONFIGURATION_LOWER}}_${{env.BUILD_PLATFORM}} -j10
-            
+      working-directory: ./build/${{env.PROJECT_NAME}}
+      run: make config=${{matrix.make_config}}_${{env.BUILD_PLATFORM}} -j10
+
+    - name: Run tests
+      working-directory: ./build/${{env.PROJECT_NAME}}/bin/${{env.BUILD_PLATFORM}}/${{matrix.configuration}}
+      timeout-minutes: 10
+      run: |
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)
+        failed=""
+        for test in $TESTS; do
+          ./$test || failed="$failed $test"
+        done
+        if [ -n "$failed" ]; then echo "::error::Failed tests:$failed"; exit 1; fi
