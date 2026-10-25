@@ -60,6 +60,14 @@ needs review by the code owner before changing.
 - [ ] `core/e2core/Localize.cpp` — style does not match `docs/codestyle.md` (C-style casts,
   `_FindToken` reserved identifier, missing `override`, `pszDefaultToken = 0`, mixed `if(` /
   `if (`). Only relevant if the file is refactored.
+- [ ] `shared/scripting/esl_bind.h:338`, `:341` — `EQSCRIPT_BIND_VAR_EX_SET_NAMED` is defined twice
+  (identical definitions).
+- [ ] `shared/sys/scripting/sys_esl_core.h:31-81` — the `ENABLE_MULTIPLAYER` block still binds
+  `Networking::Buffer` / `CNetworkThread` with the old OOLUA macros (`OOLUA_PROXY`), which do not
+  exist in ESL; it would not compile with `ENABLE_MULTIPLAYER`.
+- [ ] `shared/sys/scripting/sys_esl_engine.h:31` — the Lua class of `DDOrientedBox` is named
+  `"DDOrientedBox"`, while the other debug shapes use `Dbg*` names (`DbgBox`, `DbgSphere`, ...)
+  and its constructor function is `DbgOriBox`. Renaming changes the script API.
 
 ## Features
 

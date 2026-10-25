@@ -20,6 +20,7 @@ Related documents:
 | [public_localization.md](public_localization.md) | Localization: language files, tokens, helpers |
 | [public_rendering_overview.md](public_rendering_overview.md) | Material system overview: materials, variables, proxies, textures, debug drawing, fonts |
 | [public_egf_overview.md](public_egf_overview.md) | EGF (Entity Geometry Format): models, motion packages, physics models |
+| [scripting_esl_overview.md](scripting_esl_overview.md) | ESL (Eq Script Library): Lua bindings, engine Lua state |
 | [tools_overview.md](tools_overview.md) | Content tools: egfCA, animCA, EGFMan2, FCompress, ShaderCooker, TexCooker, localization tool |
 
 ## Overview
