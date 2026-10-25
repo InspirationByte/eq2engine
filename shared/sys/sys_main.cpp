@@ -7,12 +7,9 @@
 
 #include "core/core_common.h"
 #include "core/IDkCore.h"
-#include "core/ILocalize.h"
 #include "core/IFileSystem.h"
 
 #include "core/ConVar.h"
-#include "core/IConsoleCommands.h"
-#include "core/ICommandLine.h"
 
 #include "sys_in_console.h"
 #include "sys_version.h"
@@ -28,8 +25,6 @@
 #include <crtdbg.h>
 #endif
 #endif
-
-#define DEFAULT_CONFIG_PATH "cfg/config_default.cfg"
 
 #ifdef _RETAIL
 #define CHEATS_DEFAULT_VALUE 0
@@ -102,26 +97,6 @@ static int sysSDLMessageBoxCallback(const char* messageStr, const char* titleStr
 	return 0;
 }
 
-static void sysInitUserCfg()
-{
-	const int userCfgIdx = g_cmdLine->Find("-user_cfg");
-	if (userCfgIdx != -1)
-	{
-		extern ConVar user_cfg;
-		EqString cfgFileName(g_cmdLine->GetArgumentsOf(userCfgIdx));
-		user_cfg.SetValue(cfgFileName.TrimChar('\"').ToCString());
-	}
-
-	// execute configuration files and command line after all libraries are loaded.
-	g_consoleCommands->ClearCommandBuffer();
-	g_consoleCommands->ParseFileToCommandBuffer(DEFAULT_CONFIG_PATH);
-	g_consoleCommands->ExecuteCommandBuffer();
-
-	// in case of game FS is packed
-	// create configuration directory
-	g_fileSystem->MakeDir("cfg", SP_MOD);
-}
-
 // engine entry point after Core init
 static int sysMain()
 {
@@ -133,14 +108,6 @@ static int sysMain()
 		g_eqCore->Shutdown();
 		return -2;
 	}
-
-	sysInitUserCfg();
-
-	g_localizer->Init();
-	g_localizer->AddToken("GAME_VERSION", EqWString::Format(L"v%d (%ls %ls)", BUILD_NUMBER_ENGINE, L"" COMPILE_DATE, L"" COMPILE_TIME).ToCString());
-	g_localizer->AddToken("BUILD_NUMBER", EqWString::Format(L"v%d", BUILD_NUMBER_ENGINE));
-	g_localizer->AddToken("COMPILE_DATE", EqWString::Format(L"%ls", L"" COMPILE_DATE));
-	g_localizer->AddToken("COMPILE_TIME", EqWString::Format(L"%ls", L"" COMPILE_TIME));
 
 	if (!sysHostInit())
 	{
@@ -157,7 +124,6 @@ static int sysMain()
 	sysHostTerminate();
 
 	// shutdown
-	g_localizer->Shutdown();
 	g_fileSystem->Shutdown();
 	g_eqCore->Shutdown();
 

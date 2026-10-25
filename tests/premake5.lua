@@ -34,6 +34,20 @@ project "ds_tests"
 		"ds/*.h"
 	}
 
+project "ppmem_tests"
+    kind "ConsoleApp"
+	properties { "unitybuild" }
+    uses {
+		"corelib", "frameworkLib",
+		"e2Core",
+		"testsCommonLib",
+		"gtest"
+	}
+    files {
+		"ppmem/*.cpp",
+		"ppmem/*.h"
+	}
+
 project "scripting_tests"
     kind "ConsoleApp"
 	properties { "unitybuild" }

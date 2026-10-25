@@ -21,7 +21,7 @@ const char *__asan_default_options() {
 }
 #endif
 
-#if !defined(NO_PPMEM_OP) && !defined(PPMEM_DISABLE)
+#if !defined(NO_PPMEM_OP) && !defined(PPMEM_DISABLED)
 
 void* operator new(size_t size)
 {
@@ -73,4 +73,4 @@ void operator delete[](void* ptr, PPSourceLine sl) PPNOEXCEPT
 	PPFree(ptr);
 }
 
-#endif // !NO_PPMEM_OP && !PPMEM_DISABLE
+#endif // !NO_PPMEM_OP && !PPMEM_DISABLED

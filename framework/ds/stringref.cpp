@@ -139,8 +139,10 @@ static int x_wcsicmp( const wchar_t* s1, const wchar_t* s2 )
 {
 	while (1)
 	{
-		if (towlower(*s1) != towlower(*s2))
-			return -1;              // strings not equal
+		const wint_t c1 = towlower(*s1);
+		const wint_t c2 = towlower(*s2);
+		if (c1 != c2)
+			return c1 < c2 ? -1 : 1;	// strings not equal
 
 		if (!*s1)
 			return 0;               // strings are equal
@@ -166,7 +168,7 @@ static wchar_t* x_wcsistr(wchar_t* pStr, const wchar_t* pSearch )
 	while (*pLetter != 0)
 	{
 		// Skip over non-matches
-		if (tolower(*pLetter) == tolower(*pSearch))
+		if (towlower(*pLetter) == towlower(*pSearch))
 		{
 			// Check for match
 			const wchar_t* pMatch = pLetter + 1;
@@ -207,8 +209,8 @@ template<> bool IsAlphaNumeric(wchar_t chr) { return iswalnum(chr); }
 template<> bool IsDigit(wchar_t chr) { return iswdigit(chr); }
 template<> bool IsSpace(wchar_t chr) { return iswspace(chr); }
 
-template<> char LowerChar(char chr) { return tolower(chr); }
-template<> char UpperChar(char chr) { return toupper(chr); }
+template<> char LowerChar(char chr) { return tolower(static_cast<uint8>(chr)); }
+template<> char UpperChar(char chr) { return toupper(static_cast<uint8>(chr)); }
 
 template<> wchar_t LowerChar(wchar_t chr)
 {
@@ -321,16 +323,93 @@ int CompareCaseIns(const wchar_t* strA, const wchar_t* strB)
 	return x_wcsicmp(strA, strB);
 }
 
+// compares strings of known length, strings are not required to be null-terminated
+template<typename CH, bool CASE_INS>
+static int CompareLen(const CH* strA, int lenA, const CH* strB, int lenB)
+{
+	using UCH = std::make_unsigned_t<CH>;
+
+	ASSERT(lenA >= 0 && lenB >= 0);
+	ASSERT((strA || lenA == 0) && (strB || lenB == 0));
+
+	const int len = min(lenA, lenB);
+	if (strA != strB)
+	{
+		for (int i = 0; i < len; ++i)
+		{
+			const UCH a = CASE_INS ? CType::LowerChar(strA[i]) : strA[i];
+			const UCH b = CASE_INS ? CType::LowerChar(strB[i]) : strB[i];
+			if (a != b)
+				return a < b ? -1 : 1;
+		}
+	}
+
+	if (lenA == lenB)
+		return 0;
+	return lenA < lenB ? -1 : 1;
+}
+
+int Compare(const char* strA, int lenA, const char* strB, int lenB)
+{
+	return CompareLen<char, false>(strA, lenA, strB, lenB);
+}
+
+int Compare(const wchar_t* strA, int lenA, const wchar_t* strB, int lenB)
+{
+	return CompareLen<wchar_t, false>(strA, lenA, strB, lenB);
+}
+
+int CompareCaseIns(const char* strA, int lenA, const char* strB, int lenB)
+{
+	return CompareLen<char, true>(strA, lenA, strB, lenB);
+}
+
+int CompareCaseIns(const wchar_t* strA, int lenA, const wchar_t* strB, int lenB)
+{
+	return CompareLen<wchar_t, true>(strA, lenA, strB, lenB);
+}
+
 int PrintFV(char* buffer, int bufferCnt, const char* fmt, va_list argList)
 {
 	ASSERT(buffer && fmt);
 	return vsnprintf(buffer, bufferCnt, fmt, argList);
 }
 
+// unlike vsnprintf, wide printf returns -1 when output is truncated,
+// so required length is computed separately to match narrow PrintFV behaviour
 int PrintFV(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, va_list argList)
 {
 	ASSERT(buffer && fmt);
-	return _vsnwprintf(buffer, bufferCnt, fmt, argList);
+
+	va_list argCopy;
+	va_copy(argCopy, argList);
+	int result = _vsnwprintf(buffer, bufferCnt, fmt, argList);
+
+	if (result < 0 || result >= bufferCnt)
+	{
+		if (bufferCnt > 0)
+			buffer[bufferCnt - 1] = 0;
+
+#ifdef _WIN32
+		if (result < 0)
+			result = _vscwprintf(fmt, argCopy);
+#else
+		// no way to query the length, print into growing scratch buffer until it fits
+		constexpr int MAX_PRINT_LENGTH = 16 * 1024 * 1024;
+		for (int scratchCnt = max(bufferCnt * 2, 256); result < 0 && scratchCnt <= MAX_PRINT_LENGTH; scratchCnt *= 2)
+		{
+			wchar_t* scratch = PPAllocStructArray(wchar_t, scratchCnt);
+			va_list scratchArgs;
+			va_copy(scratchArgs, argCopy);
+			result = vswprintf(scratch, scratchCnt, fmt, scratchArgs);
+			va_end(scratchArgs);
+			PPFree(scratch);
+		}
+#endif
+	}
+
+	va_end(argCopy);
+	return result;
 }
 
 int PrintF(char* buffer, int bufferCnt, const char* fmt, ...)
@@ -419,18 +498,18 @@ template<typename CH>
 int EqTStrRef<CH>::Compare(EqTStrRef otherStr) const
 {
 	if (!IsValid() || !otherStr.IsValid())
-		return -1;
+		return (IsValid() == otherStr.IsValid()) ? 0 : -1;
 
-	return CString::Compare(m_data, otherStr.ToCString());
+	return CString::Compare(m_data, Length(), otherStr.m_data, otherStr.Length());
 }
 
 template<typename CH>
 int EqTStrRef<CH>::CompareCaseIns(EqTStrRef otherStr) const
 {
 	if (!IsValid() || !otherStr.IsValid())
-		return -1;
+		return (IsValid() == otherStr.IsValid()) ? 0 : -1;
 
-	return CString::CompareCaseIns(m_data, otherStr.ToCString());
+	return CString::CompareCaseIns(m_data, Length(), otherStr.m_data, otherStr.Length());
 }
 
 template<typename CH>
@@ -443,7 +522,7 @@ int EqTStrRef<CH>::GetMathingChars(EqTStrRef otherStr) const
 	const CH* s2 = otherStr;
 
 	int matching = 0;
-	while (*s1++ == *s2++) { matching++; }
+	while (*s1 && *s1 == *s2) { ++s1; ++s2; ++matching; }
 
 	return matching;
 }
@@ -458,7 +537,7 @@ int EqTStrRef<CH>::GetMathingCharsCaseIns(EqTStrRef otherStr) const
 	const CH* s2 = otherStr;
 
 	int matching = 0;
-	while (CType::LowerChar(*s1++) == CType::LowerChar(*s2++)) { matching++; }
+	while (*s1 && CType::LowerChar(*s1) == CType::LowerChar(*s2)) { ++s1; ++s2; ++matching; }
 
 	return matching;
 }
@@ -469,12 +548,19 @@ int EqTStrRef<CH>::Find(EqTStrRef subStr, bool bCaseSensetive, int nStart) const
 	if (!IsValid() || !subStr.IsValid() || nStart < 0)
 		return -1;
 
-	const CH* strStart = const_cast<CH*>(m_data) + min(nStart, Length());
-	const CH* subStrPtr = bCaseSensetive ? CString::SubString(strStart, subStr.ToCString()) : CString::SubStringCaseIns(strStart, subStr.ToCString());
-	if (!subStrPtr)
-		return -1;
+	// search only within known lengths, both strings may be not null-terminated
+	const int length = Length();
+	const int subLength = subStr.Length();
+	for (int i = nStart; i + subLength <= length; ++i)
+	{
+		const int cmp = bCaseSensetive
+			? CString::Compare(m_data + i, subLength, subStr.m_data, subLength)
+			: CString::CompareCaseIns(m_data + i, subLength, subStr.m_data, subLength);
+		if (cmp == 0)
+			return i;
+	}
 
-	return (subStrPtr - m_data);
+	return -1;
 }
 
 template<typename CH>
@@ -502,7 +588,7 @@ EqTStrRef<CH> EqTStrRef<CH>::UpperCase() const
 template<typename CH>
 EqTStrRef<CH> EqTStrRef<CH>::Left(int nCount) const
 {
-	return Mid(0, nCount);
+	return Mid(0, min(nCount, Length()));
 }
 
 template<typename CH>
@@ -534,12 +620,11 @@ EqTStrRef<CH> EqTStrRef<CH>::EatWhiteSpaces() const
 	if (!IsValid())
 		return EqTStr<CH>::EmptyStr;
 
-	EqTStr<CH> out;
-	const CH* cc = m_data;
-	while (cc)
+	EqTStr<CH>& out = GetTempString(nullptr, 0);
+	for (const CH* cc = m_data; *cc; ++cc)
 	{
 		if (!CType::IsSpace(*cc))
-			out.Append(*cc++);
+			out.Append(*cc);
 	}
 
 	return out;
@@ -554,19 +639,19 @@ EqTStrRef<CH> EqTStrRef<CH>::TrimSpaces(bool left, bool right) const
 	const CH* begin = m_data;
 
 	// trim whitespace from left
-	while (*begin && CType::IsSpace(*begin))
+	while (left && *begin && CType::IsSpace(*begin))
 		begin++;
 
 	if (*begin == 0)
 		return EqTStr<CH>::EmptyStr;
 
-	const CH* end = begin + CString::Length(begin) - 1;
+	const CH* end = m_data + Length();
 
 	// trim whitespace from right
-	while (end > begin && CType::IsSpace(*end))
+	while (right && end > begin && CType::IsSpace(end[-1]))
 		end--;
 
-	return Mid(begin - m_data, end - begin + 1);
+	return Mid(begin - m_data, end - begin);
 }
 
 template<typename CH>
@@ -589,13 +674,13 @@ EqTStrRef<CH> EqTStrRef<CH>::TrimChar(const CH* ch, bool left, bool right) const
 	if (*begin == 0)
 		return EqTStr<CH>::EmptyStr;
 
-	const CH* end = begin + CString::Length(begin) - 1;
+	const CH* end = m_data + Length();
 
 	// trim whitespace from right
-	while (right && end > begin && ischr(ch, *end))
+	while (right && end > begin && ischr(ch, end[-1]))
 		--end;
 
-	return Mid(begin - m_data, end - begin + 1);
+	return Mid(begin - m_data, end - begin);
 }
 
 template<typename CH>

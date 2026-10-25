@@ -150,7 +150,7 @@ project "movieLib"
 	properties { "staticlib", "unitybuild" }
 	uses { 
 		"public", "shared",
-		"ffmpeg"
+		"dav1d", "nestegg", "minivorbis"
 	}
     files {
 		"movie/**",
@@ -214,7 +214,7 @@ if ENABLE_TOOLS then
 			["Public Headers"] = PUBLIC_DIR.."/egf/**.h"
 		}
 
-	-- Equilibrium 1 Darktech Physics (Deprecated but kept for egfMan)
+	-- Equilibrium 1 Darktech Physics (Deprecated but kept for egfMan2)
 	project "dkPhysicsLib"
 		properties { "staticlib", "unitybuild" }
 		uses {

@@ -613,16 +613,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		if (!typeChecker(LUA_TLIGHTUSERDATA))
 			return Result::Failure(EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
 
-		void* objPtr = nullptr;
-		if (lua_rawlen(L, index) == 0)
-		{
-			const int t = lua_getuservalue(L, index);
-			ASSERT(t == LUA_TLIGHTUSERDATA);
-			objPtr = lua_touserdata(L, -1);
-			lua_pop(L, 1);
-		}
-		else
-			objPtr = lua_touserdata(L, index);
+		void* objPtr = lua_touserdata(L, index);
 
 		return Result{ {}, true, {}, objPtr };
 	}

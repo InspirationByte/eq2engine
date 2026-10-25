@@ -18,6 +18,7 @@
 #include "core/IEqCPUServices.h"
 #include "core/IEqParallelJobs.h"
 #include "core/IFileSystem.h"
+#include "core/ILocalize.h"
 #include "core/ConCommand.h"
 #include "core/ConVar.h"
 
@@ -41,7 +42,7 @@
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/ITextureLoader.h"
 
-
+#define DEFAULT_CONFIG_PATH			"cfg/config_default.cfg"
 #define DEFAULT_USERCONFIG_PATH		"cfg/user.cfg"
 
 DECLARE_CVAR_G(user_cfg, DEFAULT_USERCONFIG_PATH, "User configuration file location", CV_PROTECTED);
@@ -172,6 +173,25 @@ static void sysHostSaveScreenshot()
 	ScreenshotSaveJob* screenshotJob = PPNew ScreenshotSaveJob(img, saveJpegFile);
 	screenshotJob->DeleteOnFinish();
 	g_parallelJobs->GetJobMng()->InitStartJob(screenshotJob);
+}
+
+static void sysInitUserCfg()
+{
+	const int userCfgIdx = g_cmdLine->Find("-user_cfg");
+	if (userCfgIdx != -1)
+	{
+		EqString cfgFileName(g_cmdLine->GetArgumentsOf(userCfgIdx));
+		user_cfg.SetValue(cfgFileName.TrimChar('\"').ToCString());
+	}
+
+	// execute configuration files and command line after all libraries are loaded.
+	g_consoleCommands->ClearCommandBuffer();
+	g_consoleCommands->ParseFileToCommandBuffer(DEFAULT_CONFIG_PATH);
+	g_consoleCommands->ExecuteCommandBuffer();
+
+	// in case of game FS is packed
+	// create configuration directory
+	g_fileSystem->MakeDir("cfg", SP_MOD);
 }
 
 DECLARE_INTERNAL_SHADERS();
@@ -468,9 +488,14 @@ bool CGameHost::InitSystems()
 
 	g_parallelJobs->Init();
 
+	if (!LoadModules())
+		return false;
+
 	// init game states and proceed
 	if (!eqAppStateMng::InitAppStates())
 		return false;
+
+	sysInitUserCfg();
 
 	m_window = sysHostCreateWindow();
 	ApplyVideoMode();
@@ -547,6 +572,13 @@ bool CGameHost::InitSystems()
 		return false;
 
 	m_defaultFont = g_fontCache->GetFont("default", 0);
+
+	g_localizer->Init();
+	g_localizer->AddToken("GAME_VERSION", EqWString::Format(L"v%d (%ls %ls)", BUILD_NUMBER_ENGINE, L"" COMPILE_DATE, L"" COMPILE_TIME).ToCString());
+	g_localizer->AddToken("BUILD_NUMBER", EqWString::Format(L"v%d", BUILD_NUMBER_ENGINE));
+	g_localizer->AddToken("COMPILE_DATE", EqWString::Format(L"%ls", L"" COMPILE_DATE));
+	g_localizer->AddToken("COMPILE_TIME", EqWString::Format(L"%ls", L"" COMPILE_TIME));
+
 	debugoverlay->Init();
 	equi::Manager->Init();
 	g_inputCommandBinder->Init();
@@ -701,6 +733,7 @@ void CGameHost::ShutdownSystems()
 	g_inputCommandBinder->Shutdown();
 	g_consoleInput->Shutdown();
 	g_matSystem->Shutdown();
+	g_localizer->Shutdown();
 
 	g_eqCore->UnregisterInterface<IMaterialSystem>();
 	g_eqCore->UnregisterInterface<ITextureLoader>();
@@ -708,7 +741,7 @@ void CGameHost::ShutdownSystems()
 
 	g_parallelJobs->Shutdown();
 
-	SDL_DestroyWindow(g_pHost->m_window);
+	SDL_DestroyWindow(m_window);
 }
 
 bool CGameHost::FilterTime( double dTime )
@@ -954,10 +987,10 @@ bool CGameHost::Frame()
 	if (m_wantsToggleFullscreen)
 	{
 		m_wantsToggleFullscreen = false;
-		if (g_pHost->IsWindowed())
-			g_pHost->SetFullscreenMode(true);
+		if (IsWindowed())
+			SetFullscreenMode(true);
 		else
-			g_pHost->SetWindowedMode();
+			SetWindowedMode();
 	}
 
 	eqAppStateMng::g_onEndFrame(gameFrameTime);
@@ -1053,7 +1086,7 @@ void CGameHost::Mouse_Event( float x, float y, int buttons, bool down )
 		return;
 
 	if(m_clicks_to_touch.GetBool())
-		g_pHost->Touch_Event( x/m_winSize.x, y/m_winSize.y, 0, down);
+		Touch_Event( x/m_winSize.x, y/m_winSize.y, 0, down);
 
 	if(eqAppStateMng::GetCurrentState())
 		eqAppStateMng::GetCurrentState()->HandleMouseClick( x, y, buttons, down );

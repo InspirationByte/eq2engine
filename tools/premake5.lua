@@ -83,23 +83,27 @@ project "shadercooker"
 
 if ENABLE_GUI_TOOLS then
 	
--- Equilibrium Graphics File manager (EGFMan)
-project "egfman"
-    kind "WindowedApp"
+-- Equilibrium Graphics File manager on sysLib and ImGui (EGFMan2)
+project "egfMan2"
+	kind "WindowedApp"
 	properties { "tools", "app", "unitybuild" }
-    uses {
+	uses {
 		"corelib", "frameworkLib", "e2Core",
-		"fontLib", "physicsLib", "dkPhysicsLib", "renderUtilLib", "animatingLib",
-		"wxWidgets"
+		"sysLib",
+		"soundSystemLib", -- required by movieLib through sysLib
+		"physicsLib", "dkPhysicsLib", "renderUtilLib", "animatingLib",
+		"BaseShader",
+		"imgui",
+		"nfd"
 	}
-    files {
-		"egfman/*.cpp",
-		"egfman/*.h"
+	files {
+		"egfMan2/*.cpp",
+		"egfMan2/*.h"
 	}
 
-    filter "system:Windows"
-        files {
-			"egfman/**.rc"
+	filter "system:Windows"
+		files {
+			"egfMan2/**.rc"
 		}
 
 end

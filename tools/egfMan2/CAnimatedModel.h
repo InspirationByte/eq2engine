@@ -27,7 +27,6 @@ enum ViewerRenderFlags
 // for ragdoll use baseragdollanimating
 class CAnimatedModel : public CAnimatingEGF
 {
-	friend class CEGFViewFrame;
 public:
 	CAnimatedModel();
 

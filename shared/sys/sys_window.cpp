@@ -9,6 +9,9 @@
 
 #include "core/core_common.h"
 #include "core/ConVar.h"
+#include "core/ICommandLine.h"
+#include "core/IConsoleCommands.h"
+#include "core/IFileSystem.h"
 
 #include "sys_host.h"
 #include "sys_in_joystick.h"
@@ -149,9 +152,6 @@ bool sysHostInit()
 		ASSERT_MSG( "Failed to init SDL system: %s\n", SDL_GetError());
 		return false;
 	}
-
-	if(!g_pHost->LoadModules())
-		return false;
 
 	if(!g_pHost->InitSystems())
 		return false;

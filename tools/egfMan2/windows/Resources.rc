@@ -45,11 +45,11 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "FileDescription", "EGFMan\0"
+            VALUE "FileDescription", "EGFMan2\0"
             VALUE "FileVersion", "1, 0, 0, 1\0"
-            VALUE "InternalName", "EGFMan\0"
+            VALUE "InternalName", "EGFMan2\0"
             VALUE "LegalCopyright", "Copyright © 2009-2021 Inspiration Byte\0"
-            VALUE "OriginalFilename", "egfman.exe\0"
+            VALUE "OriginalFilename", "egfMan2.exe\0"
             VALUE "ProductName", "Equilibrium\0"
             VALUE "ProductVersion", "1, 0, 0, 1\0"
         END
