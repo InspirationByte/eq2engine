@@ -71,6 +71,10 @@ needs review by the code owner before changing.
 - [ ] `shared/premake5.lua:189` — `sysLib` lists `gamesys/**`, which does not exist in `shared/`.
 - [ ] `samples/GPUDriven/premake5.lua:26` — uses `egfLib`, which is defined only when
   `ENABLE_TOOLS` is on.
+- [ ] `utils/.premake_modules/usage` — the custom `usage` / `uses` module conflicts with the
+  built-in usages of newer premake5 releases (they work differently), so the build is pinned to
+  the premake5 binaries in `utils/`. Resolve the conflict (rename the module API or migrate to
+  the built-in usages) to allow updating premake5.
 
 ## Documentation to verify
 
