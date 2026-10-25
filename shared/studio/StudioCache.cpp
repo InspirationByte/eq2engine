@@ -263,6 +263,9 @@ void CStudioCache::ReleaseCache()
 
 	for (StudioMotionData* motionData : m_motionCachedList)
 	{
+		if (!motionData)
+			continue;
+
 		Studio_FreeMotionData(*motionData);
 		delete motionData;
 	}
