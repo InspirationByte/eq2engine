@@ -339,16 +339,13 @@ bool CAnimatingEGF::AddMotionData(const StudioMotionData* motionData)
 	{
 		const int existingIdx = arrayFindIndexF(m_poseControllers, [&poseCtrl](const AnimPoseController& ctrl) {
 			return CString::CompareCaseIns(ctrl.desc->name, poseCtrl.name) == 0;
-			});
+		});
 
 		if (existingIdx != -1)
 		{
 			const posecontroller_t& existingCtrl = *m_poseControllers[existingIdx].desc;
-			if (existingCtrl.blendRange[0] == poseCtrl.blendRange[0]
-				&& existingCtrl.blendRange[1] == poseCtrl.blendRange[1])
-			{
+			if (existingCtrl.blendRange[0] != poseCtrl.blendRange[0] || existingCtrl.blendRange[1] != poseCtrl.blendRange[1])
 				MsgWarning("%s warning: pose controller %s was added from another package but blend ranges are mismatched", m_geomReference->GetName(), poseCtrl.name);
-			}
 			continue;
 		}
 
@@ -1029,64 +1026,38 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 	if (!m_ikChains.numElem())
 		return;
 
-	bool ik_enabled_bones[128];
-	memset(ik_enabled_bones, 0, sizeof(ik_enabled_bones));
-
-	// run through bones and find enabled bones by IK chain
-	for (int boneId = 0; boneId < m_joints.numElem(); boneId++)
-	{
-		const int chain_id = m_joints[boneId].ikChainId;
-		const int link_id = m_joints[boneId].ikLinkId;
-
-		if (link_id != -1 && chain_id != -1 && m_ikChains[chain_id].enable)
-		{
-			const AnimIkChain& chain = m_ikChains[chain_id];
-
-			for (const AnimIkChain::Link& link : chain.links)
-			{
-				if (link.desc->bone == boneId)
-				{
-					ik_enabled_bones[boneId] = true;
-					break;
-				}
-			}
-		}
-	}
-
 	// solve ik links or copy frames to disabled links
-	for (int i = 0; i < m_ikChains.numElem(); i++)
+	for (AnimIkChain& chain : m_ikChains)
 	{
-		AnimIkChain& chain = m_ikChains[i];
 		if (chain.enable)
 		{
-			// display target
+#ifdef ENABLE_DEBUG_DRAWING
 			if (r_debugIK.GetBool())
 			{
-				const Vector3D target_pos = transformPointTransposed(chain.localTarget, worldTransform);
-				debugoverlay->Box3D(target_pos - Vector3D(1), target_pos + Vector3D(1), ColorRGBA(0, 1, 0, 1));
+				const Vector3D targetPos = transformPointTransposed(chain.localTarget, worldTransform);
+				DbgBox().CenterSize(targetPos, 1.0f).Color(color_green);
 			}
-
+#endif
 			// update chain
 			UpdateIkChain(chain, fDt);
+			continue;
 		}
-		else
+
+		// copy last frames to all links
+		for (AnimIkChain::Link& link : chain.links)
 		{
-			// copy last frames to all links
-			for (AnimIkChain::Link& link : chain.links)
-			{
-				const int boneIdx = link.desc->bone;
-				const StudioJoint& joint = m_joints[boneIdx];
+			const int boneIdx = link.desc->bone;
+			const StudioJoint& joint = m_joints[boneIdx];
 
-				link.quat = Quaternion(m_boneTransforms[boneIdx].getRotationComponent());
-				link.position = joint.bone->position;
+			link.quat = Quaternion(m_boneTransforms[boneIdx].getRotationComponent());
+			link.position = joint.bone->position;
 
-				link.localTrans = Matrix4x4(link.quat);
-				link.localTrans.setTranslation(link.position);
+			link.localTrans = Matrix4x4(link.quat);
+			link.localTrans.setTranslation(link.position);
 
-				// fix local transform for animation
-				link.localTrans = joint.localTrans * link.localTrans;
-				link.absTrans = m_boneTransforms[boneIdx];
-			}
+			// fix local transform for animation
+			link.localTrans = joint.localTrans * link.localTrans;
+			link.absTrans = m_boneTransforms[boneIdx];
 		}
 	}
 
