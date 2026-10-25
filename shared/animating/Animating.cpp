@@ -248,6 +248,8 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 	if (!model)
 		return;
 
+	ASSERT_MSG(model->GetLoadingState() == MODEL_LOAD_OK, "InitAnimating called when EGF is not loaded, consider initializing it with LoadingFuture");
+
 	const studioHdr_t& studio = model->GetStudioHdr();
 
 	m_joints = model->GetJoints();
