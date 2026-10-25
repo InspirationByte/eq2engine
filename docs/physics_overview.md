@@ -23,7 +23,7 @@ Design points:
 | `eqCollision_Callback.h/.cpp` | `IEqPhysCallback` — per-object simulation and collision callbacks |
 | `eqPhysics_Defs.h/.cpp` | Constants, `eqPhysCollisionFilter`, `eqPhysSurfParam` |
 | `eqPhysics_Broadphase.h/.cpp` | `CEqPhysicsBroadphase` — two `btDbvt` trees (dynamic and fixed) |
-| `eqPhysics_Contstraint.h`, `eqPhysics_PointConstraint.*`, `eqPhysics_MaxDistConstraint.*` | `IEqPhysicsConstraint` and point / max distance constraints |
+| `eqPhysics_Contstraint.h`, `eqPhysics_PointConstraint.*`, `eqPhysics_MaxDistConstraint.*`, `eqPhysics_AngularLimitConstraint.*` | `IEqPhysicsConstraint` and point / max distance / angular limit constraints |
 | `eqPhysics_Controller.h`, `eqPhysics_HingeJoint.*` | `IEqPhysController` and the hinge joint built from constraints |
 | `eqBulletIndexedMesh.h/.cpp` | `CEqBulletIndexedMesh` — triangle mesh with per-subpart material, for static world geometry |
 | `BulletShapeCache.h/.cpp` | `CBulletStudioShapeCache` — builds Bullet shapes for EGF physics models |
@@ -268,6 +268,7 @@ physics->TestConvexSweepCollision(shape, rotation, start, end, coll, mask, &filt
 |---|---|
 | `CEqPointConstraint` | Keeps two body points together, `allowedDistance` and `timescale` for softness |
 | `CEqMaxDistConstraint` | Keeps two body points within `maxDistance` |
+| `CEqAngularLimitConstraint` | Keeps rotation of a joint frame of body 0 relative to a joint frame of body 1 within per-axis `minLimit` / `maxLimit` (radians, equal limits lock the axis). Rotation is measured as a rotation vector in body 1 frame axes. Only pushes back when a limit is exceeded |
 | `CEqHingeJoint` (controller) | Hinge with angle limits from one point and two max distance constraints (car doors, hoods). `Break()` / `Restore()` remove / restore the limit, `SetExtraTorque` |
 
 ```cpp
