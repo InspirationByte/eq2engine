@@ -279,6 +279,16 @@ physics->AddController(hinge);		// adds its constraints to the world
 hinge->SetEnabled(true);
 ```
 
+A ragdoll joint is a `CEqPointConstraint` at the bone position plus a `CEqAngularLimitConstraint`
+with the bone orientation as both joint frames (bodies are created with identity orientation in
+the bind pose). Constraints are added with `AddConstraint` and enabled with `SetEnabled(true)`;
+see `tools/egfMan2/ragdoll/physics_ragdoll.cpp`.
+
+```cpp
+pointConstraint->Init(childBody, bonePos - childOffset, parentBody, bonePos - parentOffset, 0.0025f, 1.0f / 20.0f);
+angularConstraint->Init(childBody, boneRotation, parentBody, boneRotation, joint.minLimit, joint.maxLimit, 1.0f / 20.0f);
+```
+
 `CONSTRAINT_FLAG_BODYA_NOIMPULSE` / `CONSTRAINT_FLAG_BODYB_NOIMPULSE` apply impulses to one body
 only. `IEqPhysController` is any object with `Update(dt)` called at the start of each step while
 enabled.
@@ -311,5 +321,6 @@ AABBs of bodies.
 
 `shared/dkphysics` (`dkPhysicsLib`, `public/dkphysics`) is the old Equilibrium 1 "DarkTech"
 physics interface, now running on Jolt. It is deprecated and built only with tools
-(`ENABLE_TOOLS`), because EGFMan2 still uses it to preview physics models and ragdolls. It will
-be removed. Do not use it in new code; use eqPhysics.
+(`ENABLE_TOOLS`). EGFMan2 no longer uses it (it previews physics models and ragdolls on
+eqPhysics), so it is not linked by any project and will be removed. Do not use it in new code;
+use eqPhysics.

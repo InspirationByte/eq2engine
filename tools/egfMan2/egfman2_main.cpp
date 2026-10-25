@@ -13,7 +13,7 @@
 #include "sys/sys_host.h"
 #include "imgui_backend/imgui_host.h"
 #include "studio/StudioCache.h"
-#include "dkphysics/DkPhysicsInit.h"
+#include "egfman2_physics.h"
 
 #include "egfman2_filedialog.h"
 #include "egfman2_viewer.h"
@@ -45,7 +45,7 @@ bool InitAppStates()
 
 	s_appStates[APP_STATE_VIEWER] = g_stateViewer;
 
-	dkPhysicsLibInit();
+	PhysicsLibInit();
 	g_studioCache->Init(g_parallelJobs->GetJobMng());
 
 	FileDialogInit();
@@ -69,7 +69,7 @@ void ShutdownAppStates()
 	FileDialogShutdown();
 
 	g_studioCache->Shutdown();
-	dkPhysicsLibShutdown();
+	PhysicsLibShutdown();
 	g_parallelJobs->Shutdown();
 }
 

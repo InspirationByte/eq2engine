@@ -50,13 +50,18 @@ animca <script1.asc> [<script2.asc> ...]
 
 Application for inspecting EGF models: geometry, LODs and body groups, materials and skins,
 skeleton, animations and sequences, physics objects. Built on `sysLib` with an ImGui interface
-(registered as an always-shown ImGui debug handler), `physicsLib`, `dkPhysicsLib`,
-`renderUtilLib`, `animatingLib`; native file dialogs come from `nfd` (`src_dependency/nfd`).
+(registered as an always-shown ImGui debug handler), `physicsLib` (eqPhysics, see
+[physics_overview.md](physics_overview.md)), `renderUtilLib`, `animatingLib`; native file dialogs
+come from `nfd` (`src_dependency/nfd`).
 
 - `-model <path>` opens a model on start.
 - Camera: Shift + left / right / middle mouse button drag rotates, zooms and pans; the cursor wraps
   around the window edges while the camera moves. Left button drag pulls physics objects while
   physics simulation runs.
+- Physics preview runs eqPhysics with a fixed 1/60 s step on a floor box at zero height. All
+  surface params of the model fall back to one built-in `default` param. Ragdolls
+  (`ragdoll/physics_ragdoll.*`) use point and angular limit constraints with the joint limits
+  from the `.pod`; ragdoll parts collide only with the floor.
 - Hotkeys: Ctrl+O open, R reset view, P physics objects, B bones, W wireframe.
 - Writes its ConVars to `cfg/egfman2.cfg` instead of the game `cfg/user.cfg` unless `-user_cfg` is
   given.
