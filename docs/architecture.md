@@ -22,6 +22,7 @@ Related documents:
 | [public_egf_overview.md](public_egf_overview.md) | EGF (Entity Geometry Format): models, motion packages, physics models |
 | [rendering_matsystem_shaders_overview.md](rendering_matsystem_shaders_overview.md) | Material shaders: `CBaseShader`, pipelines, bind groups, `.def` files, overrides, `BaseUnlit` with GRIM |
 | [rendering_grim_overview.md](rendering_grim_overview.md) | GRIM: GPU-driven instance rendering, its shaders, `samples/GPUDriven` |
+| [sound_emitter_system_overview.md](sound_emitter_system_overview.md) | Sound emitter system: script banks, sounding objects, parameter graphs, audio system |
 | [scripting_esl_overview.md](scripting_esl_overview.md) | ESL (Eq Script Library): Lua bindings, engine Lua state |
 | [tools_overview.md](tools_overview.md) | Content tools: egfCA, animCA, EGFMan2, FCompress, ShaderCooker, TexCooker, localization tool |
 
