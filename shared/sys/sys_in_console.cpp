@@ -24,13 +24,13 @@
 #include <SDL_keyboard.h>
 
 #include "render/IDebugOverlay.h"
+#include "input/in_keys_ident.h"
 
 #include "font/FontLayoutBuilders.h"
 #include "font/FontCache.h"
 
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
-#include "input/InputCommandBinder.h"
 
 #include "sys_version.h"
 #include "sys_in_console.h"
@@ -38,7 +38,6 @@
 #if !defined(_RETAIL)
 #define EXTENDED_DEVELOPER_CONSOLE
 #endif
-#include "imgui/imgui_impl_sys.h"
 #include "imgui_backend/imgui_host.h"
 
 using namespace Threading;
@@ -53,11 +52,6 @@ static CEqMutex s_conInputMutex;
 #define CONSOLE_INPUT_STARTSTR ("> ")
 #define CURSOR_BLINK_TIME (0.2f)
 const float CMDLIST_SYMBOL_SIZE = 15.0f;
-
-// dummy command
-DECLARE_CMD(toggleconsole, nullptr, CV_INVISIBLE)	// dummy console command
-{
-}
 
 DECLARE_CONCOMMAND_FN(con_toggle)
 {
@@ -244,11 +238,7 @@ void CEqConsoleInput::SpewUninstall()
 
 //-------------------------------------------------------------------------
 
-CEqConsoleInput::CEqConsoleInput()
-{
-}
-
-void CEqConsoleInput::Initialize(EQWNDHANDLE window)
+void CEqConsoleInput::Init()
 {
 	const KVSection& consoleSettings = g_eqCore->GetConfig().Get("Console");
 
@@ -258,73 +248,38 @@ void CEqConsoleInput::Initialize(EQWNDHANDLE window)
 	m_font = g_fontCache->GetFont(consoleFontName, 16);
 	consoleSettings.Get("Enable").GetValues(m_enabled);
 	consoleSettings.Get("FontScale").GetValues(m_fontScale);
-
-#ifdef IMGUI_ENABLED
-	// TODO: ImGui networked console port (for Android)
-	g_imGuiHost->Initialize();
-	ImGui_ImplEq_InitForSDL(window);
-#endif
 }
 
 void CEqConsoleInput::Shutdown()
 {
-#ifdef IMGUI_ENABLED
-	ImGui_ImplEq_Shutdown();
-	g_imGuiHost->Shutdown();
-#endif
 }
 
 void CEqConsoleInput::BeginFrame()
 {
-#ifdef IMGUI_ENABLED
-	if (m_visible || g_imGuiHost->IsShown())
-	{
-		const bool anyItemShown = ImGui_ImplEq_AnyItemShown();
-
-		// Start the Dear ImGui frame
-		ImGui_ImplEq_NewFrame();
-		if (anyItemShown)
-		{
-			ImGui_ImplEq_UpdateMousePosAndButtons();
-			ImGui_ImplEq_UpdateGamepads();
-		}
-	}
-	g_imGuiHost->BeginFrame(m_visible);
-#endif
 }
 
-void CEqConsoleInput::EndFrame(int width, int height, float frameTime)
+void CEqConsoleInput::EndFrame(int width, int height, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
 {
-	IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
-		Builder<RenderPassDesc>()
-		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
-		.End()
-	);
+	if (!m_visible)
+		return;
 
-	if (m_visible)
+	if (m_showConsole)
 	{
-		if (m_showConsole)
-		{
-			int conHeight = con_size.GetFloat() * height;
-			if (conHeight < 400)
-				conHeight = min(height, 400);
+		int conHeight = con_size.GetFloat() * height;
+		if (conHeight < 400)
+			conHeight = min(height, 400);
 
-			IAARectangle consoleViewport(64, 26, width - 64, conHeight - 26);
-			DrawSelf(consoleViewport, frameTime, rendPassRecorder);
-		}
-
-		FontStyleParam versionTextStl;
-		versionTextStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-		versionTextStl.align = TEXT_ALIGN_HCENTER;
-		versionTextStl.textColor = ColorRGBA(1, 1, 1, 0.5f);
-		versionTextStl.scale = m_fontScale;
-
-		m_font->SetupRenderText(CONSOLE_ENGINEVERSION_STR, Vector2D(width / 2, height - m_fontScale - 25.0f), versionTextStl, rendPassRecorder);
+		IAARectangle consoleViewport(64, 26, width - 64, conHeight - 26);
+		DrawSelf(consoleViewport, frameTime, rendPassRecorder);
 	}
 
-	g_imGuiHost->EndFrame(width, height, rendPassRecorder);
+	FontStyleParam versionTextStl;
+	versionTextStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+	versionTextStl.align = TEXT_ALIGN_HCENTER;
+	versionTextStl.textColor = ColorRGBA(1, 1, 1, 0.5f);
+	versionTextStl.scale = m_fontScale;
 
-	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
+	m_font->SetupRenderText(CONSOLE_ENGINEVERSION_STR, Vector2D(width / 2, height - m_fontScale - 25.0f), versionTextStl, rendPassRecorder);
 }
 
 void CEqConsoleInput::AddAutoCompletion(EqStringRef name, EqStringRef commaSeparatedArgs)
@@ -1014,10 +969,8 @@ void CEqConsoleInput::DrawSelf(const IAARectangle& viewport, float frameTime, IG
 		m_cursorTime = CURSOR_BLINK_TIME;
 	}
 
-#ifdef IMGUI_ENABLED
 	if (g_imGuiHost->IsImGuiItemsInFocus())
 		m_cursorVisible = false;
-#endif
 
 	if (!m_logVisible)
 		ResetLogScroll();
@@ -1156,12 +1109,6 @@ bool CEqConsoleInput::KeyChar(const char* utfChar)
 	if (!m_hostCursorActive)
 		return false;
 
-#ifdef IMGUI_ENABLED
-	ImGui_ImplEq_InputText(utfChar);
-	if (g_imGuiHost->IsImGuiItemsInFocus())
-		return true;
-#endif
-
 	if (!m_visible)
 		return false;
 
@@ -1188,20 +1135,7 @@ bool CEqConsoleInput::KeyChar(const char* utfChar)
 bool CEqConsoleInput::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 {
 	if (!m_hostCursorActive)
-	{
-#ifdef IMGUI_ENABLED
-		// de-press buttons
-		if(!pressed)
-			ImGui_ImplEq_InputMousePress(Button, pressed);
-#endif
 		return false;
-	}
-
-#ifdef IMGUI_ENABLED
-	ImGui_ImplEq_InputMousePress(Button, pressed);
-	if (g_imGuiHost->IsImGuiItemsInFocus())
-		return true;
-#endif
 
 	if (!m_visible)
 		return false;
@@ -1224,12 +1158,6 @@ bool CEqConsoleInput::MouseWheel(int hscroll, int vscroll)
 {
 	if (!m_hostCursorActive)
 		return false;
-
-#ifdef IMGUI_ENABLED
-	ImGui_ImplEq_InputMouseWheel(hscroll, vscroll);
-	if (g_imGuiHost->IsImGuiItemsInFocus())
-		return true;
-#endif
 
 	if (!m_visible)
 		return false;
@@ -1263,38 +1191,8 @@ void CEqConsoleInput::SetVisible(bool bVisible)
 
 bool CEqConsoleInput::KeyPress(int key, bool pressed)
 {
-	if (pressed) // catch "DOWN" event
-	{
-		InputBinding* tgBind = g_inputCommandBinder->FindBindingByCommand(&toggleconsole);
-
-		if (tgBind && s_keyMapList[tgBind->keyIdx].keynum == key)
-		{
-			if (IsVisible() && IsShiftPressed())
-			{
-				SetLogVisible(!IsLogVisible());
-				return false;
-			}
-
-			SetVisible(!IsVisible());
-			return false;
-		}
-	}
-
 	if (!m_hostCursorActive)
-	{
-#ifdef IMGUI_ENABLED
-		// de-press buttons
-		if(!pressed)
-			ImGui_ImplEq_InputKeyPress(key, pressed);
-#endif
 		return false;
-	}
-
-#ifdef IMGUI_ENABLED
-	ImGui_ImplEq_InputKeyPress(key, pressed);
-	if (g_imGuiHost->IsImGuiItemsInFocus())
-		return true;
-#endif
 
 	if (!m_visible)
 		return false;

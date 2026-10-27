@@ -88,7 +88,7 @@ project "imguiBackendLib"
 	properties { "staticlib", "unitybuild" }
 	uses { 
 		"public", "shared",
-		"imgui"
+		"SDL2", "imgui"
 	}
     files {
 		"imgui_backend/**.cpp",

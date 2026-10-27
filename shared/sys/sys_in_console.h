@@ -30,17 +30,16 @@ public:
 	static void		SpewInit();
 	static void		SpewUninstall();
 
+	CEqConsoleInput() = default;
 
-					CEqConsoleInput();
-
-	void			Initialize(EQWNDHANDLE window);
+	void			Init();
 	void			Shutdown();
 
 	// useful for scripts
 	void			SetAlternateHandler( CONSOLE_ALTERNATE_HANDLER handler ) {m_alternateHandler = handler;}
 
 	void			BeginFrame();
-	void			EndFrame(int width, int height, float frameTime);
+	void			EndFrame(int width, int height, float frameTime, IGPURenderPassRecorder* rendPassRecorder);
 
 	void			SetLastLine();
 	void			AddToLinePos(int num);
@@ -58,6 +57,9 @@ public:
 	bool			KeyChar(const char* utfChar);
 	bool			MouseEvent(const Vector2D &pos, int Button,bool pressed);
 	bool			MouseWheel(int hscroll, int vscroll);
+
+	bool			IsShiftPressed() const { return m_shiftModifier; }
+	bool			IsCtrlPressed() const { return m_ctrlModifier; }
 
 	void			MousePos(const Vector2D &pos);
 
@@ -80,9 +82,6 @@ protected:
 	void			OnTextUpdate();
 
 	void			ResetLogScroll();
-
-	bool			IsShiftPressed() const { return m_shiftModifier; }
-	bool			IsCtrlPressed() const { return m_ctrlModifier; }
 
 	// returns current statement start and current input text
 	int				GetCurrentInputText(EqString& str);

@@ -24,6 +24,7 @@
 
 #include "imaging/ImageLoader.h"
 
+#include "imgui_backend/imgui_host.h"
 #include "render/IDebugOverlay.h"
 #include "render/EdgeAA.h"
 
@@ -52,6 +53,8 @@ DECLARE_CMD(exec_user_cfg, "Executes user configuration file (from cvar 'cfg_use
 	MsgInfo("* Executing user configuration file '%s'\n", user_cfg.GetString());
 	g_consoleCommands->ParseFileToCommandBuffer( user_cfg.GetString() );
 }
+
+DECLARE_CMD(toggleconsole, nullptr, CV_INVISIBLE) {}	// dummy console command
 
 DECLARE_CMD_FN_RENAME(cmd_exit, "exit", CGameHost::HostExitCmd, "Cl`oses current instance of engine", 0);
 DECLARE_CMD_FN_RENAME(cmd_quit, "quit", CGameHost::HostExitCmd, "Closes current instance of engine", 0);
@@ -580,9 +583,10 @@ bool CGameHost::InitSystems()
 	g_localizer->AddToken("COMPILE_TIME", EqWString::Format(L"%ls", L"" COMPILE_TIME));
 
 	debugoverlay->Init();
+	g_imGuiHost->Init(m_window);
 	equi::Manager->Init();
 	g_inputCommandBinder->Init();
-	g_consoleInput->Initialize(m_window);
+	g_consoleInput->Init();
 
 	REGISTER_INTERNAL_SHADERS();
 	g_fullScreenEdgeAA->Init();
@@ -728,6 +732,7 @@ void CGameHost::ShutdownSystems()
 	
 	g_fullScreenEdgeAA->Shutdown();
 	debugoverlay->Shutdown();
+	g_imGuiHost->Shutdown();
 	equi::Manager->Shutdown();
 	g_fontCache->Shutdown();
 	g_inputCommandBinder->Shutdown();
@@ -945,6 +950,9 @@ bool CGameHost::Frame()
 	debugoverlay->Draw(m_winSize.x, m_winSize.y, timescale * sys_timescale.GetFloat());
 	g_matSystem->Setup2D(m_winSize.x, m_winSize.y);
 
+	// save screenshots without ImGui/Console visible
+	sysHostSaveScreenshot();
+
 	{
 		IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
 			Builder<RenderPassDesc>()
@@ -977,6 +985,9 @@ bool CGameHost::Frame()
 
 		g_inputCommandBinder->DebugDraw(m_winSize, rendPassRecorder);
 		rendPassRecorder->DbgPopGroup();
+
+		g_consoleInput->EndFrame(m_winSize.x, m_winSize.y, GetFrameTime(), rendPassRecorder);
+		g_imGuiHost->EndFrame(m_winSize.x, m_winSize.y, rendPassRecorder);
 
 		g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 	}
@@ -1028,12 +1039,13 @@ void CGameHost::OnFocusChanged(bool inFocus)
 void CGameHost::BeginScene()
 {
 	g_matSystem->BeginFrame(nullptr);
+	g_consoleInput->BeginFrame();
+
+	g_imGuiHost->BeginFrame(g_consoleInput->IsVisible());
 
 	MatSysRenderSettings& rendSettings = g_matSystem->GetConfiguration();
 	rendSettings.wireframeMode = r_wireframe.GetBool();
 	rendSettings.overdrawMode = r_overdraw.GetBool();
-
-	g_consoleInput->BeginFrame();
 
 	const bool cursorVisible = SDL_ShowCursor(SDL_QUERY);
 	const bool cursorIsActive = cursorVisible && !m_cursorCentered;
@@ -1042,10 +1054,6 @@ void CGameHost::BeginScene()
 
 void CGameHost::EndScene()
 {
-	// save screenshots without ImGui/Console visible
-	sysHostSaveScreenshot();
-
-	g_consoleInput->EndFrame(m_winSize.x, m_winSize.y, GetFrameTime());
 	g_matSystem->EndFrame();
 }
 
@@ -1066,6 +1074,28 @@ bool CGameHost::IsTextInputShown() const
 
 void CGameHost::Key_Event( int key, bool down )
 {
+	// checking for toggle console event
+	if (down)
+	{
+		const InputBinding* binding = g_inputCommandBinder->FindBindingByCommand(&toggleconsole);
+		if (binding && s_keyMapList[binding->keyIdx].keynum == key)
+		{
+			if (g_consoleInput->IsVisible() && g_consoleInput->IsShiftPressed())
+				g_consoleInput->SetLogVisible(!g_consoleInput->IsLogVisible());
+			else
+				g_consoleInput->SetVisible(!g_consoleInput->IsVisible());
+		}
+	}
+
+	g_imGuiHost->InputKeyPress(key, down);
+
+	if (g_imGuiHost->IsImGuiItemsInFocus())
+	{
+		if (!down)
+			g_consoleInput->KeyPress(key, down);
+		return;
+	}
+
 	if(g_consoleInput->KeyPress( key, down ))
 		return;
 
@@ -1078,6 +1108,11 @@ void CGameHost::Key_Event( int key, bool down )
 
 void CGameHost::Mouse_Event( float x, float y, int buttons, bool down )
 {
+	g_imGuiHost->InputMousePress(buttons, down);
+
+	if (g_imGuiHost->IsImGuiItemsInFocus())
+		return;
+
 	if( g_consoleInput->MouseEvent( Vector2D(x,y), buttons, down ) )
 		return;
 
@@ -1121,6 +1156,11 @@ void CGameHost::MouseMove_Event(int x, int y, int dx, int dy)
 
 void CGameHost::MouseWheel_Event(int x, int y, int hscroll, int vscroll)
 {
+	g_imGuiHost->InputMouseWheel(hscroll, vscroll);
+
+	if (g_imGuiHost->IsImGuiItemsInFocus())
+		return;
+
 	if (g_consoleInput->MouseWheel(hscroll, vscroll))
 		return;
 
@@ -1164,6 +1204,11 @@ void CGameHost::Touch_Event( float x, float y, int finger, bool down )
 
 void CGameHost::ProcessKeyChar(const char* utfChar)
 {
+	g_imGuiHost->InputText(utfChar);
+
+	if (g_imGuiHost->IsImGuiItemsInFocus())
+		return;
+
 	if(g_consoleInput->KeyChar(utfChar))
 		return;
 

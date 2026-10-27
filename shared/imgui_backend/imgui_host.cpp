@@ -8,7 +8,8 @@
 #include <imgui.h>
 #include <imnodes.h>
 
-#include "imgui_backend/imgui_impl_matsystem.h"
+#include "imgui_impl_matsystem.h"
+#include "imgui_impl_sys.h"
 #include "imgui_internal.h"
 #endif // IMGUI_ENABLED
 
@@ -57,7 +58,7 @@ static void ImGuiBeginMenuPath(const char* path, bool& selected)
 }
 #endif // IMGUI_ENABLED
 
-void CEqImGuiHost::Initialize()
+void CEqImGuiHost::Init(EQWNDHANDLE window)
 {
 #ifdef IMGUI_ENABLED
 	// ImGui
@@ -89,6 +90,13 @@ void CEqImGuiHost::Initialize()
 		ImFontConfig font_cfg;
 		io.Fonts->AddFontFromMemoryTTF(buffer, length, 16.0f, &font_cfg, io.Fonts->GetGlyphRangesCyrillic());
 	}
+
+	// TODO: ImGui networked console port (for Android)
+	if(window)
+	{
+		ImGui_ImplEq_InitForSDL(window);
+		m_sdlInit = true;
+	}
 #endif // IMGUI_ENABLED
 }
 
@@ -96,9 +104,13 @@ void CEqImGuiHost::Shutdown()
 {
 #ifdef IMGUI_ENABLED
 	ImGui_ImplMatSystem_Shutdown();
+	if(m_sdlInit)
+		ImGui_ImplEq_Shutdown();
 
 	ImNodes::DestroyContext();
 	ImGui::DestroyContext();
+
+	m_sdlInit = false;
 #endif // IMGUI_ENABLED
 }
 
@@ -115,17 +127,68 @@ bool CEqImGuiHost::IsShown() const
 	return false;
 }
 
+void CEqImGuiHost::InputKeyPress(int key, bool down)
+{
+#ifdef IMGUI_ENABLED
+	if (!m_sdlInit)
+		return;
+	ImGui_ImplEq_InputKeyPress(key, down);
+#endif
+}
+
+void CEqImGuiHost::InputText(const char* keyInput)
+{
+#ifdef IMGUI_ENABLED
+	if (!m_sdlInit)
+		return;
+	ImGui_ImplEq_InputText(keyInput);
+#endif
+}
+
+void CEqImGuiHost::InputMousePress(int Button, bool pressed)
+{
+#ifdef IMGUI_ENABLED
+	if (!m_sdlInit)
+		return;
+	ImGui_ImplEq_InputMousePress(Button, pressed);
+#endif
+}
+
+void CEqImGuiHost::InputMouseWheel(int h, int v)
+{
+#ifdef IMGUI_ENABLED
+	if (!m_sdlInit)
+		return;
+	ImGui_ImplEq_InputMouseWheel(h, v);
+#endif
+}
+
 void CEqImGuiHost::BeginFrame(bool menuVisible)
 {
 #ifdef IMGUI_ENABLED
 	if (!GImGui)
 		return;
 
+	const bool isReallyShown = menuVisible || IsShown();
+
+	if (isReallyShown && m_sdlInit)
+	{
+		const bool anyItemShown = ImGui_ImplEq_AnyItemShown();
+
+		// Start the Dear ImGui frame
+		ImGui_ImplEq_NewFrame();
+		if (anyItemShown)
+		{
+			ImGui_ImplEq_UpdateMousePosAndButtons();
+			ImGui_ImplEq_UpdateGamepads();
+		}
+	}
+
 	ImGui_ImplMatSystem_NewFrame();
 	ImGui::NewFrame();
 	m_imguiDrawStart = true;
 
-	if (menuVisible || IsShown())
+	if (isReallyShown)
 	{
 		for (auto it = m_imguiMenus.begin(); !it.atEnd(); ++it)
 		{
