@@ -56,7 +56,13 @@ BEGIN_SHADER_CLASS(
 	bool SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputParams& pipelineParams, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext, IMaterial* originalMaterial) override
 	{
 		const MatSysDefaultRenderPass* rendPassInfo = static_cast<const MatSysDefaultRenderPass*>(passContext.data);
-		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
+		if (!rendPassInfo)
+		{
+			ASSERT_FAIL("No render pass data specified");
+			return false;
+		}
+
+		ASSERT_MSG(rendPassInfo->type == RENDERPASS_DEFAULT, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
 		const uint pipelineId = GenDefaultPipelineId(passContext.recorder->GetRenderTargetFormats(), passContext.recorder->GetDepthTargetFormat(), *rendPassInfo, pipelineParams.primitiveTopology);
 
 		auto it = m_renderPipelines.find(pipelineId);
