@@ -11,15 +11,15 @@ input routing, configs and screenshots. An application links `sysLib` (premake p
 | `sys_window.cpp/.h` | Window creation, SDL init, game loop (`sysHostInit`, `sysHostGameLoop`, `sysHostTerminate`) |
 | `sys_host.cpp/.h` | `g_pHost` (`CGameHost`) — systems, frame, video modes, cursor, input events |
 | `sys_state.cpp/.h` | `CAppStateBase`, `eqAppStateMng` — app states |
-| `sys_in_console.cpp/.h` | `g_consoleInput` (`CEqConsoleInput`) — developer console, log, ImGui frame |
+| `sys_in_console.cpp/.h` | `g_consoleInput` (`CEqConsoleInput`) — developer console, log |
 | `sys_in_joystick.cpp/.h` | `CEqGameControllerSDL` — game controllers |
 | `cfgloader.cpp/.h` | `WriteCfgFile`, `writecfg` |
 | `sys_version.cpp/.h` | `ENGINE_NAME`, `ENGINE_VERSION`, `COMPILE_*`, `GetEngineBuildNumber()` |
-| `imgui/imgui_impl_sys.*` | ImGui platform backend for SDL |
 | `scripting/` | Engine Lua state and bindings ([scripting_esl_overview.md](scripting_esl_overview.md)) |
 
 `sysLib` also compiles `shared/input` ([input_overview.md](input_overview.md)) and uses
-`renderUtilLib`, `equiLib`, `movieLib`, `scriptLib`, SDL2 and the ImGui backend.
+`renderUtilLib`, `equiLib`, `movieLib`, `scriptLib`, SDL2 and `imguiBackendLib` (`g_imGuiHost`,
+`shared/imgui_backend`, which also contains the ImGui platform backend for SDL).
 
 ## Start-up and shutdown
 
@@ -39,7 +39,8 @@ WinMain / main
      │   │   ├─ window (vid_mode, vid_fullscreen, vid_screen), command line (+cmd value)
      │   │   ├─ g_matSystem->Init()            RHI on the SDL window
      │   │   ├─ g_fontCache, g_localizer (+GAME_VERSION, BUILD_NUMBER tokens),
-     │   │   │  debugoverlay, equi::Manager, g_inputCommandBinder, g_consoleInput (ImGui)
+     │   │   │  debugoverlay, g_imGuiHost (ImGui on the SDL window), equi::Manager,
+     │   │   │  g_inputCommandBinder, g_consoleInput
      │   │   └─ REGISTER_INTERNAL_SHADERS()    material shaders compiled into the application
      │   └─ CEqGameControllerSDL::Init()
      ├─ sysHostGameLoop()
@@ -130,15 +131,17 @@ frame the loop sleeps `sys_sleep` ms (default 1).
 1. Measures time. With `sys_maxfps` set, the frame is skipped until enough time passed; the frame
    time is clamped to 0.001–0.1 s.
 2. `g_onBeginFrame`, controller button repeats, cursor state.
-3. `BeginScene`: `g_matSystem->BeginFrame`, `r_wireframe` / `r_overdraw`, console / ImGui frame
-   start.
+3. `BeginScene`: `g_matSystem->BeginFrame`, console frame start, ImGui frame start
+   (`g_imGuiHost->BeginFrame`, debug menus while the console is open), `r_wireframe` /
+   `r_overdraw`.
 4. `eqAppStateMng::UpdateStates(dt × state timescale × sys_timescale)` — the current state
    renders and queues its command buffers.
 5. EqUI render, full-screen edge AA, `g_matSystem->SubmitQueuedCommandsAwaitable()`.
 6. Debug overlay with engine statistics (FPS, draw / dispatch counts, GPU and system memory),
-   `r_showFPS`, `r_showFPSGraph`, input debug drawing.
-7. `EndScene`: screenshot (without console / ImGui), console and ImGui drawing,
-   `g_matSystem->EndFrame()`.
+   `r_showFPS`, `r_showFPSGraph`. Screenshot (without console / ImGui), then one render pass with
+   the debug overlay, input debug drawing, console (`g_consoleInput->EndFrame`) and ImGui
+   (`g_imGuiHost->EndFrame`).
+7. `EndScene`: `g_matSystem->EndFrame()`.
 8. Pending fullscreen toggle, `g_onEndFrame`.
 
 `GetFrameTime()` returns the current frame time; `GetWindowSize()`, `GetDefaultFont()`,
@@ -165,29 +168,37 @@ dispatched by `CGameHost`:
 
 | Event | Order |
 |---|---|
-| Keyboard | console → EqUI → state `HandleKeyPress` |
-| Mouse buttons | console / ImGui → EqUI → (touch emulation with `m_clicks_to_touch`) → state `HandleMouseClick` |
+| Keyboard | console toggle key → ImGui → console → EqUI → state `HandleKeyPress` |
+| Mouse buttons | ImGui → console → EqUI → (touch emulation with `m_clicks_to_touch`) → state `HandleMouseClick` |
 | Mouse movement | console / ImGui position → EqUI → `g_inputCommandBinder->OnVectorEvent(MOU_MOVE)` → state `HandleMouseMove` |
-| Mouse wheel | console → binder (`MOU_MOVE`) → state `HandleMouseWheel` |
+| Mouse wheel | ImGui → console → binder (`MOU_MOVE`) → state `HandleMouseWheel` |
 | Controller buttons / axes | binder → state `HandleKeyPress` / `HandleJoyAxis` |
 | Touch | binder touch zones |
-| Text input | console |
+| Text input | ImGui → console |
 
 Keyboard keys and mouse buttons reach command bindings only if the state forwards them to
 `g_inputCommandBinder->OnPressEvent` (see [input_overview.md](input_overview.md)). Input is ignored
 for 0.25 s after the window regains focus.
 
+ImGui (`g_imGuiHost->Input*`) receives keys, mouse buttons, wheel and text first. While an ImGui
+item is hovered, active or focused, or ImGui wants the mouse / keyboard
+(`g_imGuiHost->IsImGuiItemsInFocus()`), the event goes no further; key releases still reach the
+console so its modifier state does not stick.
+
 ## Developer console — `g_consoleInput`
 
-- Opened by the `+con_toggle` command (bind it to a key, e.g. `bind GRAVE +con_toggle` in
-  `cfg/config_default.cfg`), or `con_show`, `con_show_full`, `con_hide`; `clear`, `help`.
+- Opened by the key bound to `toggleconsole` (`bind GRAVE toggleconsole` in
+  `cfg/config_default.cfg`). `CGameHost::Key_Event` checks this key before any other input
+  handling, so it works while ImGui has focus; with the console open, Shift + the key toggles the
+  log view. Also `con_toggle` / `+con_toggle`, `con_show`, `con_show_full`, `con_hide`; `clear`,
+  `help`.
 - Executes console commands (see [framework_core.md](framework_core.md)) with autocompletion,
   variants, history and a log view. With the Lua state initialized, input that fails as a command
   is executed as Lua (`SetAlternateHandler`, see [scripting_esl_overview.md](scripting_esl_overview.md)).
 - ConVars: `con_size`, `con_suggest`, `con_minicon`, `con_minicon_time`.
-- The console owns the ImGui frame (`g_imGuiHost`, `shared/imgui_backend`): ImGui windows registered
-  with `g_imGuiHost->AddDebugHandler` are always drawn, and the debug menu bar with
-  `AddDebugMenu(path, handler)` entries is shown while the console is open.
+- ImGui is run by the host (`g_imGuiHost`, `shared/imgui_backend`), not the console: ImGui
+  windows registered with `g_imGuiHost->AddDebugHandler` are always drawn, and the debug menu bar
+  with `AddDebugMenu(path, handler)` entries is shown while the console is open.
 - `CEqConsoleInput::SpewInit` captures engine log output for the console log from the start.
 
 ## Configuration files
