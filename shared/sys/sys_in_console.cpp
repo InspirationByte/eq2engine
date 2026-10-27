@@ -203,14 +203,11 @@ void CEqConsoleInput::SpewFunc(ESpewType type, const char* pMsg)
 			currentSpewLine = new(s_spewMessagesPool.allocate()) ConMessage;
 			currentSpewLine->type = type;
 			currentSpewLine->text.Assign(lineStart, length);
+			s_spewMessages.append(currentSpewLine);
 
 			// output to debugoverlay if enabled
 			if(con_minicon.GetBool() && debugoverlay != nullptr)
 				debugoverlay->TextFadeOut(0, s_spewColors[type], con_minicon_time.GetFloat(), currentSpewLine->text);
-
-			{
-				s_spewMessages.append(currentSpewLine);
-			}
 		}
 
 		// if not a zero, there is line start
@@ -249,52 +246,24 @@ void CEqConsoleInput::SpewUninstall()
 
 CEqConsoleInput::CEqConsoleInput()
 {
-	// release build needs false
-	m_visible = false;
-	m_logVisible = false;
-
-	m_showConsole = true;
-
-	m_cursorTime = 0.0f;
-	m_maxLines = 10;
-
-	m_font = nullptr;
-
-	m_shiftModifier = false;
-	m_ctrlModifier = false;
-
-	m_width = 512;
-	m_height = 512;
-	m_enabled = false;
-
-	m_cursorPos = 0;
-	m_startCursorPos = 0;
-
-	m_logScrollPosition = 0;
-	m_logScrollDir = 0;
-
-	m_histIndex = 0;
-	m_fastfind_cmdbase = nullptr;
-	m_variantSelection = -1;
-
-	m_alternateHandler = nullptr;
 }
 
 void CEqConsoleInput::Initialize(EQWNDHANDLE window)
 {
+	const KVSection& consoleSettings = g_eqCore->GetConfig().Get("Console");
+
+	EqStringRef consoleFontName = "console";
+	consoleSettings.Get("Font").GetValues(consoleFontName);
+
+	m_font = g_fontCache->GetFont(consoleFontName, 16);
+	consoleSettings.Get("Enable").GetValues(m_enabled);
+	consoleSettings.Get("FontScale").GetValues(m_fontScale);
+
 #ifdef IMGUI_ENABLED
+	// TODO: ImGui networked console port (for Android)
 	g_imGuiHost->Initialize();
 	ImGui_ImplEq_InitForSDL(window);
 #endif
-
-	// TODO: ImGui networked console port (for Android)
-	KVSection* consoleSettings = g_eqCore->GetConfig().FindSection("Console");
-
-	const char* consoleFontName = KV_GetValueString(consoleSettings ? consoleSettings->FindSection("Font") : nullptr, 0, "console");
-
-	m_font = g_fontCache->GetFont(consoleFontName, 16);
-	m_enabled = KV_GetValueBool(consoleSettings ? consoleSettings->FindSection("Enable") : nullptr);
-	m_fontScale = KV_GetValueFloat(consoleSettings ? consoleSettings->FindSection("FontScale") : nullptr);
 }
 
 void CEqConsoleInput::Shutdown()
@@ -340,7 +309,8 @@ void CEqConsoleInput::EndFrame(int width, int height, float frameTime)
 			if (conHeight < 400)
 				conHeight = min(height, 400);
 
-			DrawSelf(width, conHeight, frameTime, rendPassRecorder);
+			IAARectangle consoleViewport(64, 26, width - 64, conHeight - 26);
+			DrawSelf(consoleViewport, frameTime, rendPassRecorder);
 		}
 
 		FontStyleParam versionTextStl;
@@ -1033,7 +1003,7 @@ void CEqConsoleInput::AddToLinePos(int num)
 	m_logScrollPosition = clamp(m_logScrollPosition + num, 0, s_spewMessages.numElem());
 }
 
-void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
+void CEqConsoleInput::DrawSelf(const IAARectangle& viewport, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
 {
 	CScopedMutex m(s_conInputMutex);
 	m_cursorTime -= frameTime;
@@ -1074,7 +1044,11 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 	}
 #endif // #ifdef EXTENDED_DEVELOPER_CONSOLE
 
-	const AARectangle inputTextEntryRect(64, 26, width - 64, 46);
+	const IVector2D consolePos = viewport.leftTop;
+	const IVector2D consoleSize = viewport.GetSize();
+
+	const AARectangle inputTextEntryRect(consolePos.x, consolePos.y, consolePos.x + consoleSize.x, consolePos.y + 20);
+
 	{
 		const Vector2D inputTextPos(inputTextEntryRect.leftTop.x + 4, inputTextEntryRect.rightBottom.y - 6);
 
@@ -1122,7 +1096,11 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 #ifdef EXTENDED_DEVELOPER_CONSOLE
 	if (m_logVisible)
 	{
-		AARectangle outputRectangle(64.0f, inputTextEntryRect.rightBottom.y + 26, width - 64.0f, height - inputTextEntryRect.leftTop.y);
+		AARectangle outputRectangle(
+			(float)consolePos.x, 
+			inputTextEntryRect.rightBottom.y + 26,
+			(float)consolePos.x + consoleSize.x,
+			(float)consolePos.y + consoleSize.y - inputTextEntryRect.leftTop.y);
 
 		FontStyleParam outputTextStyle;
 		outputTextStyle.scale = m_fontScale;
@@ -1131,12 +1109,10 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 
 		const float outputLineHeight = m_font->GetLineHeight(outputTextStyle);
 
-		m_maxLines = floor(height / outputLineHeight) - 1;
+		m_maxLines = floor((float)consoleSize.y / outputLineHeight) - 1;
 		if (m_maxLines < -4)
 			return;
 		m_maxLines = (outputRectangle.GetSize().y / outputLineHeight) - 2;
-
-		int numDrawn = 0;
 
 		outputRectangle.leftTop.x += 5.0f;
 		outputRectangle.leftTop.y += outputLineHeight;
@@ -1147,7 +1123,6 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 
 		const int firstLine = m_logScrollPosition;
 		const int maxLinesToRender = min(s_spewMessages.numElem(), firstLine + m_maxLines);
-
 		for (int i = firstLine; i < maxLinesToRender; ++i)
 		{
 			outputTextStyle.textColor = s_spewColors[s_spewMessages[i]->type];
@@ -1160,14 +1135,15 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 				hasLinesStyle.textColor = ColorRGBA(0.5f, 0.5f, 1.0f, 1.0f);
 				hasLinesStyle.styleFlag = TEXT_STYLE_FROM_CAP;
 
-				m_font->SetupRenderText(EqString::Format("-------- %d more messages below --------", s_spewMessages.numElem() - i - 1), Vector2D(outputRectangle.leftTop.x, outputRectangle.rightBottom.y - outputLineHeight), hasLinesStyle, rendPassRecorder);
+				m_font->SetupRenderText(EqString::Format("-------- %d more messages below --------", s_spewMessages.numElem() - i - 1), 
+					Vector2D(outputRectangle.leftTop.x, outputRectangle.rightBottom.y - outputLineHeight), hasLinesStyle, rendPassRecorder);
 				break;
 			}
 		}
 	}
 #endif // EXTENDED_DEVELOPER_CONSOLE
 
-	DrawFastFind(inputTextEntryRect.leftTop.x + 15, inputTextEntryRect.leftTop.y + 25, width - 128, rendPassRecorder);
+	DrawFastFind(inputTextEntryRect.leftTop.x + 15, inputTextEntryRect.leftTop.y + 25, consoleSize.x - 128, rendPassRecorder);
 }
 
 void CEqConsoleInput::MousePos(const Vector2D &pos)
