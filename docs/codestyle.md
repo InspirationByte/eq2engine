@@ -35,6 +35,9 @@ The reference shows the general layout; where it disagrees with this document, t
   4. the file's own header last.
 - Public interfaces live under `public/` (`I`-prefixed abstract classes); implementations live next
   to their module (`C`-prefixed classes).
+- In `.cpp` files, console variable and command declarations (`DECLARE_CVAR*`, `DECLARE_CMD*`,
+  see `framework_core.md`) go at the top, after the includes and before function code: file-local
+  helpers and other functions are placed below them.
 - Logical sections inside a file are separated with a dashed comment line:
 
   ```cpp

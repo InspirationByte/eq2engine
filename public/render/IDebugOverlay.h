@@ -23,6 +23,7 @@
 
 class IEqFont;
 class IGPURenderPassRecorder;
+class ITexture;
 
 using OnDebugDrawFn = EqFunction<bool(IGPURenderPassRecorder* rendPassRecorder)>;
 
@@ -306,7 +307,8 @@ public:
 	virtual void		Graph_AddValue( DDGraphBucket* pBucket, float value) = 0;
 
 	virtual void		SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view ) = 0;
-	virtual void		Draw(int winWide, int winTall, float timeScale = 1.0f) = 0;
+	// targets are the backbuffer and the default depth buffer when not set
+	virtual void		Draw(int winWide, int winTall, float timeScale = 1.0f, ITexture* colorTarget = nullptr, ITexture* depthTarget = nullptr) = 0;
 
 	// Old interfaces for compatibility
 

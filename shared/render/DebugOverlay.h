@@ -60,7 +60,7 @@ public:
 	void							Graph_AddValue(DDGraphBucket* pBucket, float value);
 
 	void							SetMatrices(const Matrix4x4& proj, const Matrix4x4& view);
-	void							Draw(int winWide, int winTall, float timescale = 1.0f);
+	void							Draw(int winWide, int winTall, float timescale = 1.0f, ITexture* colorTarget = nullptr, ITexture* depthTarget = nullptr);
 
 	static void						OnShowTextureChanged(ConVar* pVar, char const* pszOldValue);
 private:

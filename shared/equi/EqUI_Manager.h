@@ -12,6 +12,7 @@
 class IEqFont;
 class IMaterial;
 class IGPURenderPassRecorder;
+class ITexture;
 
 namespace equi
 {
@@ -62,7 +63,8 @@ public:
 
 	bool				IsWindowsVisible() const;
 
-	void				Render();
+	// renders to the backbuffer when target is not set
+	void				Render(ITexture* colorTarget);
 
 	bool				ProcessMouseEvents(float x, float y, int nMouseButtons, int flags);
 	bool				ProcessKeyboardEvents(int nKeyButtons, int flags);

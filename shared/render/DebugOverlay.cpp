@@ -1154,15 +1154,18 @@ void CDebugOverlay::SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view )
 #endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
 
-void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
+void CDebugOverlay::Draw(int winWide, int winTall, float timescale, ITexture* colorTarget, ITexture* depthTarget)
 {
 	m_frameTime = m_timer.GetTime(true) * timescale;
 
 #ifdef ENABLE_DEBUG_DRAWING_PROFILE
+	if (!colorTarget)
+		return;
+
 	IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
 		Builder<RenderPassDesc>()
-		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
-		.DepthStencilTarget(g_matSystem->GetDefaultDepthBuffer())
+		.ColorTarget(colorTarget)
+		.DepthStencilTarget(depthTarget)
 		.End()
 	);
 

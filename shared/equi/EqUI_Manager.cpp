@@ -243,16 +243,16 @@ bool CUIManager::IsWindowsVisible() const
 	return false;
 }
 
-void CUIManager::Render()
+void CUIManager::Render(ITexture* colorTarget)
 {
-	PROF_EVENT("EqUI render");
-
-	if(!m_rootPanel)
+	if (!m_rootPanel || !colorTarget)
 		return;
+
+	PROF_EVENT("EqUI render");
 
 	IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
 		Builder<RenderPassDesc>()
-		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+		.ColorTarget(colorTarget)
 		.End()
 	);
 	rendPassRecorder->DbgPushGroup("EqUI");

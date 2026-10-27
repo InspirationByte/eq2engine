@@ -46,6 +46,7 @@ public:
 	void			RemoveDebugHandler(const char* name);
 
 	bool			IsImGuiItemsInFocus() const;
+	bool			IsTextInputActive() const;
 
 private:
 	struct Menu

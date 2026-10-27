@@ -128,6 +128,7 @@ void CState_EGFViewer::OnLeave(CAppStateBase* to)
 	m_dragObj = nullptr;
 	s_model.SetModel(nullptr);
 	PhysicsSceneShutdown();
+	m_viewport.ReleaseTargets();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -344,7 +345,7 @@ void CState_EGFViewer::RenderFloor(IGPURenderPassRecorder* rendPassRecorder)
 
 bool CState_EGFViewer::Update(float fDt)
 {
-	const IVector2D& screenSize = g_pHost->GetWindowSize();
+	const IVector2D screenSize = m_viewport.GetSize();
 
 	Vector3D forward, right;
 	AngleVectors(m_cameraRotation, forward, right);
@@ -412,8 +413,8 @@ bool CState_EGFViewer::Update(float fDt)
 
 	IGPURenderPassRecorderPtr modelDrawRenderPass = g_renderAPI->BeginRenderPass(
 		Builder<RenderPassDesc>()
-		.ColorTarget(g_matSystem->GetCurrentBackbuffer(), true, ColorRGBA(0.5f, 0.5f, 0.5f, 1.0f))
-		.DepthStencilTarget(g_matSystem->GetDefaultDepthBuffer())
+		.ColorTarget(m_viewport.GetColorTarget(), true, ColorRGBA(0.5f, 0.5f, 0.5f, 1.0f))
+		.DepthStencilTarget(m_viewport.GetDepthTarget())
 		.DepthClear()
 		.End()
 	);
@@ -501,7 +502,7 @@ void CState_EGFViewer::WrapCursor(int x, int y)
 	if (m_cursorWrapPending)
 		return;
 
-	const IVector2D& screenSize = g_pHost->GetWindowSize();
+	const IVector2D screenSize = m_viewport.GetSize();
 	IVector2D wrapPos(x, y);
 
 	if (x <= 0)
@@ -536,7 +537,7 @@ void CState_EGFViewer::ProcessMouse(int x, int y, const Vector2D& moveDelta)
 	if (!m_mouseButtons)
 		m_cursorWrapPending = false;
 
-	const IVector2D& screenSize = g_pHost->GetWindowSize();
+	const IVector2D screenSize = m_viewport.GetSize();
 	const int w = screenSize.x;
 	const int h = screenSize.y;
 
@@ -620,8 +621,12 @@ void CState_EGFViewer::DrawUI(bool& visible)
 	DrawMenuBar();
 
 	const ImGuiViewport* viewport = ImGui::GetMainViewport();
+	const float topPanelsHeight = viewport->WorkSize.y - s_bottomPanelHeight;
 	if (m_showBrowser)
-		DrawModelBrowser(viewport->WorkPos.y, viewport->WorkSize.y - s_bottomPanelHeight);
+		DrawModelBrowser(viewport->WorkPos.y, topPanelsHeight);
+
+	const float browserWidth = m_showBrowser ? s_browserPanelWidth : 0.0f;
+	DrawSceneViewport(ImVec2(viewport->WorkPos.x + browserWidth, viewport->WorkPos.y), ImVec2(viewport->WorkSize.x - browserWidth, topPanelsHeight));
 
 	ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x, viewport->WorkPos.y + viewport->WorkSize.y - s_bottomPanelHeight));
 	ImGui::SetNextWindowSize(ImVec2(viewport->WorkSize.x, s_bottomPanelHeight));
@@ -659,6 +664,19 @@ void CState_EGFViewer::DrawUI(bool& visible)
 		}
 	}
 	ImGui::End();
+}
+
+void CState_EGFViewer::DrawSceneViewport(const ImVec2& pos, const ImVec2& size)
+{
+	ImGui::SetNextWindowPos(pos);
+	ImGui::SetNextWindowSize(size);
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+	if (ImGui::Begin("##egfman2Scene", nullptr, s_panelFlags | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+		m_viewport.DrawImGui();
+	ImGui::End();
+	ImGui::PopStyleVar(2);
 }
 
 void CState_EGFViewer::DrawModelBrowser(float panelTop, float panelHeight)

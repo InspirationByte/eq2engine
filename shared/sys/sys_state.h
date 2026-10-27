@@ -11,6 +11,7 @@
 constexpr int APP_STATE_NONE = 0;
 
 class CAppStateBase;
+class CHostViewport;
 using StateFrameEvent = Event<void(const float deltaTime)>;
 using StatePreUpdateEvent = StateFrameEvent;
 using StatePostUpdateEvent = StateFrameEvent;
@@ -51,6 +52,9 @@ public:
 
 	virtual void	GetMouseCursorProperties(bool& visible, bool& centered) {visible = false; centered = false;}
 	virtual float	GetTimescale() const { return 1.0f; }
+
+	// when viewport is visible, mouse and keyboard input goes to the state in viewport coordinates
+	virtual CHostViewport*	GetViewport() { return nullptr; }
 
 	void			SetNextState(CAppStateBase* state, bool force = false)	{m_nextState = state;m_forceNextState = force;}
 	CAppStateBase*	GetNextState(bool* force = nullptr) const					{if(force)*force = m_forceNextState; return m_nextState;}

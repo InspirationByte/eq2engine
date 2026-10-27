@@ -289,6 +289,16 @@ bool CEqImGuiHost::IsImGuiItemsInFocus() const
 	return false;
 }
 
+bool CEqImGuiHost::IsTextInputActive() const
+{
+#ifdef IMGUI_ENABLED
+	if (!GImGui)
+		return false;
+	return ImGui::GetIO().WantTextInput;
+#endif
+	return false;
+}
+
 void CEqImGuiHost::AddDebugHandler(const char* name, IMGUI_HANDLER func)
 {
 #ifdef IMGUI_ENABLED
