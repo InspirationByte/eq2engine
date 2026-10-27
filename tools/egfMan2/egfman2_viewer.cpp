@@ -37,6 +37,11 @@
 #include "egfman2_viewer.h"
 
 static constexpr const float s_bottomPanelHeight = 200.0f;
+static constexpr const float s_browserPanelWidth = 260.0f;
+static constexpr const char* s_browserRootDir = "models";
+
+static constexpr ImGuiWindowFlags s_panelFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove
+	| ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
 static constexpr const float s_dragSpring = 10.0f;
 static constexpr const float s_dragDamping = 0.5f;
 
@@ -60,6 +65,16 @@ static CViewerModel		s_model;
 static CViewParams		s_cameraParams(Vector3D(0, 0, -100), vec3_zero, 70);
 
 //-------------------------------------------------------------------------------------------------
+
+// tool output goes to the engine console
+static void RunCompilerTool(const EqString& cmdLine)
+{
+	int exitCode = 0;
+	if (!RunProcessToConsole(cmdLine, exitCode))
+		ErrorMsg("Failed to run command '%s'", cmdLine.ToCString());
+	else if (exitCode != 0)
+		MsgError("Command '%s' failed with exit code %d\n", cmdLine.ToCString(), exitCode);
+}
 
 static void FlushCache()
 {
@@ -168,8 +183,7 @@ void CState_EGFViewer::CompileScriptsDialog()
 			const EqString cmdLine(EqString::Format("animca.exe -devAddon \"%s\" \"%s\"", devAddonDir, fileName.ToCString()));
 
 			Msg("***Starting animCa: %s\n", cmdLine.ToCString());
-			if (system(cmdLine.ToCString()) != 0)
-				ErrorMsg("Failed to run command '%s'", cmdLine.ToCString());
+			RunCompilerTool(cmdLine);
 
 			continue;
 		}
@@ -186,8 +200,7 @@ void CState_EGFViewer::CompileScriptsDialog()
 				const EqString cmdLine(EqString::Format("egfca.exe -devAddon \"%s\" \"%s\"", devAddonDir, fileName.ToCString()));
 
 				Msg("***Starting egfCa: '%s'\n", cmdLine.ToCString());
-				if (system(cmdLine.ToCString()) != 0)
-					ErrorMsg("Failed to run command %s", cmdLine.ToCString());
+				RunCompilerTool(cmdLine);
 			}
 			else
 			{
@@ -607,13 +620,13 @@ void CState_EGFViewer::DrawUI(bool& visible)
 	DrawMenuBar();
 
 	const ImGuiViewport* viewport = ImGui::GetMainViewport();
+	if (m_showBrowser)
+		DrawModelBrowser(viewport->WorkPos.y, viewport->WorkSize.y - s_bottomPanelHeight);
+
 	ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x, viewport->WorkPos.y + viewport->WorkSize.y - s_bottomPanelHeight));
 	ImGui::SetNextWindowSize(ImVec2(viewport->WorkSize.x, s_bottomPanelHeight));
 
-	constexpr ImGuiWindowFlags panelFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove
-		| ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
-
-	if (ImGui::Begin("##egfman2Panel", nullptr, panelFlags))
+	if (ImGui::Begin("##egfman2Panel", nullptr, s_panelFlags))
 	{
 		if (ImGui::BeginTabBar("##egfman2Tabs"))
 		{
@@ -648,6 +661,138 @@ void CState_EGFViewer::DrawUI(bool& visible)
 	ImGui::End();
 }
 
+void CState_EGFViewer::DrawModelBrowser(float panelTop, float panelHeight)
+{
+	const ImGuiViewport* viewport = ImGui::GetMainViewport();
+	ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x, panelTop));
+	ImGui::SetNextWindowSize(ImVec2(s_browserPanelWidth, panelHeight));
+
+	if (ImGui::Begin("##egfman2Browser", nullptr, s_panelFlags))
+	{
+		const ImGuiStyle& style = ImGui::GetStyle();
+		const float refreshWidth = ImGui::CalcTextSize("Refresh").x + style.FramePadding.x * 2.0f;
+
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - refreshWidth - style.ItemSpacing.x);
+		ImGui::InputTextWithHint("##browserFilter", "Filter", m_browserFilter, sizeof(m_browserFilter));
+		ImGui::SameLine();
+		if (ImGui::Button("Refresh"))
+			m_browserDirs.clear();
+
+		ImGui::Separator();
+
+		if (ImGui::BeginChild("##browserTree"))
+		{
+			// filter needs all directories, they are scanned once and cached
+			if (m_browserFilter[0])
+				DrawBrowserFiltered(s_browserRootDir);
+			else
+				DrawBrowserDir(s_browserRootDir);
+		}
+		ImGui::EndChild();
+	}
+	ImGui::End();
+}
+
+void CState_EGFViewer::DrawBrowserDir(const EqString& dirPath)
+{
+	// directory map items are not moved by inserts made in nested directories
+	const BrowserDir& dir = GetBrowserDir(dirPath);
+
+	for (const EqString& name : dir.dirs)
+	{
+		if (!ImGui::TreeNodeEx(name.ToCString(), ImGuiTreeNodeFlags_SpanAvailWidth))
+			continue;
+
+		DrawBrowserDir(EqString::Format("%s/%s", dirPath.ToCString(), name.ToCString()));
+		ImGui::TreePop();
+	}
+
+	for (const EqString& name : dir.files)
+		DrawBrowserFile(dirPath, name, name);
+}
+
+void CState_EGFViewer::DrawBrowserFiltered(const EqString& dirPath)
+{
+	const BrowserDir& dir = GetBrowserDir(dirPath);
+
+	for (const EqString& name : dir.dirs)
+		DrawBrowserFiltered(EqString::Format("%s/%s", dirPath.ToCString(), name.ToCString()));
+
+	// label is the path relative to the browser root
+	const int rootLength = CString::Length(s_browserRootDir);
+	const char* relativeDir = dirPath.ToCString() + min(rootLength + 1, dirPath.Length());
+
+	for (const EqString& name : dir.files)
+	{
+		if (name.Find(m_browserFilter) == -1)
+			continue;
+
+		const EqString label = *relativeDir ? EqString::Format("%s/%s", relativeDir, name.ToCString()) : name;
+		DrawBrowserFile(dirPath, name, label);
+	}
+}
+
+void CState_EGFViewer::DrawBrowserFile(const EqString& dirPath, const EqString& name, const EqString& label)
+{
+	const EqString filePath = EqString::Format("%s/%s", dirPath.ToCString(), name.ToCString());
+
+	bool selected = false;
+	if (s_model.m_model)
+	{
+		EqString currentModel = s_model.m_model->GetName();
+		EqString cmpFilePath = filePath;
+		fnmPathFixSeparators(currentModel);
+		fnmPathFixSeparators(cmpFilePath);
+		selected = !cmpFilePath.CompareCaseIns(currentModel);
+	}
+
+	if (!ImGui::Selectable(label.ToCString(), selected) || selected)
+		return;
+
+	LoadModel(filePath);
+	SetOptimalCameraDistance();
+	RefreshGUI();
+}
+
+const CState_EGFViewer::BrowserDir& CState_EGFViewer::GetBrowserDir(const EqString& dirPath)
+{
+	const uint dirId = StringId(dirPath, true);
+	const auto it = m_browserDirs.find(dirId);
+	if (!it.atEnd())
+		return *it;
+
+	BrowserDir& dir = m_browserDirs[dirId];
+
+	// same entries may come from several search paths
+	CFileSystemFind fsFind(EqString::Format("%s/*", dirPath.ToCString()), SP_MOD);
+	while (fsFind.Next())
+	{
+		const EqStringRef name = fsFind.GetPath();
+		if (name[0] == '.')
+			continue;
+
+		const bool isDirectory = fsFind.IsDirectory();
+		if (!isDirectory && fnmPathExtractExt(name) != "egf")
+			continue;
+
+		Array<EqString>& entries = isDirectory ? dir.dirs : dir.files;
+		const int foundIdx = arrayFindIndexF(entries, [&](const EqString& entry) {
+			return !entry.CompareCaseIns(name);
+		});
+
+		if (foundIdx == -1)
+			entries.append(name);
+	}
+
+	const auto compareNames = [](const EqString& a, const EqString& b) {
+		return a.CompareCaseIns(b);
+	};
+	arraySort(dir.dirs, compareNames);
+	arraySort(dir.files, compareNames);
+
+	return dir;
+}
+
 void CState_EGFViewer::DrawMenuBar()
 {
 	if (!ImGui::BeginMainMenuBar())
@@ -679,6 +824,8 @@ void CState_EGFViewer::DrawMenuBar()
 		if (ImGui::MenuItem("Reset View", "R"))
 			ResetView();
 
+		ImGui::MenuItem("Model browser", nullptr, &m_showBrowser);
+		ImGui::Separator();
 		ImGui::MenuItem("Show physics objects", "P", &m_drawPhysModel);
 		ImGui::MenuItem("Show bones", "B", &m_drawBones);
 		ImGui::MenuItem("Show attachments", nullptr, &m_drawAttachments);

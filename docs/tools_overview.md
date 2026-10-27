@@ -55,6 +55,13 @@ skeleton, animations and sequences, physics objects. Built on `sysLib` with an I
 come from `nfd` (`src_dependency/nfd`).
 
 - `-model <path>` opens a model on start.
+- Model browser on the left (View → Model browser) lists `.egf` files under `models/` of the `SP_MOD`
+  search paths; clicking a file opens it. Directories are scanned when first expanded, Refresh
+  rescans them. The filter field shows a flat list of files whose names contain the text (case
+  insensitive); it scans all directories under `models/`.
+- File → Compile scripts... runs `egfca` (`.esc`) or `animca` (`.asc`) for the selected scripts and
+  waits for them. Their stdout and stderr go to the engine console through a pipe (no console window
+  is opened); a single compiled model is opened afterwards.
 - Camera: Shift + left / right / middle mouse button drag rotates, zooms and pans; the cursor wraps
   around the window edges while the camera moves. Left button drag pulls physics objects while
   physics simulation runs.

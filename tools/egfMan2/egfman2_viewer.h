@@ -42,6 +42,12 @@ private:
 		int			sequenceId{ -1 };
 	};
 
+	struct BrowserDir
+	{
+		Array<EqString>	dirs{ PP_SL };
+		Array<EqString>	files{ PP_SL };
+	};
+
 	void		LoadModel(const char* modelPath);
 	void		ReloadModel();
 	void		OpenModelDialog();
@@ -57,6 +63,11 @@ private:
 	void		ShowFPS(float frameTime);
 
 	void		DrawMenuBar();
+	void		DrawModelBrowser(float panelTop, float panelHeight);
+	void		DrawBrowserDir(const EqString& dirPath);
+	void		DrawBrowserFiltered(const EqString& dirPath);
+	void		DrawBrowserFile(const EqString& dirPath, const EqString& name, const EqString& label);
+	const BrowserDir&	GetBrowserDir(const EqString& dirPath);
 	void		DrawModelTab();
 	void		DrawMotionTab();
 	void		DrawPhysicsTab();
@@ -90,6 +101,11 @@ private:
 	bool		m_drawFloor{ false };
 	bool		m_drawGrid{ true };
 	bool		m_wireframe{ false };
+	bool		m_showBrowser{ true };
+
+	// model browser, directories are scanned when opened
+	Map<uint, BrowserDir>	m_browserDirs{ PP_SL };
+	char		m_browserFilter[64]{};
 
 	// Model tab
 	Array<EqString>	m_bodyGroupNames{ PP_SL };

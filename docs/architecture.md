@@ -10,7 +10,7 @@ Related documents:
 | [codestyle.md](codestyle.md) | Code style for new files |
 | [framework_ds.md](framework_ds.md) | Containers, strings, smart pointers (`framework/ds`) |
 | [framework_math.md](framework_math.md) | Math library (`framework/math`) |
-| [framework_core.md](framework_core.md) | Console variables/commands, command line, profiler |
+| [framework_core.md](framework_core.md) | Console variables/commands, command line, console tool helpers (`cmdlib.h`), profiler |
 | [framework_platform.md](framework_platform.md) | Message boxes, timers |
 | [framework_multithreading.md](framework_multithreading.md) | Threads, locks, signals, TLS, atomics |
 | [framework_job_manager.md](framework_job_manager.md) | Job manager and `g_parallelJobs` |
