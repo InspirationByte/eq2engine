@@ -7,9 +7,11 @@
 
 #pragma once
 #include "sys/sys_state.h"
+#include "sys/sys_viewport.h"
 
 class CEqRigidBody;
 class IGPURenderPassRecorder;
+struct ImVec2;
 
 enum EAppStateType
 {
@@ -32,6 +34,7 @@ public:
 	void		HandleMouseMove(int x, int y, float deltaX, float deltaY) override;
 
 	void		GetMouseCursorProperties(bool& visible, bool& centered) override;
+	CHostViewport*	GetViewport() override { return &m_viewport; }
 
 	void		DrawUI(bool& visible);
 
@@ -40,6 +43,12 @@ private:
 	{
 		EqString	name;
 		int			sequenceId{ -1 };
+	};
+
+	struct BrowserDir
+	{
+		Array<EqString>	dirs{ PP_SL };
+		Array<EqString>	files{ PP_SL };
 	};
 
 	void		LoadModel(const char* modelPath);
@@ -57,6 +66,12 @@ private:
 	void		ShowFPS(float frameTime);
 
 	void		DrawMenuBar();
+	void		DrawSceneViewport(const ImVec2& pos, const ImVec2& size);
+	void		DrawModelBrowser(float panelTop, float panelHeight);
+	void		DrawBrowserDir(const EqString& dirPath);
+	void		DrawBrowserFiltered(const EqString& dirPath);
+	void		DrawBrowserFile(const EqString& dirPath, const EqString& name, const EqString& label);
+	const BrowserDir&	GetBrowserDir(const EqString& dirPath);
 	void		DrawModelTab();
 	void		DrawMotionTab();
 	void		DrawPhysicsTab();
@@ -64,6 +79,8 @@ private:
 
 	void		OnSequenceSelected();
 	void		OnPoseControllerSelected();
+
+	CHostViewport	m_viewport{ "egfman2_scene" };
 
 	// camera
 	Vector3D	m_cameraRotation{ 25.0f, 225.0f, 0.0f };
@@ -90,6 +107,11 @@ private:
 	bool		m_drawFloor{ false };
 	bool		m_drawGrid{ true };
 	bool		m_wireframe{ false };
+	bool		m_showBrowser{ true };
+
+	// model browser, directories are scanned when opened
+	Map<uint, BrowserDir>	m_browserDirs{ PP_SL };
+	char		m_browserFilter[64]{};
 
 	// Model tab
 	Array<EqString>	m_bodyGroupNames{ PP_SL };

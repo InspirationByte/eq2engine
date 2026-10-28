@@ -1,4 +1,4 @@
-# framework/core — console, command line, profiler
+# framework/core — console, command line, console tool helpers, profiler
 
 This document covers the console variable/command system, the command line and the profiling
 interface. Headers live in `framework/core/` (`coreLib`) and `public/core/`; implementations of
@@ -140,6 +140,25 @@ if (idx != -1)
 	...
 
 const char* value = g_cmdLine->GetArgumentsOf(g_cmdLine->Find("-game"));
+```
+
+## Console tool helpers — `framework/core/cmdlib.h`
+
+Included by `core/core_common.h`.
+
+- `Install_SpewFunction()` — prints log messages to the process console with colors by message type
+  (and `OutputDebugString` on Windows). Console tools (`egfca`, `animca`, ...) call it first in
+  `main`.
+- `RunProcessToConsole(cmdLine, exitCode)` — runs a command, waits for it and prints its stdout and
+  stderr line by line with `Msg`. On Windows the process gets no console window
+  (`CreateProcess` + pipe), so it also works from windowed applications where `_popen` does not;
+  elsewhere it uses `popen`. Returns `false` if the process could not be started. Child output
+  that is block-buffered appears when the process flushes or exits.
+
+```cpp
+int exitCode = 0;
+if (!RunProcessToConsole("egfca.exe models/box.esc", exitCode))
+	MsgError("Failed to run egfca\n");
 ```
 
 ## Profiler — `framework/core/profiler.h`

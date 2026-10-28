@@ -25,12 +25,17 @@ class CEqImGuiHost
 public:
 	using IMGUI_HANDLER = EqFunction<void(bool& visible)>;
 
-	void			Initialize();
+	void			Init(EQWNDHANDLE window);
 	void			Shutdown();
 
 	bool			IsShown() const;
 	void			BeginFrame(bool menuVisible);
 	void			EndFrame(int width, int height, IGPURenderPassRecorder* rendPassRecorder);
+
+	void			InputKeyPress(int key, bool down);
+	void			InputText(const char* keyInput);
+	void			InputMousePress(int Button, bool pressed);
+	void			InputMouseWheel(int h, int v);
 
 	void			AddDebugHandler(const char* name, IMGUI_HANDLER func);
 	void			AddDebugMenu(const char* path, IMGUI_HANDLER func);
@@ -41,6 +46,7 @@ public:
 	void			RemoveDebugHandler(const char* name);
 
 	bool			IsImGuiItemsInFocus() const;
+	bool			IsTextInputActive() const;
 
 private:
 	struct Menu
@@ -51,8 +57,9 @@ private:
 		bool			enabled{ false };
 	};
 
-	Map<int, Menu>			m_imguiMenus{ PP_SL };
-	bool					m_imguiDrawStart{ false };
+	Map<int, Menu>		m_imguiMenus{ PP_SL };
+	bool				m_imguiDrawStart{ false };
+	bool				m_sdlInit{ false };
 };
 
 extern CEqImGuiHost* g_imGuiHost;

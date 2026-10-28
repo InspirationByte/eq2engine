@@ -14,9 +14,6 @@
 
 #include "egf/EGFGenerator.h"
 
-class IShaderAPI* g_renderAPI = nullptr;
-class IMaterialSystem* g_matSystem = nullptr;
-
 DECLARE_CVAR(__cheats, "1", "Enable cheats", CV_PROTECTED | CV_INVISIBLE);
 
 static bool CompileESCScript(const char* filename)

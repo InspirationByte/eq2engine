@@ -24,13 +24,13 @@
 #include <SDL_keyboard.h>
 
 #include "render/IDebugOverlay.h"
+#include "input/in_keys_ident.h"
 
 #include "font/FontLayoutBuilders.h"
 #include "font/FontCache.h"
 
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
-#include "input/InputCommandBinder.h"
 
 #include "sys_version.h"
 #include "sys_in_console.h"
@@ -38,7 +38,6 @@
 #if !defined(_RETAIL)
 #define EXTENDED_DEVELOPER_CONSOLE
 #endif
-#include "imgui/imgui_impl_sys.h"
 #include "imgui_backend/imgui_host.h"
 
 using namespace Threading;
@@ -53,11 +52,6 @@ static CEqMutex s_conInputMutex;
 #define CONSOLE_INPUT_STARTSTR ("> ")
 #define CURSOR_BLINK_TIME (0.2f)
 const float CMDLIST_SYMBOL_SIZE = 15.0f;
-
-// dummy command
-DECLARE_CMD(toggleconsole, nullptr, CV_INVISIBLE)	// dummy console command
-{
-}
 
 DECLARE_CONCOMMAND_FN(con_toggle)
 {
@@ -203,14 +197,11 @@ void CEqConsoleInput::SpewFunc(ESpewType type, const char* pMsg)
 			currentSpewLine = new(s_spewMessagesPool.allocate()) ConMessage;
 			currentSpewLine->type = type;
 			currentSpewLine->text.Assign(lineStart, length);
+			s_spewMessages.append(currentSpewLine);
 
 			// output to debugoverlay if enabled
 			if(con_minicon.GetBool() && debugoverlay != nullptr)
 				debugoverlay->TextFadeOut(0, s_spewColors[type], con_minicon_time.GetFloat(), currentSpewLine->text);
-
-			{
-				s_spewMessages.append(currentSpewLine);
-			}
 		}
 
 		// if not a zero, there is line start
@@ -247,114 +238,48 @@ void CEqConsoleInput::SpewUninstall()
 
 //-------------------------------------------------------------------------
 
-CEqConsoleInput::CEqConsoleInput()
+void CEqConsoleInput::Init()
 {
-	// release build needs false
-	m_visible = false;
-	m_logVisible = false;
+	const KVSection& consoleSettings = g_eqCore->GetConfig().Get("Console");
 
-	m_showConsole = true;
-
-	m_cursorTime = 0.0f;
-	m_maxLines = 10;
-
-	m_font = nullptr;
-
-	m_shiftModifier = false;
-	m_ctrlModifier = false;
-
-	m_width = 512;
-	m_height = 512;
-	m_enabled = false;
-
-	m_cursorPos = 0;
-	m_startCursorPos = 0;
-
-	m_logScrollPosition = 0;
-	m_logScrollDir = 0;
-
-	m_histIndex = 0;
-	m_fastfind_cmdbase = nullptr;
-	m_variantSelection = -1;
-
-	m_alternateHandler = nullptr;
-}
-
-void CEqConsoleInput::Initialize(EQWNDHANDLE window)
-{
-#ifdef IMGUI_ENABLED
-	g_imGuiHost->Initialize();
-	ImGui_ImplEq_InitForSDL(window);
-#endif
-
-	// TODO: ImGui networked console port (for Android)
-	KVSection* consoleSettings = g_eqCore->GetConfig().FindSection("Console");
-
-	const char* consoleFontName = KV_GetValueString(consoleSettings ? consoleSettings->FindSection("Font") : nullptr, 0, "console");
+	EqStringRef consoleFontName = "console";
+	consoleSettings.Get("Font").GetValues(consoleFontName);
 
 	m_font = g_fontCache->GetFont(consoleFontName, 16);
-	m_enabled = KV_GetValueBool(consoleSettings ? consoleSettings->FindSection("Enable") : nullptr);
-	m_fontScale = KV_GetValueFloat(consoleSettings ? consoleSettings->FindSection("FontScale") : nullptr);
+	consoleSettings.Get("Enable").GetValues(m_enabled);
+	consoleSettings.Get("FontScale").GetValues(m_fontScale);
 }
 
 void CEqConsoleInput::Shutdown()
 {
-#ifdef IMGUI_ENABLED
-	ImGui_ImplEq_Shutdown();
-	g_imGuiHost->Shutdown();
-#endif
 }
 
 void CEqConsoleInput::BeginFrame()
 {
-#ifdef IMGUI_ENABLED
-	if (m_visible || g_imGuiHost->IsShown())
-	{
-		const bool anyItemShown = ImGui_ImplEq_AnyItemShown();
-
-		// Start the Dear ImGui frame
-		ImGui_ImplEq_NewFrame();
-		if (anyItemShown)
-		{
-			ImGui_ImplEq_UpdateMousePosAndButtons();
-			ImGui_ImplEq_UpdateGamepads();
-		}
-	}
-	g_imGuiHost->BeginFrame(m_visible);
-#endif
 }
 
-void CEqConsoleInput::EndFrame(int width, int height, float frameTime)
+void CEqConsoleInput::EndFrame(int width, int height, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
 {
-	IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
-		Builder<RenderPassDesc>()
-		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
-		.End()
-	);
+	if (!m_visible)
+		return;
 
-	if (m_visible)
+	if (m_showConsole)
 	{
-		if (m_showConsole)
-		{
-			int conHeight = con_size.GetFloat() * height;
-			if (conHeight < 400)
-				conHeight = min(height, 400);
+		int conHeight = con_size.GetFloat() * height;
+		if (conHeight < 400)
+			conHeight = min(height, 400);
 
-			DrawSelf(width, conHeight, frameTime, rendPassRecorder);
-		}
-
-		FontStyleParam versionTextStl;
-		versionTextStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-		versionTextStl.align = TEXT_ALIGN_HCENTER;
-		versionTextStl.textColor = ColorRGBA(1, 1, 1, 0.5f);
-		versionTextStl.scale = m_fontScale;
-
-		m_font->SetupRenderText(CONSOLE_ENGINEVERSION_STR, Vector2D(width / 2, height - m_fontScale - 25.0f), versionTextStl, rendPassRecorder);
+		IAARectangle consoleViewport(64, 26, width - 64, conHeight - 26);
+		DrawSelf(consoleViewport, frameTime, rendPassRecorder);
 	}
 
-	g_imGuiHost->EndFrame(width, height, rendPassRecorder);
+	FontStyleParam versionTextStl;
+	versionTextStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+	versionTextStl.align = TEXT_ALIGN_HCENTER;
+	versionTextStl.textColor = ColorRGBA(1, 1, 1, 0.5f);
+	versionTextStl.scale = m_fontScale;
 
-	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
+	m_font->SetupRenderText(CONSOLE_ENGINEVERSION_STR, Vector2D(width / 2, height - m_fontScale - 25.0f), versionTextStl, rendPassRecorder);
 }
 
 void CEqConsoleInput::AddAutoCompletion(EqStringRef name, EqStringRef commaSeparatedArgs)
@@ -1033,7 +958,7 @@ void CEqConsoleInput::AddToLinePos(int num)
 	m_logScrollPosition = clamp(m_logScrollPosition + num, 0, s_spewMessages.numElem());
 }
 
-void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
+void CEqConsoleInput::DrawSelf(const IAARectangle& viewport, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
 {
 	CScopedMutex m(s_conInputMutex);
 	m_cursorTime -= frameTime;
@@ -1044,10 +969,8 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 		m_cursorTime = CURSOR_BLINK_TIME;
 	}
 
-#ifdef IMGUI_ENABLED
 	if (g_imGuiHost->IsImGuiItemsInFocus())
 		m_cursorVisible = false;
-#endif
 
 	if (!m_logVisible)
 		ResetLogScroll();
@@ -1074,7 +997,11 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 	}
 #endif // #ifdef EXTENDED_DEVELOPER_CONSOLE
 
-	const AARectangle inputTextEntryRect(64, 26, width - 64, 46);
+	const IVector2D consolePos = viewport.leftTop;
+	const IVector2D consoleSize = viewport.GetSize();
+
+	const AARectangle inputTextEntryRect(consolePos.x, consolePos.y, consolePos.x + consoleSize.x, consolePos.y + 20);
+
 	{
 		const Vector2D inputTextPos(inputTextEntryRect.leftTop.x + 4, inputTextEntryRect.rightBottom.y - 6);
 
@@ -1122,7 +1049,11 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 #ifdef EXTENDED_DEVELOPER_CONSOLE
 	if (m_logVisible)
 	{
-		AARectangle outputRectangle(64.0f, inputTextEntryRect.rightBottom.y + 26, width - 64.0f, height - inputTextEntryRect.leftTop.y);
+		AARectangle outputRectangle(
+			(float)consolePos.x, 
+			inputTextEntryRect.rightBottom.y + 26,
+			(float)consolePos.x + consoleSize.x,
+			(float)consolePos.y + consoleSize.y - inputTextEntryRect.leftTop.y);
 
 		FontStyleParam outputTextStyle;
 		outputTextStyle.scale = m_fontScale;
@@ -1131,12 +1062,10 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 
 		const float outputLineHeight = m_font->GetLineHeight(outputTextStyle);
 
-		m_maxLines = floor(height / outputLineHeight) - 1;
+		m_maxLines = floor((float)consoleSize.y / outputLineHeight) - 1;
 		if (m_maxLines < -4)
 			return;
 		m_maxLines = (outputRectangle.GetSize().y / outputLineHeight) - 2;
-
-		int numDrawn = 0;
 
 		outputRectangle.leftTop.x += 5.0f;
 		outputRectangle.leftTop.y += outputLineHeight;
@@ -1147,7 +1076,6 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 
 		const int firstLine = m_logScrollPosition;
 		const int maxLinesToRender = min(s_spewMessages.numElem(), firstLine + m_maxLines);
-
 		for (int i = firstLine; i < maxLinesToRender; ++i)
 		{
 			outputTextStyle.textColor = s_spewColors[s_spewMessages[i]->type];
@@ -1160,14 +1088,15 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 				hasLinesStyle.textColor = ColorRGBA(0.5f, 0.5f, 1.0f, 1.0f);
 				hasLinesStyle.styleFlag = TEXT_STYLE_FROM_CAP;
 
-				m_font->SetupRenderText(EqString::Format("-------- %d more messages below --------", s_spewMessages.numElem() - i - 1), Vector2D(outputRectangle.leftTop.x, outputRectangle.rightBottom.y - outputLineHeight), hasLinesStyle, rendPassRecorder);
+				m_font->SetupRenderText(EqString::Format("-------- %d more messages below --------", s_spewMessages.numElem() - i - 1), 
+					Vector2D(outputRectangle.leftTop.x, outputRectangle.rightBottom.y - outputLineHeight), hasLinesStyle, rendPassRecorder);
 				break;
 			}
 		}
 	}
 #endif // EXTENDED_DEVELOPER_CONSOLE
 
-	DrawFastFind(inputTextEntryRect.leftTop.x + 15, inputTextEntryRect.leftTop.y + 25, width - 128, rendPassRecorder);
+	DrawFastFind(inputTextEntryRect.leftTop.x + 15, inputTextEntryRect.leftTop.y + 25, consoleSize.x - 128, rendPassRecorder);
 }
 
 void CEqConsoleInput::MousePos(const Vector2D &pos)
@@ -1179,12 +1108,6 @@ bool CEqConsoleInput::KeyChar(const char* utfChar)
 {
 	if (!m_hostCursorActive)
 		return false;
-
-#ifdef IMGUI_ENABLED
-	ImGui_ImplEq_InputText(utfChar);
-	if (g_imGuiHost->IsImGuiItemsInFocus())
-		return true;
-#endif
 
 	if (!m_visible)
 		return false;
@@ -1212,20 +1135,7 @@ bool CEqConsoleInput::KeyChar(const char* utfChar)
 bool CEqConsoleInput::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 {
 	if (!m_hostCursorActive)
-	{
-#ifdef IMGUI_ENABLED
-		// de-press buttons
-		if(!pressed)
-			ImGui_ImplEq_InputMousePress(Button, pressed);
-#endif
 		return false;
-	}
-
-#ifdef IMGUI_ENABLED
-	ImGui_ImplEq_InputMousePress(Button, pressed);
-	if (g_imGuiHost->IsImGuiItemsInFocus())
-		return true;
-#endif
 
 	if (!m_visible)
 		return false;
@@ -1248,12 +1158,6 @@ bool CEqConsoleInput::MouseWheel(int hscroll, int vscroll)
 {
 	if (!m_hostCursorActive)
 		return false;
-
-#ifdef IMGUI_ENABLED
-	ImGui_ImplEq_InputMouseWheel(hscroll, vscroll);
-	if (g_imGuiHost->IsImGuiItemsInFocus())
-		return true;
-#endif
 
 	if (!m_visible)
 		return false;
@@ -1287,38 +1191,8 @@ void CEqConsoleInput::SetVisible(bool bVisible)
 
 bool CEqConsoleInput::KeyPress(int key, bool pressed)
 {
-	if (pressed) // catch "DOWN" event
-	{
-		InputBinding* tgBind = g_inputCommandBinder->FindBindingByCommand(&toggleconsole);
-
-		if (tgBind && s_keyMapList[tgBind->keyIdx].keynum == key)
-		{
-			if (IsVisible() && IsShiftPressed())
-			{
-				SetLogVisible(!IsLogVisible());
-				return false;
-			}
-
-			SetVisible(!IsVisible());
-			return false;
-		}
-	}
-
 	if (!m_hostCursorActive)
-	{
-#ifdef IMGUI_ENABLED
-		// de-press buttons
-		if(!pressed)
-			ImGui_ImplEq_InputKeyPress(key, pressed);
-#endif
 		return false;
-	}
-
-#ifdef IMGUI_ENABLED
-	ImGui_ImplEq_InputKeyPress(key, pressed);
-	if (g_imGuiHost->IsImGuiItemsInFocus())
-		return true;
-#endif
 
 	if (!m_visible)
 		return false;

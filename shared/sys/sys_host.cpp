@@ -24,11 +24,13 @@
 
 #include "imaging/ImageLoader.h"
 
+#include "imgui_backend/imgui_host.h"
 #include "render/IDebugOverlay.h"
 #include "render/EdgeAA.h"
 
 #include "sys_host.h"
 #include "sys_state.h"
+#include "sys_viewport.h"
 #include "sys_in_console.h"
 #include "sys_in_joystick.h"
 #include "sys_version.h"
@@ -52,6 +54,8 @@ DECLARE_CMD(exec_user_cfg, "Executes user configuration file (from cvar 'cfg_use
 	MsgInfo("* Executing user configuration file '%s'\n", user_cfg.GetString());
 	g_consoleCommands->ParseFileToCommandBuffer( user_cfg.GetString() );
 }
+
+DECLARE_CMD(toggleconsole, nullptr, CV_INVISIBLE) {}	// dummy console command
 
 DECLARE_CMD_FN_RENAME(cmd_exit, "exit", CGameHost::HostExitCmd, "Cl`oses current instance of engine", 0);
 DECLARE_CMD_FN_RENAME(cmd_quit, "quit", CGameHost::HostExitCmd, "Closes current instance of engine", 0);
@@ -224,6 +228,36 @@ CStaticAutoPtr<CRenderFullScreenEdgeAA> g_fullScreenEdgeAA;
 static OSModule*	g_matsysmodule = nullptr;
 IMaterialSystem*	g_matSystem = nullptr;
 IShaderAPI*			g_renderAPI = nullptr;
+
+// visible viewport of the current state
+static CHostViewport* GetStateViewport()
+{
+	CAppStateBase* state = eqAppStateMng::GetCurrentState();
+	CHostViewport* viewport = state ? state->GetViewport() : nullptr;
+	return (viewport && viewport->IsVisible()) ? viewport : nullptr;
+}
+
+// pressed inside viewport buttons send input to the state until released
+static bool ViewportMouseButtonInput(CHostViewport* viewport, const IVector2D& windowPos, int buttons, bool down)
+{
+	if (!down)
+	{
+		const bool captured = viewport->IsMouseCaptured();
+		viewport->SetMouseButtonCaptured(buttons, false);
+		return captured;
+	}
+
+	if (!viewport->IsMouseCaptured() && !viewport->IsMouseOver(windowPos))
+		return false;
+
+	viewport->SetMouseButtonCaptured(buttons, true);
+	return true;
+}
+
+static bool ViewportMouseInput(CHostViewport* viewport, const IVector2D& windowPos)
+{
+	return viewport->IsMouseCaptured() || viewport->IsMouseOver(windowPos);
+}
 
 void CGameHost::HostQuitToDesktop()
 {
@@ -580,9 +614,10 @@ bool CGameHost::InitSystems()
 	g_localizer->AddToken("COMPILE_TIME", EqWString::Format(L"%ls", L"" COMPILE_TIME));
 
 	debugoverlay->Init();
+	g_imGuiHost->Init(m_window);
 	equi::Manager->Init();
 	g_inputCommandBinder->Init();
-	g_consoleInput->Initialize(m_window);
+	g_consoleInput->Init();
 
 	REGISTER_INTERNAL_SHADERS();
 	g_fullScreenEdgeAA->Init();
@@ -728,6 +763,7 @@ void CGameHost::ShutdownSystems()
 	
 	g_fullScreenEdgeAA->Shutdown();
 	debugoverlay->Shutdown();
+	g_imGuiHost->Shutdown();
 	equi::Manager->Shutdown();
 	g_fontCache->Shutdown();
 	g_inputCommandBinder->Shutdown();
@@ -785,7 +821,11 @@ void CGameHost::UpdateCursorState()
 	SDL_SetRelativeMouseMode(m_cursorCentered ? SDL_TRUE : SDL_FALSE);
 
 	if (previousCenterState = previousCenterState != m_cursorCentered)
-		SDL_WarpMouseInWindow(m_window, m_winSize.x / 2, m_winSize.y / 2);
+	{
+		CHostViewport* viewport = GetStateViewport();
+		const IVector2D centerPos = viewport ? viewport->GetScreenRect().GetCenter() : m_winSize / 2;
+		SDL_WarpMouseInWindow(m_window, centerPos.x, centerPos.y);
+	}
 
 	// update cursor visibility state
 	SetCursorShow( cursorVisible );
@@ -793,8 +833,12 @@ void CGameHost::UpdateCursorState()
 
 void CGameHost::SetCursorPosition(int x, int y)
 {
-	SDL_WarpMouseInWindow(m_window, x, y);
-	m_mousePos = IVector2D(x,y);
+	// state uses viewport coordinates
+	CHostViewport* viewport = GetStateViewport();
+	const IVector2D windowPos = viewport ? viewport->ToWindow(IVector2D(x, y)) : IVector2D(x, y);
+
+	SDL_WarpMouseInWindow(m_window, windowPos.x, windowPos.y);
+	m_mousePos = windowPos;
 }
 
 void CGameHost::SetCursorShow(bool bShow)
@@ -863,11 +907,17 @@ bool CGameHost::Frame()
 	// this also resets matsystem from overdraw
 	g_matSystem->GetConfiguration().overdrawMode = false;
 
-	equi::Manager->SetViewFrame(IAARectangle(0, 0, m_winSize.x, m_winSize.y));
-	equi::Manager->Render();
+	// EqUI, debug overlays and console are drawn in the state viewport
+	const CHostViewport* viewport = GetStateViewport();
+	const IVector2D viewportSize = viewport ? viewport->GetSize() : m_winSize;
+	ITexturePtr viewColorTarget = viewport ? viewport->GetColorTarget() : g_matSystem->GetCurrentBackbuffer();
+
+	equi::Manager->SetViewFrame(IAARectangle(0, 0, viewportSize.x, viewportSize.y));
+	equi::Manager->Render(viewColorTarget);
 
 	// DO AA after we done scene and UI
-	if(g_fullScreenEdgeAA->IsEnabled())
+	// TODO: viewport target is not a storage texture for the luma pass
+	if(g_fullScreenEdgeAA->IsEnabled() && !viewport)
 	{
 		g_matSystem->Setup2D(m_winSize.x, m_winSize.y);
 
@@ -928,27 +978,40 @@ bool CGameHost::Frame()
 		debugoverlay->Graph_AddValue(&s_fpsGraph, gamefps);
 	}
 
-	const ShaderAPIStats& stats = g_renderAPI->GetStats();
-	size_t totalMem = PPMemGetUsage();
+#ifdef ENABLE_DEBUG_DRAWING_PROFILE
+	{
+		const ShaderAPIStats& stats = g_renderAPI->GetStats();
+		size_t totalMem = PPMemGetUsage();
 
-	debugoverlay->Text(color_white, "SYS FPS: %i", fps);
-	debugoverlay->Text(color_white, "GAME FPS: %i (%.4f)", gamefps, gameFrameTime);
-	debugoverlay->Text(color_white, "DRAWS/INDIRECT: %i/%i", stats.drawCount, stats.indirectDrawCount);
-	debugoverlay->Text(color_white, "DISPATCHS/INDIRECT: %i/%i", stats.dispatchCount, stats.indirectDispatchCount);
-	debugoverlay->Text(color_white, "UPDATE CNT BUFFER/TEXTURE : %i/%i", stats.bufferUpdateCount, stats.textureUpdateCount);
-	debugoverlay->Text(color_white, "BIND GROUPS : %i", stats.bindGroups);
-	debugoverlay->Text(color_white, "PIPELINES : %i", stats.pipelines);
-	debugoverlay->Text(color_white, "MEM BUFFER : %.2f", stats.bufferMem / 1024.0f / 1024.0f);
-	debugoverlay->Text(color_white, "MEM TEXTURE : %.2f", stats.textureMem / 1024.0f / 1024.0f);
-	if (totalMem)
-		debugoverlay->Text(color_white, "MEM SYS : %.2f", totalMem / 1024.0f / 1024.0f);
-	debugoverlay->Draw(m_winSize.x, m_winSize.y, timescale * sys_timescale.GetFloat());
-	g_matSystem->Setup2D(m_winSize.x, m_winSize.y);
+		debugoverlay->Text(color_white, "SYS FPS: %i", fps);
+		debugoverlay->Text(color_white, "GAME FPS: %i (%.4f)", gamefps, gameFrameTime);
+		debugoverlay->Text(color_white, "DRAWS/INDIRECT: %i/%i", stats.drawCount, stats.indirectDrawCount);
+		debugoverlay->Text(color_white, "DISPATCHS/INDIRECT: %i/%i", stats.dispatchCount, stats.indirectDispatchCount);
+		debugoverlay->Text(color_white, "UPDATE CNT BUFFER/TEXTURE : %i/%i", stats.bufferUpdateCount, stats.textureUpdateCount);
+		debugoverlay->Text(color_white, "BIND GROUPS : %i", stats.bindGroups);
+		debugoverlay->Text(color_white, "PIPELINES : %i", stats.pipelines);
+		debugoverlay->Text(color_white, "MEM BUFFER : %.2f", stats.bufferMem / 1024.0f / 1024.0f);
+		debugoverlay->Text(color_white, "MEM TEXTURE : %.2f", stats.textureMem / 1024.0f / 1024.0f);
+		if (totalMem)
+			debugoverlay->Text(color_white, "MEM SYS : %.2f", totalMem / 1024.0f / 1024.0f);
+
+		ITexturePtr colorTarget = viewport ? viewColorTarget : g_matSystem->GetCurrentBackbuffer();
+		ITexturePtr depthTarget = viewport ? viewport->GetDepthTarget() : g_matSystem->GetDefaultDepthBuffer();
+		debugoverlay->Draw(viewportSize.x, viewportSize.y, timescale * sys_timescale.GetFloat(), colorTarget, depthTarget);
+	}
+#endif // ENABLE_DEBUG_DRAWING_PROFILE
+
+	g_matSystem->Setup2D(viewportSize.x, viewportSize.y);
+
+	// save screenshots without ImGui/Console visible
+	// viewport is in the backbuffer only after ImGui is drawn, so screenshot includes UI
+	if (!viewport)
+		sysHostSaveScreenshot();
 
 	{
 		IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
 			Builder<RenderPassDesc>()
-			.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+			.ColorTarget(viewColorTarget)
 			.End()
 		);
 		rendPassRecorder->DbgPushGroup("Extra Overlays");
@@ -975,10 +1038,32 @@ bool CGameHost::Frame()
 			}
 		}
 
-		g_inputCommandBinder->DebugDraw(m_winSize, rendPassRecorder);
+		g_inputCommandBinder->DebugDraw(viewportSize, rendPassRecorder);
 		rendPassRecorder->DbgPopGroup();
 
+		g_consoleInput->EndFrame(viewportSize.x, viewportSize.y, GetFrameTime(), rendPassRecorder);
+
+		if (!viewport)
+			g_imGuiHost->EndFrame(m_winSize.x, m_winSize.y, rendPassRecorder);
+
 		g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
+	}
+
+	// when viewport is drawn, ImGui draws the viewport target in the window
+	// and it's done as separate pass
+	if (viewport)
+	{
+		g_matSystem->Setup2D(m_winSize.x, m_winSize.y);
+
+		IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
+			Builder<RenderPassDesc>()
+			.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+			.End()
+		);
+		g_imGuiHost->EndFrame(m_winSize.x, m_winSize.y, rendPassRecorder);
+		g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
+
+		sysHostSaveScreenshot();
 	}
 
 	// End frame from render lib
@@ -1028,12 +1113,13 @@ void CGameHost::OnFocusChanged(bool inFocus)
 void CGameHost::BeginScene()
 {
 	g_matSystem->BeginFrame(nullptr);
+	g_consoleInput->BeginFrame();
+
+	g_imGuiHost->BeginFrame(g_consoleInput->IsVisible());
 
 	MatSysRenderSettings& rendSettings = g_matSystem->GetConfiguration();
 	rendSettings.wireframeMode = r_wireframe.GetBool();
 	rendSettings.overdrawMode = r_overdraw.GetBool();
-
-	g_consoleInput->BeginFrame();
 
 	const bool cursorVisible = SDL_ShowCursor(SDL_QUERY);
 	const bool cursorIsActive = cursorVisible && !m_cursorCentered;
@@ -1042,10 +1128,6 @@ void CGameHost::BeginScene()
 
 void CGameHost::EndScene()
 {
-	// save screenshots without ImGui/Console visible
-	sysHostSaveScreenshot();
-
-	g_consoleInput->EndFrame(m_winSize.x, m_winSize.y, GetFrameTime());
 	g_matSystem->EndFrame();
 }
 
@@ -1066,6 +1148,38 @@ bool CGameHost::IsTextInputShown() const
 
 void CGameHost::Key_Event( int key, bool down )
 {
+	// checking for toggle console event
+	if (down)
+	{
+		const InputBinding* binding = g_inputCommandBinder->FindBindingByCommand(&toggleconsole);
+		if (binding && s_keyMapList[binding->keyIdx].keynum == key)
+		{
+			if (g_consoleInput->IsVisible() && g_consoleInput->IsShiftPressed())
+				g_consoleInput->SetLogVisible(!g_consoleInput->IsLogVisible());
+			else
+				g_consoleInput->SetVisible(!g_consoleInput->IsVisible());
+		}
+	}
+
+	g_imGuiHost->InputKeyPress(key, down);
+
+	// console in the viewport takes keys while open
+	CHostViewport* viewport = GetStateViewport();
+	const bool viewportInput = viewport && (viewport->IsFocused() || g_consoleInput->IsVisible()) && !g_imGuiHost->IsTextInputActive();
+
+	if (!viewportInput && g_imGuiHost->IsImGuiItemsInFocus())
+	{
+		if (!down)
+		{
+			g_consoleInput->KeyPress(key, down);
+
+			// key could be pressed while viewport was focused
+			if (viewport && eqAppStateMng::GetCurrentState())
+				eqAppStateMng::GetCurrentState()->HandleKeyPress(key, down);
+		}
+		return;
+	}
+
 	if(g_consoleInput->KeyPress( key, down ))
 		return;
 
@@ -1078,6 +1192,22 @@ void CGameHost::Key_Event( int key, bool down )
 
 void CGameHost::Mouse_Event( float x, float y, int buttons, bool down )
 {
+	g_imGuiHost->InputMousePress(buttons, down);
+
+	// console, EqUI and state are in the viewport
+	CHostViewport* viewport = GetStateViewport();
+	if (viewport)
+	{
+		if (!ViewportMouseButtonInput(viewport, IVector2D(x, y), buttons, down))
+			return;
+
+		const IVector2D viewportPos = viewport->ToViewport(IVector2D(x, y));
+		x = viewportPos.x;
+		y = viewportPos.y;
+	}
+	else if (g_imGuiHost->IsImGuiItemsInFocus())
+		return;
+
 	if( g_consoleInput->MouseEvent( Vector2D(x,y), buttons, down ) )
 		return;
 
@@ -1085,8 +1215,9 @@ void CGameHost::Mouse_Event( float x, float y, int buttons, bool down )
 	if( equi::Manager->ProcessMouseEvents( x, y, equiMouseButtons, down ? equi::UI_EVENT_DOWN : equi::UI_EVENT_UP) )
 		return;
 
+	const IVector2D viewSize = viewport ? viewport->GetSize() : m_winSize;
 	if(m_clicks_to_touch.GetBool())
-		Touch_Event( x/m_winSize.x, y/m_winSize.y, 0, down);
+		Touch_Event( x/viewSize.x, y/viewSize.y, 0, down);
 
 	if(eqAppStateMng::GetCurrentState())
 		eqAppStateMng::GetCurrentState()->HandleMouseClick( x, y, buttons, down );
@@ -1102,7 +1233,18 @@ void CGameHost::MouseMove_Event(int x, int y, int dx, int dy)
 
 	m_mousePos = IVector2D(x,y);
 
-	g_consoleInput->MousePos( m_mousePos );
+	CHostViewport* viewport = GetStateViewport();
+	if (viewport)
+	{
+		const IVector2D viewportPos = viewport->ToViewport(m_mousePos);
+		x = viewportPos.x;
+		y = viewportPos.y;
+	}
+
+	g_consoleInput->MousePos( Vector2D(x, y) );
+
+	if (viewport && !ViewportMouseInput(viewport, m_mousePos))
+		return;
 
 	if( equi::Manager->ProcessMouseEvents(x, y, 0, equi::UI_EVENT_MOUSE_MOVE) )
 		return;
@@ -1121,6 +1263,21 @@ void CGameHost::MouseMove_Event(int x, int y, int dx, int dy)
 
 void CGameHost::MouseWheel_Event(int x, int y, int hscroll, int vscroll)
 {
+	g_imGuiHost->InputMouseWheel(hscroll, vscroll);
+
+	CHostViewport* viewport = GetStateViewport();
+	if (viewport)
+	{
+		if (!ViewportMouseInput(viewport, m_mousePos))
+			return;
+
+		const IVector2D viewportPos = viewport->ToViewport(IVector2D(x, y));
+		x = viewportPos.x;
+		y = viewportPos.y;
+	}
+	else if (g_imGuiHost->IsImGuiItemsInFocus())
+		return;
+
 	if (g_consoleInput->MouseWheel(hscroll, vscroll))
 		return;
 
@@ -1164,6 +1321,14 @@ void CGameHost::Touch_Event( float x, float y, int finger, bool down )
 
 void CGameHost::ProcessKeyChar(const char* utfChar)
 {
+	g_imGuiHost->InputText(utfChar);
+
+	CHostViewport* viewport = GetStateViewport();
+	const bool viewportInput = viewport && (viewport->IsFocused() || g_consoleInput->IsVisible()) && !g_imGuiHost->IsTextInputActive();
+
+	if (!viewportInput && g_imGuiHost->IsImGuiItemsInFocus())
+		return;
+
 	if(g_consoleInput->KeyChar(utfChar))
 		return;
 

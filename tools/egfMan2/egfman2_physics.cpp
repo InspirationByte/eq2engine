@@ -18,8 +18,10 @@
 
 #include "egfman2_physics.h"
 
+static constexpr const int PHYSICS_ITERATIONS = 4;
 static constexpr const float PHYSICS_FRAME_INTERVAL = 1.0f / 60.0f;
 static constexpr const int PHYSICS_MAX_STEPS_PER_FRAME = 4;
+
 static constexpr const float PHYSICS_FLOOR_SIZE = 512.0f;
 static constexpr const int PHYSICS_FLOOR_GRID = 32;
 static constexpr const int PHYSICS_FLOOR_VERTS = PHYSICS_FLOOR_GRID * PHYSICS_FLOOR_GRID;
@@ -139,13 +141,14 @@ void PhysicsSceneShutdown()
 
 void PhysicsSimulate(float frameTime)
 {
+	const float iterTimeStep = PHYSICS_FRAME_INTERVAL / PHYSICS_ITERATIONS;
 	s_dtAccumulator = min(s_dtAccumulator + frameTime, PHYSICS_FRAME_INTERVAL * PHYSICS_MAX_STEPS_PER_FRAME);
 
 	int iteration = 0;
 	while (s_dtAccumulator >= PHYSICS_FRAME_INTERVAL)
 	{
-		s_physWorld->SimulateStep(PHYSICS_FRAME_INTERVAL, iteration++);
-		s_dtAccumulator -= PHYSICS_FRAME_INTERVAL;
+		s_physWorld->SimulateStep(iterTimeStep, iteration++);
+		s_dtAccumulator -= iterTimeStep;
 	}
 }
 

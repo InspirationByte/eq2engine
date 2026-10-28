@@ -8,3 +8,7 @@
 #pragma once
 
 void Install_SpewFunction();
+
+// runs command and waits for it, stdout and stderr lines are printed with Msg
+// returns false if process could not be started
+bool RunProcessToConsole(const char* cmdLine, int& exitCode);

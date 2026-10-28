@@ -30,17 +30,16 @@ public:
 	static void		SpewInit();
 	static void		SpewUninstall();
 
+	CEqConsoleInput() = default;
 
-					CEqConsoleInput();
-
-	void			Initialize(EQWNDHANDLE window);
+	void			Init();
 	void			Shutdown();
 
 	// useful for scripts
 	void			SetAlternateHandler( CONSOLE_ALTERNATE_HANDLER handler ) {m_alternateHandler = handler;}
 
 	void			BeginFrame();
-	void			EndFrame(int width, int height, float frameTime);
+	void			EndFrame(int width, int height, float frameTime, IGPURenderPassRecorder* rendPassRecorder);
 
 	void			SetLastLine();
 	void			AddToLinePos(int num);
@@ -59,13 +58,16 @@ public:
 	bool			MouseEvent(const Vector2D &pos, int Button,bool pressed);
 	bool			MouseWheel(int hscroll, int vscroll);
 
+	bool			IsShiftPressed() const { return m_shiftModifier; }
+	bool			IsCtrlPressed() const { return m_ctrlModifier; }
+
 	void			MousePos(const Vector2D &pos);
 
 	void			AddAutoCompletion(EqStringRef name, EqStringRef commaSeparatedArgs);
 
 protected:
 
-	void			DrawSelf(int width, int height, float frameTime, IGPURenderPassRecorder* rendPassRecorder);
+	void			DrawSelf(const IAARectangle& viewport, float frameTime, IGPURenderPassRecorder* rendPassRecorder);
 	void			DrawListBox(const IVector2D& pos, int width, ArrayCRef<EqString> items, const char* tooltipText, int maxItems, int startItem, int& selection, IGPURenderPassRecorder* rendPassRecorder);
 
 	void			DrawFastFind(float x, float y, float w, IGPURenderPassRecorder* rendPassRecorder);
@@ -81,9 +83,6 @@ protected:
 
 	void			ResetLogScroll();
 
-	bool			IsShiftPressed() const { return m_shiftModifier; }
-	bool			IsCtrlPressed() const { return m_ctrlModifier; }
-
 	// returns current statement start and current input text
 	int				GetCurrentInputText(EqString& str);
 
@@ -94,49 +93,44 @@ protected:
 
 private:
 
-	IEqFont*						m_font;
-	float							m_fontScale;
+	IEqFont*						m_font{ nullptr };
+	float							m_fontScale{ 8.0f };
 
-	Vector2D						m_mousePosition;
-	bool							m_visible;
+	Vector2D						m_mousePosition{ 0 };
 
-	bool							m_logVisible;
-	bool							m_showConsole;
+	float							m_cursorTime{ 0.0f };
+	int								m_maxLines{ 10 };
+	int								m_cursorPos{ 0 };
+	int								m_startCursorPos{ 0 };
 
-	bool							m_cursorVisible;
-	bool							m_hostCursorActive;
-	float							m_cursorTime;
-	int								m_maxLines;
+	int								m_logScrollPosition{ 0 };
+	float							m_logScrollAccumTime{ 0 };
+	float							m_logScrollTime{ 0 };
+	int								m_logScrollDir{ 1 };
 
-	bool							m_shiftModifier;
-	bool							m_ctrlModifier;
+	bool							m_shiftModifier{ false };
+	bool							m_ctrlModifier{ false };
 
-	int								m_width;
-	int								m_height;
+	bool							m_showConsole{ true };
+	bool							m_enabled{ false };
 
-	bool							m_enabled;
-
-	int								m_cursorPos;
-	int								m_startCursorPos;
-
-	int								m_logScrollPosition;
-
-	float							m_logScrollAccumTime;
-	float							m_logScrollTime;
-	int								m_logScrollDir;
+	bool							m_cursorVisible{ false };
+	bool							m_hostCursorActive{ false };
+	bool							m_visible{ false };
+	bool							m_logVisible{ false };
 
 	// Input history
 	Array<EqString>					m_commandHistory{ PP_SL };
-	int								m_histIndex;
+	int								m_histIndex{ -1 };
 
 	Array<const ConCommandBase*>	m_foundCmdList{ PP_SL };
-	int								m_cmdSelection;
+	int								m_cmdSelection{ -1 };
 
 	const ConCommandBase*			m_fastfind_cmdbase;
 	Array<EqString>					m_variantList{ PP_SL };
-	int								m_variantSelection;
+	int								m_variantSelection{ -1 };
 
-	CONSOLE_ALTERNATE_HANDLER		m_alternateHandler;
+	CONSOLE_ALTERNATE_HANDLER		m_alternateHandler{ nullptr };
 
 	// Current input text
 	EqString						m_inputText;

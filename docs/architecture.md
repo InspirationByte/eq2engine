@@ -10,7 +10,7 @@ Related documents:
 | [codestyle.md](codestyle.md) | Code style for new files |
 | [framework_ds.md](framework_ds.md) | Containers, strings, smart pointers (`framework/ds`) |
 | [framework_math.md](framework_math.md) | Math library (`framework/math`) |
-| [framework_core.md](framework_core.md) | Console variables/commands, command line, profiler |
+| [framework_core.md](framework_core.md) | Console variables/commands, command line, console tool helpers (`cmdlib.h`), profiler |
 | [framework_platform.md](framework_platform.md) | Message boxes, timers |
 | [framework_multithreading.md](framework_multithreading.md) | Threads, locks, signals, TLS, atomics |
 | [framework_job_manager.md](framework_job_manager.md) | Job manager and `g_parallelJobs` |
@@ -87,12 +87,12 @@ Public interfaces are declared in `public/` and implemented in `core/` or `share
 | `shared/audio/` | Audio system on OpenAL, sound emitters/scripts/mixer; `source/` holds WAV/OGG sources |
 | `shared/physics/` | EqPhysics engine on top of Bullet collision — see [physics_overview.md](physics_overview.md) |
 | `shared/equi/` | EqUI interface library: manager, controls, scheme |
-| `shared/imgui_backend/` | ImGui host and material-system renderer backend |
+| `shared/imgui_backend/` | ImGui host (`g_imGuiHost`), SDL platform backend and material-system renderer backend |
 | `shared/scripting/` | ESL — Lua binding library |
 | `shared/movie/` | WebM movie player: AV1 video (dav1d), Vorbis audio, YUV to RGBA conversion on GPU (`MovieYUV` shader) |
 | `shared/network/` | UDP networking |
 | `shared/input/` | Input command binder |
-| `shared/sys/` | Application host: main loop, window, states, console, joystick, config loader; `sys/scripting/` exposes engine subsystems to ESL, `sys/imgui/` is the ImGui platform backend |
+| `shared/sys/` | Application host: main loop, window, states, console, joystick, config loader; `sys/scripting/` exposes engine subsystems to ESL |
 | `shared/components/`, `shared/entity/` | Component system and data tables (no engine project; compiled by consumers) |
 | `tools/` | Content tools (see below); `localization_tool/` is a separate C# project, `imp-exp blender/` is a Blender add-on |
 | `samples/` | Sample applications, each with its own workspace `premake5.lua` |
@@ -208,7 +208,7 @@ All are static libraries using `public` and `shared` include paths.
 | `studioLib` | `studio/**` | studioFileLib |
 | `animatingLib` | `animating/**` | studioLib |
 | `equiLib` | `equi/**` | fontLib (imgui) |
-| `imguiBackendLib` | `imgui_backend/**` | (imgui) |
+| `imguiBackendLib` | `imgui_backend/**` | (SDL2, imgui) |
 | `networkLib` | `network/**` except `NETThread.cpp` | (zlib) |
 | `soundSystemLib` | `audio/**` | (minivorbis, openal-soft, imgui) |
 | `physicsLib` | `physics/**` | (bullet2) |

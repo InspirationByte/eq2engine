@@ -55,14 +55,25 @@ skeleton, animations and sequences, physics objects. Built on `sysLib` with an I
 come from `nfd` (`src_dependency/nfd`).
 
 - `-model <path>` opens a model on start.
+- The scene is rendered into a `CHostViewport` (see
+  [sys_application_overview.md](sys_application_overview.md)) shown in the ImGui window between the
+  model browser and the bottom panel; camera and drag input and hotkeys work while the mouse is over
+  the scene or the scene window is focused.
+- Model browser on the left (View → Model browser) lists `.egf` files under `models/` of the `SP_MOD`
+  search paths; clicking a file opens it. Directories are scanned when first expanded, Refresh
+  rescans them. The filter field shows a flat list of files whose names contain the text (case
+  insensitive); it scans all directories under `models/`.
+- File → Compile scripts... runs `egfca` (`.esc`) or `animca` (`.asc`) for the selected scripts and
+  waits for them. Their stdout and stderr go to the engine console through a pipe (no console window
+  is opened); a single compiled model is opened afterwards.
 - Camera: Shift + left / right / middle mouse button drag rotates, zooms and pans; the cursor wraps
-  around the window edges while the camera moves. Left button drag pulls physics objects while
+  around the scene viewport edges while the camera moves. Left button drag pulls physics objects while
   physics simulation runs.
 - Physics preview runs eqPhysics with a fixed 1/60 s step on a floor box at zero height. All
   surface params of the model fall back to one built-in `default` param. Ragdolls
   (`ragdoll/physics_ragdoll.*`) use point and angular limit constraints with the joint limits
   from the `.pod`; ragdoll parts collide only with the floor.
-- Hotkeys: Ctrl+O open, R reset view, P physics objects, B bones, W wireframe.
+- Hotkeys (scene window focused): Ctrl+O open, R reset view, P physics objects, B bones, W wireframe.
 - Writes its ConVars to `cfg/egfman2.cfg` instead of the game `cfg/user.cfg` unless `-user_cfg` is
   given.
 

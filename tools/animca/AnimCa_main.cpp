@@ -14,8 +14,6 @@
 #include "egf/MotionPackageGenerator.h"
 #include "egf/model.h"
 
-class IShaderAPI* g_renderAPI = nullptr;
-class IMaterialSystem* g_matSystem = nullptr;
 
 DECLARE_CVAR(__cheats, "1", "Enable cheats", CV_PROTECTED | CV_INVISIBLE);
 

@@ -120,6 +120,7 @@ void fnConDebugSpew(ESpewType type,const char* text)
 #include <stdio.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <sys/wait.h>
 
 static const char* g_InitialColor = "\033[0m";
 static const char* g_NormColor = "\033[0;37m";
@@ -172,3 +173,110 @@ void Install_SpewFunction()
 	SetSpewFunction(fnConDebugSpew);
 	GetInitialColors();
 }
+
+//-------------------------------------------------------------------------------------------------
+
+// splits output into lines, keeps the incomplete line for the next chunk
+static void PrintOutputChunk(EqString& lineBuffer, const char* data, int size)
+{
+	for (int i = 0; i < size; ++i)
+	{
+		const char chr = data[i];
+		if (chr == '\r')
+			continue;
+
+		if (chr != '\n')
+		{
+			lineBuffer.Append(chr);
+			continue;
+		}
+
+		Msg("%s\n", lineBuffer.ToCString());
+		lineBuffer.Empty();
+	}
+}
+
+#ifdef _WIN32
+
+bool RunProcessToConsole(const char* cmdLine, int& exitCode)
+{
+	SECURITY_ATTRIBUTES secAttrs{};
+	secAttrs.nLength = sizeof(secAttrs);
+	secAttrs.bInheritHandle = TRUE;
+
+	HANDLE readPipe = nullptr;
+	HANDLE writePipe = nullptr;
+	if (!CreatePipe(&readPipe, &writePipe, &secAttrs, 0))
+		return false;
+
+	// only the write end goes to the child
+	SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
+
+	STARTUPINFOA startInfo{};
+	startInfo.cb = sizeof(startInfo);
+	startInfo.dwFlags = STARTF_USESTDHANDLES;
+	startInfo.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+	startInfo.hStdOutput = writePipe;
+	startInfo.hStdError = writePipe;
+
+	PROCESS_INFORMATION procInfo{};
+
+	// CreateProcess may modify the command line buffer
+	EqString cmdLineBuffer(cmdLine);
+	const BOOL started = CreateProcessA(nullptr, cmdLineBuffer.GetData(), nullptr, nullptr, TRUE, CREATE_NO_WINDOW, nullptr, nullptr, &startInfo, &procInfo);
+
+	// read returns when all write ends are closed, so close ours
+	CloseHandle(writePipe);
+
+	if (!started)
+	{
+		CloseHandle(readPipe);
+		return false;
+	}
+
+	EqString lineBuffer;
+	char readBuffer[1024];
+	DWORD bytesRead = 0;
+	while (ReadFile(readPipe, readBuffer, sizeof(readBuffer), &bytesRead, nullptr) && bytesRead > 0)
+		PrintOutputChunk(lineBuffer, readBuffer, static_cast<int>(bytesRead));
+
+	if (lineBuffer.Length())
+		Msg("%s\n", lineBuffer.ToCString());
+
+	WaitForSingleObject(procInfo.hProcess, INFINITE);
+
+	DWORD processExitCode = 0;
+	GetExitCodeProcess(procInfo.hProcess, &processExitCode);
+	exitCode = static_cast<int>(processExitCode);
+
+	CloseHandle(procInfo.hProcess);
+	CloseHandle(procInfo.hThread);
+	CloseHandle(readPipe);
+
+	return true;
+}
+
+#else
+
+bool RunProcessToConsole(const char* cmdLine, int& exitCode)
+{
+	FILE* pipe = popen(EqString::Format("%s 2>&1", cmdLine), "r");
+	if (!pipe)
+		return false;
+
+	EqString lineBuffer;
+	char readBuffer[1024];
+	size_t bytesRead = 0;
+	while ((bytesRead = fread(readBuffer, 1, sizeof(readBuffer), pipe)) > 0)
+		PrintOutputChunk(lineBuffer, readBuffer, static_cast<int>(bytesRead));
+
+	if (lineBuffer.Length())
+		Msg("%s\n", lineBuffer.ToCString());
+
+	const int status = pclose(pipe);
+	exitCode = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+
+	return true;
+}
+
+#endif // _WIN32
