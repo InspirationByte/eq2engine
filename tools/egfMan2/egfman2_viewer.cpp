@@ -745,7 +745,10 @@ void CState_EGFViewer::DrawBrowserFiltered(const EqString& dirPath)
 		if (name.Find(m_browserFilter) == -1)
 			continue;
 
-		const EqString label = *relativeDir ? EqString::Format("%s/%s", relativeDir, name.ToCString()) : name;
+		EqString label(name);
+		if (*relativeDir)
+			label = EqString::Format("%s/%s", relativeDir, name.ToCString());
+
 		DrawBrowserFile(dirPath, name, label);
 	}
 }
