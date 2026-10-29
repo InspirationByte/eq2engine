@@ -11,7 +11,7 @@ require ".premake_modules/vscode"
 IS_ANDROID = (_ACTION == "androidndk")
 
 local CAN_BUILD_TOOLS = (_TARGET_OS == "linux" or _TARGET_OS == "windows")
-local CAN_BUILD_GUI_TOOLS = (--[[os.target() == "linux" or]] _TARGET_OS == "windows")
+local CAN_BUILD_GUI_TOOLS = (_TARGET_OS == "linux" or _TARGET_OS == "windows")
 
 WORKSPACE_NAME = (WORKSPACE_NAME or "Equilibrium2")
 ENGINE_DIR = ENGINE_DIR or _WORKING_DIR

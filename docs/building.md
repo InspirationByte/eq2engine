@@ -56,10 +56,10 @@ msbuild /m /p:Configuration=Release /p:Platform=x64 build\auto_tests\auto_tests.
 
 - clang, make (`build-essential`).
 - Meson, ninja and nasm to build dav1d.
-- Development packages for SDL2, OpenAL-soft and libXxf86vm. On Ubuntu:
+- Development packages for SDL2, OpenAL-soft, libXxf86vm and D-Bus (native file dialogs in `egfMan2`). On Ubuntu:
 
   ```
-  sudo apt-get install build-essential meson ninja-build nasm libsdl2-dev libopenal-dev libxxf86vm-dev
+  sudo apt-get install build-essential meson ninja-build nasm libsdl2-dev libopenal-dev libxxf86vm-dev libdbus-1-dev
   ```
 
 ### Dependencies
@@ -72,6 +72,10 @@ The script downloads Slang into `src_dependency/slang/` and builds dav1d 1.5.4 f
 `src_dependency/dav1d/`. SDL2 and OpenAL come from system packages.
 
 ### Generating projects
+
+The engine workspace is generated with `./utils/premake5 gmake2`. It builds the engine libraries
+and tools, including `egfMan2` (for example `make -C build config=debug_x64 egfMan2`). The tests
+workspace:
 
 ```
 ./utils/premake5 --file=premake5-tests.lua gmake2
@@ -86,7 +90,7 @@ names are the lowercase configuration and platform: `debug_x64`, `release_x64`,
 
 For VS Code, additionally run the `vscode` action for the same script
 (`./utils/premake5 --file=samples/GPUDriven/premake5.lua vscode`), open the folder and press F5.
-GUI tools (`egfMan2`) are not built on Linux.
+`egfMan2` is built on Linux as well and uses the D-Bus xdg-desktop-portal backend for native file dialogs.
 
 ## Output layout
 
