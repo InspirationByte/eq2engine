@@ -14,6 +14,23 @@ meson install -C build
 
 Copy `<install_dir>/include/dav1d` to `include/`, `lib/dav1d.lib` to `lib/`, `bin/dav1d.dll` to `bin/`.
 
+## Linux x86_64
+
+Requires meson, ninja and nasm in `PATH` (for example `sudo apt-get install meson ninja-build nasm`). Run from the repository root:
+
+```
+meson setup build <dav1d_src> --backend=ninja --buildtype=release --libdir=lib -Ddefault_library=shared -Denable_tools=false -Denable_tests=false -Denable_examples=false --prefix=<install_dir>
+meson compile -C build
+meson install -C build
+```
+
+Copy `<install_dir>/include/dav1d` to `include/` and the `<install_dir>/lib/libdav1d.so*` files
+(with their symlinks) to `lib/x64/`. The build script does this automatically:
+
+```
+./utils/linux_dev_prepare.sh
+```
+
 ## Movie content
 
 `movieLib` plays WebM files with 8 bit 4:2:0 AV1 video and Vorbis audio (mono or stereo). Convert videos with:

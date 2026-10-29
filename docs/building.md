@@ -55,10 +55,11 @@ msbuild /m /p:Configuration=Release /p:Platform=x64 build\auto_tests\auto_tests.
 ### Prerequisites
 
 - clang, make (`build-essential`).
+- Meson, ninja and nasm to build dav1d.
 - Development packages for SDL2, OpenAL-soft and libXxf86vm. On Ubuntu:
 
   ```
-  sudo apt-get install build-essential libsdl2-dev libopenal-dev libxxf86vm-dev
+  sudo apt-get install build-essential meson ninja-build nasm libsdl2-dev libopenal-dev libxxf86vm-dev
   ```
 
 ### Dependencies
@@ -67,7 +68,8 @@ msbuild /m /p:Configuration=Release /p:Platform=x64 build\auto_tests\auto_tests.
 ./utils/linux_dev_prepare.sh
 ```
 
-The script downloads Slang into `src_dependency/slang/`. SDL2 and OpenAL come from system packages.
+The script downloads Slang into `src_dependency/slang/` and builds dav1d 1.5.4 from source into
+`src_dependency/dav1d/`. SDL2 and OpenAL come from system packages.
 
 ### Generating projects
 
