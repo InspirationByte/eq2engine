@@ -5,8 +5,11 @@
 #include "core/ConCommand.h"
 
 #ifdef IMGUI_ENABLED
+
 #include <imgui.h>
 #include <imnodes.h>
+
+#include "utils/KeyValues.h"
 
 #include "imgui_impl_matsystem.h"
 #include "imgui_impl_sys.h"
@@ -19,6 +22,204 @@ static CEqImGuiHost s_imGuiHost;
 CEqImGuiHost* g_imGuiHost = &s_imGuiHost;
 
 #ifdef IMGUI_ENABLED
+
+static ImVec4 ParseImGuiColorValue(const KVSection& key)
+{
+	const char* valueStr = key.ValueAt(0).GetString();
+	if (key.ValueCount() == 1 && valueStr[0] == '#')
+	{
+		MColor hexColor = hexToColor4(valueStr + 1);
+		return ImVec4(hexColor.r, hexColor.g, hexColor.b, hexColor.a);
+	}
+
+	if (key.ValueCount() < 3)
+		MsgWarning("ImGui style: '%s' needs RGB or RGBA values\n", key.GetName());
+
+	ImVec4 color(0.0f, 0.0f, 0.0f, 1.0f);
+	key.GetValues(color.x, color.y, color.z, color.w);
+	return color;
+}
+
+// Descriptor value that writes the parsed entry directly into an ImGuiStyle member
+template<typename T>
+struct ImGuiStyleValue
+{
+	T*		ptr{ nullptr };
+	void	operator=(const T& value) const { *ptr = value; }
+};
+
+template<typename T>
+struct KVPairValuesGetter<ImGuiStyleValue<T>>
+{
+	using CompGetter = KVPairValuesGetter<T>;
+	static float Get(const KVSection& section, int index) { return CompGetter::Get(section, index); }
+	static const int vcount = 1;
+};
+
+template<> struct KVPairValuesGetter<ImGuiStyleValue<ImVec2>>
+{
+	using CompGetter = KVPairValuesGetter<float>;
+	static ImVec2 Get(const KVSection& section, int index)
+	{
+		return ImVec2(CompGetter::Get(section, index), CompGetter::Get(section, index + 1));
+	}
+	static const int vcount = 2;
+};
+
+template<> struct KVPairValuesGetter<ImGuiStyleValue<ImVec4>>
+{
+	static ImVec4 Get(const KVSection& section, int index) { return ParseImGuiColorValue(section); }
+	static const int vcount = 1;
+};
+
+#define IMGUI_STYLE_COLOR_LIST(X) \
+	X(Text) \
+	X(TextDisabled) \
+	X(WindowBg) \
+	X(ChildBg) \
+	X(PopupBg) \
+	X(Border) \
+	X(BorderShadow) \
+	X(FrameBg) \
+	X(FrameBgHovered) \
+	X(FrameBgActive) \
+	X(TitleBg) \
+	X(TitleBgActive) \
+	X(TitleBgCollapsed) \
+	X(MenuBarBg) \
+	X(ScrollbarBg) \
+	X(ScrollbarGrab) \
+	X(ScrollbarGrabHovered) \
+	X(ScrollbarGrabActive) \
+	X(CheckMark) \
+	X(SliderGrab) \
+	X(SliderGrabActive) \
+	X(Button) \
+	X(ButtonHovered) \
+	X(ButtonActive) \
+	X(Header) \
+	X(HeaderHovered) \
+	X(HeaderActive) \
+	X(Separator) \
+	X(SeparatorHovered) \
+	X(SeparatorActive) \
+	X(ResizeGrip) \
+	X(ResizeGripHovered) \
+	X(ResizeGripActive) \
+	X(Tab) \
+	X(TabHovered) \
+	X(TabActive) \
+	X(TabUnfocused) \
+	X(TabUnfocusedActive) \
+	X(PlotLines) \
+	X(PlotLinesHovered) \
+	X(PlotHistogram) \
+	X(PlotHistogramHovered) \
+	X(TableHeaderBg) \
+	X(TableBorderStrong) \
+	X(TableBorderLight) \
+	X(TableRowBg) \
+	X(TableRowBgAlt) \
+	X(TextSelectedBg) \
+	X(DragDropTarget) \
+	X(NavHighlight) \
+	X(NavWindowingHighlight) \
+	X(NavWindowingDimBg) \
+	X(ModalWindowDimBg)
+
+#define IMGUI_STYLE_FIELD_LIST(X) \
+	X(Alpha, float) \
+	X(DisabledAlpha, float) \
+	X(WindowPadding, ImVec2) \
+	X(WindowRounding, float) \
+	X(WindowBorderSize, float) \
+	X(WindowMinSize, ImVec2) \
+	X(WindowTitleAlign, ImVec2) \
+	X(WindowMenuButtonPosition, int) \
+	X(ChildRounding, float) \
+	X(ChildBorderSize, float) \
+	X(PopupRounding, float) \
+	X(PopupBorderSize, float) \
+	X(FramePadding, ImVec2) \
+	X(FrameRounding, float) \
+	X(FrameBorderSize, float) \
+	X(ItemSpacing, ImVec2) \
+	X(ItemInnerSpacing, ImVec2) \
+	X(CellPadding, ImVec2) \
+	X(TouchExtraPadding, ImVec2) \
+	X(IndentSpacing, float) \
+	X(ColumnsMinSpacing, float) \
+	X(ScrollbarSize, float) \
+	X(ScrollbarRounding, float) \
+	X(GrabMinSize, float) \
+	X(GrabRounding, float) \
+	X(LogSliderDeadzone, float) \
+	X(TabRounding, float) \
+	X(TabBorderSize, float) \
+	X(TabMinWidthForCloseButton, float) \
+	X(ColorButtonPosition, int) \
+	X(ButtonTextAlign, ImVec2) \
+	X(SelectableTextAlign, ImVec2) \
+	X(DisplayWindowPadding, ImVec2) \
+	X(DisplaySafeAreaPadding, ImVec2) \
+	X(MouseCursorScale, float) \
+	X(AntiAliasedLines, bool) \
+	X(AntiAliasedLinesUseTex, bool) \
+	X(AntiAliasedFill, bool) \
+	X(CurveTessellationTol, float) \
+	X(CircleTessellationMaxError, float)
+
+#define IMGUI_STYLE_COLOR_DECLARE(name) ImGuiStyleValue<ImVec4> name{ &ImGui::GetStyle().Colors[ImGuiCol_##name] };
+#define IMGUI_STYLE_COLOR_DESC(name) KV_DESC_FIELD(name)
+#define IMGUI_STYLE_FIELD_DECLARE(name, type) ImGuiStyleValue<type> name{ &ImGui::GetStyle().name };
+#define IMGUI_STYLE_FIELD_DESC(name, type) KV_DESC_FIELD(name)
+
+#define IMGUI_STYLE_COLOR_COUNT(name) + 1
+static_assert(IMGUI_STYLE_COLOR_LIST(IMGUI_STYLE_COLOR_COUNT) == ImGuiCol_COUNT, "ImGui color list is out of date");
+#undef IMGUI_STYLE_COLOR_COUNT
+
+struct ImGuiStyleColorsDesc
+{
+	DEFINE_KEYVALUES_DESC();
+
+	IMGUI_STYLE_COLOR_LIST(IMGUI_STYLE_COLOR_DECLARE)
+};
+
+BEGIN_KEYVALUES_DESC(ImGuiStyleColorsDesc)
+	IMGUI_STYLE_COLOR_LIST(IMGUI_STYLE_COLOR_DESC)
+END_KEYVALUES_DESC
+
+struct ImGuiStyleDesc
+{
+	DEFINE_KEYVALUES_DESC();
+
+	ImGuiStyleColorsDesc Colors;
+
+	IMGUI_STYLE_FIELD_LIST(IMGUI_STYLE_FIELD_DECLARE)
+};
+
+BEGIN_KEYVALUES_DESC(ImGuiStyleDesc)
+	KV_DESC_EMBEDDED(Colors)
+	IMGUI_STYLE_FIELD_LIST(IMGUI_STYLE_FIELD_DESC)
+END_KEYVALUES_DESC
+
+#undef IMGUI_STYLE_COLOR_DECLARE
+#undef IMGUI_STYLE_COLOR_DESC
+#undef IMGUI_STYLE_FIELD_DECLARE
+#undef IMGUI_STYLE_FIELD_DESC
+#undef IMGUI_STYLE_COLOR_LIST
+#undef IMGUI_STYLE_FIELD_LIST
+
+static void LoadImGuiStyle(const char* fileName)
+{
+	KVSection styleKvs;
+	if (!KV_LoadFromFile(fileName, SP_DATA | SP_MOD, styleKvs))
+		return;
+
+	ImGuiStyleDesc styleDesc;
+	KeyValues::ParseDesc(styleDesc, styleKvs);
+}
+
 static void ImGuiBeginMenuPath(const char* path, bool& selected)
 {
 	char tmpName[128] = { 0 };
@@ -69,15 +270,11 @@ void CEqImGuiHost::Init(EQWNDHANDLE window)
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
-	// Setup Dear ImGui style
-	ImGui::StyleColorsDark();
-
 	// Setup Platform/Renderer backends
 	ImGui_ImplMatSystem_Init();
 
 	static const char* fontFileName = "resources/imgui/Inter-Regular.ttf";
 	IFileStreamPtr fontFile = g_fileSystem->Open(fontFileName, FS_OPEN_READ, SP_DATA);
-
 	if (fontFile)
 	{
 		const int length = fontFile->GetSize();
@@ -90,6 +287,8 @@ void CEqImGuiHost::Init(EQWNDHANDLE window)
 		ImFontConfig font_cfg;
 		io.Fonts->AddFontFromMemoryTTF(buffer, length, 16.0f, &font_cfg, io.Fonts->GetGlyphRangesCyrillic());
 	}
+
+	LoadImGuiStyle("resources/imgui/style.txt");
 
 	// TODO: ImGui networked console port (for Android)
 	if(window)
