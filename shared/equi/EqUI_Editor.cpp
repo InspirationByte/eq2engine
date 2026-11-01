@@ -97,6 +97,7 @@ private:
 	void			UpdateKVText();
 
 	void			ClearIncludes();
+	bool			ReloadIncludeDoc(LayoutDoc& doc);
 	LayoutDoc*		GetIncludeDoc(const char* filePath);
 	LayoutDoc*		GetKVDoc();
 
@@ -126,6 +127,8 @@ private:
 	void			DrawOutlinerNode(IUIControl* control);
 	void			DrawAddChildMenu(const SectionRef& ref, const EqString& path, bool editorOnly);
 	void			DrawPreviewTab();
+	void			DrawLayoutPopup();
+	void			MoveSelectedControl(const IVector2D& move);
 	void			DrawPreviewOverlay(const ImVec2& origin, float zoom, IUIControl* hovered);
 	void			DrawPreviewRulers(const ImVec2& origin, const IVector2D& size, float zoom, const ImVec2& rulerSize);
 	void			RenderPreview(const IVector2D& size);
@@ -151,6 +154,9 @@ private:
 	// empty path is the panel itself
 	EqString		m_selection;
 	bool			m_hasSelection{ false };
+
+	// control of the layout popup opened in the preview
+	EqString		m_layoutPopupPath;
 
 	// outliner item under the mouse in the current frame, outliner is drawn before the preview
 	EqString		m_outlinerHoverPath;
@@ -247,6 +253,34 @@ static void AddFontNames(const KVSection& sec, Array<EqString>& outNames)
 		if (foundIdx == -1)
 			outNames.append(fontSec.GetName());
 	}
+}
+
+// containers and controls with selfVisible off draw nothing
+static bool IsDrawnControl(const IUIControl* control)
+{
+	return control->IsSelfVisible()
+		&& CString::CompareCaseIns(control->GetClassname(), "Container")
+		&& CString::CompareCaseIns(control->GetClassname(), "HudElement");
+}
+
+// Unlike IUIControl::HitTest, children outside of the parent rectangle are tested, and controls
+// that draw nothing are picked only when no drawn control is under the point.
+static void EditorHitTest(IUIControl* control, const IVector2D& point, IUIControl*& drawnHit, IUIControl*& anyHit)
+{
+	if (!control->IsVisible())
+		return;
+
+	// first children are drawn on top
+	for (auto it = control->GetFirstChild(); !it.atEnd() && !drawnHit; ++it)
+		EditorHitTest(*it, point, drawnHit, anyHit);
+
+	if (drawnHit || !control->GetClientRectangle().Contains(point))
+		return;
+
+	if (IsDrawnControl(control))
+		drawnHit = control;
+	else if (!anyHit)
+		anyHit = control;
 }
 
 static void SetIntPair(KVSection& sec, const char* name, int x, int y)
@@ -468,6 +502,30 @@ void CUIEditor::UpdateKVText()
 void CUIEditor::ClearIncludes()
 {
 	m_includeDocs.clear();
+}
+
+// discards changes of the file, the file that failed to load is loaded again
+bool CUIEditor::ReloadIncludeDoc(LayoutDoc& doc)
+{
+	IFileStreamPtr file = g_fileSystem->Open(doc.filePath, FS_OPEN_READ, SP_MOD);
+	KVSection root;
+	if (!file || !KeyValues::Parse(file, root))
+	{
+		MsgError("EqUI editor: can't reload '%s'\n", doc.filePath.ToCString());
+		return false;
+	}
+
+	doc.root.Clear();
+	root.CopyTo(doc.root);
+	doc.modified = false;
+	doc.valid = true;
+
+	if (GetKVDoc() == &doc)
+		m_kvTextEdited = false;
+
+	m_rebuildPending = true;
+	m_kvTextDirty = true;
+	return true;
 }
 
 LayoutDoc* CUIEditor::GetIncludeDoc(const char* filePath)
@@ -841,6 +899,12 @@ void CUIEditor::DrawMenuBar()
 		if (ImGui::MenuItem("Reload", nullptr, false, m_mainDoc->filePath.Length() > 0))
 			LoadDocument(EqString(m_mainDoc->filePath));
 
+		if (ImGui::MenuItem("Reload included files", nullptr, false, m_includeDocs.numElem() > 0))
+		{
+			for (const LayoutDocPtr& doc : m_includeDocs)
+				ReloadIncludeDoc(*doc);
+		}
+
 		ImGui::Separator();
 
 		// included files are saved together with the layout
@@ -1128,6 +1192,17 @@ void CUIEditor::DrawOutlinerNode(IUIControl* control)
 			m_addFilePopupRequest = true;
 		}
 
+		if (fromInclude && ImGui::MenuItem(EqString::Format("Reload %s", fnmPathExtractName(ref.doc->filePath).ToCString())))
+			ReloadIncludeDoc(*ref.doc);
+
+		ImGui::Separator();
+		if (ImGui::BeginMenu("Layout"))
+		{
+			if (DrawLayoutProperties(*ref.sec))
+				OnDocumentChanged(ref.doc);
+			ImGui::EndMenu();
+		}
+
 		if (!isPanel)
 		{
 			ImGui::Separator();
@@ -1338,14 +1413,40 @@ void CUIEditor::DrawPreviewTab()
 		if (previewHovered)
 		{
 			const ImVec2 mousePos = ImGui::GetMousePos();
-			hovered = m_panel->HitTest(IVector2D(static_cast<int>((mousePos.x - origin.x) / zoom), static_cast<int>((mousePos.y - origin.y) / zoom)));
+			const IVector2D point(static_cast<int>((mousePos.x - origin.x) / zoom), static_cast<int>((mousePos.y - origin.y) / zoom));
+
+			IUIControl* drawnHit = nullptr;
+			IUIControl* anyHit = nullptr;
+			EditorHitTest(m_panel, point, drawnHit, anyHit);
+			hovered = drawnHit ? drawnHit : anyHit;
 		}
 
 		if (hovered && previewClicked)
 			Select(GetControlPath(hovered));
 
-		if (hovered)
+		if (hovered && ImGui::IsItemClicked(ImGuiMouseButton_Right))
+		{
+			Select(GetControlPath(hovered));
+			m_layoutPopupPath = m_selection;
+			ImGui::OpenPopup("##controlLayout");
+		}
+
+		if (hovered && !ImGui::IsPopupOpen("##controlLayout"))
 			ImGui::SetTooltip("%s [%s]", hovered->GetName(), hovered->GetClassname());
+
+		DrawLayoutPopup();
+
+		// arrows move the selected control, Shift moves by 10
+		if (ImGui::IsWindowFocused() && !io.WantTextInput)
+		{
+			const int step = io.KeyShift ? 10 : 1;
+			const IVector2D move(
+				(ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow)) ? step : 0) - (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow)) ? step : 0),
+				(ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)) ? step : 0) - (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)) ? step : 0));
+
+			if (move.x || move.y)
+				MoveSelectedControl(move);
+		}
 
 		// control under the mouse in the outliner is highlighted when visible
 		if (!hovered && m_hasOutlinerHover)
@@ -1362,6 +1463,61 @@ void CUIEditor::DrawPreviewTab()
 	}
 
 	ImGui::EndChild();
+}
+
+void CUIEditor::DrawLayoutPopup()
+{
+	if (!ImGui::BeginPopup("##controlLayout"))
+		return;
+
+	// path is kept because the controls are recreated after every change
+	const SectionRef ref = FindSectionByPath(m_layoutPopupPath);
+	IUIControl* control = m_layoutPopupPath.Length() ? m_panel->Get(m_layoutPopupPath) : m_panel;
+
+	if (control)
+		ImGui::Text("%s [%s]", control->GetName(), control->GetClassname());
+
+	ImGui::Separator();
+
+	if (ref.sec)
+	{
+		if (DrawLayoutProperties(*ref.sec))
+			OnDocumentChanged(ref.doc);
+	}
+	else
+	{
+		ImGui::TextDisabled("Control has no layout section");
+	}
+
+	ImGui::EndPopup();
+}
+
+// position is the offset from the right and bottom sides with these alignments
+void CUIEditor::MoveSelectedControl(const IVector2D& move)
+{
+	const IUIControl* control = GetSelectedControl();
+	const SectionRef ref = FindSectionByPath(m_selection);
+	if (!control || !ref.sec)
+		return;
+
+	const int alignment = control->GetAlignment();
+	const IVector2D offset(
+		(alignment & UI_ALIGN_RIGHT) ? -move.x : move.x,
+		(alignment & UI_ALIGN_BOTTOM) ? -move.y : move.y);
+
+	KVSection* key = ref.sec->FindSection("position");
+	IVector2D position(0);
+	if (key)
+		key->GetValues(position);
+	else
+		key = &ref.sec->CreateSection("position");
+
+	position += offset;
+	key->ClearValues();
+	key->AddValue(position.x);
+	key->AddValue(position.y);
+
+	OnDocumentChanged(ref.doc);
 }
 
 void CUIEditor::DrawPreviewRulers(const ImVec2& origin, const IVector2D& size, float zoom, const ImVec2& rulerSize)
@@ -1448,8 +1604,27 @@ void CUIEditor::DrawPreviewOverlay(const ImVec2& origin, float zoom, IUIControl*
 	if (hovered)
 		drawControlRect(hovered, s_hoverColor, 1.0f);
 
-	if (const IUIControl* selected = GetSelectedControl())
-		drawControlRect(selected, s_selectionColor, 2.0f);
+	const IUIControl* selected = GetSelectedControl();
+	if (!selected)
+		return;
+
+	drawControlRect(selected, s_selectionColor, 2.0f);
+
+	// layout values as written in the file, above the rectangle or below it near the top edge
+	const IVector2D position = selected->GetPosition();
+	const IVector2D size = selected->GetSize();
+	const EqString label = EqString::Format("pos X: %d Y: %d  size W: %d H: %d", position.x, position.y, size.x, size.y);
+
+	const IAARectangle rect = selected->GetClientRectangle();
+	const ImVec2 textSize = ImGui::CalcTextSize(label);
+	const float padding = 2.0f;
+
+	ImVec2 labelPos(origin.x + floorf(rect.leftTop.x * zoom), origin.y + floorf(rect.leftTop.y * zoom) - textSize.y - padding * 2.0f);
+	if (labelPos.y < ImGui::GetWindowPos().y)
+		labelPos.y = origin.y + floorf(rect.rightBottom.y * zoom) + padding * 2.0f;
+
+	drawList->AddRectFilled(ImVec2(labelPos.x - padding, labelPos.y - padding), ImVec2(labelPos.x + textSize.x + padding, labelPos.y + textSize.y + padding), IM_COL32(0, 0, 0, 200));
+	drawList->AddText(labelPos, s_selectionColor, label);
 }
 
 void CUIEditor::DrawKeyValuesTab()
@@ -1660,6 +1835,15 @@ void CUIEditor::DrawIncludes(const SectionRef& ref)
 
 		if (ImGui::IsItemHovered())
 			ImGui::SetTooltip("Show the file in the KeyValues tab");
+
+		ImGui::SameLine();
+		ImGui::BeginDisabled(includeIdx == -1);
+		if (ImGui::SmallButton("R"))
+			ReloadIncludeDoc(*m_includeDocs[includeIdx]);
+		ImGui::EndDisabled();
+
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Reload the file from disk, its unsaved changes are lost");
 
 		ImGui::SameLine();
 		char pathBuffer[256];

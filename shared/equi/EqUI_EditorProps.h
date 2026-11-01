@@ -23,4 +23,7 @@ bool	IsEditorOnly(const KVSection& sec);
 
 // draws property editors of the control layout section, returns true when the section is changed
 bool	DrawControlProperties(KVSection& sec, const char* className, const PropertiesContext& ctx);
+
+// alignment and anchors as visual pickers, position, size and scaling; returns true when the section is changed
+bool	DrawLayoutProperties(KVSection& sec);
 }

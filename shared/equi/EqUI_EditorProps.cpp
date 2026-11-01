@@ -547,6 +547,101 @@ static bool DrawAddKey(KVSection& sec)
 	return parsed.KeyCount() > 0;
 }
 
+static const PropDesc& GetCommonPropDesc(const char* key)
+{
+	for (const PropDesc& desc : s_propDescs)
+	{
+		if (!desc.className && !CString::CompareCaseIns(desc.key, key))
+			return desc;
+	}
+
+	ASSERT_FAIL("unknown property %s", key);
+	return s_propDescs[0];
+}
+
+// 3x3 grid, missing key is left top like in IUIControl
+static bool DrawAlignmentGrid(KVSection& sec)
+{
+	static const char* s_hAlign[] = { "left", "hcenter", "right" };
+	static const char* s_vAlign[] = { "top", "vcenter", "bottom" };
+
+	KVSection* key = sec.FindSection("align");
+
+	int curH = 0;
+	int curV = 0;
+	if (key)
+	{
+		curH = HasOption(key, "hcenter") ? 1 : (HasOption(key, "right") ? 2 : 0);
+		curV = HasOption(key, "vcenter") ? 1 : (HasOption(key, "bottom") ? 2 : 0);
+	}
+
+	bool changed = false;
+	for (int v = 0; v < 3; ++v)
+	{
+		for (int h = 0; h < 3; ++h)
+		{
+			if (h > 0)
+				ImGui::SameLine();
+
+			ImGui::PushID(v * 3 + h);
+			if (ImGui::RadioButton("##align", h == curH && v == curV) && !(h == curH && v == curV))
+			{
+				KVSection& newKey = ResetKey(sec, key, "align");
+				newKey.AddValue(s_hAlign[h]);
+				newKey.AddValue(s_vAlign[v]);
+				changed = true;
+			}
+
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("%s %s", s_hAlign[h], s_vAlign[v]);
+			ImGui::PopID();
+		}
+	}
+	return changed;
+}
+
+// checkboxes placed on the sides of a square
+static bool DrawAnchorsCross(KVSection& sec)
+{
+	KVSection* key = sec.FindSection("anchors");
+
+	bool sides[4];
+	for (int i = 0; i < 4; ++i)
+		sides[i] = HasOption(key, s_anchorOptions[i]);
+
+	const float boxSize = ImGui::GetFrameHeight();
+	const float spacing = ImGui::GetStyle().ItemSpacing.x;
+	const float startX = ImGui::GetCursorPosX();
+
+	// left, top, right, bottom
+	bool changed = false;
+	const auto drawSide = [&](int side, float offsetX) {
+		ImGui::SetCursorPosX(startX + offsetX);
+		ImGui::PushID(side);
+		changed = ImGui::Checkbox("##anchor", &sides[side]) || changed;
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("%s", s_anchorOptions[side]);
+		ImGui::PopID();
+	};
+
+	drawSide(1, boxSize + spacing);
+	drawSide(0, 0.0f);
+	ImGui::SameLine();
+	drawSide(2, (boxSize + spacing) * 2.0f);
+	drawSide(3, boxSize + spacing);
+
+	if (!changed)
+		return false;
+
+	KVSection& newKey = ResetKey(sec, key, "anchors");
+	for (int i = 0; i < 4; ++i)
+	{
+		if (sides[i])
+			newKey.AddValue(s_anchorOptions[i]);
+	}
+	return true;
+}
+
 //-------------------------------------------------------------------------------------------------
 
 bool IsEditorOnly(const KVSection& sec)
@@ -576,6 +671,49 @@ bool DrawControlProperties(KVSection& sec, const char* className, const Properti
 
 	ImGui::Separator();
 	changed = DrawAddKey(sec) || changed;
+
+	return changed;
+}
+
+bool DrawLayoutProperties(KVSection& sec)
+{
+	static const Array<EqString> s_noFonts{ PP_SL };
+	const PropertiesContext ctx{ s_noFonts };
+
+	bool changed = false;
+
+	constexpr ImGuiTableFlags pickerFlags = ImGuiTableFlags_SizingFixedFit;
+	if (ImGui::BeginTable("##layoutPickers", 2, pickerFlags))
+	{
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
+		ImGui::TextUnformatted("Align");
+		changed = DrawAlignmentGrid(sec) || changed;
+
+		ImGui::TableNextColumn();
+		ImGui::TextUnformatted("Anchors");
+		changed = DrawAnchorsCross(sec) || changed;
+
+		ImGui::EndTable();
+	}
+
+	// popups and menus are sized by their content, values take the remaining width
+	constexpr float labelWidth = 70.0f;
+	constexpr float valueWidth = 180.0f;
+	for (const char* keyName : { "position", "size", "scaling" })
+	{
+		const PropDesc& desc = GetCommonPropDesc(keyName);
+		KVSection* key = sec.FindSection(desc.key);
+
+		ImGui::PushID(keyName);
+		ImGui::TextUnformatted(keyName);
+		ImGui::SameLine(labelWidth);
+		ImGui::BeginGroup();
+		ImGui::Dummy(ImVec2(valueWidth, 0.0f));
+		changed = DrawPropertyValue(sec, key, desc, ctx) || changed;
+		ImGui::EndGroup();
+		ImGui::PopID();
+	}
 
 	return changed;
 }

@@ -305,7 +305,9 @@ registered. `equiEditorOpenFile(path)` opens a file from code.
   `InitChildItems` (the last section with the name wins), including nested includes. The preview
   is built with `SetLayoutFileLoader`, so it shows unsaved changes of included files. Save writes
   the layout and every changed included file; note that included files are often shared by
-  several layouts. The inspector lists `child file` entries of the control (edit path, remove,
+  several layouts. An included file can be reloaded alone (R in the inspector list, Reload in the
+  outliner menu of its controls, File → Reload included files for all), its unsaved changes are
+  discarded. The inspector lists `child file` entries of the control (edit path, remove,
   add, show in the KeyValues tab). `Container` `file` includes are not supported.
 - **Preview:** the panel is a child of the editor's own root panel, which is not added to the
   manager: it is not drawn by the host and does not receive game input. The editor renders it to
@@ -317,7 +319,14 @@ registered. `equiEditorOpenFile(path)` opens a file from code.
   resolution is centered in the tab, has rulers in preview pixels and can be zoomed (10-400%,
   Ctrl + mouse wheel over the preview); the target keeps the resolution, only its display is
   scaled. Clicking a control
-  selects it; selection and bounds are drawn without control transforms.
+  selects it; selection and bounds are drawn without control transforms. The selection shows the
+  `position` and `size` of the control in layout units. Picking tests children
+  outside of the parent rectangle, and controls that draw nothing (`Container`, `HudElement`,
+  `selfVisible 0`) are picked only when no drawn control is under the cursor. Right click opens
+  the layout popup of the control (alignment grid, anchors, position, size, scaling; also the
+  Layout submenu of the outliner). Arrow keys move the selected control while the preview is
+  focused (Shift - by 10 units); with `right` / `bottom` alignment the position is inverted, as
+  it is an offset from that side.
 - **KeyValues tab:** the layout or a loaded included file as text; edits are applied back with
   Apply.
 - **Outliner:** the control tree. Controls written in included files are blue with the file
