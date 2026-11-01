@@ -29,6 +29,7 @@ enum EPropType
 	PROP_FLAGS,		// any combination of option tokens
 	PROP_ENUM,		// one of option tokens
 	PROP_FONT,		// local font name or font description values
+	PROP_TRANSFORM,	// nested section: rotate, translate, elementScale
 };
 
 struct PropDesc
@@ -57,6 +58,7 @@ static const PropDesc s_propDescs[] = {
 	{ "align",			PROP_FLAGS,		nullptr, PROP_OPTIONS(s_alignOptions), {} },
 	{ "anchors",		PROP_FLAGS,		nullptr, PROP_OPTIONS(s_anchorOptions), {} },
 	{ "scaling",		PROP_ENUM,		nullptr, PROP_OPTIONS(s_scalingOptions), {} },
+	{ "transform",		PROP_TRANSFORM,	nullptr, nullptr, 0, {} },
 	{ "clipChilds",		PROP_BOOL,		nullptr, nullptr, 0, { 1 } },
 	{ "clipTransform",	PROP_BOOL,		nullptr, nullptr, 0, { 1 } },
 	{ "command",		PROP_VALUES,	nullptr, nullptr, 0, {} },
@@ -184,6 +186,14 @@ static bool HasOption(const KVSection* key, const char* option)
 			return true;
 	}
 	return false;
+}
+
+static void SetFloatValues(KVSection& sec, const char* name, const float* values, int count)
+{
+	KVSection* key = sec.FindSection(name);
+	KVSection& newKey = ResetKey(sec, key, name);
+	for (int i = 0; i < count; ++i)
+		newKey.AddValue(values[i]);
 }
 
 // replaces values of the key with parsed text, the key is created if it is valid
@@ -329,6 +339,50 @@ static bool DrawPropertyValue(KVSection& sec, KVSection*& key, const PropDesc& d
 
 			return changed;
 		}
+		case PROP_TRANSFORM:
+		{
+			// same keys and defaults as in IUIControl::Parse
+			float rotate = KV_GetValueFloat(key ? key->FindSection("rotate") : nullptr, 0, 0.0f);
+			Vector2D translate = KV_GetVector2D(key ? key->FindSection("translate") : nullptr, 0, vec2_zero);
+			Vector2D elementScale = KV_GetVector2D(key ? key->FindSection("elementScale") : nullptr, 0, Vector2D(1.0f));
+
+			// short labels to fit narrow columns and menus, key names are in the tooltips
+			const float startX = ImGui::GetCursorPosX();
+			const float labelWidth = ImGui::CalcTextSize("T").x + ImGui::GetStyle().ItemSpacing.x;
+			const auto beginRow = [&](const char* label, const char* tooltip) {
+				ImGui::AlignTextToFramePadding();
+				ImGui::TextUnformatted(label);
+				if (ImGui::IsItemHovered())
+					ImGui::SetTooltip("%s", tooltip);
+				ImGui::SameLine(startX + labelWidth);
+				ImGui::SetNextItemWidth(-FLT_MIN);
+			};
+
+			beginRow("T", "translate");
+			const bool translateChanged = ImGui::DragFloat2("##translate", &translate.x, 0.5f);
+
+			beginRow("R", "rotate, degrees");
+			const bool rotateChanged = ImGui::DragFloat("##rotate", &rotate, 0.5f, 0.0f, 0.0f, "%.1f");
+
+			beginRow("S", "elementScale");
+			const bool scaleChanged = ImGui::DragFloat2("##elementScale", &elementScale.x, 0.01f);
+
+			if (!rotateChanged && !translateChanged && !scaleChanged)
+				return false;
+
+			// nested keys are kept, only the changed one is written
+			if (!key)
+				key = &sec.CreateSection(desc.key);
+
+			if (rotateChanged)
+				SetFloatValues(*key, "rotate", &rotate, 1);
+			if (translateChanged)
+				SetFloatValues(*key, "translate", &translate.x, 2);
+			if (scaleChanged)
+				SetFloatValues(*key, "elementScale", &elementScale.x, 2);
+
+			return true;
+		}
 		case PROP_FLAGS:
 		{
 			const ImGuiStyle& style = ImGui::GetStyle();
@@ -418,6 +472,16 @@ static void SetDefaultValue(KVSection& key, const PropDesc& desc, const Properti
 		case PROP_FONT:
 			key.AddValue(ctx.localFonts.numElem() ? ctx.localFonts[0].ToCString() : "default");
 			break;
+		case PROP_TRANSFORM:
+		{
+			const float rotate = 0.0f;
+			const float translate[] = { 0.0f, 0.0f };
+			const float elementScale[] = { 1.0f, 1.0f };
+			SetFloatValues(key, "rotate", &rotate, 1);
+			SetFloatValues(key, "translate", translate, 2);
+			SetFloatValues(key, "elementScale", elementScale, 2);
+			break;
+		}
 		default:
 			break;
 	}
@@ -700,7 +764,7 @@ bool DrawLayoutProperties(KVSection& sec)
 	// popups and menus are sized by their content, values take the remaining width
 	constexpr float labelWidth = 70.0f;
 	constexpr float valueWidth = 180.0f;
-	for (const char* keyName : { "position", "size", "scaling" })
+	for (const char* keyName : { "position", "size", "scaling", "transform" })
 	{
 		const PropDesc& desc = GetCommonPropDesc(keyName);
 		KVSection* key = sec.FindSection(desc.key);

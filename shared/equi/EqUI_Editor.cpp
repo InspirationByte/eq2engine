@@ -1729,7 +1729,7 @@ void CUIEditor::DrawInspector()
 
 	if (ref.doc != m_mainDoc.Ptr())
 	{
-		ImGui::TextColored(s_includeTextColor, "File: %s%s", ref.doc->filePath, ref.doc->modified ? "*" : "");
+		ImGui::TextColored(s_includeTextColor, "File: %s%s", ref.doc->filePath.ToCString(), ref.doc->modified ? "*" : "");
 		if (ImGui::IsItemHovered())
 			ImGui::SetTooltip("Control is written in the included file, the file is saved with the layout");
 	}

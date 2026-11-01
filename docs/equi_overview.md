@@ -323,7 +323,7 @@ registered. `equiEditorOpenFile(path)` opens a file from code.
   `position` and `size` of the control in layout units. Picking tests children
   outside of the parent rectangle, and controls that draw nothing (`Container`, `HudElement`,
   `selfVisible 0`) are picked only when no drawn control is under the cursor. Right click opens
-  the layout popup of the control (alignment grid, anchors, position, size, scaling; also the
+  the layout popup of the control (alignment grid, anchors, position, size, scaling, transform; also the
   Layout submenu of the outliner). Arrow keys move the selected control while the preview is
   focused (Shift - by 10 units); with `right` / `bottom` alignment the position is inverted, as
   it is an offset from that side.
@@ -344,7 +344,8 @@ registered. `equiEditorOpenFile(path)` opens a file from code.
   editors; a checkbox writes or removes the key, flag options wrap to the next line when the
   column is narrow. `font` has a list of local fonts: names from `fonts` sections of the
   control, its parents and their included files. Other keys are edited as raw values written as
-  in `.res` files; nested sections (`transform`, `fonts`) are edited in the KeyValues tab.
+  in `.res` files. `transform` has its own editor (T, R, S: `translate`, `rotate`,
+  `elementScale`); other nested sections (`fonts`) are edited in the KeyValues tab.
 - **Editor-only controls:** child sections with `editorOnly 1;` are shown in the preview (for
   example sample content for a list) and removed from the file on save. This includes
   `child file "<path>" { editorOnly 1; }` (Add child file... has an Editor only option, the
