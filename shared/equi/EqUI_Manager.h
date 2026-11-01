@@ -18,39 +18,33 @@ namespace equi
 {
 class Panel;
 
-using ControlFactoryFunc = IUIControl* (*)();
-
-struct ControlFactory
-{
-	const char*			name;
-	ControlFactoryFunc	factory;
-};
+using ControlFactoryFn = IUIControl* (*)();
 
 class CUIManager
 {
 public:
-	CUIManager();
 	~CUIManager();
+	CUIManager() = default;
 
 	void				Init();
 	void				Shutdown();
 
-	equi::Panel*		GetRootPanel() const;
+	Panel*				GetRootPanel() const;
 
 	// the element loader
-	void				RegisterFactory(const char* name, ControlFactoryFunc factory);
+	void				RegisterFactory(const char* name, ControlFactoryFn factory);
 
 	template<typename T>
 	T*					Create();
 
-	IUIControl*			CreateElement( const char* pszTypeName );
+	IUIControl*			CreateElement( const char* pszTypeName ) const;
 
-	void				AddPanel( equi::Panel* panel);
-	void				DestroyPanel( equi::Panel* pPanel );
-	equi::Panel*		FindPanel( const char* pszPanelName ) const;
+	void				AddPanel( Panel* panel);
+	void				DestroyPanel( Panel* pPanel );
+	Panel*				FindPanel( const char* pszPanelName ) const;
 
-	void				BringToTop( equi::Panel* panel );
-	equi::Panel*		GetTopPanel() const;
+	void				BringToTop( Panel* panel );
+	Panel*				GetTopPanel() const;
 
 	void				SetViewFrame(const IAARectangle& rect);
 	const IAARectangle&	GetViewFrame() const;
@@ -69,29 +63,31 @@ public:
 	bool				ProcessMouseEvents(float x, float y, int nMouseButtons, int flags);
 	bool				ProcessKeyboardEvents(int nKeyButtons, int flags);
 
-	void				DumpPanelsToConsole();
+	void				DumpPanelsToConsole() const;
 
 	IEqFont*			GetDefaultFont() const {return m_defaultFont;}
 
 private:
 
-	equi::Panel*		GetPanelByElement(IUIControl* control);
+	struct Factory
+	{
+		const char*			name;
+		ControlFactoryFn	factory;
+	};
 
-	equi::Panel*			m_rootPanel;
+	Panel*				GetPanelByElement(IUIControl* control) const;
 
-	IUIControl*				m_keyboardFocus;
-	IUIControl*				m_mouseOver;
+	Array<Factory>		m_controlFactory{ PP_SL };
+	IEqFont*			m_defaultFont{ nullptr };
 
-	IVector2D				m_mousePos;
+	Panel*				m_rootPanel{ nullptr };
+	Array<Panel*>		m_panels{ PP_SL };
 
-	Array<equi::Panel*>		m_panels{ PP_SL };
+	IUIControl*			m_keyboardFocus{ nullptr };
+	IUIControl*			m_mouseOver{ nullptr };
 
-	IAARectangle			m_viewFrameRect;
-	IMaterial*				m_material;
-
-	IEqFont*				m_defaultFont;
-
-	Array<ControlFactory>	m_controlFactory{ PP_SL };
+	IAARectangle		m_viewFrameRect{ 0, 0, 640, 480 };
+	IVector2D			m_mousePos{ 0 };
 };
 
 template<typename T>

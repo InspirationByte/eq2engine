@@ -254,7 +254,7 @@ protected:
 
 	IUIControl*					m_parent{ nullptr };
 	List<IUIControl*>			m_childs{ PP_SL };		// child panels
-	Array<EvtHandler>			m_eventCallbacks{ PP_SL };
+	Array<EvtHandler>			m_eventCallbacks{ PP_SL };	// DEPRECATED, not used - might be removed or reworked
 	FontCollection				m_fontCollection{ PP_SL };
 	FontProps					m_font;
 

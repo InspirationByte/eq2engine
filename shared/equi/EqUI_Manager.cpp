@@ -23,7 +23,7 @@ DECLARE_CMD(ui_showpanel, nullptr, CV_CHEAT)
 	if(CMD_ARGC == 0)
 		return;
 
-	equi::Panel* pPanel = equi::Manager->FindPanel( CMD_ARGV(0).ToCString() );
+	equi::Panel* pPanel = equi::Manager->FindPanel( CMD_ARGV(0) );
 
 	if( pPanel )
 		pPanel->Show();
@@ -36,7 +36,7 @@ DECLARE_CMD(ui_hidepanel, nullptr, CV_CHEAT)
 	if(CMD_ARGC == 0)
 		return;
 
-	equi::Panel* pPanel = equi::Manager->FindPanel( CMD_ARGV(0).ToCString() );
+	equi::Panel* pPanel = equi::Manager->FindPanel( CMD_ARGV(0) );
 
 	if( pPanel )
 		pPanel->Hide();
@@ -53,10 +53,6 @@ DECLARE_CVAR(equi_debug, "0", nullptr, 0);
 
 namespace equi
 {
-
-CUIManager::CUIManager() : m_keyboardFocus(nullptr), m_rootPanel(nullptr), m_defaultFont(nullptr), m_mousePos(0)
-{
-}
 
 CUIManager::~CUIManager()
 {
@@ -95,7 +91,7 @@ Panel* CUIManager::GetRootPanel() const
 }
 
 // the element loader
-void CUIManager::RegisterFactory(const char* name, ControlFactoryFunc factory)
+void CUIManager::RegisterFactory(const char* name, ControlFactoryFn factory)
 {
 	for(int i = 0; i < m_controlFactory.numElem(); i++)
 	{
@@ -106,18 +102,18 @@ void CUIManager::RegisterFactory(const char* name, ControlFactoryFunc factory)
 		}
 	}
 
-	ControlFactory& fac = m_controlFactory.append();
+	Factory& fac = m_controlFactory.append();
 	fac.factory = factory;
 	fac.name = name;	
 }
 
 // the element loader
-IUIControl* CUIManager::CreateElement( const char* type )
+IUIControl* CUIManager::CreateElement( const char* type ) const
 {
-	for(int i = 0; i < m_controlFactory.numElem(); i++)
+	for(const Factory& fac : m_controlFactory)
 	{
-		if(!CString::CompareCaseIns(m_controlFactory[i].name, type))
-			return (*m_controlFactory[i].factory)();
+		if(!CString::CompareCaseIns(fac.name, type))
+			return (*fac.factory)();
 	}
 
 	ASSERT_FAIL("Unknown UI element type '%s'", type);
@@ -165,25 +161,24 @@ void CUIManager::DestroyPanel( Panel* panel )
 
 Panel* CUIManager::FindPanel( const char* pszPanelName ) const
 {
-	for(int i = 0; i < m_panels.numElem(); i++)
-	{
-		if(strlen(m_panels[i]->GetName()) > 0)
-		{
-			if(!CString::CompareCaseIns(pszPanelName, m_panels[i]->GetName()))
-				return m_panels[i];
-		}
-	}
+	const int idx = arrayFindIndexF(m_panels, [pszPanelName](Panel* panel){
+		return panel->m_name.Length() > 0 && !panel->m_name.CompareCaseIns(pszPanelName);
+	});
 
-	return nullptr;
+	if (idx == -1)
+		return nullptr;
+
+	return m_panels[idx];
 }
 
-void CUIManager::BringToTop( equi::Panel* panel )
+void CUIManager::BringToTop( Panel* panel )
 {
 	auto it = m_rootPanel->m_childs.findFront(panel);
-	m_rootPanel->m_childs.moveToFront(it);
+	if(!it.atEnd())
+		m_rootPanel->m_childs.moveToFront(it);
 }
 
-equi::Panel* CUIManager::GetTopPanel() const
+Panel* CUIManager::GetTopPanel() const
 {
 	auto it = m_rootPanel->m_childs.begin();
 	if (it.atEnd())
@@ -191,7 +186,7 @@ equi::Panel* CUIManager::GetTopPanel() const
 	return static_cast<Panel*>(*it);
 }
 
-void CUIManager::DumpPanelsToConsole()
+void CUIManager::DumpPanelsToConsole() const
 {
 	MsgInfo("Available UI panels/windows:\n");
 
@@ -234,9 +229,9 @@ IUIControl* CUIManager::GetMouseOver() const
 
 bool CUIManager::IsWindowsVisible() const
 {
-	for(int i = 0; i < m_panels.numElem(); i++)
+	for(const Panel* panel : m_panels)
 	{
-		if(m_panels[i]->IsVisible() && m_panels[i]->m_windowControls)
+		if(panel->IsVisible() && panel->m_windowControls)
 			return true;
 	}
 
@@ -269,14 +264,14 @@ void CUIManager::Render(ITexture* colorTarget)
 	m_rootPanel->SetRectangle( m_viewFrameRect );
 	m_rootPanel->ResetSizeDiffs();
 
-	equi::ControlRenderContext ctrlRenderContext{ rendPassRecorder };
+	ControlRenderContext ctrlRenderContext{ rendPassRecorder };
 	m_rootPanel->Render(1, ctrlRenderContext);
 	rendPassRecorder->DbgPopGroup();
 
 	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 }
 
-equi::Panel* CUIManager::GetPanelByElement(IUIControl* control)
+Panel* CUIManager::GetPanelByElement(IUIControl* control) const
 {
 	IUIControl* firstCtrl = control;
 	while(firstCtrl && arrayFindIndex(m_panels, (Panel*)firstCtrl) == -1)
