@@ -347,14 +347,12 @@ static bool DrawPropertyValue(KVSection& sec, KVSection*& key, const PropDesc& d
 			Vector2D elementScale = KV_GetVector2D(key ? key->FindSection("elementScale") : nullptr, 0, Vector2D(1.0f));
 
 			// short labels to fit narrow columns and menus, key names are in the tooltips
-			const float startX = ImGui::GetCursorPosX();
-			const float labelWidth = ImGui::CalcTextSize("T").x + ImGui::GetStyle().ItemSpacing.x;
 			const auto beginRow = [&](const char* label, const char* tooltip) {
-				ImGui::AlignTextToFramePadding();
+				ImGui::SetNextItemWidth(40);
 				ImGui::TextUnformatted(label);
 				if (ImGui::IsItemHovered())
 					ImGui::SetTooltip("%s", tooltip);
-				ImGui::SameLine(startX + labelWidth);
+				ImGui::SameLine(45);
 				ImGui::SetNextItemWidth(-FLT_MIN);
 			};
 
