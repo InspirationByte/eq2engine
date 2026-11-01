@@ -350,7 +350,7 @@ void IUIControl::InitChildItems(const KVSection& sec, bool keepElements)
 		if (!childClass.CompareCaseIns("file"))
 		{
 			KVSection section;
-			if (!KV_LoadFromFile(childName, SP_MOD, section))
+			if (!equi::Manager->LoadLayoutFile(childName, section))
 			{
 				MsgWarning("EqUI warning: file %s requested by element %s not found\n", childName.ToCString(), m_name.ToCString());
 				continue;
@@ -787,7 +787,7 @@ void IUIControl::Render(int depth, RenderContextAbstract& context)
 	// should we instead contain elements inside of parent scissor rectangle?
 	rendPassRecorder->SetScissorRectangle(scissorRect);
 
-	if( m_parent && m_selfVisible )
+	if( m_selfVisible )
 	{
 		// paint control itself
 		DrawSelf(clientRectRender, rendPassRecorder);

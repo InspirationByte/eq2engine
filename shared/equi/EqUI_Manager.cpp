@@ -8,6 +8,8 @@
 #include "core/core_common.h"
 #include "core/ConCommand.h"
 #include "core/ConVar.h"
+#include "core/IFileSystem.h"
+#include "utils/KeyValues.h"
 
 #include "EqUI_Manager.h"
 #include "font/IFontCache.h"
@@ -73,6 +75,7 @@ void CUIManager::Init()
 
 	m_rootPanel = (Panel*)CreateElement("Panel");
 	m_rootPanel->SetName("equi_root");
+	m_rootPanel->SetSelfVisible(false);
 	m_rootPanel->Show();
 
 	m_defaultFont = g_fontCache->GetFont("default", 22);
@@ -83,6 +86,20 @@ void CUIManager::Shutdown()
 	// all childs will be cleaned up
 	SAFE_DELETE(m_rootPanel);
 	m_panels.clear(true);
+}
+
+bool CUIManager::LoadLayoutFile(const char* fileName, KVSection& outSec) const
+{
+	if (m_layoutFileLoader)
+		return m_layoutFileLoader(fileName, outSec);
+
+	return KV_LoadFromFile(fileName, SP_MOD, outSec);
+}
+
+void CUIManager::GetControlClassNames(Array<EqStringRef>& outNames) const
+{
+	for (const Factory& factory : m_controlFactory)
+		outNames.append(factory.name);
 }
 
 Panel* CUIManager::GetRootPanel() const

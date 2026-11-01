@@ -477,4 +477,5 @@ void eslSysTerm()
 {
 	eslSysConsoleTerm();
 	eslSysInputTerm();
+	eslSysEquiTerm();
 }

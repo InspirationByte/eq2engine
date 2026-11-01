@@ -19,6 +19,7 @@ namespace equi
 class Panel;
 
 using ControlFactoryFn = IUIControl* (*)();
+using LayoutFileLoaderFn = EqFunction<bool(const char* fileName, KVSection& outSec)>;
 
 class CUIManager
 {
@@ -38,6 +39,9 @@ public:
 	T*					Create();
 
 	IUIControl*			CreateElement( const char* pszTypeName ) const;
+
+	// names of registered control classes in registration order
+	void				GetControlClassNames(Array<EqStringRef>& outNames) const;
 
 	void				AddPanel( Panel* panel);
 	void				DestroyPanel( Panel* pPanel );
@@ -65,6 +69,10 @@ public:
 
 	void				DumpPanelsToConsole() const;
 
+	// loads layout file included with 'child file', the loader replaces the file system when set (used by the editor)
+	bool				LoadLayoutFile(const char* fileName, KVSection& outSec) const;
+	void				SetLayoutFileLoader(const LayoutFileLoaderFn& loader) { m_layoutFileLoader = loader; }
+
 	IEqFont*			GetDefaultFont() const {return m_defaultFont;}
 
 private:
@@ -85,6 +93,8 @@ private:
 
 	IUIControl*			m_keyboardFocus{ nullptr };
 	IUIControl*			m_mouseOver{ nullptr };
+
+	LayoutFileLoaderFn	m_layoutFileLoader;
 
 	IAARectangle		m_viewFrameRect{ 0, 0, 640, 480 };
 	IVector2D			m_mousePos{ 0 };

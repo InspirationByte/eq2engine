@@ -34,3 +34,4 @@ EQSCRIPT_BIND_TYPE_WITH_PARENT(equi::Image, equi::IUIControl, "equi::Image")
 EQSCRIPT_BIND_TYPE_WITH_PARENT(equi::ProgressBar, equi::IUIControl, "equi::ProgressBar")
 
 bool eslSysEquiInit(const esl::ScriptState& state);
+void eslSysEquiTerm();

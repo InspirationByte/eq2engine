@@ -16,6 +16,8 @@ instead (`g_imGuiHost`, see [sys_application_overview.md](sys_application_overvi
 | `EqUI_Image.h/.cpp` | `Image` — material or atlas image |
 | `EqUI_Mask.h/.cpp` | `Mask` — draws its children through a mask texture |
 | `EqUI_ProgressBar.h/.cpp` | `ProgressBar` |
+| `EqUI_Editor.h/.cpp` | Layout editor (ImGui): document, outliner, preview, KeyValues view |
+| `EqUI_EditorProps.h/.cpp` | Layout editor property inspector |
 | `shared/sys/scripting/sys_esl_equi.cpp` | Lua bindings (`equi`, `equi_cast`, `fonts`) |
 
 ## Manager and panels
@@ -122,8 +124,11 @@ panel
   layered over a base layout.
 - `Panel::InitFromKeyValues` uses the nested `panel` section if there is one, otherwise the given
   section.
-- `child file "<path>"` loads another file (path as is, `SP_MOD`) and adds its fonts and children
-  to this control. `Container` also accepts `file "<name>"`, loaded from `resources/<name>`.
+- `child file "<path>"` loads another file (path as is, `SP_MOD`) with
+  `CUIManager::LoadLayoutFile` and adds its fonts and children to this control (as with
+  `keepElements = true`). `SetLayoutFileLoader` replaces the file system for these loads (the
+  editor gives its unsaved copies). `Container` also accepts `file "<name>"`, loaded from
+  `resources/<name>` directly.
 
 ### Common properties — `IUIControl::Parse`
 
@@ -221,7 +226,9 @@ or the state viewport). Each control:
 
 1. Pushes its transform (`transform` block, rotated and scaled around its center).
 2. Sets the scissor rectangle (its client rectangle, clipped by parents with `clipChilds`).
-3. Calls `DrawSelf(rect, recorder)` if `selfVisible` (the root panel never draws itself).
+3. Calls `DrawSelf(rect, recorder)` if `selfVisible`. The manager root panel is created with
+   `selfVisible` off; controls rendered without a parent (the game HUD layout) are drawn like any
+   other control.
 4. Renders children, earliest first.
 
 `Mask` renders its children to a render target (`_ui_<name>_masked`) and draws it with the
@@ -280,3 +287,58 @@ end
 | `ui_showpanel <name>`, `ui_hidepanel <name>` | Show / hide a panel |
 | `equi_debug <depth>` | Draw control rectangles and names at the given tree depth (`-1` for all) |
 | `equi_debugMaskClear 1` | Clear mask render targets to red |
+
+## Layout editor
+
+`EqUI_Editor.cpp` is an ImGui editor of layout files, built in all configurations except `Retail`
+and `Profile` (`EQUI_EDITOR`). The host registers it as the `ENGINE/UI/EQUI EDITOR` debug menu
+after `equi::Manager->Init()` and calls `equiEditorShutdown()` before `equi::Manager->Shutdown()`,
+so it can be opened in any sysLib application, including the game, where game controls are
+registered. `equiEditorOpenFile(path)` opens a file from code.
+
+- **Document:** the layout is edited as a KeyValues document loaded from `SP_MOD` (File → Open
+  lists `.res` files under `resources/`). The preview controls are recreated from the document
+  after every change. Controls are matched with their `child` sections by the path of names from
+  the panel, so controls with duplicate names among siblings cannot be told apart.
+- **Included files:** `child file` files are loaded into the editor when first needed and are
+  edited like the layout: the section of a control is searched in the same order as
+  `InitChildItems` (the last section with the name wins), including nested includes. The preview
+  is built with `SetLayoutFileLoader`, so it shows unsaved changes of included files. Save writes
+  the layout and every changed included file; note that included files are often shared by
+  several layouts. The inspector lists `child file` entries of the control (edit path, remove,
+  add, show in the KeyValues tab). `Container` `file` includes are not supported.
+- **Preview:** the panel is a child of the editor's own root panel, which is not added to the
+  manager: it is not drawn by the host and does not receive game input. The editor renders it to
+  its own target with the size chosen in the tab (window size or a fixed resolution) the same way
+  as `CUIManager::Render`. With Stretch panel (default) the panel is resized to the preview size,
+  as the game does with HUD layouts, so children are scaled from the layout size. With Root
+  element the layout is rendered without a parent and without its own background, as the game
+  renders the HUD layout; it is on by default for files without a `panel` section. A fixed
+  resolution is centered in the tab, has rulers in preview pixels and can be zoomed (10-400%,
+  Ctrl + mouse wheel over the preview); the target keeps the resolution, only its display is
+  scaled. Clicking a control
+  selects it; selection and bounds are drawn without control transforms.
+- **KeyValues tab:** the layout or a loaded included file as text; edits are applied back with
+  Apply.
+- **Outliner:** the control tree. Controls written in included files are blue with the file
+  name. Controls without a section (window controls) are grayed out and read-only. The context
+  menu adds children of any class registered in the manager (`GetControlClassNames`, engine and
+  game controls), adds `child file` entries picked from `.res` files, moves children (up, down, to the beginning or the end),
+  deletes them and toggles editor-only. The outliner lists children in the reverse order of their
+  sections (`AddChild` prepends): upper controls are drawn on top and are written later in the
+  file. Moving changes the order of `child` keys in the section that has the control, so a control
+  written in an included file is moved inside that file. A visible
+  control under the mouse in the outliner is highlighted in the preview.
+  The checkbox before a control hides it in the preview only; hidden controls are kept by path
+  in the editor, they are not written to the document and are reset when a file is opened.
+- **Inspector:** known keys of the control class (see [Layout files](#layout-files)) with typed
+  editors; a checkbox writes or removes the key, flag options wrap to the next line when the
+  column is narrow. `font` has a list of local fonts: names from `fonts` sections of the
+  control, its parents and their included files. Other keys are edited as raw values written as
+  in `.res` files; nested sections (`transform`, `fonts`) are edited in the KeyValues tab.
+- **Editor-only controls:** child sections with `editorOnly 1;` are shown in the preview (for
+  example sample content for a list) and removed from the file on save. This includes
+  `child file "<path>" { editorOnly 1; }` (Add child file... has an Editor only option, the
+  inspector has a checkbox per included file): controls of such a file and their children are
+  shown as editor-only. `InitChildItems` ignores the keys of `child file` sections.
+- There is no undo yet; File → Reload discards unsaved changes.

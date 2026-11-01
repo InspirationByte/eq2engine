@@ -12,6 +12,12 @@
 #include "sys_esl.h"
 #include "sys_esl_equi.h"
 
+#include "equi/EqUI_Editor.h"
+
+#ifdef IMGUI_ENABLED
+#include "imgui_backend/imgui_host.h"
+#endif
+
 EQSCRIPT_TYPE_BEGIN(EqWString)
 EQSCRIPT_TYPE_END
 
@@ -437,5 +443,14 @@ bool eslSysEquiInit(const esl::ScriptState& state)
 		state.SetGlobal("fonts", fontsTable);
 	}
 
+#ifdef IMGUI_ENABLED
+	g_imGuiHost->AddDebugMenu("ENGINE/EQUI/SCHEME EDITOR UI", equiEditorUIDraw);
+#endif
+
 	return true;
+}
+
+void eslSysEquiTerm()
+{
+	equiEditorShutdown();
 }
