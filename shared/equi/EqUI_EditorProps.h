@@ -17,6 +17,7 @@ static constexpr const char* EDITOR_ONLY_KEY = "editorOnly";
 struct PropertiesContext
 {
 	const Array<EqString>&	localFonts;		// names from 'fonts' sections of the layout available to the control
+	EqStringRef				filter;
 };
 
 bool	IsEditorOnly(const KVSection& sec);
