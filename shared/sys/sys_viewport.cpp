@@ -51,11 +51,13 @@ void CHostViewport::UpdateTargets(const IVector2D& size)
 			.End()
 		);
 
+		// states sample scene depth like the default depth buffer
 		m_depthTarget = g_renderAPI->CreateRenderTarget(
 			Builder<TextureDesc>()
 			.Name(EqString::Format("_hvp_%s_depth", m_name))
 			.Size(size.x, size.y)
 			.Format(g_matSystem->GetDefaultDepthBuffer()->GetFormat())
+			.Sampler(sampler)
 			.End()
 		);
 		return;

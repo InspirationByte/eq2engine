@@ -158,8 +158,9 @@ frame the loop sleeps `sys_sleep` ms (default 1).
 - `SetFullscreenMode(screenSize)`, `SetWindowedMode()`, `ToggleFullscreen()` (also Right Alt +
   Enter), `ApplyVideoMode()`, `GetVideoModes(list)`, `IsWindowed()`; commands
   `sys_set_fullscreen`, `sys_set_windowed`, `sys_vmode_list`.
-- `SetWindowTitle(title)`; non-retail builds append the renderer, configuration, platform and build
-  number.
+- `SetWindowTitle(title)` can be called at any time, the title is applied when the window and the
+  renderer exist (`InitAppStates` runs before them); non-retail builds append the renderer,
+  configuration, platform and build number.
 - Text input for on-screen keyboards: `RequestTextInput()`, `ReleaseTextInput()`,
   `IsTextInputShown()`.
 - Cursor: controlled by the current state (`GetMouseCursorProperties`); it is always shown and
@@ -221,7 +222,8 @@ g_renderAPI->BeginRenderPass(
 	.End());
 ```
 
-- `DrawImGui(size)` resizes the color and depth targets (backbuffer formats, `ResizeRenderTarget`)
+- `DrawImGui(size)` resizes the color and depth targets (backbuffer formats and samplers, so the
+  depth target can be sampled like the default depth buffer; `ResizeRenderTarget`)
   to the drawn size and puts an invisible button with the image in the current ImGui window. The
   viewport is *visible* only in a frame where `DrawImGui` was called.
 - Viewports are disabled in `Retail` and `Profile` builds (`HOST_VIEWPORT_ENABLED` in

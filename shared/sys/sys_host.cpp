@@ -296,6 +296,22 @@ bool CGameHost::LoadModules()
 void CGameHost::SetWindowTitle(const char* windowTitle)
 {
 	m_windowTitle = windowTitle;
+	ApplyWindowTitle();
+}
+
+void CGameHost::ApplyWindowTitle()
+{
+	// non-retail title shows the renderer, so it is applied after the material system is initialized
+	if (!m_window || !g_renderAPI)
+		return;
+
+#ifdef _RETAIL
+	SDL_SetWindowTitle(m_window, m_windowTitle);
+#else
+	SDL_SetWindowTitle(m_window, EqString::Format(
+		"%s | %s | " COMPILE_CONFIGURATION " (" COMPILE_PLATFORM ") | build %d (" COMPILE_DATE ")",
+		m_windowTitle.ToCString(), g_renderAPI->GetRendererName(), BUILD_NUMBER_ENGINE));
+#endif
 }
 
 bool CGameHost::IsWindowed() const
@@ -622,13 +638,7 @@ bool CGameHost::InitSystems()
 	REGISTER_INTERNAL_SHADERS();
 	g_fullScreenEdgeAA->Init();
 
-#ifdef _RETAIL
-	SDL_SetWindowTitle(m_window, m_windowTitle);
-#else
-	SDL_SetWindowTitle(m_window, EqString::Format(
-		"%s | %s | " COMPILE_CONFIGURATION " (" COMPILE_PLATFORM ") | build %d (" COMPILE_DATE ")", 
-		m_windowTitle.ToCString(), g_renderAPI->GetRendererName(), BUILD_NUMBER_ENGINE));
-#endif
+	ApplyWindowTitle();
 
 	return true;
 }

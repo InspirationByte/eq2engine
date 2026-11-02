@@ -99,6 +99,7 @@ protected:
 
 	void				UpdateCursorState();
 	void				SetCursorShow(bool bShow);
+	void				ApplyWindowTitle();
 
 	void				BeginScene();
 	void				EndScene();
