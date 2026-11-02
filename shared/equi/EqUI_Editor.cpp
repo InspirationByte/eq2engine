@@ -165,6 +165,9 @@ private:
 	// controls hidden in the preview only, not written to the document
 	Array<EqString>	m_editorHiddenPaths{ PP_SL };
 
+	// inspector
+	char			m_propertyFilter[64]{};
+
 	// KeyValues tab, -1 is the main document, otherwise include index
 	Array<char>		m_kvText{ PP_SL };
 	int				m_kvDocIdx{ -1 };
@@ -1775,7 +1778,9 @@ void CUIEditor::DrawInspector()
 
 	CollectLocalFonts(m_selection, localFonts);
 
-	const PropertiesContext propsCtx{ localFonts };
+	ImGui::InputTextWithHint("##filter", "Filter", m_propertyFilter, sizeof(m_propertyFilter));
+	const PropertiesContext propsCtx{ localFonts, m_propertyFilter };
+
 	if (DrawControlProperties(*sec, className, propsCtx))
 		OnDocumentChanged(ref.doc);
 

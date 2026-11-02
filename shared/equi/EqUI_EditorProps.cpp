@@ -529,7 +529,7 @@ static bool DrawProperty(KVSection& sec, const PropDesc& desc, const PropertiesC
 }
 
 // keys that the inspector does not know are edited as raw values
-static bool DrawOtherKeys(KVSection& sec, const char* className)
+static bool DrawOtherKeys(const PropertiesContext& ctx, KVSection& sec, const char* className)
 {
 	bool changed = false;
 	int removeKeyIdx = -1;
@@ -541,6 +541,9 @@ static bool DrawOtherKeys(KVSection& sec, const char* className)
 			continue;
 
 		if (IsKnownKey(key.GetName(), className))
+			continue;
+
+		if (ctx.filter.Length() > 0 && _Es(key.GetName()).Find(ctx.filter, false, 0) != -1)
 			continue;
 
 		ImGui::PushID(i);
@@ -710,7 +713,7 @@ bool IsEditorOnly(const KVSection& sec)
 {
 	return KV_GetValueBool(sec.FindSection(EDITOR_ONLY_KEY), 0, false);
 }
-
+PRAGMA_OPTIMIZE_OFF
 bool DrawControlProperties(KVSection& sec, const char* className, const PropertiesContext& ctx)
 {
 	bool changed = false;
@@ -723,11 +726,16 @@ bool DrawControlProperties(KVSection& sec, const char* className, const Properti
 
 		for (const PropDesc& desc : s_propDescs)
 		{
-			if (IsPropOfClass(desc, className))
-				changed = DrawProperty(sec, desc, ctx) || changed;
+			if (!IsPropOfClass(desc, className))
+				continue;
+
+			if (ctx.filter.Length() > 0 && _Es(desc.key).Find(ctx.filter, false, 0) == -1)
+				continue;
+
+			changed = DrawProperty(sec, desc, ctx) || changed;
 		}
 
-		changed = DrawOtherKeys(sec, className) || changed;
+		changed = DrawOtherKeys(ctx, sec, className) || changed;
 		ImGui::EndTable();
 	}
 
