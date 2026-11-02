@@ -153,8 +153,10 @@ frame the loop sleeps `sys_sleep` ms (default 1).
 
 ## Window and video modes
 
-- ConVars: `vid_mode` (`"1280x720"`), `vid_fullscreen`, `vid_screen`, `vid_bpp`,
+- ConVars: `vid_mode` (`"1280x720"`), `vid_fullscreen`, `vid_screen`, `vid_maximized`, `vid_bpp`,
   `r_antialiasing`.
+- `vid_maximized` creates the window maximized; `SetWindowedMode()` keeps the size of a maximized
+  window instead of applying `vid_mode`.
 - `SetFullscreenMode(screenSize)`, `SetWindowedMode()`, `ToggleFullscreen()` (also Right Alt +
   Enter), `ApplyVideoMode()`, `GetVideoModes(list)`, `IsWindowed()`; commands
   `sys_set_fullscreen`, `sys_set_windowed`, `sys_vmode_list`.

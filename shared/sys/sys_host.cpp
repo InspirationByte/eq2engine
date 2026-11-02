@@ -366,14 +366,22 @@ void CGameHost::SetWindowedMode()
 	int screen = 0;
 	sysHostGetWindowProperties(fullscreen, screen, adjustedWide, adjustedTall);
 
+	// maximized window (vid_maximized) keeps its size: resizing it leaves the window maximized but not filling the screen
+	const bool maximized = (SDL_GetWindowFlags(m_window) & SDL_WINDOW_MAXIMIZED) != 0;
+	if (maximized)
+		SDL_GetWindowSize(m_window, &adjustedWide, &adjustedTall);
+
 	OnWindowResize(adjustedWide, adjustedTall);
 	if (!g_matSystem->IsInitialized() || g_matSystem->SetWindowed(true))
 	{
 		Msg("Set %dx%d mode (windowed)\n", adjustedWide, adjustedTall);
 
 		SDL_SetWindowFullscreen(m_window, 0);
-		SDL_SetWindowSize(m_window, adjustedWide, adjustedTall);
-		SDL_SetWindowPosition(m_window, adjustedPosX, adjustedPosY);
+		if (!maximized)
+		{
+			SDL_SetWindowSize(m_window, adjustedWide, adjustedTall);
+			SDL_SetWindowPosition(m_window, adjustedPosX, adjustedPosY);
+		}
 	}
 }
 
