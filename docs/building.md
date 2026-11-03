@@ -18,8 +18,6 @@ releases and works differently from them.
 - Windows SDK 10.0.26100 or newer (required by Tracy). The SDK version can be set with the
   `WINSDK_VER` environment variable (for example `10.0.26100.0`); without it the latest
   installed SDK is used.
-- PowerShell module `7Zip4PowerShell`, used to unpack dependency archives. Install it once with
-  `utils/win_install_7zip4powershell.ps1`.
 
 ### Dependencies
 
@@ -27,13 +25,11 @@ releases and works differently from them.
 powershell -ExecutionPolicy Bypass -File utils\windows_dev_prepare.ps1
 ```
 
-The script downloads SDL2, OpenAL-soft, wxWidgets and Slang and unpacks them into `src_dependency/`.
+The script downloads SDL2, OpenAL-soft and Slang and unpacks them into `src_dependency/`.
 Run it once after cloning and again after the dependency versions in the script change.
-wxWidgets is not used by the engine projects, but is required by the game project that includes
-the engine (`src_game`).
 
-`utils/cross_windows_dev_prepare.sh` does the same from a Linux shell (needs `wget`, `unzip` and
-`7z`), for example to prepare a Windows checkout from WSL.
+`utils/cross_windows_dev_prepare.sh` does the same from a Linux shell (needs `wget` and `unzip`), for
+example to prepare a Windows checkout from WSL.
 
 ### Generating projects
 

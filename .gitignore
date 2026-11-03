@@ -23,10 +23,8 @@ android-project/.idea
 build/*
 samples/*/build
 
-src_dependency/wxWidgets/*
 src_dependency/openal-soft/*
 src_dependency/SDL2/*
-!src_dependency/wxWidgets/premake5.lua
 !src_dependency/openal-soft/premake5.lua
 !src_dependency/SDL2/premake5.lua
 src_dependency/slang/*

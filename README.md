@@ -53,7 +53,7 @@ While it demonstrates some best practices used in AA and AAA game development, s
 - Build All
 
 #### Linux
-- Install packages: `build-essential SDL2-devel openal-soft-devel libXxf86vm-devel wxBase3-devel wxGTK3-devel`
+- Install packages: `build-essential SDL2-devel openal-soft-devel libXxf86vm-devel`
 - Run `utils/linux_dev_prepare.sh`
 - Run `utils/premake5 --file=samples\GPUDriven\premake5.lua gmake2 && utils/premake5 --file=samples\GPUDriven\premake5.lua vscode` in repo root
 - Open VS Code and open `samples\GPUDriven\build` folder, install recommended C++ extensions

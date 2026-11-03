@@ -5,7 +5,6 @@ require ".premake_modules/usage"
 require ".premake_modules/properties"
 require ".premake_modules/androidndk"
 require ".premake_modules/unitybuild"
-require ".premake_modules/wxwidgets"
 require ".premake_modules/vscode"
 
 IS_ANDROID = (_ACTION == "androidndk")

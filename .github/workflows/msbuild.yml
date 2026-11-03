@@ -51,11 +51,6 @@ jobs:
         token: ${{ secrets.ACTIONSPAT }}
         submodules: recursive
 
-    - name: PowerShell Module Cache
-      uses: potatoqualitee/psmodulecache@v6.2.1
-      with:
-        modules-to-cache: 7Zip4PowerShell
-
     - name: Run PS commands
       shell: pwsh
       run: .\utils\windows_dev_prepare.ps1

@@ -117,7 +117,6 @@ loaded at the top of `premake5.lua`:
 | `unitybuild` | `unitybuild`, `maxfilesinunity`, `excludefromunity` — MSVC unity build support |
 | `androidndk` | `androidndk` action for Android builds |
 | `vscode` | `vscode` action and `vscode_*` launch settings |
-| `wxwidgets` | wxWidgets integration for GUI tools |
 
 ### usage / uses
 
