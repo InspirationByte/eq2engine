@@ -12,6 +12,15 @@ render passes, pipelines) will be described in separate documents.
 | `eqNVRHI`, `eqWGPURHI`, `eqNullRHI` | shared libraries | RHI backends (D3D12/Vulkan, WebGPU, null) implementing `IShaderAPI`; selected by the `MaterialSystem.Renderer` list in `E2.CONFIG` |
 | `BaseShader` | static library | `CBaseShader` base class for writing material shaders (`public/materialsystem1/BaseShader.*`) |
 
+`eqNVRHI` creates an NVRHI binding set for every bind group and pipeline pair; a bind group with a
+binding layout gets a binding set per pipeline id (`nvrhiFillBindingSets` in `NVRHIStates.cpp`).
+On D3D12 every binding set needs a sampler descriptor table, and the shader-visible sampler heap is
+limited to 2048 descriptors (`D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE`). The engine's NVRHI fork
+(`src_dependency/nvrhi/NVRHI`, branch `insbyte-changes`) therefore shares sampler tables between
+binding sets that have the same sampler descriptors (`DeviceResources::acquireSamplerTable`), so heap
+usage depends on the number of distinct sampler combinations, not on the number of materials and
+pipeline permutations.
+
 Public headers:
 
 | Header | Contents |
