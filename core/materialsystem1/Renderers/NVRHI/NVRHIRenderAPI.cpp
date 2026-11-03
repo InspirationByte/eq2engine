@@ -109,6 +109,7 @@ void CNVRHIRenderAPI::Shutdown()
 	m_rhiCommandLists.clear(true);
 	m_rhiFreeCommandLists.clear(true);
 	m_rhiSamplers.clear(true);
+	m_rhiBindingLayouts.clear(true);
 	m_rhiDevice = nullptr;
 }
 
@@ -794,6 +795,54 @@ nvrhi::SamplerHandle CNVRHIRenderAPI::GetRHISampler(const SamplerStateParams& sa
 	m_rhiSamplers.insert(samplerId, rhiSampler);
 
 	return rhiSampler;
+}
+
+static bool nvrhiBindingLayoutDescEqual(const nvrhi::BindingLayoutDesc& a, const nvrhi::BindingLayoutDesc& b)
+{
+	return a.visibility == b.visibility
+		&& a.registerSpace == b.registerSpace
+		&& a.registerSpaceIsDescriptorSet == b.registerSpaceIsDescriptorSet
+		&& a.bindings == b.bindings
+		&& a.bindingOffsets.shaderResource == b.bindingOffsets.shaderResource
+		&& a.bindingOffsets.sampler == b.bindingOffsets.sampler
+		&& a.bindingOffsets.constantBuffer == b.bindingOffsets.constantBuffer
+		&& a.bindingOffsets.unorderedAccess == b.bindingOffsets.unorderedAccess;
+}
+
+nvrhi::BindingLayoutHandle CNVRHIRenderAPI::GetRHIBindingLayout(const nvrhi::BindingLayoutDesc& rhiLayoutDesc)
+{
+	size_t hash = 0;
+	nvrhi::hash_combine(hash, static_cast<uint>(rhiLayoutDesc.visibility));
+	nvrhi::hash_combine(hash, rhiLayoutDesc.registerSpace);
+	nvrhi::hash_combine(hash, rhiLayoutDesc.registerSpaceIsDescriptorSet);
+	nvrhi::hash_combine(hash, rhiLayoutDesc.bindingOffsets.shaderResource);
+	nvrhi::hash_combine(hash, rhiLayoutDesc.bindingOffsets.sampler);
+	nvrhi::hash_combine(hash, rhiLayoutDesc.bindingOffsets.constantBuffer);
+	nvrhi::hash_combine(hash, rhiLayoutDesc.bindingOffsets.unorderedAccess);
+	for (const nvrhi::BindingLayoutItem& item : rhiLayoutDesc.bindings)
+	{
+		nvrhi::hash_combine(hash, item.slot);
+		nvrhi::hash_combine(hash, static_cast<uint>(item.type));
+		nvrhi::hash_combine(hash, static_cast<uint>(item.size));
+	}
+	const uint layoutId = static_cast<uint>(hash ^ (hash >> 32));
+
+	CScopedMutex m(m_rhiBindingLayoutsMutex);
+	auto it = m_rhiBindingLayouts.find(layoutId);
+	if (it)
+	{
+		if (nvrhiBindingLayoutDescEqual(*(*it)->getDesc(), rhiLayoutDesc))
+			return *it;
+
+		// hash collision, layout is not shared
+		return m_rhiDevice->createBindingLayout(rhiLayoutDesc);
+	}
+
+	nvrhi::BindingLayoutHandle rhiLayout = m_rhiDevice->createBindingLayout(rhiLayoutDesc);
+	if (rhiLayout)
+		m_rhiBindingLayouts.insert(layoutId, rhiLayout);
+
+	return rhiLayout;
 }
 
 IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUBindingLayout* bindingLayout) const
