@@ -716,6 +716,7 @@ void CMaterialSystem::ReleaseUnusedMaterials()
 {
 	CScopedMutex m(s_matSystemMutex);
 
+	int flushedCount = 0;
 	for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
 	{
 		CMaterial* material = (CMaterial*)*it;
@@ -724,12 +725,36 @@ void CMaterialSystem::ReleaseUnusedMaterials()
 		if(!CString::CompareCaseIns(material->GetName(), "Default"))
 			continue;
 
-		const int framesDiff = (material->m_frameBound - m_frame);
+		if (material->GetState() != MATERIAL_LOAD_OK)
+			continue;
 
-		// Flush materials
-		if(framesDiff >= m_config.materialFlushThresh - 1)
-			material->Cleanup(false, true);
+		const uint framesDiff = m_frame - material->m_frameBound;
+		if(framesDiff < (uint)m_config.materialFlushThresh)
+			continue;
+
+		material->Flush();
+		++flushedCount;
 	}
+
+	// drop pipeline caches (pipelines, layouts, shared bind groups) of shader classes without materials.
+	// Pending pipeline jobs only resolve their futures, so dropping them is safe.
+	int droppedCaches = 0;
+	{
+		CScopedMutex m(s_matSystemPipelineMutex);
+
+		Array<int> unusedCaches(PP_SL);
+		for (auto it = m_renderPipelineCache.begin(); !it.atEnd(); ++it)
+		{
+			if (it.value().users <= 0)
+				unusedCaches.append(it.key());
+		}
+
+		for (int shaderNameHash : unusedCaches)
+			m_renderPipelineCache.remove(shaderNameHash);
+		droppedCaches = unusedCaches.numElem();
+	}
+
+	DevMsg(DEVMSG_MATSYSTEM, "ReleaseUnusedMaterials: %d materials flushed, %d pipeline caches dropped\n", flushedCount, droppedCaches);
 }
 
 // Reloads materials
@@ -740,9 +765,6 @@ void CMaterialSystem::ReloadAllMaterials()
 	MsgInfo("Reloading all materials and shaders...\n");
 	Array<IMaterialPtr> loadingList(PP_SL);
 
-	// drop pipeline cache
-	m_renderPipelineCache.clear(true);
-
 	const int oldFreq = m_shaderAPI->GetProgressiveTextureFrequency();
 	m_shaderAPI->SetProgressiveTextureFrequency(0);
 
@@ -752,12 +774,24 @@ void CMaterialSystem::ReloadAllMaterials()
 		m_shaderAPI->ReloadShaderPackage(it.key());
 	}
 
+	// free all shaders first, they release pipeline caches
+	for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
+	{
+		CMaterial* material = static_cast<CMaterial*>(*it);
+		material->Cleanup(material->m_loadFromDisk, true);
+	}
+
+	// drop pipeline cache
+	{
+		CScopedMutex m(s_matSystemPipelineMutex);
+		m_renderPipelineCache.clear(true);
+	}
+
 	for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
 	{
 		CMaterial* material = static_cast<CMaterial*>(*it);
 
 		const bool loadedFromDisk = material->m_loadFromDisk;
-		material->Cleanup(loadedFromDisk, true);
 
 		// don't reload materials which are not from disk
 		if(!loadedFromDisk)
@@ -805,26 +839,33 @@ void CMaterialSystem::ReloadShader(const char* name)
 		return;
 	}
 
-	// clear pipeline cache first
+	Array<IMaterialPtr> loadingList(PP_SL);
+	Array<CMaterial*> reloadList(PP_SL);
+
+	const int oldFreq = m_shaderAPI->GetProgressiveTextureFrequency();
+	m_shaderAPI->SetProgressiveTextureFrequency(0);
+
+	// free shaders of materials which have that shader, they release the pipeline cache.
+	// Materials without shader (not loaded or flushed) will load the new one on use.
+	for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
+	{
+		CMaterial* material = static_cast<CMaterial*>(*it);
+		if (!material->m_shader || CString::Compare(material->m_shader->GetName(), name) != 0)
+			continue;
+
+		material->Cleanup(material->m_loadFromDisk, true);
+		reloadList.append(material);
+	}
+
+	// clear pipeline cache
 	{
 		CScopedMutex m(s_matSystemPipelineMutex);
 		m_renderPipelineCache.remove(shaderNameHash);
 	}
 
-	Array<IMaterialPtr> loadingList(PP_SL);
-
-	const int oldFreq = m_shaderAPI->GetProgressiveTextureFrequency();
-	m_shaderAPI->SetProgressiveTextureFrequency(0);
-
-	// reload materials which have that shader
-	for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
+	for (CMaterial* material : reloadList)
 	{
-		CMaterial* material = static_cast<CMaterial*>(*it);
-		if (CString::Compare(material->m_shader->GetName(), name) != 0)
-			continue;
-
 		const bool loadedFromDisk = material->m_loadFromDisk;
-		material->Cleanup(loadedFromDisk, true);
 
 		// don't reload materials which are not from disk
 		if (!loadedFromDisk)
@@ -934,10 +975,47 @@ void CMaterialSystem::RegisterShaderOverride(const char* shaderName, OVERRIDE_SH
 	m_shaderOverrideList.insert(new_override, 0);
 }
 
-MatSysShaderPipelineCache& CMaterialSystem::GetRenderPipelineCache(int shaderNameHash)
+MatSysShaderPipelineCache& CMaterialSystem::AcquireRenderPipelineCache(int shaderNameHash)
 {
 	CScopedMutex m(s_matSystemPipelineMutex);
-	return m_renderPipelineCache[shaderNameHash];
+	MatSysShaderPipelineCache& cache = m_renderPipelineCache[shaderNameHash];
+	++cache.users;
+	return cache;
+}
+
+void CMaterialSystem::ReleaseRenderPipelineCache(int shaderNameHash)
+{
+	CScopedMutex m(s_matSystemPipelineMutex);
+	auto it = m_renderPipelineCache.find(shaderNameHash);
+	if (it.atEnd())
+		return;
+
+	MatSysShaderPipelineCache& cache = *it;
+	ASSERT_MSG(cache.users > 0, "Pipeline cache has no users");
+	if (cache.users > 0)
+		--cache.users;
+}
+
+void CMaterialSystem::ReleaseSharedBindGroups()
+{
+	CScopedMutex m(s_matSystemPipelineMutex);
+	for (auto it = m_renderPipelineCache.begin(); !it.atEnd(); ++it)
+	{
+		MatSysShaderPipelineCache& cache = *it;
+		Threading::CScopedWriteLocker lock(cache.rwLock);
+		for (MatSysShaderPipelineCache::SharedBindGroup& shared : cache.sharedBindGroups)
+			shared = MatSysShaderPipelineCache::SharedBindGroup{};
+	}
+}
+
+uint CMaterialSystem::GenerateRenderPassVersion()
+{
+	uint version = Atomic::Increment(m_renderPassVersion);
+
+	// COM_UINT_MAX means 'any version' for shared bind groups
+	if (version == COM_UINT_MAX)
+		version = Atomic::Increment(m_renderPassVersion);
+	return version;
 }
 
 const MatSysShaderFactory* CMaterialSystem::GetShaderFactory(const char* szShaderName, int instanceFormatId)
@@ -978,6 +1056,9 @@ void CMaterialSystem::QueueLoading(const IMaterialPtr& pMaterial)
 
 	if(Atomic::CompareExchange(material->m_state, MATERIAL_LOAD_NEED_LOAD, MATERIAL_LOAD_INQUEUE) != MATERIAL_LOAD_NEED_LOAD)
 		return;
+
+	// loaded material is not flushed by ReleaseUnusedMaterials until it was unused for materialFlushThresh frames
+	material->m_frameBound = m_frame;
 
 	if( m_config.threadedloader )
 	{
@@ -1628,7 +1709,12 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 {
 	const EMaterialLoadingState matState = material->GetState();
 	if (matState != MATERIAL_LOAD_OK && matState != MATERIAL_LOAD_ERROR)
+	{
+		// material was flushed by ReleaseUnusedMaterials (or never queued), load it again
+		if (matState == MATERIAL_LOAD_NEED_LOAD)
+			QueueLoading(IMaterialPtr(material));
 		return false;
+	}
 
 	IShaderAPI* renderAPI = m_shaderAPI;
 
@@ -1837,6 +1923,7 @@ void CMaterialSystem::PrintLoadedMaterials() const
 	Msg("*** Render pipeline list begin ***\n");
 	int totalCached = 0;
 	int totalShaders = 0;
+	int totalBindGroups = 0;
 	for (auto it = m_shaderFactoryList.begin(); !it.atEnd(); ++it)
 	{
 		const MatSysShaderFactory& shaderFactory = *it;
@@ -1847,8 +1934,13 @@ void CMaterialSystem::PrintLoadedMaterials() const
 
 		Msg("shader %s: %d\n", shaderFactory.shaderName, pipelineCache.pipelines.size());
 		totalCached += pipelineCache.pipelines.size();
+		for (const MatSysShaderPipelineCache::SharedBindGroup& sharedBindGroup : pipelineCache.sharedBindGroups)
+		{
+			if(sharedBindGroup.bindGroup)
+				totalBindGroups += 1;
+		}
 		++totalShaders;
 	}
-	Msg("Total render pipelines: %d from %d shaders\n", totalCached, totalShaders);
+	Msg("Total: %d pipelines, %d bind groups from %d shaders\n", totalCached, totalBindGroups, totalShaders);
 }
 

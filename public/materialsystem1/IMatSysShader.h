@@ -55,18 +55,30 @@ enum EBindGroupId : int
 	BINDGROUP_COUNT
 };
 
+// Per-shader-class data owned by the material system.
+// Shader instances never keep references into it beyond a single call: pending pipelines are
+// shared through futures and shaders poll them, so material can be freed at any time.
 struct MatSysShaderPipelineCache
 {
 	struct Pipeline
 	{
-		Future<IGPURenderPipelinePtr>	future;
+		Future<IGPURenderPipelinePtr>	future;		// valid while pipeline is created asynchronously
 		IGPUBindingLayoutPtr			layout;
 		IGPURenderPipelinePtr			pipeline;
 	};
 	using PipelineMap = Map<uint, Pipeline>;
 
+	// bind group shared between all materials of the shader class (e.g. render pass data)
+	struct SharedBindGroup
+	{
+		IGPUBindGroupPtr				bindGroup;
+		uint							version{ COM_UINT_MAX };
+	};
+
 	PipelineMap						pipelines{ PP_SL };
+	SharedBindGroup					sharedBindGroups[BINDGROUP_COUNT];
 	Threading::CEqReadWriteLock		rwLock;
+	int								users{ 0 };	// shader objects using the cache; unused caches are dropped by ReleaseUnusedMaterials
 };
 
 class IShaderMeshInstanceProvider

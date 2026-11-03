@@ -133,7 +133,17 @@ public:
 	virtual bool					IsMaterialExist(const char* szMaterialName) const = 0;
 
 	virtual const MatSysShaderFactory*	GetShaderFactory(const char* szShaderName, int instanceFormatId) = 0;
-	virtual MatSysShaderPipelineCache&	GetRenderPipelineCache(int shaderNameHash) = 0;
+	// returns pipeline cache of the shader class and adds a user to it. The cache stays valid until
+	// ReleaseRenderPipelineCache is called by that user (or material reload drops it).
+	virtual MatSysShaderPipelineCache&	AcquireRenderPipelineCache(int shaderNameHash) = 0;
+	virtual void					ReleaseRenderPipelineCache(int shaderNameHash) = 0;
+
+	// drops shader shared bind groups (and resources they reference) of all shader classes.
+	// Call it when render pass resources (render targets, env maps) are about to be freed.
+	virtual void					ReleaseSharedBindGroups() = 0;
+
+	// returns unique render pass data version so stale shared bind groups never match new data
+	virtual uint					GenerateRenderPassVersion() = 0;
 
 	virtual void					QueueLoading(const IMaterialPtr& pMaterial) = 0;
 	virtual void					PreloadNewMaterials() = 0;
@@ -142,6 +152,9 @@ public:
 
 	virtual void					ReloadAllMaterials() = 0;
 	virtual void					ReloadShader(const char* name) = 0;
+	// unloads shaders and textures of materials not drawn for MaterialsInitSettings::materialFlushThresh frames
+	// (they are loaded again on next use) and drops pipeline caches of shader classes nobody uses.
+	// Call it only when no rendering job uses materials.
 	virtual void					ReleaseUnusedMaterials() = 0;
 	virtual void					FreeMaterial(IMaterial* pMaterial) = 0;
 

@@ -377,6 +377,10 @@ MatVarProxyUnk CMaterial::FindMaterialVar(const char* pszVarName) const
 
 const ITexturePtr& CMaterial::GetBaseTexture(int stage)
 {
+	// shader is dropped when the material is flushed by ReleaseUnusedMaterials
+	if (!m_shader && m_state == MATERIAL_LOAD_NEED_LOAD)
+		DoLoadShaderAndTextures();
+
 	if(m_shader != nullptr && !IsError())
 	{
 		DoLoadShaderAndTextures();
@@ -446,6 +450,23 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 
 	m_proxies.clear(true);
 	m_storage.clear(true);
+
+	Atomic::Exchange(m_state, MATERIAL_LOAD_NEED_LOAD);
+}
+
+void CMaterial::Flush()
+{
+	WaitForLoading();
+
+	if (m_shader)
+	{
+		m_shader->Unload();
+		SAFE_DELETE(m_shader);
+	}
+
+	// shader data stored by shaders
+	m_storage.clear(true);
+	m_needUpdateGPUProxies = true;
 
 	Atomic::Exchange(m_state, MATERIAL_LOAD_NEED_LOAD);
 }

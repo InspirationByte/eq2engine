@@ -52,6 +52,13 @@ Main responsibilities:
 - **Materials:** `GetMaterial(name)` (loads or returns cached), `CreateMaterial(name, params)` (from
   a `KVSection`), `IsMaterialExist`, `GetDefaultMaterial`, `QueueLoading`, `PreloadNewMaterials`,
   `WaitAllMaterialsLoaded`, `ReloadAllMaterials`, `ReleaseUnusedMaterials`.
+- **Unused material release:** `ReleaseUnusedMaterials` flushes loaded materials not drawn for
+  `MaterialsInitSettings::materialFlushThresh` frames (`CMaterial::Flush`: the shader and its
+  textures are freed, vars and proxies are kept; a newly queued material counts as drawn) and drops
+  the pipeline caches of shader classes no shader object uses. A flushed material is queued for
+  loading again by its next `SetupMaterialPipeline` (that draw is skipped) or `GetBaseTexture`.
+  Call it only at a point where no render job uses materials; it is also the `mat_releaseUnused`
+  console command.
 - **Shaders:** `LoadShaderLibrary`, `RegisterShader`, `RegisterShaderOverride`, `ReloadShader`.
 - **Proxies:** `RegisterProxy(factory, name)`, `CreateProxyByName`, `SetProxyDeltaTime`.
 - **Global material variables:** `GetGlobalMaterialVarByName(name, default)` — variables shared by

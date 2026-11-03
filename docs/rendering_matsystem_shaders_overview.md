@@ -119,7 +119,10 @@ void BuildPipelineShaderQuery(Array<EqString>& shaderQuery) const override
 streams, the material flags (cull, depth test / write, decal, Z-only, blend mode), the topology,
 the presence of an instance provider, the render target formats and MSAA. The pipeline is looked up
 in the shader object, then in the material-system-wide cache for this shader name
-(`GetRenderPipelineCache`), and created otherwise:
+(`AcquireRenderPipelineCache`), and created otherwise. Each shader object holds one user of the
+cache from the first lookup until `Unload` (`ReleaseRenderPipelineCache`);
+`ReleaseUnusedMaterials` drops caches without users, `ReloadAllMaterials` / `ReloadShader` drop
+them after freeing the shaders.
 
 - `FillRenderPipelineDesc` builds the description: shader name and query, vertex layouts from the
   mesh instance format (only the streams in `usedLayoutBits`; an instance stream must be bound),
@@ -131,6 +134,10 @@ in the shader object, then in the material-system-wide cache for this shader nam
   `false`) until the pipeline is ready. `RenderPassContext::waitForPipelines` or device
   validation create them synchronously. `r_showPipelineCacheMisses` logs pipelines created during
   rendering; `r_pipelineCacheDisable` disables the shared cache.
+- The job owns its inputs (description, binding layout) and only resolves a future. The shader
+  object and the cache entry keep that future, and `EnsureRenderPipeline` polls it on the next
+  lookup. Nothing points back into the shader or material, so they may be freed (level unload,
+  `ReleaseUnusedMaterials`, material reload) while pipelines are still being created.
 
 ## Bind groups
 
@@ -147,7 +154,13 @@ in the shader object, then in the material-system-wide cache for this shader nam
   constant groups).
 - `CreateBindGroup` — a new group each call (render pass / transient data).
 - `CreateSharedBindGroup` / `GetSharedBindGroup` — one group shared by all materials of the shader
-  class, with a version number.
+  class, with a version number. It is stored by the material system next to the pipeline cache of
+  the shader class (`MatSysShaderPipelineCache::sharedBindGroups`), not by materials, so it outlives
+  them. `GetSharedBindGroup` returns nothing when the version differs (`COM_UINT_MAX` matches any).
+  - Take versions from `IMaterialSystem::GenerateRenderPassVersion`: they are unique for the
+    process, so a group made for older render pass data never matches new data.
+  - Call `IMaterialSystem::ReleaseSharedBindGroups` before freeing resources the groups reference
+    (render targets, environment maps), e.g. on level unload.
 - `GetEmptyBindGroup` — for unused groups.
 
 `setupParams.uniformBuffers` holds buffers passed by the caller with a signature
