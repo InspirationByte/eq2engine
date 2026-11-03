@@ -148,6 +148,12 @@ frame the loop sleeps `sys_sleep` ms (default 1).
 7. `EndScene`: `g_matSystem->EndFrame()`.
 8. Pending fullscreen toggle, `g_onEndFrame`.
 
+The ImGui renderer backend (`imgui_impl_matsystem.cpp`) draws through material system dynamic meshes,
+which hold up to 32767 vertices and indices. It sets `ImGuiBackendFlags_RendererHasVtxOffset`, so
+ImGui can put more than 65535 vertices into one draw list with 16-bit indices, and splits draw
+commands by triangles into chunks that are packed into dynamic meshes. User callbacks draw the
+pending chunks first.
+
 `GetFrameTime()` returns the current frame time; `GetWindowSize()`, `GetDefaultFont()`,
 `GetWindowHandle()`.
 
