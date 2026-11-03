@@ -506,7 +506,7 @@ static float ConvexOrient2D(const Vector2D& o, const Vector2D& a, const Vector2D
 void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
 {
 	const int n = points.numElem();
-	if (n <= 3)
+	if (n < 3)
 		return;
 	int k = 0;
 
