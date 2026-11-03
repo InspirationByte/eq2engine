@@ -10,9 +10,8 @@
 // DirectX data
 struct ImGui_ImplMatSystem_Data
 {
-	ITexturePtr	FontTexture;
-
-	ImGui_ImplMatSystem_Data() { memset(this, 0, sizeof(*this)); }
+	ITexturePtr			FontTexture;
+	EShaderBlendMode	BlendMode{ SHADER_BLEND_TRANSLUCENT };	// set by BeginOpaque / EndOpaque callbacks
 };
 
 // Backend data stored in io.BackendRendererUserData to allow support for multiple Dear ImGui contexts
@@ -20,6 +19,30 @@ struct ImGui_ImplMatSystem_Data
 static ImGui_ImplMatSystem_Data* ImGui_ImplMatSystem_GetBackendData()
 {
 	return ImGui::GetCurrentContext() ? (ImGui_ImplMatSystem_Data*)ImGui::GetIO().BackendRendererUserData : nullptr;
+}
+
+// callback data is non-null for BeginOpaque
+static void ImGui_ImplMatSystem_OpaqueCallback(const ImDrawList* parent_list, const ImDrawCmd* cmd)
+{
+	ImGui_ImplMatSystem_Data* bd = ImGui_ImplMatSystem_GetBackendData();
+	bd->BlendMode = cmd->UserCallbackData ? SHADER_BLEND_NONE : SHADER_BLEND_TRANSLUCENT;
+}
+
+void ImGui_ImplMatSystem_BeginOpaque(ImDrawList* drawList)
+{
+	drawList->AddCallback(ImGui_ImplMatSystem_OpaqueCallback, reinterpret_cast<void*>(1));
+}
+
+void ImGui_ImplMatSystem_EndOpaque(ImDrawList* drawList)
+{
+	drawList->AddCallback(ImGui_ImplMatSystem_OpaqueCallback, nullptr);
+}
+
+void ImGui_ImplMatSystem_AddImageOpaque(ImDrawList* drawList, ImTextureID texture, const ImVec2& pMin, const ImVec2& pMax, const ImVec2& uvMin, const ImVec2& uvMax, ImU32 col)
+{
+	ImGui_ImplMatSystem_BeginOpaque(drawList);
+	drawList->AddImage(texture, pMin, pMax, uvMin, uvMax, col);
+	ImGui_ImplMatSystem_EndOpaque(drawList);
 }
 
 static void ImGui_ImplMatSystem_SetupRenderState(ImDrawData* draw_data, IGPURenderPassRecorder* rendPassRecorder, const RenderDrawCmd& drawCmd)
@@ -109,7 +132,7 @@ static void ImGui_ImplMatSystem_DrawChunks(ImDrawData* draw_data, IGPURenderPass
 		// Apply Scissor/clipping rectangle, Bind texture, Draw
 
 		MatSysDefaultRenderPass defaultRenderPass;
-		defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+		defaultRenderPass.blendMode = ImGui_ImplMatSystem_GetBackendData()->BlendMode;
 		defaultRenderPass.texture = ITexturePtr((ITexture*)pcmd->GetTexID());
 
 		g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), nullptr, drawCmd.batchInfo.primTopology, drawCmd.instanceInfo.instFormat, RenderPassContext(rendPassRecorder, &defaultRenderPass));
@@ -128,12 +151,15 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRec
 	if (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f)
 		return;
 
+	ImGui_ImplMatSystem_Data* bd = ImGui_ImplMatSystem_GetBackendData();
+
 	Array<ImGui_ImplMatSystem_DrawChunk> chunks(PP_SL);
 	RenderDrawCmd drawCmd;
 
 	for (int n = 0; n < draw_data->CmdListsCount; n++)
 	{
 		const ImDrawList* cmd_list = draw_data->CmdLists[n];
+		bd->BlendMode = SHADER_BLEND_TRANSLUCENT;
 
 		// chunks waiting for a mesh
 		int batchVertices = 0;
@@ -170,6 +196,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRec
 				// (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
 				if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
 				{
+					bd->BlendMode = SHADER_BLEND_TRANSLUCENT;
 					if (drawCmd.instanceInfo.vertexBuffers[0].buffer)
 						ImGui_ImplMatSystem_SetupRenderState(draw_data, rendPassRecorder, drawCmd);
 				}
@@ -218,6 +245,8 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRec
 
 		flushChunks();
 	}
+
+	bd->BlendMode = SHADER_BLEND_TRANSLUCENT;
 }
 
 bool ImGui_ImplMatSystem_Init()

@@ -14,6 +14,7 @@
 // enabled by sys_viewport.h
 #ifdef HOST_VIEWPORT_ENABLED
 #include <imgui.h>
+#include "imgui_backend/imgui_impl_matsystem.h"
 #endif // HOST_VIEWPORT_ENABLED
 
 CHostViewport::CHostViewport(const char* name)
@@ -87,7 +88,8 @@ void CHostViewport::DrawImGui(const Vector2D& size)
 	m_hovered = ImGui::IsItemHovered() || ImGui::IsItemActive();
 	m_focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 
-	ImGui::GetWindowDrawList()->AddImage(reinterpret_cast<ImTextureID>(m_colorTarget.Ptr()), screenPos, screenEnd);
+	// alpha of the state render target is not coverage
+	ImGui_ImplMatSystem_AddImageOpaque(ImGui::GetWindowDrawList(), reinterpret_cast<ImTextureID>(m_colorTarget.Ptr()), screenPos, screenEnd);
 
 	m_screenRect = IAARectangle(static_cast<int>(screenPos.x), static_cast<int>(screenPos.y), static_cast<int>(screenEnd.x), static_cast<int>(screenEnd.y));
 	m_drawFrame = ImGui::GetFrameCount();

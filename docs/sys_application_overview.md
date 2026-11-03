@@ -154,6 +154,14 @@ ImGui can put more than 65535 vertices into one draw list with 16-bit indices, a
 commands by triangles into chunks that are packed into dynamic meshes. User callbacks draw the
 pending chunks first.
 
+ImGui draws everything with translucent blending, so a texture's alpha is treated as coverage.
+Render targets whose alpha is not coverage (scene targets, previews) are drawn without blending:
+`ImGui_ImplMatSystem_AddImageOpaque`, or `ImGui_ImplMatSystem_BeginOpaque` /
+`ImGui_ImplMatSystem_EndOpaque` around draw list commands (`imgui_impl_matsystem.h`). These add draw
+list callbacks, so each block flushes the pending chunks; group many images into one block.
+Anti-aliased lines and text inside a block lose their smooth edges. Blending is reset to translucent
+at the start of each draw list and on `ImDrawCallback_ResetRenderState`.
+
 `GetFrameTime()` returns the current frame time; `GetWindowSize()`, `GetDefaultFont()`,
 `GetWindowHandle()`.
 
@@ -233,7 +241,8 @@ g_renderAPI->BeginRenderPass(
 - `DrawImGui(size)` resizes the color and depth targets (backbuffer formats and samplers, so the
   depth target can be sampled like the default depth buffer; `ResizeRenderTarget`)
   to the drawn size and puts an invisible button with the image in the current ImGui window. The
-  viewport is *visible* only in a frame where `DrawImGui` was called.
+  image is drawn without blending (`ImGui_ImplMatSystem_AddImageOpaque`): the alpha written by the
+  state is ignored. The viewport is *visible* only in a frame where `DrawImGui` was called.
 - Viewports are disabled in `Retail` and `Profile` builds (`HOST_VIEWPORT_ENABLED` in
   `sys_viewport.h`): `DrawImGui` does nothing and the viewport is never visible.
 - When the viewport is not visible (ImGui window closed, `Retail` or `Profile` build),

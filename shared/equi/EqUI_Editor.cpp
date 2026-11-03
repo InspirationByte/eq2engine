@@ -17,6 +17,7 @@
 
 #ifdef EQUI_EDITOR
 #include <imgui.h>
+#include "imgui_backend/imgui_impl_matsystem.h"
 
 namespace equi::Editor
 {
@@ -1404,7 +1405,10 @@ void CUIEditor::DrawPreviewTab()
 			ImGui::SetCursorScreenPos(origin);
 		}
 
+		// preview target alpha is not coverage
+		ImGui_ImplMatSystem_BeginOpaque(ImGui::GetWindowDrawList());
 		ImGui::Image(reinterpret_cast<ImTextureID>(m_previewTarget.Ptr()), displaySize);
+		ImGui_ImplMatSystem_EndOpaque(ImGui::GetWindowDrawList());
 		const bool previewHovered = ImGui::IsItemHovered();
 		const bool previewClicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
 
