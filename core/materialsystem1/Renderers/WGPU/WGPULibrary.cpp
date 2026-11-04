@@ -243,8 +243,9 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		caps.maxComputeWorkgroupSizeY = supLimits.maxComputeWorkgroupSizeY;
 		caps.maxComputeWorkgroupSizeZ = supLimits.maxComputeWorkgroupSizeZ;
 		caps.maxComputeWorkgroupsPerDimension = supLimits.maxComputeWorkgroupsPerDimension;
-		caps.multiDrawIndirectSupport = wgpuAdapterHasFeature(m_rhiAdapter, WGPUFeatureName_MultiDrawIndirect);
-		caps.multiDrawIndexedIndirectSupport = caps.multiDrawIndirectSupport;
+		caps.multiDrawIndirectSupport = false;	// set by device features after device is created
+		caps.multiDrawIndexedIndirectSupport = false;
+		caps.multiDrawIndirectCountSupport = false;
 
 		caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED
 									| SHADER_CAPS_PIXEL_SUPPORTED
@@ -313,6 +314,9 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		if(wgpuAdapterHasFeature(m_rhiAdapter, WGPUFeatureName_MultiDrawIndirect))
 			requiredFeatures.append(WGPUFeatureName_MultiDrawIndirect);
 
+		if (wgpuAdapterHasFeature(m_rhiAdapter, WGPUFeatureName_IndirectFirstInstance))
+			requiredFeatures.append(WGPUFeatureName_IndirectFirstInstance);
+
 		//requiredFeatures.append(WGPUFeatureName_BGRA8UnormStorage);
 		//requiredFeatures.append(WGPUFeatureName_SurfaceCapabilities);
 		requiredFeatures.append(WGPUFeatureName_Norm16TextureFormats);
@@ -343,6 +347,12 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		}
 
 		m_deviceQueue = wgpuDeviceGetQueue(m_rhiDevice);
+
+		// multi-draw is only reported when indirect commands may also use firstInstance
+		caps.multiDrawIndirectSupport = wgpuDeviceHasFeature(m_rhiDevice, WGPUFeatureName_MultiDrawIndirect)
+									&& wgpuDeviceHasFeature(m_rhiDevice, WGPUFeatureName_IndirectFirstInstance);
+		caps.multiDrawIndexedIndirectSupport = caps.multiDrawIndirectSupport;
+		caps.multiDrawIndirectCountSupport = caps.multiDrawIndirectSupport;
 	}
 
 	constexpr int jobQueueSize = 1024;

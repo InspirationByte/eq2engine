@@ -365,7 +365,8 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 		caps.maxComputeWorkgroupSizeZ = 64;
 		caps.maxComputeWorkgroupsPerDimension = 65535;
 		caps.multiDrawIndirectSupport = false;
-		caps.multiDrawIndexedIndirectSupport = true;
+		caps.multiDrawIndexedIndirectSupport = false;	// set by device features in CreateDevice
+		caps.multiDrawIndirectCountSupport = false;
 
 		caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED
 			| SHADER_CAPS_PIXEL_SUPPORTED
@@ -714,8 +715,14 @@ bool CNVRHIRenderLibVK::CreateDevice()
 	// get/set shading rate features which are detected individually by nvrhi (not just at extension level)
 	vk::PhysicalDeviceFeatures2 actualDeviceFeatures2;
 	vk::PhysicalDeviceFragmentShadingRateFeaturesKHR fragmentShadingRateFeatures;
+	vk::PhysicalDeviceVulkan12Features actualVulkan12Features;
 	actualDeviceFeatures2.pNext = &fragmentShadingRateFeatures;
+	fragmentShadingRateFeatures.pNext = &actualVulkan12Features;
 	m_vkPhysicalDevice.getFeatures2( &actualDeviceFeatures2 );
+
+	// multi-draw is only reported when indirect commands may also use firstInstance
+	const bool multiDrawIndirectSupported = actualDeviceFeatures2.features.multiDrawIndirect && actualDeviceFeatures2.features.drawIndirectFirstInstance;
+	const bool drawIndirectCountSupported = multiDrawIndirectSupported && actualVulkan12Features.drawIndirectCount;
 
 	auto vrsFeatures = vk::PhysicalDeviceFragmentShadingRateFeaturesKHR()
 					   .setPipelineFragmentShadingRate( fragmentShadingRateFeatures.pipelineFragmentShadingRate )
@@ -762,7 +769,9 @@ bool CNVRHIRenderLibVK::CreateDevice()
 #endif
 						  .setFillModeNonSolid( true )
 						  .setImageCubeArray( true )
-						  .setDualSrcBlend( true );
+						  .setDualSrcBlend( true )
+						  .setMultiDrawIndirect( actualDeviceFeatures2.features.multiDrawIndirect )
+						  .setDrawIndirectFirstInstance( actualDeviceFeatures2.features.drawIndirectFirstInstance );
 
 	auto vulkan12features = vk::PhysicalDeviceVulkan12Features()
 							.setDescriptorIndexing( true )
@@ -772,6 +781,7 @@ bool CNVRHIRenderLibVK::CreateDevice()
 							.setTimelineSemaphore( true )
 							.setShaderSampledImageArrayNonUniformIndexing( true )
 							.setBufferDeviceAddress( bufferAddressSupported )
+							.setDrawIndirectCount( drawIndirectCountSupported )
 							.setPNext( pNext );
 
 	Array<const char*> vkDevExtNames(PP_SL);
@@ -823,6 +833,9 @@ bool CNVRHIRenderLibVK::CreateDevice()
 	ShaderAPICapabilities& caps = CNVRHIRenderAPI::Instance.m_caps;
 	caps.renderTargetFormatsSupported[FORMAT_D24S8] = 
 		caps.renderTargetFormatsSupported[FORMAT_D24] = (ret == vk::Result::eSuccess);
+
+	caps.multiDrawIndexedIndirectSupport = multiDrawIndirectSupported;
+	caps.multiDrawIndirectCountSupport = drawIndirectCountSupported;
 
 	// Determine which Vulkan surface present modes are supported by device and surface
 	auto surfacePModes = m_vkPhysicalDevice.getSurfacePresentModesKHR( m_defaultSwapChain->m_vkWindowSurface );

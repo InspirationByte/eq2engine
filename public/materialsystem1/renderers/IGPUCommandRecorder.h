@@ -89,6 +89,9 @@ public:
 	virtual void					DrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset) = 0;
 	virtual void					DrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset) = 0;
 
+	// Draws commands placed in indirectBuffer one after another.
+	// When drawCountBuffer is null exactly maxDrawCount commands are drawn (caps.multiDraw[Indexed]IndirectSupport),
+	// otherwise draw count is read from drawCountBuffer and clamped by maxDrawCount (caps.multiDrawIndirectCountSupport).
 	virtual void					MultiDrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset) = 0;
 	virtual void					MultiDrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset) = 0;
 

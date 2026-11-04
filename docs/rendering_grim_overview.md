@@ -3,7 +3,8 @@
 **GRIM — GPU-driven Rendering and Instance Manager** (`grimLib`). It keeps per-instance data in GPU
 buffers and renders large numbers of instanced meshes. Filtering, visibility culling, LOD selection
 and the building of indirect draw commands all run in compute shaders. The CPU only uploads
-changed data and records one `DrawIndexedIndirect` per mesh batch.
+changed data and records indirect draws: one multi-draw per run of mesh batches when the RHI
+supports it, otherwise one `DrawIndexedIndirect` per batch.
 
 | File | Contents |
 |---|---|
@@ -193,12 +194,34 @@ renderer.Draw(renderState, RenderPassContext(rendPassRecorder, nullptr));
   invocations with `instanceCount > 0`. Until then every invocation is drawn; `Draw` waits for the
   readback if it is still in flight.
 - `Draw` skips inactive invocations, hidden archetypes and archetypes with no instances. It groups
-  the rest by material, vertex format and topology, sets up each material pipeline once and issues
-  `DrawIndexedIndirect` per batch. `RenderPassContext::beforeMaterialSetup` may replace or drop
+  the rest by material, vertex format and topology, sets up each material pipeline once and draws
+  the batches of the group (see [Multi-draw](#multi-draw)). `RenderPassContext::beforeMaterialSetup` may replace or drop
   materials (e.g. for a depth pass); `GRIMRenderState::drawCallMaterialGroupByFlags` selects whether
   grouping uses the original or the replaced material.
 - Group masks: an instance is drawn when `(mask & include) != 0` and `(mask & exclude) == 0`, with
   `include = renderState.groupMaskInclude & settings.groupMaskInclude` and exclude combined with OR.
+
+### Multi-draw
+
+The indirect command index of a batch (`GPUIndexedBatch::cmdIdx`) is the index of its draw info.
+The draw infos of an archetype are allocated as one contiguous range
+(`AllocDrawInfoRange` / `FreeDrawInfoRange`), sorted by material, topology and LOD. Batches of an
+archetype with the same material therefore have adjacent commands.
+
+`Draw` walks the commands of each material group in ascending order and binds the vertex and index
+buffers once per archetype. Adjacent commands of the same archetype form a run that is drawn with
+one `MultiDrawIndexedIndirect` (without a draw count buffer). A run may also cover commands of
+other groups that lie between, but only if the readback (`PostPrepareDraw`) confirmed that they have
+`instanceCount == 0`, so they draw nothing. Without readback results (software mode, failed
+readback), runs contain only commands of the group.
+
+- Multi-draw is used when `ShaderAPICapabilities::multiDrawIndexedIndirectSupport` is set: D3D12,
+  Vulkan with the `multiDrawIndirect` and `drawIndirectFirstInstance` device features, WebGPU with
+  the `multi-draw-indirect` feature. D3D11 always draws commands one by one.
+- `grim_dbgMultiDrawOff 1` draws every command separately.
+- Archetypes have their own vertex and index buffers, so a multi-draw never crosses archetypes.
+- Commands of archetypes created after `PrepareDraw` are not in the indirect buffer of that render
+  state and are not drawn until the next `PrepareDraw`.
 
 ### Draw settings and software mode
 
@@ -286,10 +309,9 @@ Debug UI: "ENGINE/RENDER/INSTANCE MANAGER DEBUG UI" menu (`DemoInstManagerDebugD
   with per-archetype visibility, highlighting and details (LODs, batches, materials, vertex
   buffers). Available when `GRIM_INSTANCES_DEBUG_ENABLED` (not in `Profile` / `Retail`).
 - Cheat ConVars: `grim_dbgSoftwareMode`, `grim_dbgOnlyMaterial <name>` (draw only one material),
-  `grim_dbgLogArchetypes`, `grim_dbgValidate`.
+  `grim_dbgLogArchetypes`, `grim_dbgValidate`, `grim_dbgMultiDrawOff`.
 - With device validation enabled, every indirect draw gets a debug marker with the archetype,
-  material, LOD and instance count.
-- Multi-draw indirect (`GRIM_MULTI_DRAW_SUPPORT`) is in development and disabled.
+  material, first LOD, number of commands and instance count.
 
 ## Limits
 
