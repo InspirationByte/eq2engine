@@ -211,9 +211,9 @@ void arraySort(ARRAY_TYPE& arr, const CMP& comparator)
 }
 
 template<typename T, int N, typename CMP>
-void arraySort(const T(&arr)[N], const CMP& comparator)
+void arraySort(T(&arr)[N], const CMP& comparator)
 {
-	arraySort(arr.ptr(), arr.ptr() + arr.numElem(), comparator);
+	arraySort(arr, arr + N, comparator);
 }
 
 // -----------------------------------------------------------------
