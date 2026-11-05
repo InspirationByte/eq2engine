@@ -19,19 +19,13 @@
 #include "GrimInstanceAllocator.h"
 #include "materialsystem1/IMaterialSystem.h"
 
-// in development
-// #define GRIM_MULTI_DRAW_SUPPORT
-
 using namespace Threading;
 
 DECLARE_CVAR(grim_dbgSoftwareMode, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbgOnlyMaterial, "", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbgLogArchetypes, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbgValidate, "0", nullptr, CV_CHEAT);
-
-#ifdef GRIM_MULTI_DRAW_SUPPORT
-DECLARE_CVAR(grim_dbgMultiDrawOff, "0", nullptr, CV_CHEAT);
-#endif
+DECLARE_CVAR(grim_dbgMultiDrawOff, "0", "Draw every indirect command separately even if multi-draw is supported", CV_CHEAT);
 
 static constexpr char SHADERNAME_FILTER_INSTANCES[] = "InstanceFilter";
 static constexpr char SHADERNAME_CULL_INSTANCES[] = "InstancesCull";
@@ -128,6 +122,8 @@ void GRIMBaseRenderer::Shutdown()
 	m_pendingArchetypes.clear(true);
 	m_pendingDeletion.clear(true);
 	m_drawInfos.clear(true);
+	m_drawInfoFreeRanges.clear(true);
+	m_numDrawInfos = 0;
 
 	m_drawBatchs.Clear(true);
 	m_drawLodInfos.Clear(true);
@@ -307,6 +303,8 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 	if (grim_dbgLogArchetypes.GetBool())
 		MsgInfo("GRIM: creating archetype %d (%s)\n", slot, archetypeInfo->name.ToCString());
 
+	Array<DrawInfo> drawInfos(PP_SL);
+
 	int prevLod = -1;
 	for (int i = 0; i < studio.numLodParams; i++)
 	{
@@ -364,7 +362,7 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 				drawInfo.batchIdx = newBatch;
 				drawInfo.lodNumber = i;
 
-				m_drawBatchs[newBatch].cmdIdx = m_drawInfos.add(drawInfo);
+				drawInfos.append(drawInfo);
 				hasBodyGroups = true;
 			}
 		}
@@ -386,6 +384,8 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 		}
 		prevLod = newLod;
 	}
+
+	AddArchetypeDrawInfos(drawInfos);
 }
 
 void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetypeDesc& desc)
@@ -436,6 +436,8 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 	if (grim_dbgLogArchetypes.GetBool())
 		MsgInfo("GRIM: creating archetype %d (%s)\n", slot, archetypeInfo->name.ToCString());
 
+	Array<DrawInfo> drawInfos(PP_SL);
+
 	int prevLod = -1;
 	int numLods = 0;
 	for (const GRIMArchetypeDesc::LodInfo& lodInfo : desc.lods)
@@ -473,7 +475,7 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 			drawInfo.batchIdx = newBatch;
 			drawInfo.lodNumber = numLods;
 
-			m_drawBatchs[newBatch].cmdIdx = m_drawInfos.add(drawInfo);
+			drawInfos.append(drawInfo);
 			hasBodyGroups = true;
 		}
 
@@ -496,6 +498,8 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 
 		++numLods;
 	}
+
+	AddArchetypeDrawInfos(drawInfos);
 }
 
 void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype archetype)
@@ -572,7 +576,6 @@ void GRIMBaseRenderer::DestroyArchetypeData(GRIMArchetype slot)
 	struct ItemInfo {
 		enum EWhat
 		{
-			DRAWINFO,
 			BATCH,
 			LODINFO
 		};
@@ -583,13 +586,18 @@ void GRIMBaseRenderer::DestroyArchetypeData(GRIMArchetype slot)
 	delItems.clear();
 	delItems.reserve(64);
 
+	// draw infos of archetype are allocated as single range
+	int firstCmdIdx = COM_INT_MAX;
+	int numCmds = 0;
+
 	const GPULodList lodList = m_drawLodsList[slot];
 	for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = m_drawLodInfos[lodIdx].next)
 	{
 		const GPULodInfo lodInfo = m_drawLodInfos[lodIdx];
 		for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = m_drawBatchs[batchIdx].next)
 		{
-			delItems.appendEmplace(m_drawBatchs[batchIdx].cmdIdx, ItemInfo::DRAWINFO);
+			firstCmdIdx = min(firstCmdIdx, m_drawBatchs[batchIdx].cmdIdx);
+			++numCmds;
 			delItems.appendEmplace(batchIdx, ItemInfo::BATCH);
 		}
 		delItems.appendEmplace(lodIdx, ItemInfo::LODINFO);
@@ -598,13 +606,13 @@ void GRIMBaseRenderer::DestroyArchetypeData(GRIMArchetype slot)
 	if (grim_dbgLogArchetypes.GetBool())
 		MsgInfo("GRIM: freed archetype %d (%s)\n", slot, DbgGetArchetypeName(slot).ToCString());
 
+	if (numCmds > 0)
+		FreeDrawInfoRange(firstCmdIdx, numCmds);
+
 	for (ItemInfo& item : delItems)
 	{
 		switch (item.what)
 		{
-		case ItemInfo::DRAWINFO:
-			m_drawInfos.remove(item.index);
-			break;
 		case ItemInfo::BATCH:
 			m_drawBatchs.Remove(item.index);
 			break;
@@ -618,6 +626,115 @@ void GRIMBaseRenderer::DestroyArchetypeData(GRIMArchetype slot)
 	{
 		CScopedMutex m(s_grimRendererMutex);
 		m_drawLodsList.Update(slot, GPULodList{});
+	}
+}
+
+bool GRIMBaseRenderer::IsValidDrawInfo(int cmdIdx) const
+{
+	return m_drawInfos.inRange(cmdIdx) && m_drawInfos[cmdIdx].ownerArchetype != GRIM_INVALID_ARCHETYPE;
+}
+
+void GRIMBaseRenderer::AddArchetypeDrawInfos(Array<DrawInfo>& drawInfos)
+{
+	if (drawInfos.isEmpty())
+		return;
+
+	// keep batches with same material and topology next to each other (in LOD order)
+	// so their indirect commands can be drawn with single multi-draw
+	arraySort(drawInfos, [](const DrawInfo& a, const DrawInfo& b) {
+		if (a.material.Ptr() != b.material.Ptr())
+			return a.material.Ptr() < b.material.Ptr() ? -1 : 1;
+		if (a.primTopology != b.primTopology)
+			return static_cast<int>(a.primTopology) - static_cast<int>(b.primTopology);
+		if (a.lodNumber != b.lodNumber)
+			return a.lodNumber - b.lodNumber;
+		return a.batchIdx - b.batchIdx;
+	});
+
+	const int firstCmdIdx = AllocDrawInfoRange(drawInfos.numElem());
+	for (int i = 0; i < drawInfos.numElem(); ++i)
+	{
+		const DrawInfo& drawInfo = drawInfos[i];
+		m_drawInfos[firstCmdIdx + i] = drawInfo;
+		m_drawBatchs[drawInfo.batchIdx].cmdIdx = firstCmdIdx + i;
+	}
+}
+
+int GRIMBaseRenderer::AllocDrawInfoRange(int count)
+{
+	ASSERT(count > 0);
+	m_numDrawInfos += count;
+
+	for (int i = 0; i < m_drawInfoFreeRanges.numElem(); ++i)
+	{
+		DrawInfoRange& range = m_drawInfoFreeRanges[i];
+		if (range.count < count)
+			continue;
+
+		const int firstCmdIdx = range.first;
+		range.first += count;
+		range.count -= count;
+		if (range.count == 0)
+			m_drawInfoFreeRanges.removeIndex(i);
+
+		return firstCmdIdx;
+	}
+
+	const int firstCmdIdx = m_drawInfos.numElem();
+	for (int i = 0; i < count; ++i)
+		m_drawInfos.append(DrawInfo{});
+
+	return firstCmdIdx;
+}
+
+void GRIMBaseRenderer::FreeDrawInfoRange(int firstCmdIdx, int count)
+{
+	ASSERT(firstCmdIdx >= 0 && firstCmdIdx + count <= m_drawInfos.numElem());
+
+	for (int i = firstCmdIdx; i < firstCmdIdx + count; ++i)
+	{
+		ASSERT_MSG(IsValidDrawInfo(i), "Draw info %d is not allocated", i);
+		m_drawInfos[i] = DrawInfo{};
+	}
+	m_numDrawInfos -= count;
+
+	int rangeIdx = 0;
+	while (rangeIdx < m_drawInfoFreeRanges.numElem() && m_drawInfoFreeRanges[rangeIdx].first < firstCmdIdx)
+		++rangeIdx;
+	m_drawInfoFreeRanges.insert(DrawInfoRange{ firstCmdIdx, count }, rangeIdx);
+
+	// merge with adjacent free ranges
+	if (rangeIdx + 1 < m_drawInfoFreeRanges.numElem())
+	{
+		DrawInfoRange& range = m_drawInfoFreeRanges[rangeIdx];
+		const DrawInfoRange& nextRange = m_drawInfoFreeRanges[rangeIdx + 1];
+		if (range.first + range.count == nextRange.first)
+		{
+			range.count += nextRange.count;
+			m_drawInfoFreeRanges.removeIndex(rangeIdx + 1);
+		}
+	}
+
+	if (rangeIdx > 0)
+	{
+		DrawInfoRange& prevRange = m_drawInfoFreeRanges[rangeIdx - 1];
+		const DrawInfoRange& range = m_drawInfoFreeRanges[rangeIdx];
+		if (prevRange.first + prevRange.count == range.first)
+		{
+			prevRange.count += range.count;
+			m_drawInfoFreeRanges.removeIndex(rangeIdx);
+		}
+	}
+
+	// free range at the end shrinks the draw info list
+	if (m_drawInfoFreeRanges.numElem())
+	{
+		const DrawInfoRange lastRange = m_drawInfoFreeRanges.back();
+		if (lastRange.first + lastRange.count == m_drawInfos.numElem())
+		{
+			m_drawInfos.setNum(lastRange.first, false);
+			m_drawInfoFreeRanges.popBack();
+		}
 	}
 }
 
@@ -1055,7 +1172,7 @@ void GRIMBaseRenderer::UpdateIndirectInstances_Software(IntermediateState& inter
 				m_dbgStatsDrawnInstances += drawCmd.instanceCount;
 #endif
 
-				ASSERT_MSG(m_drawInfos(drawBatch.cmdIdx), "Draw archetype might not be present");
+				ASSERT_MSG(IsValidDrawInfo(drawBatch.cmdIdx), "Draw archetype might not be present");
 
 				//drawCommands[drawBatch.cmdIdx] = drawCmd;
 				cmdRecorder->WriteBuffer(drawInvocationsBuffer, &drawCmd, sizeof(drawCmd), sizeof(GPUDrawIndexedIndirectCmd) * drawBatch.cmdIdx);
@@ -1087,7 +1204,7 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 	if (maxNumberOfObjects == 0)
 		return;
 
-	const BufferInfo drawInvocationsBufferInfo(sizeof(GPUDrawIndexedIndirectCmd), m_drawInfos.numSlots());
+	const BufferInfo drawInvocationsBufferInfo(sizeof(GPUDrawIndexedIndirectCmd), m_drawInfos.numElem());
 	if(!renderState.drawInvocationsBuffer || renderState.drawInvocationsBuffer->GetSize() < drawInvocationsBufferInfo.GetBufferSize())
 	{
 		renderState.drawInvocationsBuffer = g_renderAPI->CreateBuffer(drawInvocationsBufferInfo, BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST | BUFFERUSAGE_COPY_SRC, "DrawInvocations");
@@ -1100,7 +1217,7 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 		renderState.instanceIdsBuffer = g_renderAPI->CreateBuffer(instanceIdsBufferInfo, BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceIds");
 	}
 
-	renderState.activeDrawInvocations.resize(m_drawInfos.numSlots() + 1);
+	renderState.activeDrawInvocations.resize(m_drawInfos.numElem() + 1);
 	renderState.visibleArchetypes.resize(m_drawLodsList.NumSlots() + 1);
 
 	// everything is drawn by default
@@ -1288,9 +1405,14 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 	}
 
 	const ShaderAPICapabilities& caps = g_renderAPI->GetCaps();
+	const bool useMultiDraw = caps.multiDrawIndexedIndirectSupport && !grim_dbgMultiDrawOff.GetBool();
+
+	// draw infos added after PrepareDraw have no commands in the indirect buffer
+	const int numDrawCmds = min(min(m_drawInfos.numElem(), renderState.activeDrawInvocations.numBits()),
+		static_cast<int>(renderState.drawInvocationsBuffer->GetSize() / sizeof(GPUDrawIndexedIndirectCmd)));
 
 	renderState.drawInfoLinkList.clear();
-	renderState.drawInfoLinkList.reserve(m_drawInfos.numSlots());
+	renderState.drawInfoLinkList.reserve(numDrawCmds + 1);
 	renderState.drawInfoLinkList.append(GRIMRenderState::ListItm{}); // store end element in this array
 
 	const bool validationOn = g_renderAPI->IsDeviceValidationActive();
@@ -1298,9 +1420,9 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 	thread_local Map<uint64, int> drawInfosByMaterial(PP_SL);
 	drawInfosByMaterial.clear();
 
-	for (int i = 0; i < m_drawInfos.numSlots(); ++i)
+	for (int i = 0; i < numDrawCmds; ++i)
 	{
-		if (!m_drawInfos(i))
+		if (!IsValidDrawInfo(i))
 			continue;
 
 		if (!renderState.activeDrawInvocations[i])
@@ -1348,13 +1470,6 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 		else
 			materialId += reinterpret_cast<uint64>(material);
 		materialId *= 31;
-#ifdef GRIM_MULTI_DRAW_SUPPORT
-		if (caps.multiDrawIndexedIndirectSupport && !grim_dbgMultiDrawOff.GetBool())
-		{
-			materialId += drawInfo.ownerArchetype;
-		}
-		else
-#endif
 		{
 			const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
 			materialId += archetypeInfo.meshInstFormat.formatId;
@@ -1371,58 +1486,76 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 		*it = renderState.drawInfoLinkList.append(GRIMRenderState::ListItm{ (uint16)i, (uint16)*it }); // link to last element
 	}
 
+	thread_local Array<int> groupCmds(PP_SL);
+
 	renderPassCtx.recorder->DbgPushGroup("GRIMDraw");
 	int numDrawCalls = 0;
 	for (auto it = drawInfosByMaterial.begin(); !it.atEnd(); ++it)
 	{
-		GRIMRenderState::ListItm litem = renderState.drawInfoLinkList[*it];
+		// the list is linked from the last added draw info, so collect it in ascending command order
+		groupCmds.clear();
+		for (GRIMRenderState::ListItm litem = renderState.drawInfoLinkList[*it]; litem.id != USHRT_MAX; litem = renderState.drawInfoLinkList[litem.next])
+			groupCmds.append(litem.id);
 
-		const DrawInfo& setupDrawInfo = m_drawInfos[litem.id];
+		const int numGroupCmds = groupCmds.numElem();
+		for (int i = 0; i < numGroupCmds / 2; ++i)
+			QuickSwap(groupCmds[i], groupCmds[numGroupCmds - 1 - i]);
+
+		// pipeline is set up from the list head (the last added draw info)
+		const DrawInfo& setupDrawInfo = m_drawInfos[groupCmds[numGroupCmds - 1]];
 		const ArchetypeInfo& setupArchetypeInfo = setupDrawInfo.archetypeInfo.Ref();
 
 		if (!g_matSystem->SetupMaterialPipeline(setupDrawInfo.material, nullptr, setupDrawInfo.primTopology, setupArchetypeInfo.meshInstFormat, renderPassCtx, this))
 			continue;
-#ifdef GRIM_MULTI_DRAW_SUPPORT
-		if (caps.multiDrawIndexedIndirectSupport && !grim_dbgMultiDrawOff.GetBool())
+
+		const ArchetypeInfo* boundArchetypeInfo = nullptr;
+		for (int i = 0; i < numGroupCmds; )
 		{
-			for (int vsi = 0; vsi < setupArchetypeInfo.vertexBuffers.numElem(); ++vsi)
-				renderPassCtx.recorder->SetVertexBuffer(vsi, (setupArchetypeInfo.instanceStreamId == vsi) ? renderState.instanceIdsBuffer : setupArchetypeInfo.vertexBuffers[vsi]);
-			renderPassCtx.recorder->SetIndexBuffer(setupArchetypeInfo.indexBuffer, setupArchetypeInfo.indexFormat);
+			const int firstCmdIdx = groupCmds[i];
+			const DrawInfo& drawInfo = m_drawInfos[firstCmdIdx];
+			const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
 
-			for (; litem.id != USHRT_MAX; litem = renderState.drawInfoLinkList[litem.next])
+			// Commands of one archetype are contiguous, so following commands of the group can join the multi-draw.
+			// Commands between them belong to other groups and may only be included
+			// when the readback confirmed they have no instances to draw.
+			int lastCmdIdx = firstCmdIdx;
+			for (++i; useMultiDraw && i < numGroupCmds; ++i)
 			{
-				const DrawInfo& drawInfo = m_drawInfos[litem.id];
-				ASSERT_MSG(drawInfo.archetypeInfo == setupDrawInfo.archetypeInfo, "Mismatching archetype for draw infos");
+				const int nextCmdIdx = groupCmds[i];
+				if (m_drawInfos[nextCmdIdx].ownerArchetype != drawInfo.ownerArchetype)
+					break;
 
-#ifdef GRIM_INSTANCES_DEBUG_ENABLED
-				if (validationOn)
-					renderPassCtx.recorder->DbgAddMarker(EqString::Format("draw arch %d (mtl %s) (lod %d) (cnt %d)", drawInfo.ownerArchetype, drawInfo.material->GetName(), drawInfo.lodNumber, m_instAllocator.GetInstanceCount(drawInfo.ownerArchetype)));
-#endif
+				bool emptyGap = true;
+				for (int j = lastCmdIdx + 1; j < nextCmdIdx && emptyGap; ++j)
+					emptyGap = !renderState.activeDrawInvocations[j];
 
-				renderPassCtx.recorder->DrawIndexedIndirect(renderState.drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd) * m_drawBatchs[drawInfo.batchIdx].cmdIdx);
-				++numDrawCalls;
+				if (!emptyGap)
+					break;
+
+				lastCmdIdx = nextCmdIdx;
 			}
-		}
-		else
-#endif
-		{
-			for (; litem.id != USHRT_MAX; litem = renderState.drawInfoLinkList[litem.next])
-			{
-				const DrawInfo& drawInfo = m_drawInfos[litem.id];
-				const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
 
+			if (boundArchetypeInfo != &archetypeInfo)
+			{
 				for (int vsi = 0; vsi < archetypeInfo.vertexBuffers.numElem(); ++vsi)
 					renderPassCtx.recorder->SetVertexBuffer(vsi, (archetypeInfo.instanceStreamId == vsi) ? renderState.instanceIdsBuffer : archetypeInfo.vertexBuffers[vsi]);
 				renderPassCtx.recorder->SetIndexBuffer(archetypeInfo.indexBuffer, archetypeInfo.indexFormat);
+				boundArchetypeInfo = &archetypeInfo;
+			}
+
+			const int numCmds = lastCmdIdx - firstCmdIdx + 1;
+			const int cmdOffset = static_cast<int>(sizeof(GPUDrawIndexedIndirectCmd)) * firstCmdIdx;
 
 #ifdef GRIM_INSTANCES_DEBUG_ENABLED
-				if (validationOn)
-					renderPassCtx.recorder->DbgAddMarker(EqString::Format("draw arch %d (mtl %s) (lod %d) (cnt %d)", drawInfo.ownerArchetype, drawInfo.material->GetName(), drawInfo.lodNumber, m_instAllocator.GetInstanceCount(drawInfo.ownerArchetype)));
+			if (validationOn)
+				renderPassCtx.recorder->DbgAddMarker(EqString::Format("draw arch %d (mtl %s) (lod %d) (cmds %d) (cnt %d)", drawInfo.ownerArchetype, drawInfo.material->GetName(), drawInfo.lodNumber, numCmds, m_instAllocator.GetInstanceCount(drawInfo.ownerArchetype)));
 #endif
 
-				renderPassCtx.recorder->DrawIndexedIndirect(renderState.drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd) * m_drawBatchs[drawInfo.batchIdx].cmdIdx);
-				++numDrawCalls;
-			}
+			if (numCmds > 1)
+				renderPassCtx.recorder->MultiDrawIndexedIndirect(renderState.drawInvocationsBuffer, cmdOffset, numCmds, nullptr, 0);
+			else
+				renderPassCtx.recorder->DrawIndexedIndirect(renderState.drawInvocationsBuffer, cmdOffset);
+			++numDrawCalls;
 		}
 	}
 	renderPassCtx.recorder->DbgPopGroup();
@@ -1524,7 +1657,7 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 		ImGui::TextDisabled("Draw calls: %d", renderer.m_dbgStatsDrawCalls);
 		ImGui::TextDisabled("Drawn instances (Lods x Archetypes): %d", renderer.m_dbgStatsDrawnInstances);		
 
-		ImGui::TextDisabled(" %d draw infos: %.2f KB", renderer.m_drawInfos.numElem(), memBytesToKB(renderer.m_drawInfos.numSlots() * sizeof(renderer.m_drawInfos[0])));
+		ImGui::TextDisabled(" %d draw infos: %.2f KB", renderer.m_numDrawInfos, memBytesToKB(renderer.m_drawInfos.numElem() * sizeof(GRIMBaseRenderer::DrawInfo)));
 		ImGui::TextDisabled(" %d batchs: %.2f KB", renderer.m_drawBatchs.NumElem(), memBytesToKB(renderer.m_drawBatchs.NumSlots() * sizeof(renderer.m_drawBatchs[0])));
 		ImGui::TextDisabled(" %d lod infos: %.2f KB", renderer.m_drawLodInfos.NumElem(), memBytesToKB(renderer.m_drawLodInfos.NumSlots() * sizeof(renderer.m_drawLodInfos[0])));
 		ImGui::TextDisabled(" %d lod lists: %.2f KB", renderer.m_drawLodsList.NumElem(), memBytesToKB(renderer.m_drawLodsList.NumSlots() * sizeof(renderer.m_drawLodsList[0])));

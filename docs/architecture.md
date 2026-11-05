@@ -24,6 +24,7 @@ Related documents:
 | [animating_egf_overview.md](animating_egf_overview.md) | EGF animation (`shared/animating`): sequences, activities, blending, pose controllers, events, IK |
 | [rendering_matsystem_shaders_overview.md](rendering_matsystem_shaders_overview.md) | Material shaders: `CBaseShader`, pipelines, bind groups, `.def` files, overrides, `BaseUnlit` with GRIM |
 | [rendering_grim_overview.md](rendering_grim_overview.md) | GRIM: GPU-driven instance rendering, its shaders, `samples/GPUDriven` |
+| [equi_overview.md](equi_overview.md) | EqUI (`shared/equi`): game UI controls, layout `.res` files, scaling, events, Lua bindings |
 | [sys_application_overview.md](sys_application_overview.md) | Application framework (`shared/sys`): start-up, game loop, app states, console, configs |
 | [input_overview.md](input_overview.md) | Input: key codes, command bindings, vector actions, touch zones, controllers |
 | [physics_overview.md](physics_overview.md) | Physics (`shared/physics`, eqPhysics): world, collision objects, rigid bodies, ray tests, constraints |
@@ -86,7 +87,7 @@ Public interfaces are declared in `public/` and implemented in `core/` or `share
 | `shared/animating/` | Skeletal animation, bone setup, activities and events |
 | `shared/audio/` | Audio system on OpenAL, sound emitters/scripts/mixer; `source/` holds WAV/OGG sources |
 | `shared/physics/` | EqPhysics engine on top of Bullet collision — see [physics_overview.md](physics_overview.md) |
-| `shared/equi/` | EqUI interface library: manager, controls, scheme |
+| `shared/equi/` | EqUI interface library: manager, controls, scheme — see [equi_overview.md](equi_overview.md) |
 | `shared/imgui_backend/` | ImGui host (`g_imGuiHost`), SDL platform backend and material-system renderer backend |
 | `shared/scripting/` | ESL — Lua binding library |
 | `shared/movie/` | WebM movie player: AV1 video (dav1d), Vorbis audio, YUV to RGBA conversion on GPU (`MovieYUV` shader) |
@@ -116,7 +117,6 @@ loaded at the top of `premake5.lua`:
 | `unitybuild` | `unitybuild`, `maxfilesinunity`, `excludefromunity` — MSVC unity build support |
 | `androidndk` | `androidndk` action for Android builds |
 | `vscode` | `vscode` action and `vscode_*` launch settings |
-| `wxwidgets` | wxWidgets integration for GUI tools |
 
 ### usage / uses
 

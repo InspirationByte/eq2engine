@@ -45,6 +45,9 @@ public:
 
 	void					Cleanup(bool dropVars = true, bool dropShader = true);
 
+	// unloads shader and its GPU resources but keeps vars and proxies; material is loaded again on next use
+	void					Flush();
+
 	bool					LoadShaderAndTextures();
 	void					WaitForLoading() const;
 

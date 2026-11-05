@@ -350,7 +350,7 @@ void IUIControl::InitChildItems(const KVSection& sec, bool keepElements)
 		if (!childClass.CompareCaseIns("file"))
 		{
 			KVSection section;
-			if (!KV_LoadFromFile(childName, SP_MOD, section))
+			if (!equi::Manager->LoadLayoutFile(childName, section))
 			{
 				MsgWarning("EqUI warning: file %s requested by element %s not found\n", childName.ToCString(), m_name.ToCString());
 				continue;
@@ -787,7 +787,7 @@ void IUIControl::Render(int depth, RenderContextAbstract& context)
 	// should we instead contain elements inside of parent scissor rectangle?
 	rendPassRecorder->SetScissorRectangle(scissorRect);
 
-	if( m_parent && m_selfVisible )
+	if( m_selfVisible )
 	{
 		// paint control itself
 		DrawSelf(clientRectRender, rendPassRecorder);
@@ -949,21 +949,23 @@ int IUIControl::CommandCb(IUIControl* control, const EvtHandler& event, void* us
 	else if (!UICMD_ARGV(0).CompareCaseIns("engine"))
 	{
 		// execute console commands
-		g_consoleCommands->SetCommandBuffer(UICMD_ARGV(1).ToCString());
+		g_consoleCommands->SetCommandBuffer(UICMD_ARGV(1));
 		g_consoleCommands->ExecuteCommandBuffer();
 		g_consoleCommands->ClearCommandBuffer();
 	}
 	else if (!UICMD_ARGV(0).CompareCaseIns("showpanel"))
 	{
 		// show panel
-		equi::Panel* panel = equi::Manager->FindPanel(UICMD_ARGV(1).ToCString());
-		panel->Show();
+		equi::Panel* panel = equi::Manager->FindPanel(UICMD_ARGV(1));
+		if(panel)
+			panel->Show();
 	}
 	else if (!UICMD_ARGV(0).CompareCaseIns("hidepanel"))
 	{
 		// hide panel
-		equi::Panel* panel = equi::Manager->FindPanel(UICMD_ARGV(1).ToCString());
-		panel->Hide();
+		equi::Panel* panel = equi::Manager->FindPanel(UICMD_ARGV(1));
+		if (panel)
+			panel->Hide();
 	}
 
 	// TODO: findChild/hideChild etc

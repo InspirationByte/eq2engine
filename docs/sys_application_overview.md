@@ -148,18 +148,35 @@ frame the loop sleeps `sys_sleep` ms (default 1).
 7. `EndScene`: `g_matSystem->EndFrame()`.
 8. Pending fullscreen toggle, `g_onEndFrame`.
 
+The ImGui renderer backend (`imgui_impl_matsystem.cpp`) draws through material system dynamic meshes,
+which hold up to 32767 vertices and indices. It sets `ImGuiBackendFlags_RendererHasVtxOffset`, so
+ImGui can put more than 65535 vertices into one draw list with 16-bit indices, and splits draw
+commands by triangles into chunks that are packed into dynamic meshes. User callbacks draw the
+pending chunks first.
+
+ImGui draws everything with translucent blending, so a texture's alpha is treated as coverage.
+Render targets whose alpha is not coverage (scene targets, previews) are drawn without blending:
+`ImGui_ImplMatSystem_AddImageOpaque`, or `ImGui_ImplMatSystem_BeginOpaque` /
+`ImGui_ImplMatSystem_EndOpaque` around draw list commands (`imgui_impl_matsystem.h`). These add draw
+list callbacks, so each block flushes the pending chunks; group many images into one block.
+Anti-aliased lines and text inside a block lose their smooth edges. Blending is reset to translucent
+at the start of each draw list and on `ImDrawCallback_ResetRenderState`.
+
 `GetFrameTime()` returns the current frame time; `GetWindowSize()`, `GetDefaultFont()`,
 `GetWindowHandle()`.
 
 ## Window and video modes
 
-- ConVars: `vid_mode` (`"1280x720"`), `vid_fullscreen`, `vid_screen`, `vid_bpp`,
+- ConVars: `vid_mode` (`"1280x720"`), `vid_fullscreen`, `vid_screen`, `vid_maximized`, `vid_bpp`,
   `r_antialiasing`.
+- `vid_maximized` creates the window maximized; `SetWindowedMode()` keeps the size of a maximized
+  window instead of applying `vid_mode`.
 - `SetFullscreenMode(screenSize)`, `SetWindowedMode()`, `ToggleFullscreen()` (also Right Alt +
   Enter), `ApplyVideoMode()`, `GetVideoModes(list)`, `IsWindowed()`; commands
   `sys_set_fullscreen`, `sys_set_windowed`, `sys_vmode_list`.
-- `SetWindowTitle(title)`; non-retail builds append the renderer, configuration, platform and build
-  number.
+- `SetWindowTitle(title)` can be called at any time, the title is applied when the window and the
+  renderer exist (`InitAppStates` runs before them); non-retail builds append the renderer,
+  configuration, platform and build number.
 - Text input for on-screen keyboards: `RequestTextInput()`, `ReleaseTextInput()`,
   `IsTextInputShown()`.
 - Cursor: controlled by the current state (`GetMouseCursorProperties`); it is always shown and
@@ -221,9 +238,11 @@ g_renderAPI->BeginRenderPass(
 	.End());
 ```
 
-- `DrawImGui(size)` resizes the color and depth targets (backbuffer formats, `ResizeRenderTarget`)
+- `DrawImGui(size)` resizes the color and depth targets (backbuffer formats and samplers, so the
+  depth target can be sampled like the default depth buffer; `ResizeRenderTarget`)
   to the drawn size and puts an invisible button with the image in the current ImGui window. The
-  viewport is *visible* only in a frame where `DrawImGui` was called.
+  image is drawn without blending (`ImGui_ImplMatSystem_AddImageOpaque`): the alpha written by the
+  state is ignored. The viewport is *visible* only in a frame where `DrawImGui` was called.
 - Viewports are disabled in `Retail` and `Profile` builds (`HOST_VIEWPORT_ENABLED` in
   `sys_viewport.h`): `DrawImGui` does nothing and the viewport is never visible.
 - When the viewport is not visible (ImGui window closed, `Retail` or `Profile` build),

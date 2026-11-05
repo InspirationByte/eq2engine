@@ -97,7 +97,10 @@ public:
 	bool						IsMaterialExist(const char* szMaterialName) const;
 								
 	const MatSysShaderFactory*		GetShaderFactory(const char* szShaderName, int instanceFormatId);
-	MatSysShaderPipelineCache&	GetRenderPipelineCache(int shaderNameHash);
+	MatSysShaderPipelineCache&	AcquireRenderPipelineCache(int shaderNameHash);
+	void						ReleaseRenderPipelineCache(int shaderNameHash);
+	void						ReleaseSharedBindGroups();
+	uint						GenerateRenderPassVersion();
 								
 	void						PreloadNewMaterials();
 	bool						WaitAllMaterialsLoaded(int timeout = -1);
@@ -203,6 +206,7 @@ private:
 	Array<ShaderProxyFactory>	m_proxyFactoryList{ PP_SL };
 
 	Map<int, MatSysShaderPipelineCache> m_renderPipelineCache{ PP_SL };
+	uint						m_renderPassVersion{ 0 };
 	Map<int, IMaterial*>		m_loadedMaterials{ PP_SL };			// loaded material list
 
 	Array<CDynamicMesh>			m_dynamicMeshes{ PP_SL };

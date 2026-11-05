@@ -128,6 +128,11 @@ protected:
 	void			DestroyPendingArchetypes();
 	void			DestroyArchetypeData(GRIMArchetype slot);
 
+	bool			IsValidDrawInfo(int cmdIdx) const;
+	void			AddArchetypeDrawInfos(Array<DrawInfo>& drawInfos);
+	int				AllocDrawInfoRange(int count);
+	void			FreeDrawInfoRange(int firstCmdIdx, int count);
+
 	struct PendingDesc
 	{
 		enum Type {
@@ -152,8 +157,19 @@ protected:
 	Array<PendingDesc>			m_pendingArchetypes{ PP_SL };
 	Array<GRIMArchetype>		m_pendingDeletion{ PP_SL };
 
+	struct DrawInfoRange
+	{
+		int		first{ 0 };
+		int		count{ 0 };
+	};
+
 	GRIMBaseInstanceAllocator&	m_instAllocator;
-	SlottedArray<DrawInfo>		m_drawInfos{ PP_SL };
+
+	// Draw info index is the indirect command index. Draw infos of an archetype occupy
+	// one contiguous range sorted by material and topology so they can be drawn with multi-draw.
+	Array<DrawInfo>				m_drawInfos{ PP_SL };
+	Array<DrawInfoRange>		m_drawInfoFreeRanges{ PP_SL };	// sorted by first index
+	int							m_numDrawInfos{ 0 };
 	Pool<GPUIndexedBatch>		m_drawBatchs{ GRIMResource::BUFFER, "GPUIndexedBatch", PP_SL };
 	Pool<GPULodInfo>			m_drawLodInfos{ GRIMResource::BUFFER, "GPULodInfo", PP_SL };
 	Pool<GPULodList>			m_drawLodsList{ GRIMResource::BUFFER, "GPULodList", PP_SL };

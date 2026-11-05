@@ -48,8 +48,9 @@ SourceControl p4						// key with a value and a nested section
 }
 ```
 
-- A key is followed by values separated by whitespace; the entry ends with `;` or with a `{ ... }`
-  section.
+- A key is followed by values separated by whitespace. A key without a section must end with `;`
+  (see the examples above): a newline does not terminate an entry, so without the `;` the following
+  tokens are read as more values of the same key. A `{ ... }` section also ends the value list.
 - Values may be unquoted (no spaces or special characters) or quoted; quoted strings support
   escapes such as `\n`, `\t`, `\"`.
 - `//` and `/* ... */` comments.

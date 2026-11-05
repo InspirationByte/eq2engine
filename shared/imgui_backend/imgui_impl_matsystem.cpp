@@ -10,9 +10,8 @@
 // DirectX data
 struct ImGui_ImplMatSystem_Data
 {
-	ITexturePtr	FontTexture;
-
-	ImGui_ImplMatSystem_Data() { memset(this, 0, sizeof(*this)); }
+	ITexturePtr			FontTexture;
+	EShaderBlendMode	BlendMode{ SHADER_BLEND_TRANSLUCENT };	// set by BeginOpaque / EndOpaque callbacks
 };
 
 // Backend data stored in io.BackendRendererUserData to allow support for multiple Dear ImGui contexts
@@ -20,6 +19,30 @@ struct ImGui_ImplMatSystem_Data
 static ImGui_ImplMatSystem_Data* ImGui_ImplMatSystem_GetBackendData()
 {
 	return ImGui::GetCurrentContext() ? (ImGui_ImplMatSystem_Data*)ImGui::GetIO().BackendRendererUserData : nullptr;
+}
+
+// callback data is non-null for BeginOpaque
+static void ImGui_ImplMatSystem_OpaqueCallback(const ImDrawList* parent_list, const ImDrawCmd* cmd)
+{
+	ImGui_ImplMatSystem_Data* bd = ImGui_ImplMatSystem_GetBackendData();
+	bd->BlendMode = cmd->UserCallbackData ? SHADER_BLEND_NONE : SHADER_BLEND_TRANSLUCENT;
+}
+
+void ImGui_ImplMatSystem_BeginOpaque(ImDrawList* drawList)
+{
+	drawList->AddCallback(ImGui_ImplMatSystem_OpaqueCallback, reinterpret_cast<void*>(1));
+}
+
+void ImGui_ImplMatSystem_EndOpaque(ImDrawList* drawList)
+{
+	drawList->AddCallback(ImGui_ImplMatSystem_OpaqueCallback, nullptr);
+}
+
+void ImGui_ImplMatSystem_AddImageOpaque(ImDrawList* drawList, ImTextureID texture, const ImVec2& pMin, const ImVec2& pMax, const ImVec2& uvMin, const ImVec2& uvMax, ImU32 col)
+{
+	ImGui_ImplMatSystem_BeginOpaque(drawList);
+	drawList->AddImage(texture, pMin, pMax, uvMin, uvMax, col);
+	ImGui_ImplMatSystem_EndOpaque(drawList);
 }
 
 static void ImGui_ImplMatSystem_SetupRenderState(ImDrawData* draw_data, IGPURenderPassRecorder* rendPassRecorder, const RenderDrawCmd& drawCmd)
@@ -34,24 +57,34 @@ static void ImGui_ImplMatSystem_SetupRenderState(ImDrawData* draw_data, IGPURend
 	rendPassRecorder->SetIndexBufferView(drawCmd.instanceInfo.indexBuffer, drawCmd.instanceInfo.indexFormat);
 }
 
-// Render function.
-void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRecorder* rendPassRecorder)
+// Dynamic mesh capacity is lower than a draw list can have (MAX_DYNAMIC_VERTICES and MAX_DYNAMIC_INDICES
+// in DynamicMesh.cpp), draw commands are split by triangles into chunks and chunks are packed into meshes
+static constexpr int s_maxBatchVertices = 32000;
+static constexpr int s_maxBatchIndices = 31998;		// whole triangles
+
+// part of a draw command that fits into one dynamic mesh
+struct ImGui_ImplMatSystem_DrawChunk
 {
-	// Avoid rendering when minimized
-	if (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f)
+	const ImDrawCmd*	cmd;
+	int					firstIndex;		// in the draw list index buffer
+	int					numIndices;
+	int					minVertex;		// referenced range of the draw list vertex buffer
+	int					maxVertex;
+};
+
+static void ImGui_ImplMatSystem_DrawChunks(ImDrawData* draw_data, IGPURenderPassRecorder* rendPassRecorder, const ImDrawList* cmd_list, ArrayCRef<ImGui_ImplMatSystem_DrawChunk> chunks, int numVertices, int numIndices, RenderDrawCmd& drawCmd)
+{
+	if (chunks.isEmpty())
 		return;
 
-	// Copy vertices to matsystem mesh
-	ImVec2 clip_off = draw_data->DisplayPos;
-	for (int n = 0; n < draw_data->CmdListsCount; n++)
+	IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh(max(numVertices, numIndices));
+	CMeshBuilder mb(dynMesh);
+	mb.Begin(PRIM_TRIANGLES);
+
+	// vertices of each chunk go one after another
+	for (const ImGui_ImplMatSystem_DrawChunk& chunk : chunks)
 	{
-		const ImDrawList* cmd_list = draw_data->CmdLists[n];
-
-		IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh(max(cmd_list->VtxBuffer.Size, cmd_list->IdxBuffer.Size));
-		CMeshBuilder mb(dynMesh);
-		mb.Begin(PRIM_TRIANGLES);
-
-		for (int i = 0; i < cmd_list->VtxBuffer.Size; i++)
+		for (int i = chunk.minVertex; i <= chunk.maxVertex; i++)
 		{
 			const ImDrawVert& vtx_src = cmd_list->VtxBuffer.Data[i];
 			MColor color(vtx_src.col);
@@ -61,54 +94,159 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRec
 			mb.Color4fv(color);
 			mb.AdvanceVertex();
 		}
+	}
 
+	// indices are rebased to the chunk vertices
+	int baseVertex = 0;
+	for (const ImGui_ImplMatSystem_DrawChunk& chunk : chunks)
+	{
 		ImDrawIdx* idx_dst;
 		void* vtx_dst;
-		if (dynMesh->AllocateGeom(0, cmd_list->IdxBuffer.Size, &vtx_dst, &idx_dst, false) != -1)
+		if (dynMesh->AllocateGeom(0, chunk.numIndices, &vtx_dst, &idx_dst, false) != -1)
 		{
-			memcpy(idx_dst, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
+			const ImDrawIdx* idx_src = cmd_list->IdxBuffer.Data + chunk.firstIndex;
+			const int indexOffset = chunk.cmd->VtxOffset - chunk.minVertex + baseVertex;
+			for (int i = 0; i < chunk.numIndices; i++)
+				idx_dst[i] = static_cast<ImDrawIdx>(idx_src[i] + indexOffset);
 		}
+		baseVertex += chunk.maxVertex - chunk.minVertex + 1;
+	}
 
-		RenderDrawCmd drawCmd;
-		mb.End(drawCmd);
+	if (!mb.End(drawCmd))
+		return;
 
-		// render command buffers now
+	const ImVec2 clip_off = draw_data->DisplayPos;
+	int firstIndex = 0;
+	for (const ImGui_ImplMatSystem_DrawChunk& chunk : chunks)
+	{
+		const ImDrawCmd* pcmd = chunk.cmd;
+		const int chunkFirstIndex = firstIndex;
+		firstIndex += chunk.numIndices;
+
+		// Project scissor/clipping rectangles into framebuffer space
+		ImVec2 clip_min(pcmd->ClipRect.x - clip_off.x, pcmd->ClipRect.y - clip_off.y);
+		ImVec2 clip_max(pcmd->ClipRect.z - clip_off.x, pcmd->ClipRect.w - clip_off.y);
+		if (clip_max.x <= clip_min.x || clip_max.y <= clip_min.y)
+			continue;
+
+		// Apply Scissor/clipping rectangle, Bind texture, Draw
+
+		MatSysDefaultRenderPass defaultRenderPass;
+		defaultRenderPass.blendMode = ImGui_ImplMatSystem_GetBackendData()->BlendMode;
+		defaultRenderPass.texture = ITexturePtr((ITexture*)pcmd->GetTexID());
+
+		g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), nullptr, drawCmd.batchInfo.primTopology, drawCmd.instanceInfo.instFormat, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+
+		rendPassRecorder->SetScissorRectangle(IAARectangle((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y));
+		rendPassRecorder->SetVertexBufferView(0, drawCmd.instanceInfo.vertexBuffers[0]);
+		rendPassRecorder->SetIndexBufferView(drawCmd.instanceInfo.indexBuffer, INDEXFMT_UINT16);
+		rendPassRecorder->DrawIndexed(chunk.numIndices, chunkFirstIndex, 1);
+	}
+}
+
+// Render function.
+void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRecorder* rendPassRecorder)
+{
+	// Avoid rendering when minimized
+	if (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f)
+		return;
+
+	ImGui_ImplMatSystem_Data* bd = ImGui_ImplMatSystem_GetBackendData();
+
+	Array<ImGui_ImplMatSystem_DrawChunk> chunks(PP_SL);
+	RenderDrawCmd drawCmd;
+
+	for (int n = 0; n < draw_data->CmdListsCount; n++)
+	{
+		const ImDrawList* cmd_list = draw_data->CmdLists[n];
+		bd->BlendMode = SHADER_BLEND_TRANSLUCENT;
+
+		// chunks waiting for a mesh
+		int batchVertices = 0;
+		int batchIndices = 0;
+		chunks.clear();
+
+		auto flushChunks = [&]() {
+			ImGui_ImplMatSystem_DrawChunks(draw_data, rendPassRecorder, cmd_list, chunks, batchVertices, batchIndices, drawCmd);
+			chunks.clear();
+			batchVertices = 0;
+			batchIndices = 0;
+		};
+
+		auto addChunk = [&](const ImGui_ImplMatSystem_DrawChunk& chunk) {
+			const int chunkVertices = chunk.maxVertex - chunk.minVertex + 1;
+			if (batchVertices + chunkVertices > s_maxBatchVertices || batchIndices + chunk.numIndices > s_maxBatchIndices)
+				flushChunks();
+
+			chunks.append(chunk);
+			batchVertices += chunkVertices;
+			batchIndices += chunk.numIndices;
+		};
+
 		for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
 		{
 			const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
 
 			if (pcmd->UserCallback != nullptr)
 			{
+				// commands before the callback are drawn first
+				flushChunks();
+
 				// User callback, registered via ImDrawList::AddCallback()
 				// (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
 				if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
-					ImGui_ImplMatSystem_SetupRenderState(draw_data, rendPassRecorder, drawCmd);
+				{
+					bd->BlendMode = SHADER_BLEND_TRANSLUCENT;
+					if (drawCmd.instanceInfo.vertexBuffers[0].buffer)
+						ImGui_ImplMatSystem_SetupRenderState(draw_data, rendPassRecorder, drawCmd);
+				}
 				else
 					pcmd->UserCallback(cmd_list, pcmd);
+
+				continue;
 			}
-			else
+
+			// split the command by triangles into chunks that fit into one mesh
+			ImGui_ImplMatSystem_DrawChunk chunk;
+			chunk.cmd = pcmd;
+			chunk.firstIndex = pcmd->IdxOffset;
+			chunk.numIndices = 0;
+			chunk.minVertex = INT_MAX;
+			chunk.maxVertex = -1;
+
+			const ImDrawIdx* indices = cmd_list->IdxBuffer.Data;
+			for (int i = pcmd->IdxOffset; i + 2 < (int)(pcmd->IdxOffset + pcmd->ElemCount); i += 3)
 			{
-				// Project scissor/clipping rectangles into framebuffer space
-				ImVec2 clip_min(pcmd->ClipRect.x - clip_off.x, pcmd->ClipRect.y - clip_off.y);
-				ImVec2 clip_max(pcmd->ClipRect.z - clip_off.x, pcmd->ClipRect.w - clip_off.y);
-				if (clip_max.x <= clip_min.x || clip_max.y <= clip_min.y)
-					continue;
+				const int triMin = min(min(indices[i], indices[i + 1]), indices[i + 2]) + pcmd->VtxOffset;
+				const int triMax = max(max(indices[i], indices[i + 1]), indices[i + 2]) + pcmd->VtxOffset;
 
-				// Apply Scissor/clipping rectangle, Bind texture, Draw
+				const int minVertex = min(chunk.minVertex, triMin);
+				const int maxVertex = max(chunk.maxVertex, triMax);
+				if (chunk.numIndices && (maxVertex - minVertex + 1 > s_maxBatchVertices || chunk.numIndices + 3 > s_maxBatchIndices))
+				{
+					addChunk(chunk);
 
-				MatSysDefaultRenderPass defaultRenderPass;
-				defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-				defaultRenderPass.texture = ITexturePtr((ITexture*)pcmd->GetTexID());
-
-				g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), nullptr, drawCmd.batchInfo.primTopology, drawCmd.instanceInfo.instFormat, RenderPassContext(rendPassRecorder, &defaultRenderPass));
-
-				rendPassRecorder->SetScissorRectangle(IAARectangle((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y));
-				rendPassRecorder->SetVertexBufferView(0, drawCmd.instanceInfo.vertexBuffers[0]);
-				rendPassRecorder->SetIndexBufferView(drawCmd.instanceInfo.indexBuffer, INDEXFMT_UINT16);
-				rendPassRecorder->DrawIndexed(pcmd->ElemCount, pcmd->IdxOffset, 1);
+					chunk.firstIndex = i;
+					chunk.numIndices = 0;
+					chunk.minVertex = triMin;
+					chunk.maxVertex = triMax;
+				}
+				else
+				{
+					chunk.minVertex = minVertex;
+					chunk.maxVertex = maxVertex;
+				}
+				chunk.numIndices += 3;
 			}
+
+			if (chunk.numIndices)
+				addChunk(chunk);
 		}
+
+		flushChunks();
 	}
+
+	bd->BlendMode = SHADER_BLEND_TRANSLUCENT;
 }
 
 bool ImGui_ImplMatSystem_Init()
@@ -120,7 +258,7 @@ bool ImGui_ImplMatSystem_Init()
 	ImGui_ImplMatSystem_Data* bd = IM_NEW(ImGui_ImplMatSystem_Data)();
 	io.BackendRendererUserData = (void*)bd;
 	io.BackendRendererName = "eqMatSystem";
-	//io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;  // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
+	io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;  // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
 
 	return true;
 }

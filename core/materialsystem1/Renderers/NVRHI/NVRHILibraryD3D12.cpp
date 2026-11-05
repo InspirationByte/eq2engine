@@ -231,6 +231,7 @@ bool CNVRHIRenderLibD3D12::InitAPI(const ShaderAPIParams& params)
 		caps.maxComputeWorkgroupsPerDimension = 65535;
 		caps.multiDrawIndirectSupport = false;
 		caps.multiDrawIndexedIndirectSupport = true;
+		caps.multiDrawIndirectCountSupport = true;
 
 		caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED
 									| SHADER_CAPS_PIXEL_SUPPORTED

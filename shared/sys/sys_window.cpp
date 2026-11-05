@@ -21,6 +21,7 @@ DECLARE_CVAR(sys_sleep, "1", "Sleep time for every frame", CV_ARCHIVE);
 DECLARE_CVAR(vid_screen, "0", "Fullscreen mode screen ID", CV_ARCHIVE);
 DECLARE_CVAR(vid_mode, "1024x768", "Screen Resoulution. Resolution string format: WIDTHxHEIGHT", CV_ARCHIVE);
 DECLARE_CVAR(vid_fullscreen, "0", "Enable fullscreen mode on startup", CV_ARCHIVE);
+DECLARE_CVAR(vid_maximized, "0", "Maximize window at startup", CV_ARCHIVE);
 
 #define DEFAULT_WINDOW_TITLE "Initializing..."
 
@@ -57,6 +58,9 @@ EQWNDHANDLE sysHostCreateWindow()
 #endif
 	if (fullscreen)
 		sdlFlags |= SDL_WINDOW_FULLSCREEN;
+
+	if(vid_maximized.GetBool())
+		sdlFlags |= SDL_WINDOW_MAXIMIZED;
 
 #ifdef PLAT_ANDROID
 	adjustedPosX = adjustedPosY = SDL_WINDOWPOS_UNDEFINED;

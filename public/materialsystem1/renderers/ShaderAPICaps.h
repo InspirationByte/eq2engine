@@ -43,8 +43,9 @@ struct ShaderAPICapabilities
 	bool	textureFormatsSupported[FORMAT_COUNT]{ false };
 	bool	renderTargetFormatsSupported[FORMAT_COUNT]{ false };
 
-	bool	multiDrawIndirectSupport{ false };
-	bool	multiDrawIndexedIndirectSupport{ false };
+	bool	multiDrawIndirectSupport{ false };			// MultiDrawIndirect without draw count buffer
+	bool	multiDrawIndexedIndirectSupport{ false };	// MultiDrawIndexedIndirect without draw count buffer
+	bool	multiDrawIndirectCountSupport{ false };		// Multi draws with draw count buffer
 	
 	int		minUniformBufferOffsetAlignment{ 1 };
 	int		minStorageBufferOffsetAlignment{ 1 };

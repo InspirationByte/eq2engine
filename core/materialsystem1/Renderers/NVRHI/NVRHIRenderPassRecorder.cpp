@@ -54,7 +54,7 @@ void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffe
 		m_rhiCommandList->setBufferState(indirectBuffer, nvrhi::ResourceStates::IndirectArgument);
 
 	if(indirectCountBuffer)
-		m_rhiCommandList->setBufferState(indirectBuffer, nvrhi::ResourceStates::IndirectArgument);
+		m_rhiCommandList->setBufferState(indirectCountBuffer, nvrhi::ResourceStates::IndirectArgument);
 
 	// FIXME: should be same count as render targets?
 	auto rhiViewportState = nvrhi::ViewportState()
@@ -279,13 +279,16 @@ void CNVRHIRenderPassRecorder::MultiDrawIndexedIndirect(IGPUBuffer* indirectBuff
 	ASSERT(indirectBufferImpl);
 	ASSERT_MSG(indirectBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDIRECT, "buffer doesn't have Indirect buffer usage bit");
 
+	// draw count buffer is optional, without it maxDrawCount commands are drawn
 	CNVRHIBuffer* drawCountBufferImpl = static_cast<CNVRHIBuffer*>(drawCountBuffer);
-	ASSERT(drawCountBufferImpl);
-	ASSERT_MSG(drawCountBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDIRECT, "buffer doesn't have Indirect buffer usage bit");
+	ASSERT_MSG(!drawCountBufferImpl || (drawCountBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDIRECT), "buffer doesn't have Indirect buffer usage bit");
+
+	if (maxDrawCount <= 0)
+		return;
 
 	if (!IsViewportAndScissorValid())
 	{
-		DbgAddMarker("DrawIndexedIndirect skip");
+		DbgAddMarker("MultiDrawIndexedIndirect skip");
 		return;
 	}
 
@@ -294,9 +297,12 @@ void CNVRHIRenderPassRecorder::MultiDrawIndexedIndirect(IGPUBuffer* indirectBuff
 	m_lastIndirectBuffer = indirectBufferImpl;
 	m_lastDrawCountBuffer = drawCountBufferImpl;
 
-	CommitGraphicsState(indirectBufferImpl->GetNVRHIBufferHandle(), drawCountBufferImpl->GetNVRHIBufferHandle());
+	CommitGraphicsState(indirectBufferImpl->GetNVRHIBufferHandle(), drawCountBufferImpl ? drawCountBufferImpl->GetNVRHIBufferHandle() : nullptr);
 
-	m_rhiCommandList->drawIndexedIndirectCount(indirectOffset, drawCountBufferOffset, maxDrawCount);
+	if (drawCountBufferImpl)
+		m_rhiCommandList->drawIndexedIndirectCount(indirectOffset, drawCountBufferOffset, maxDrawCount);
+	else
+		m_rhiCommandList->drawIndexedIndirect(indirectOffset, maxDrawCount);
 
 	ShaderAPIStats& stats = CNVRHIRenderAPI::Instance.GetStatsMutable();
 	Atomic::Increment(stats.indirectDrawCount);

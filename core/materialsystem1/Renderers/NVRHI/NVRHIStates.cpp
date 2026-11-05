@@ -368,11 +368,10 @@ void nvrhiCreateBindingLayouts(const ShaderInfo& shaderInfo, const CNVRHIBinding
 			}
 		}
 
-		nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
 		for (nvrhi::BindingLayoutDesc& rhiDesc : rhiBindingLayoutDescList)
 		{
 			rhiDesc.setVisibility(rhiShaderType);
-			rhiBindingLayouts.append(rhiDevice->createBindingLayout(rhiDesc));
+			rhiBindingLayouts.append(CNVRHIRenderAPI::Instance.GetRHIBindingLayout(rhiDesc));
 		}
 	}
 }
@@ -392,12 +391,27 @@ void nvrhiFillBindingSets(const ShaderInfo& shaderInfo, ArrayCRef<int> shaderMod
 			if (!bindingSetIt)
 			{
 				const BindGroupDesc& bindGroupDesc = bindGroup->m_bindGroupDesc;
+				nvrhi::IBindingLayout* rhiBindingLayout = rhiBindingLayouts[bindGroupDesc.groupIdx];
 
 				// we need to create binding set for this shader using provided layout
 				auto rhiBindingSetDesc = nvrhi::BindingSetDesc();
 				bindGroup->m_bindingLayout->FillBindingSetDescByLayoutMap(bindGroupDesc, shaderInfo, shaderModuleIdxs, rhiBindingSetDesc);
-				
-				nvrhi::BindingSetHandle rhiBindSet = nvrhiDevice->createBindingSet(rhiBindingSetDesc, rhiBindingLayouts[bindGroupDesc.groupIdx]);
+
+				// pipelines with the same layout and bindings (e.g. instanced and non-instanced permutations) share the binding set
+				nvrhi::BindingSetHandle rhiBindSet;
+				for (auto it = bindGroup->m_rhiBindingSets.begin(); !it.atEnd(); ++it)
+				{
+					nvrhi::IBindingSet* rhiExistingSet = *it;
+					if (rhiExistingSet->getLayout() == rhiBindingLayout && *rhiExistingSet->getDesc() == rhiBindingSetDesc)
+					{
+						rhiBindSet = rhiExistingSet;
+						break;
+					}
+				}
+
+				if (!rhiBindSet)
+					rhiBindSet = nvrhiDevice->createBindingSet(rhiBindingSetDesc, rhiBindingLayout);
+
 				if (!rhiBindSet)
 				{
 					ASSERT_FAIL("Failed to create binding set for shared bind group %s\n", bindGroupDesc.name.ToCString());

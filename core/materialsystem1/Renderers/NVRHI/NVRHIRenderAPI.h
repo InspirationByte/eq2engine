@@ -101,6 +101,7 @@ public:
 
 	nvrhi::DeviceHandle			GetNVRHIDevice() const { return m_rhiDevice; }
 	nvrhi::SamplerHandle		GetRHISampler(const SamplerStateParams& samplerStateParams);
+	nvrhi::BindingLayoutHandle	GetRHIBindingLayout(const nvrhi::BindingLayoutDesc& rhiLayoutDesc);
 
 	int							AcquireRHITransientTextureHeap();
 	void						ReleaseRHITransientTextureHeap(int heapIdx);
@@ -131,6 +132,10 @@ protected:
 	mutable Array<int>						m_rhiFreeCommandLists{ PP_SL };
 
 	Map<int, nvrhi::SamplerHandle>	m_rhiSamplers{ PP_SL };
+
+	// pipelines with equal binding layouts share layout objects, so they can share binding sets too
+	Map<uint, nvrhi::BindingLayoutHandle>	m_rhiBindingLayouts{ PP_SL };
+	CEqMutex						m_rhiBindingLayoutsMutex;
 
 	Map<int, ShaderInfo>		m_shaderCache{ PP_SL };
 	nvrhi::DeviceHandle			m_rhiDevice{ nullptr };
