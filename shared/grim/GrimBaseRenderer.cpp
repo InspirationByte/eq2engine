@@ -1117,7 +1117,10 @@ void GRIMBaseRenderer::UpdateIndirectInstances_Compute(IntermediateState& interm
 	computeRecorder->Complete();
 
 	// copy draw invocations to readback buffer
-	intermediate.cmdRecorder->CopyBufferToBuffer(rendState.drawInvocationsBuffer, 0, rendState.drawInvocationsReadbackBuffer, 0, rendState.drawInvocationsBuffer->GetSize());
+	// buffer does not shrink when draw infos are freed, copy only used commands
+	const int drawInvocationsSize = m_drawInfos.numElem() * static_cast<int>(sizeof(GPUDrawIndexedIndirectCmd));
+	if (drawInvocationsSize > 0)
+		intermediate.cmdRecorder->CopyBufferToBuffer(rendState.drawInvocationsBuffer, 0, rendState.drawInvocationsReadbackBuffer, 0, drawInvocationsSize);
 }
 
 void GRIMBaseRenderer::UpdateIndirectInstances_Software(IntermediateState& intermediate)
@@ -1279,7 +1282,8 @@ bool GRIMBaseRenderer::IsSoftwareMode() const
 void GRIMBaseRenderer::PostPrepareDraw(GRIMRenderState& renderState)
 {
 	IGPUBufferPtr& drawInvocationsReadbackBuffer = renderState.drawInvocationsReadbackBuffer;
-	if (IsSoftwareMode() || renderState.drawFrame != m_drawFrame || !drawInvocationsReadbackBuffer)
+	const int drawInvocationsSize = min(m_drawInfos.numElem() * static_cast<int>(sizeof(GPUDrawIndexedIndirectCmd)), drawInvocationsReadbackBuffer ? static_cast<int>(drawInvocationsReadbackBuffer->GetSize()) : 0);
+	if (IsSoftwareMode() || renderState.drawFrame != m_drawFrame || drawInvocationsSize <= 0)
 	{
 		renderState.drawInvocationsReadbackFuture = nullptr;
 		return;
@@ -1288,7 +1292,7 @@ void GRIMBaseRenderer::PostPrepareDraw(GRIMRenderState& renderState)
 	BitArray& activeDrawInvocations = renderState.activeDrawInvocations;
 
 	// read draw invocations
-	renderState.drawInvocationsReadbackFuture = drawInvocationsReadbackBuffer->Lock(0, drawInvocationsReadbackBuffer->GetSize(), 0);
+	renderState.drawInvocationsReadbackFuture = drawInvocationsReadbackBuffer->Lock(0, drawInvocationsSize, 0);
 	renderState.drawInvocationsReadbackFuture.AddCallback([this, &activeDrawInvocations, drawInvocationsReadbackBuffer](const FutureResult<BufferMapData>& result) {
 		if (result.IsError())
 		{
@@ -1297,7 +1301,7 @@ void GRIMBaseRenderer::PostPrepareDraw(GRIMRenderState& renderState)
 		}
 
 		ASSERT(result->data);
-		const int numIndirectCmds = result->size / sizeof(GPUDrawIndexedIndirectCmd);
+		const int numIndirectCmds = min(static_cast<int>(result->size / sizeof(GPUDrawIndexedIndirectCmd)), activeDrawInvocations.numBits());
 
 		GPUDrawIndexedIndirectCmd* drawIndexedCmd = reinterpret_cast<GPUDrawIndexedIndirectCmd*>(result->data);
 		int drawnInstances = 0;
