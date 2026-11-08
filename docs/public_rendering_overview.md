@@ -70,6 +70,11 @@ Main responsibilities:
   `SetupOrtho`, `GetViewProjection`, `GetCameraParams`; `SetFogInfo`.
 - **Helpers:** `GetDynamicMesh()`, `GetTransientUniformBuffer`, `GetWhiteTexture`,
   `GetErrorCheckerboardTexture`, `GetShaderAPI()` (RHI access).
+- **Transient uniform data:** `GetTransientUniformBuffer(data, size)` is thread safe and returns a
+  view into a ring of eight 512 KB buffers. The data is written by a command buffer that is queued
+  before the next submitted command buffers, so the view is valid in any command buffer submitted
+  later; the ring moves to the next buffer only when the current one is full, so a view stays
+  valid until about 4 MB more transient data is written.
 - **Device loss:** `AddDestroyLostCallbacks` / `RemoveLostRestoreCallbacks`.
 
 ## Materials — `IMaterial.h`, `IMaterialVar.h`

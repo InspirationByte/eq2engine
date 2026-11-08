@@ -1556,6 +1556,20 @@ GPUBufferView CMaterialSystem::GetTransientUniformBuffer(const void* data, int64
 
 	TransientBufferCollection& collection = m_transientUniformBuffers;
 
+	// Buffers are switched only when the current one is full. Views handed out earlier stay valid
+	// until the ring wraps around, even when their draw is recorded into a command buffer that is
+	// submitted after many internal buffer commits.
+	if (data && size > 0)
+	{
+		ASSERT(size <= maxTransientBufferSize);
+		const int64 alignedOffset = AlignBufferSize(collection.bufferOffsets[collection.bufferIdx], bufferAlignment);
+		if (alignedOffset + size > maxTransientBufferSize)
+		{
+			collection.bufferIdx = (collection.bufferIdx + 1) % elementsOf(collection.buffers);
+			collection.bufferOffsets[collection.bufferIdx] = 0;
+		}
+	}
+
 	const int bufferIndex = collection.bufferIdx;
 	IGPUBufferPtr& buffer = collection.buffers[bufferIndex];
 	if (!buffer)
@@ -1599,16 +1613,12 @@ void CMaterialSystem::QueueCommitInternalBuffers()
 		buffers.append(submitBuf);
 	}
 
+	// transient buffers are written from job threads
+	CScopedMutex m(s_matSystemBufferMutex);
 	if (m_bufferCmdRecorder)
 	{
 		buffers.append(m_bufferCmdRecorder->End());
 		m_bufferCmdRecorder = nullptr;
-
-		{
-			TransientBufferCollection& collection = m_transientUniformBuffers;
-			collection.bufferOffsets[collection.bufferIdx] = 0;
-			collection.bufferIdx = (collection.bufferIdx + 1) % elementsOf(collection.buffers);
-		}
 		m_cameraChangeId += 8192;
 	}
 }
