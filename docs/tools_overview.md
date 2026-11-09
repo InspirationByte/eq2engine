@@ -16,7 +16,7 @@ commands and ConVars can be passed with `+name value` on the command line.
 | `egfMan2` | GUI (sysLib + ImGui, Windows) | `.egf`, `.mop`, `.pod` | — (viewer) |
 | `fcompress` | console | `PackageCooker.CONFIG` | `.epk` packages |
 | `shadercooker` | console | `ShaderCooker.CONFIG` + Slang shader sources | Shader packages for RHI backends (`.shd`, DPK format) |
-| `texcooker` | console | `TextureCooker.CONFIG` + materials + source images + `.atl` atlas descriptions | Batch-converted textures (`.dds`) via external converters, texture atlases (`.atlas` + material) |
+| `texcooker` | console | `TextureCooker.CONFIG` + materials + source images + `.atl` atlas descriptions + `.font` font descriptions | Batch-converted textures (`.dds`) via external converters, texture atlases (`.atlas` + material), `eqfont2` fonts |
 | `localization_tool` | GUI (C#, WinForms) | `resources/text_<language>/*.txt` | Edited localization files |
 | `fontconv/msdf_to_eqfont.py` | Python 3 script | msdf-atlas-gen JSON layout + PNG atlas | `eqfont2` `.fnt` files, uncompressed RGBA8 `.dds` atlas |
 
@@ -149,6 +149,51 @@ Atlas description files (`.atl`) in the source materials folder are packed befor
 The tool writes the packed source image, a material (`.mat`) and an `.atlas` file with the image
 rectangles (`atlasgroup`); the packed image is then converted like any other texture. Materials
 with an `.atlas` file expose the rectangles through `IMaterial::GetAtlas()`.
+
+### Font atlases
+
+Font description files (`.font`) in the source materials folder are processed in the same pass
+as `.atl` files (`FontAtlasGenerator.cpp`). Glyph outlines and kerning (GPOS or `kern` table) are
+read with `stb_truetype`, distance fields are generated with msdfgen (`src_dependency/msdfgen`,
+core only) and glyphs are packed with `stb_rect_pack` into the smallest power of two atlas.
+
+```
+texture		"ui/roboto_msdf";		// atlas TGA in the source materials folder, no extension
+type		mtsdf;					// mtsdf (default), msdf, sdf, psdf
+size		48;						// atlas pixels per em
+pxrange		8;						// distance range in atlas pixels
+padding		2;						// extra pixels around each glyph box
+charset		"charset.txt"			// charset files relative to the .font file (optional)
+{
+	chars	"№€";					// inline entries (optional), same keys as in charset files
+}
+font		"roboto_msdf"	"ttf/Roboto-Regular.ttf";	// <name in resources/fonts> <TTF / OTF>
+font		"roboto_msdf_b"	"ttf/Roboto-Bold.ttf";		// all fonts share one atlas
+```
+
+- The charset is key-values: each value of the `charset` key is a charset file (key-values, UTF-8,
+  BOM allowed) relative to the `.font` file, and keys of the `charset` section are added inline.
+  Charset files and the section use the same keys; order and duplicates do not matter:
+
+  ```
+  chars	" !\"#$%&'()*+,-./0123456789:;<=>?@";	// every character of the strings
+  range	"A" "Z";								// first and last: a single character or a number
+  range	0x400 0x45F;
+  code	0x2116 8364;							// code points, decimal or 0x hex
+  ```
+
+  A one-character `range` bound is the character itself, so `"0" "9"` are digits. Inside a string
+  `\"` is a quote and `\n`, `\r`, `\t` are control characters; a backslash cannot end a string
+  (add it with `code 0x5C`).
+- The tool writes the RGBA8 atlas TGA to `<source materials>/<texture>.tga` and one `eqfont2`
+  file per `font` entry to `<game>/resources/fonts/<name>.fnt` (format:
+  [public_rendering_overview.md](public_rendering_overview.md#eqfont2-msdf-fonts)).
+- Each atlas texture is added to `<source materials>/_fonts.mat` with `usage:fonts` (existing
+  entries are kept; the file is written only when an entry is added or changed), so the batch
+  conversion pass converts the atlas to DDS. The `fonts` usage must keep the texture uncompressed
+  and without mipmaps (`-f BGRA -m 1` for texconv): block compression breaks the distance channels.
+- Glyph quads include `pxrange / 2 + padding` pixels around the outline, which leaves room for
+  `textWeight` and the shadow offset.
 
 ## MSDF font converter (`tools/fontconv`)
 

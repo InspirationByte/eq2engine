@@ -143,6 +143,7 @@ private:
 	TargetProperties	m_targetProps;
 
 	Array<TexInfo>		m_textureList{ PP_SL };
+	Array<EqString>		m_fontTextureList{ PP_SL };
 };
 
 //-----------------------------------------------------------------------
@@ -380,6 +381,11 @@ void CTextureCooker::SearchFolderForAtlasesAndConvert(const char* wildcard)
 		{
 			const EqString fullAtlPath = fnmPathCombine(searchFolder, fileName);
 			ProcessAtlasFile(fullAtlPath, m_targetProps.sourceMaterialPath);
+		}
+		else if (fnmPathExtractExt(fileName) == s_fontDescFileExt)
+		{
+			const EqString fullFontPath = fnmPathCombine(searchFolder, fileName);
+			ProcessFontFile(fullFontPath, m_targetProps.sourceMaterialPath, m_fontTextureList);
 		}
 	}
 }
@@ -652,8 +658,12 @@ void CTextureCooker::Execute(CEqJobManager& jobMng)
 
 	const EqString searchTemplate = fnmPathCombine(m_targetProps.sourceMaterialPath, "*");
 
-	// convert atlas sources first
+	// convert atlas and font sources first
 	SearchFolderForAtlasesAndConvert(searchTemplate);
+
+	// font atlas textures are converted through the fonts material
+	if (m_fontTextureList.numElem())
+		UpdateFontsMaterial(m_targetProps.sourceMaterialPath, m_fontTextureList);
 
 	// walk up material files
 	SearchFolderForMaterialsAndGetTextures(searchTemplate);

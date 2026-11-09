@@ -58,7 +58,8 @@ project "texcooker"
 	properties { "tools", "app", "unitybuild" }
     uses {
 		"corelib", "frameworkLib",
-		"e2Core"
+		"e2Core",
+		"stb", "msdfgen"
 	}
     files {
 		"texcooker/*.cpp",
