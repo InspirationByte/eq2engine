@@ -290,6 +290,51 @@ const float width = font->GetStringWidth(L"Some text", params);
   `TEXT_STYLE_USE_TAGS`, `TEXT_STYLE_SCISSOR`, `TEXT_STYLE_UPPERCASE`, `TEXT_STYLE_LOWERCASE`.
 - Tags (with `TEXT_STYLE_USE_TAGS`): `&#RRGGBB;text&;` — colored text; `&;` closes the tag. Only
   color is supported.
+- Kerning pairs of `eqfont2` fonts are applied by `GetStringWidth` and text drawing.
 - Custom layouts: implement `ITextLayoutBuilder` (`OnNewLine`, `LayoutChar`) and set it in
   `params.layoutBuilder`; `CRectangleTextLayoutBuilder` (`shared/font/FontLayoutBuilders.h`) wraps
   text inside a rectangle.
+
+### Font file formats
+
+`CFont::LoadFont` detects the format by the root section of the `.fnt` file:
+
+| Root section | Source | Rendering |
+|---|---|---|
+| `Font` | fixed grid bitmap font | legacy SDF |
+| `eqfont` | customized BMFont (`isSDF 1` for its outer-distance SDF) | bitmap or legacy SDF |
+| `eqfont2` | msdf-atlas-gen + `tools/fontconv/msdf_to_eqfont.py` ([tools_overview.md](tools_overview.md)) | MSDF / MTSDF / SDF |
+
+All of them are drawn with the `SDFFont` shader (`_sdfRegular` material of the font cache);
+`FontParams.w` selects the legacy or the `eqfont2` path.
+
+### eqfont2 (MSDF) fonts
+
+```
+eqfont2
+{
+	type "mtsdf";                   // msdf, mtsdf, sdf or psdf
+	texture "ui/fonts/roboto";      // atlas texture, materials path
+	size 48;                        // atlas pixels per em
+	distanceRange 8;                // distance range in atlas pixels
+	lineheight 1.171875;            // metrics are in ems
+	ascender 0.927734;
+	descender 0.244141;
+	// unicode advance [plane left top right bottom] [atlas left top right bottom]
+	glyph 32 0.249023;
+	glyph 33 0.271973 -0.027018 -0.802083 0.306315 0.09375 1899.5 530.5 1915.5 573.5;
+	kern 65 86 -0.05;               // first second advance (ems)
+}
+```
+
+- Plane bounds use a Y-down axis with the origin at the baseline; atlas bounds are in atlas
+  pixels from the top-left corner. Glyphs without bounds (spaces) only advance.
+- `FontStyleParam::scale` is the em size in screen pixels; line height, baseline offset, advances
+  and kerning are scaled by it.
+- The edge is antialiased over one screen pixel at any scale (the shader derives the screen-space
+  distance range from `distanceRange` and texture coordinate derivatives), so one atlas covers all
+  text sizes.
+- `textWeight` moves the edge outwards (bolder) in normalized distance, `0.5` is the whole outer
+  half of the range. `shadowWeight` expands and softens the shadow by the same amount;
+  `shadowOffset` is in screen pixels. MTSDF fonts draw the shadow from the true SDF in alpha.
+- `r_font_sdfStart` / `r_font_sdfRange` affect only legacy `eqfont` SDF fonts.

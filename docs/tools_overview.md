@@ -18,6 +18,7 @@ commands and ConVars can be passed with `+name value` on the command line.
 | `shadercooker` | console | `ShaderCooker.CONFIG` + Slang shader sources | Shader packages for RHI backends (`.shd`, DPK format) |
 | `texcooker` | console | `TextureCooker.CONFIG` + materials + source images + `.atl` atlas descriptions | Batch-converted textures (`.dds`) via external converters, texture atlases (`.atlas` + material) |
 | `localization_tool` | GUI (C#, WinForms) | `resources/text_<language>/*.txt` | Edited localization files |
+| `fontconv/msdf_to_eqfont.py` | Python 3 script | msdf-atlas-gen JSON layout + PNG atlas | `eqfont2` `.fnt` files, uncompressed RGBA8 `.dds` atlas |
 
 ## egfCA — EGF compiler (`tools/egfca`)
 
@@ -148,6 +149,33 @@ Atlas description files (`.atl`) in the source materials folder are packed befor
 The tool writes the packed source image, a material (`.mat`) and an `.atlas` file with the image
 rectangles (`atlasgroup`); the packed image is then converted like any other texture. Materials
 with an `.atlas` file expose the rectangles through `IMaterial::GetAtlas()`.
+
+## MSDF font converter (`tools/fontconv`)
+
+`msdf_to_eqfont.py` converts the output of
+[msdf-atlas-gen](https://github.com/Chlumsky/msdf-atlas-gen) (v1.4) into `eqfont2` font files
+(format: [public_rendering_overview.md](public_rendering_overview.md#eqfont2-msdf-fonts)).
+
+```
+msdf-atlas-gen -font Roboto-Regular.ttf -charset charset.txt -fontname Roboto-Regular
+               -and -font Roboto-Bold.ttf -charset charset.txt -fontname Roboto-Bold
+               -type mtsdf -size 48 -pxrange 8 -outerpxpadding 2 -yorigin top -potr
+               -format png -imageout roboto.png -json roboto.json
+python msdf_to_eqfont.py roboto.json roboto.png -texture ui/fonts/roboto
+                         -fntout <game>/resources/fonts -ddsout <game>/materials/ui/fonts/roboto.dds
+```
+
+- `-type mtsdf` is preferred: RGB holds the MSDF for sharp edges, alpha holds a true SDF used for
+  shadows. `msdf`, `sdf` and `psdf` atlases are accepted as well.
+- Several fonts joined with `-and` share one atlas; the script writes one `.fnt` per font, named
+  by its `-fontname`. With a single font the name comes from `-name`, `-fontname` or the JSON file
+  name.
+- `-pxrange` limits how far `textWeight` / `shadowWeight` can move the edge (half the range on
+  each side); `-outerpxpadding` keeps shadow samples (offset by `shadowOffset`) from reaching
+  neighbor glyphs.
+- The atlas is written as uncompressed RGBA8 DDS: block compression breaks the distance channels.
+- msdf-atlas-gen reads kerning only from the legacy `kern` table, so fonts with GPOS-only kerning
+  (for example Roboto) get no kerning pairs.
 
 ## Localization tool (`tools/localization_tool`)
 
