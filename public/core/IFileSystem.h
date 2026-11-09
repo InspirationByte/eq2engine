@@ -32,7 +32,7 @@ class IFileSystem : public IEqCoreModule
 {
 	friend class CFileSystemFind;
 public:
-	CORE_INTERFACE("E2_Filesystem_011")
+	CORE_INTERFACE("E2_Filesystem_012")
 
     // Initialization of filesystem
     virtual bool			Init(bool bEditorMode) = 0;
@@ -99,6 +99,26 @@ public:
 
 	// opens package for further reading. Does not add package as FS layer.
 	virtual IPackFileReaderPtr OpenPackage(const char* packageName, int searchFlags = -1) = 0;
+
+	//------------------------------------------------------------
+	// Source control
+	//------------------------------------------------------------
+
+	// files written, removed or renamed by the calling thread go to the pending changelist
+	// with this description until the scope is popped. Use SourceControlScope.
+	virtual void			PushSourceControlChangelist(const char* description) = 0;
+	virtual void			PopSourceControlChangelist() = 0;
+
+	// true when written files are checked out and added, connects to the server on the first call
+	virtual bool			IsSourceControlEnabled() const = 0;
+
+	// checks out a depot file, or all depot files of a directory recursively, into the current
+	// changelist. Writing many files of a checked out directory does not query the server per file.
+	// Also used by writers which do not open files with Open.
+	virtual void			CheckoutSourceControlFiles(const char* fileOrDirName, ESearchPath search) = 0;
+
+	// adds a file created without Open, or checks it out when it is in the depot
+	virtual void			AddSourceControlFile(const char* fileName, ESearchPath search) = 0;
 
 protected:
 	//------------------------------------------------------------
@@ -180,3 +200,35 @@ inline bool CFileSystemFind::Next()
 
 	return (m_fd && m_curPath);
 }
+
+//-----------------------------------------------------------------------------------------
+// Source control changelist scope
+//-----------------------------------------------------------------------------------------
+
+// Files written by the calling thread while the scope exists go to the pending changelist
+// with the given description, it is created on the first file and reused when it exists.
+// New files are added by one command when the scope ends.
+// Does nothing when source control is not enabled.
+//
+//	SourceControlScope scScope("+export %s", levelName.ToCString());
+class SourceControlScope
+{
+public:
+	SourceControlScope(const char* descFormat, ...)
+	{
+		va_list argList;
+		va_start(argList, descFormat);
+		const EqString description(EqString::FormatV(descFormat, argList));
+		va_end(argList);
+
+		g_fileSystem->PushSourceControlChangelist(description);
+	}
+
+	~SourceControlScope()
+	{
+		g_fileSystem->PopSourceControlChangelist();
+	}
+
+	SourceControlScope(const SourceControlScope&) = delete;
+	SourceControlScope& operator=(const SourceControlScope&) = delete;
+};
