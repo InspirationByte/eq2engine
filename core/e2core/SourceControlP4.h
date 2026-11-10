@@ -62,8 +62,8 @@ public:
 	bool			IsAvailable() override;
 
 	void			CheckoutDir(EqStringRef fullPath) override;
-	void			PrepareFileWrite(EqStringRef fullPath) override;
-	void			FinishFileWrite(EqStringRef fullPath) override;
+	void			PrepareFileWrite(EqStringRef fullPath, ESourceControlFileType fileType) override;
+	void			FinishFileWrite(EqStringRef fullPath, ESourceControlFileType fileType) override;
 	bool			RemoveFile(EqStringRef fullPath) override;
 	bool			RenameFile(EqStringRef oldFullPath, EqStringRef newFullPath) override;
 
@@ -71,7 +71,7 @@ public:
 	void			PrintStatus() const override;
 
 protected:
-	void			AddFiles(ArrayCRef<EqString> fullPaths) override;
+	void			AddFiles(ArrayCRef<EqString> fullPaths, ESourceControlFileType fileType) override;
 	void			RevertUnchangedFiles(ArrayCRef<EqString> fullPaths) override;
 
 private:
@@ -90,10 +90,10 @@ private:
 	P4FileInfo		QueryFileInfo(EqStringRef fullPath);
 	P4FileInfo		GetFileInfo(EqStringRef fullPath);
 
-	bool			OpenForEdit(EqStringRef fullPath, const P4FileInfo& info);
-	bool			AddFile(EqStringRef fullPath);
-	void			AddNewFile(EqStringRef fullPath);
-	bool			ReopenToCurrentChangelist(EqStringRef fullPath, const P4FileInfo& info);
+	bool			OpenForEdit(EqStringRef fullPath, const P4FileInfo& info, ESourceControlFileType fileType);
+	bool			AddFile(EqStringRef fullPath, ESourceControlFileType fileType);
+	void			AddNewFile(EqStringRef fullPath, ESourceControlFileType fileType);
+	bool			ReopenToCurrentChangelist(EqStringRef fullPath, const P4FileInfo& info, ESourceControlFileType fileType);
 	bool			RevertKeepFile(EqStringRef fullPath);
 	void			Disable(EqStringRef reason);
 

@@ -133,8 +133,8 @@ public:
 	void						PushSourceControlChangelist(const char* description);
 	void						PopSourceControlChangelist();
 	bool						IsSourceControlEnabled() const;
-	void						CheckoutSourceControlFiles(const char* fileOrDirName, ESearchPath search);
-	void						AddSourceControlFile(const char* fileName, ESearchPath search);
+	void						CheckoutSourceControlFiles(const char* fileOrDirName, ESearchPath search, ESourceControlFileType fileType);
+	void						AddSourceControlFile(const char* fileName, ESearchPath search, ESourceControlFileType fileType);
 
 	ISourceControl*				GetSourceControl() const { return m_sourceControl.Ptr(); }
 

@@ -117,6 +117,13 @@ SourceControl p4
 | `CheckoutSourceControlFiles`, directory | `p4 fstat`, `p4 edit` and `p4 reopen` of `<dir>/...`: all depot files of the directory |
 | `AddSourceControlFile` | `p4 add` of a file created without `Open` (`p4 edit` if it is in depot) |
 
+`CheckoutSourceControlFiles` (for a file) and `AddSourceControlFile` take an
+`ESourceControlFileType`. With `SC_FILETYPE_BINARY` the file is added, checked out and reopened
+with `-t binary`, which also retypes a depot file stored as text. Files written by `Open` use
+`SC_FILETYPE_AUTO`: the depot file keeps its type and the server detects the type of a new file
+by its contents, so it can take a binary file for text and convert its line endings on sync.
+`CDPKFileWriter` passes `SC_FILETYPE_BINARY` for packages (`.epk`, `.shd`).
+
 `IsSourceControlEnabled` connects on the first call and tells whether written files are handled;
 the level editor uses it to skip its project backup.
 
@@ -137,7 +144,7 @@ SourceControlScope scScope("+export %s", levelName.ToCString());
 SaveLevelFiles(levelName);	// files go to the '+export <level>' changelist
 ```
 
-New files written inside a scope are added by one `p4 -x - add` when the scope ends; outside a
+New files written inside a scope are added by one `p4 -x - add` per file type when the scope ends; outside a
 scope each file is added at once. Checked out files written inside a scope are passed to one
 `p4 -x - revert -a` when the scope ends, so files written without changes leave the changelist;
 outside a scope they stay opened. A changelist left without files is not deleted. Work split across frames or jobs opens the scope again in each

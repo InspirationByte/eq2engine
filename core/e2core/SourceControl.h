@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "core/IFileSystem.h"
 
 struct KVSection;
 
@@ -40,11 +41,12 @@ public:
 	// so that writing many files there does not query the server per file
 	virtual void		CheckoutDir(EqStringRef fullPath) = 0;
 
-	// called before a file is opened for writing: checks out the file if it is in the depot
-	virtual void		PrepareFileWrite(EqStringRef fullPath) = 0;
+	// called before a file is opened for writing: checks out the file if it is in the depot.
+	// The file type is changed unless it is SC_FILETYPE_AUTO.
+	virtual void		PrepareFileWrite(EqStringRef fullPath, ESourceControlFileType fileType) = 0;
 
-	// called after a file was created: adds the file if it is not in the depot
-	virtual void		FinishFileWrite(EqStringRef fullPath) = 0;
+	// called after a file was created: adds the file with the file type if it is not in the depot
+	virtual void		FinishFileWrite(EqStringRef fullPath, ESourceControlFileType fileType) = 0;
 
 	// returns true when the provider removed the file, false to remove it without source control
 	virtual bool		RemoveFile(EqStringRef fullPath) = 0;
@@ -61,7 +63,7 @@ protected:
 	static EqStringRef	GetScopeChangelistDesc();
 
 	// queues the file to be added when the innermost scope is popped, false when there is no scope
-	static bool			DeferScopeAdd(EqStringRef fullPath);
+	static bool			DeferScopeAdd(EqStringRef fullPath, ESourceControlFileType fileType);
 
 	// queues the checked out file to be reverted if unchanged when the innermost scope is popped
 	static void			DeferScopeRevertUnchanged(EqStringRef fullPath);
@@ -69,8 +71,8 @@ protected:
 	// removes the file from the add and revert queues of the innermost scope
 	static void			CancelScopeFile(EqStringRef fullPath);
 
-	// adds files queued by a scope, called before the scope is popped
-	virtual void		AddFiles(ArrayCRef<EqString> fullPaths) = 0;
+	// adds files queued by a scope with the file type, called before the scope is popped
+	virtual void		AddFiles(ArrayCRef<EqString> fullPaths, ESourceControlFileType fileType) = 0;
 
 	// reverts files queued by a scope whose contents match the depot, called before the scope is popped
 	virtual void		RevertUnchangedFiles(ArrayCRef<EqString> fullPaths) = 0;

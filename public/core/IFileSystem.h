@@ -22,6 +22,15 @@ enum ESearchPath : int
 	SP_IGNORE_PACKAGE	= (1 << 4),	// ignore files from packages
 };
 
+// file type a file is added or checked out with by the source control
+enum ESourceControlFileType : int
+{
+	SC_FILETYPE_AUTO = 0,	// type of the depot file, new files are detected by the server
+	SC_FILETYPE_BINARY,		// binary, no line ending conversion on sync
+
+	SC_FILETYPE_COUNT
+};
+
 struct FSFindData;
 
 //------------------------------------------------------------------------------
@@ -115,10 +124,11 @@ public:
 	// checks out a depot file, or all depot files of a directory recursively, into the current
 	// changelist. Writing many files of a checked out directory does not query the server per file.
 	// Also used by writers which do not open files with Open.
-	virtual void			CheckoutSourceControlFiles(const char* fileOrDirName, ESearchPath search) = 0;
+	// A checked out file gets the file type unless it is SC_FILETYPE_AUTO, directories ignore it.
+	virtual void			CheckoutSourceControlFiles(const char* fileOrDirName, ESearchPath search, ESourceControlFileType fileType = SC_FILETYPE_AUTO) = 0;
 
-	// adds a file created without Open, or checks it out when it is in the depot
-	virtual void			AddSourceControlFile(const char* fileName, ESearchPath search) = 0;
+	// adds a file created without Open with the file type, or checks it out when it is in the depot
+	virtual void			AddSourceControlFile(const char* fileName, ESearchPath search, ESourceControlFileType fileType = SC_FILETYPE_AUTO) = 0;
 
 protected:
 	//------------------------------------------------------------

@@ -57,13 +57,13 @@ bool CDPKFileWriter::Begin(const char* fileName, ESearchPath searchPath)
 	if (m_output.IsOpen())
 		return false;
 
-	// package is written without IFileSystem::Open, check it out and add it explicitly
-	g_fileSystem->CheckoutSourceControlFiles(fileName, searchPath);
+	// package is written without IFileSystem::Open, check it out and add it explicitly as binary
+	g_fileSystem->CheckoutSourceControlFiles(fileName, searchPath, SC_FILETYPE_BINARY);
 
 	if (!m_output.Open(g_fileSystem->GetAbsolutePath(searchPath, fileName), COSFile::WRITE))
 		return false;
 
-	g_fileSystem->AddSourceControlFile(fileName, searchPath);
+	g_fileSystem->AddSourceControlFile(fileName, searchPath, SC_FILETYPE_BINARY);
 
 	memset(&m_header, 0, sizeof(m_header));
 	m_header.version = DPK_VERSION;

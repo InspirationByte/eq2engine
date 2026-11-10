@@ -39,8 +39,14 @@ DECLARE_CMD(fs_sc_reset, "Drops cached source control file states", CV_UNREGISTE
 struct SCChangelistScope
 {
 	EqString		desc;
-	Array<EqString>	pendingAdds{ PP_SL };
+	Array<EqString>	pendingAdds{ PP_SL };		// SC_FILETYPE_AUTO
+	Array<EqString>	pendingBinaryAdds{ PP_SL };	// SC_FILETYPE_BINARY
 	Array<EqString>	pendingReverts{ PP_SL };
+
+	Array<EqString>& GetPendingAdds(ESourceControlFileType fileType)
+	{
+		return (fileType == SC_FILETYPE_BINARY) ? pendingBinaryAdds : pendingAdds;
+	}
 };
 
 // changelist scopes are per thread so that loader threads do not write into a scope of another thread
@@ -61,7 +67,10 @@ void ISourceControl::PopChangelist()
 	// the scope stays current while its files are added
 	SCChangelistScope& scope = s_changelistScopes.back();
 	if (scope.pendingAdds.numElem())
-		AddFiles(scope.pendingAdds);
+		AddFiles(scope.pendingAdds, SC_FILETYPE_AUTO);
+
+	if (scope.pendingBinaryAdds.numElem())
+		AddFiles(scope.pendingBinaryAdds, SC_FILETYPE_BINARY);
 
 	if (scope.pendingReverts.numElem())
 		RevertUnchangedFiles(scope.pendingReverts);
@@ -102,12 +111,16 @@ static void SCRemovePath(Array<EqString>& paths, EqStringRef fullPath)
 	}
 }
 
-bool ISourceControl::DeferScopeAdd(EqStringRef fullPath)
+bool ISourceControl::DeferScopeAdd(EqStringRef fullPath, ESourceControlFileType fileType)
 {
 	if (!s_changelistScopes.numElem())
 		return false;
 
-	SCAppendUniquePath(s_changelistScopes.back().pendingAdds, fullPath);
+	// the last requested file type wins
+	SCChangelistScope& scope = s_changelistScopes.back();
+	SCRemovePath(scope.pendingAdds, fullPath);
+	SCRemovePath(scope.pendingBinaryAdds, fullPath);
+	SCAppendUniquePath(scope.GetPendingAdds(fileType), fullPath);
 	return true;
 }
 
@@ -126,6 +139,7 @@ void ISourceControl::CancelScopeFile(EqStringRef fullPath)
 
 	SCChangelistScope& scope = s_changelistScopes.back();
 	SCRemovePath(scope.pendingAdds, fullPath);
+	SCRemovePath(scope.pendingBinaryAdds, fullPath);
 	SCRemovePath(scope.pendingReverts, fullPath);
 }
 

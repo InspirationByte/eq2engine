@@ -23,6 +23,14 @@ using namespace Threading;
 // global options of every p4 call: script output, tagged fields, network wait limit
 static constexpr const char* P4_GLOBAL_OPTIONS = "-s -ztag -zprog=e2core -v net.maxwait=15 ";
 
+// 'add', 'edit' or 'reopen' with the file type option, SC_FILETYPE_AUTO leaves the type to the server
+static EqString P4TypedCommand(const char* command, ESourceControlFileType fileType)
+{
+	if (fileType == SC_FILETYPE_BINARY)
+		return EqString::Format("%s -t binary", command);
+	return command;
+}
+
 //-------------------------------------------------------------------------------------------------
 // Process runner
 //-------------------------------------------------------------------------------------------------
@@ -732,13 +740,13 @@ P4FileInfo CSourceControlP4::QueryFileInfo(EqStringRef fullPath)
 	return info;
 }
 
-bool CSourceControlP4::OpenForEdit(EqStringRef fullPath, const P4FileInfo& info)
+bool CSourceControlP4::OpenForEdit(EqStringRef fullPath, const P4FileInfo& info, ESourceControlFileType fileType)
 {
 	if (info.state == P4_FILE_OPENED_DELETE && !RevertKeepFile(fullPath))
 		return false;
 
 	P4Result result;
-	if (!RunChangelistCommand("edit", P4QuoteArg(fullPath), result))
+	if (!RunChangelistCommand(P4TypedCommand("edit", fileType), P4QuoteArg(fullPath), result))
 	{
 		P4PrintMessages(result);
 		MsgWarning("p4: can not check out '%s'\n", fullPath.ToCString());
@@ -752,21 +760,21 @@ bool CSourceControlP4::OpenForEdit(EqStringRef fullPath, const P4FileInfo& info)
 }
 
 // adds the file now, or when the changelist scope of the calling thread is popped
-void CSourceControlP4::AddNewFile(EqStringRef fullPath)
+void CSourceControlP4::AddNewFile(EqStringRef fullPath, ESourceControlFileType fileType)
 {
 	if (!m_addNewFiles)
 		return;
 
-	if (DeferScopeAdd(fullPath))
+	if (DeferScopeAdd(fullPath, fileType))
 		return;
 
-	AddFile(fullPath);
+	AddFile(fullPath, fileType);
 }
 
-bool CSourceControlP4::AddFile(EqStringRef fullPath)
+bool CSourceControlP4::AddFile(EqStringRef fullPath, ESourceControlFileType fileType)
 {
 	P4Result result;
-	if (!RunChangelistCommand("add", P4QuoteArg(fullPath), result))
+	if (!RunChangelistCommand(P4TypedCommand("add", fileType), P4QuoteArg(fullPath), result))
 	{
 		if (result.HasMessage("ignored file") || result.HasMessage("not in client view"))
 		{
@@ -786,8 +794,8 @@ bool CSourceControlP4::AddFile(EqStringRef fullPath)
 	return true;
 }
 
-// inside a changelist scope moves an opened file into the scope changelist
-bool CSourceControlP4::ReopenToCurrentChangelist(EqStringRef fullPath, const P4FileInfo& info)
+// inside a changelist scope moves an opened file into the scope changelist, setting the file type
+bool CSourceControlP4::ReopenToCurrentChangelist(EqStringRef fullPath, const P4FileInfo& info, ESourceControlFileType fileType)
 {
 	if (!GetScopeChangelistDesc().Length())
 		return true;
@@ -797,7 +805,7 @@ bool CSourceControlP4::ReopenToCurrentChangelist(EqStringRef fullPath, const P4F
 		return true;
 
 	P4Result result;
-	if (!RunChangelistCommand("reopen", P4QuoteArg(fullPath), result))
+	if (!RunChangelistCommand(P4TypedCommand("reopen", fileType), P4QuoteArg(fullPath), result))
 	{
 		P4PrintMessages(result);
 		return false;
@@ -962,7 +970,7 @@ void CSourceControlP4::CheckoutDir(EqStringRef fullPath)
 }
 
 // adds files queued by a changelist scope with one command
-void CSourceControlP4::AddFiles(ArrayCRef<EqString> fullPaths)
+void CSourceControlP4::AddFiles(ArrayCRef<EqString> fullPaths, ESourceControlFileType fileType)
 {
 	CScopedMutex m(m_mutex);
 	if (!fullPaths.numElem() || !EnsureConnected())
@@ -977,7 +985,7 @@ void CSourceControlP4::AddFiles(ArrayCRef<EqString> fullPaths)
 
 	// file names are read from stdin
 	P4Result result;
-	RunChangelistCommand("-x - add", "", result, fileList);
+	RunChangelistCommand(P4TypedCommand("-x - add", fileType), "", result, fileList);
 	if (m_failed)
 		return;
 
@@ -1060,7 +1068,7 @@ void CSourceControlP4::RevertUnchangedFiles(ArrayCRef<EqString> fullPaths)
 	DevMsg(DEVMSG_FS, "p4: reverted %d unchanged of %d checked out files\n", numReverted, fullPaths.numElem());
 }
 
-void CSourceControlP4::PrepareFileWrite(EqStringRef fullPath)
+void CSourceControlP4::PrepareFileWrite(EqStringRef fullPath, ESourceControlFileType fileType)
 {
 	CScopedMutex m(m_mutex);
 	if (!EnsureConnected() || !IsUnderClientRoot(fullPath))
@@ -1083,15 +1091,15 @@ void CSourceControlP4::PrepareFileWrite(EqStringRef fullPath)
 	{
 		case P4_FILE_SYNCED:
 		case P4_FILE_OPENED_DELETE:
-			OpenForEdit(fullPath, info);
+			OpenForEdit(fullPath, info, fileType);
 			break;
 		case P4_FILE_OPENED_EDIT:
 		case P4_FILE_OPENED_ADD:
-			ReopenToCurrentChangelist(fullPath, info);
+			ReopenToCurrentChangelist(fullPath, info, fileType);
 			break;
 		case P4_FILE_NOT_IN_DEPOT:
 			// existing file the application writes, ignored files are cached once 'p4 add' rejects them
-			AddNewFile(fullPath);
+			AddNewFile(fullPath, fileType);
 			break;
 		default:
 			break;
@@ -1102,7 +1110,7 @@ void CSourceControlP4::PrepareFileWrite(EqStringRef fullPath)
 		DeferScopeRevertUnchanged(fullPath);
 }
 
-void CSourceControlP4::FinishFileWrite(EqStringRef fullPath)
+void CSourceControlP4::FinishFileWrite(EqStringRef fullPath, ESourceControlFileType fileType)
 {
 	CScopedMutex m(m_mutex);
 	if (!EnsureConnected() || !IsUnderClientRoot(fullPath))
@@ -1113,15 +1121,15 @@ void CSourceControlP4::FinishFileWrite(EqStringRef fullPath)
 	switch (info.state)
 	{
 		case P4_FILE_NOT_IN_DEPOT:
-			AddNewFile(fullPath);
+			AddNewFile(fullPath, fileType);
 			break;
 		case P4_FILE_SYNCED:
 		case P4_FILE_OPENED_DELETE:
-			OpenForEdit(fullPath, info);
+			OpenForEdit(fullPath, info, fileType);
 			break;
 		case P4_FILE_OPENED_EDIT:
 		case P4_FILE_OPENED_ADD:
-			ReopenToCurrentChangelist(fullPath, info);
+			ReopenToCurrentChangelist(fullPath, info, fileType);
 			break;
 		default:
 			break;
@@ -1183,7 +1191,7 @@ bool CSourceControlP4::RenameFile(EqStringRef oldFullPath, EqStringRef newFullPa
 	{
 		case P4_FILE_SYNCED:
 			// 'p4 move' needs the file opened for edit
-			if (!OpenForEdit(oldFullPath, info))
+			if (!OpenForEdit(oldFullPath, info, SC_FILETYPE_AUTO))
 				return false;
 			break;
 		case P4_FILE_OPENED_EDIT:

@@ -500,14 +500,14 @@ IFileStreamPtr CFileSystem::Open(const char* filename, int openFlags, int search
 		{
 			scFullPath = GetAbsoluteFullPath(SP_DIRECT, filePath);
 			scFileCreated = fast_stat(scFullPath, nullptr) != 0;
-			m_sourceControl->PrepareFileWrite(scFullPath);
+			m_sourceControl->PrepareFileWrite(scFullPath, SC_FILETYPE_AUTO);
 		}
 
 		COSFile osFile;
 		if (osFile.Open(filePath, osModeFlags))
 		{
 			if (scFileCreated)
-				m_sourceControl->FinishFileWrite(scFullPath);
+				m_sourceControl->FinishFileWrite(scFullPath, SC_FILETYPE_AUTO);
 
 			fileHandle = IFileStreamPtr(CRefPtr_new(COSFileStream, filename, std::move(osFile)));
 			return true;
@@ -823,7 +823,7 @@ bool CFileSystem::Rename(const char* oldNameOrPath, const char* newNameOrPath, E
 
 	// renamed file which is not in the depot is added as a new one
 	if (fast_stat(newFullPath, nullptr) == 0)
-		m_sourceControl->FinishFileWrite(newFullPath);
+		m_sourceControl->FinishFileWrite(newFullPath, SC_FILETYPE_AUTO);
 
 	return true;
 }
@@ -845,7 +845,7 @@ bool CFileSystem::IsSourceControlEnabled() const
 	return m_sourceControl && m_sourceControl->IsAvailable();
 }
 
-void CFileSystem::CheckoutSourceControlFiles(const char* fileOrDirName, ESearchPath search)
+void CFileSystem::CheckoutSourceControlFiles(const char* fileOrDirName, ESearchPath search, ESourceControlFileType fileType)
 {
 	if (!m_sourceControl)
 		return;
@@ -854,17 +854,17 @@ void CFileSystem::CheckoutSourceControlFiles(const char* fileOrDirName, ESearchP
 	if (DirExist(fullPath, SP_DIRECT))
 		m_sourceControl->CheckoutDir(fullPath);
 	else
-		m_sourceControl->PrepareFileWrite(fullPath);
+		m_sourceControl->PrepareFileWrite(fullPath, fileType);
 }
 
-void CFileSystem::AddSourceControlFile(const char* fileName, ESearchPath search)
+void CFileSystem::AddSourceControlFile(const char* fileName, ESearchPath search, ESourceControlFileType fileType)
 {
 	if (!m_sourceControl)
 		return;
 
 	const EqString fullPath = GetAbsoluteFullPath(SP_DIRECT, GetAbsolutePath(search, fileName));
 	if (fast_stat(fullPath, nullptr) == 0)
-		m_sourceControl->FinishFileWrite(fullPath);
+		m_sourceControl->FinishFileWrite(fullPath, fileType);
 }
 
 bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, const SPWalkFunc& func) const
