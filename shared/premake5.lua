@@ -27,7 +27,7 @@ project "fontLib"
 -- Render Utility and Debug Drawing
 project "renderUtilLib"
 	properties { "staticlib", "unitybuild" }
-	uses { "public", "shared" }
+	uses { "public", "shared", "smaa" }
     files {
 		"render/**",
 		PUBLIC_DIR.."/render/**"

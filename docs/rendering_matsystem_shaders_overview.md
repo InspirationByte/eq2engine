@@ -198,6 +198,11 @@ shader BaseUnlit
 - `VertexLayouts` — vertex formats to compile for; each must have a Slang layout in
   `VertexLayouts/<Name>.h`. The name must equal the C++ vertex format name: the pipeline uses
   `StringId24` of the format name as `shaderVertexLayoutId`.
+  A layout without a `VertexLayouts/<Name>.h` file only selects a shader variant
+  (`CURRENT_VERTEX_ID == VID_<Name>`): ShaderCooker does not add the `IVertex` / `VertexLayout`
+  modules for it, so such a shader must not `import VertexLayout` (e.g. the SMAA passes in
+  `SMAA.def`, picked by `RenderPipelineDesc::ShaderVertexLayoutId`). Compute shaders never get
+  these modules.
 - Every nested section with `define` adds a switchable define; ShaderCooker compiles all
   combinations of defines for every vertex layout (`SkipCombo` excludes combinations). Section
   names (`Pass`, `MatVar`, `BlendMode`) only group and document the defines.

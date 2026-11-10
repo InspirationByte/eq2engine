@@ -225,6 +225,13 @@ static EQCURSOR s_defaultCursor[20];
 CStaticAutoPtr<CGameHost> g_pHost;
 CStaticAutoPtr<CRenderFullScreenEdgeAA> g_fullScreenEdgeAA;
 
+static void r_aa_changed(ConVar* cvar, const char* oldValue)
+{
+	g_fullScreenEdgeAA->SetMode(static_cast<EEdgeAAMode>(cvar->GetInt()));
+}
+
+DECLARE_CVAR_CLAMP_CHANGE(r_aa, "2", r_aa_changed, 0, 2, "Anti-aliasing mode. 0 - off, 1 - FXAA, 2 - SMAA", CV_ARCHIVE);
+
 static OSModule*	g_matsysmodule = nullptr;
 IMaterialSystem*	g_matSystem = nullptr;
 IShaderAPI*			g_renderAPI = nullptr;
@@ -644,7 +651,7 @@ bool CGameHost::InitSystems()
 	g_consoleInput->Init();
 
 	REGISTER_INTERNAL_SHADERS();
-	g_fullScreenEdgeAA->Init();
+	g_fullScreenEdgeAA->Init(static_cast<EEdgeAAMode>(r_aa.GetInt()));
 
 	ApplyWindowTitle();
 
