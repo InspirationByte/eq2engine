@@ -395,13 +395,13 @@ void CTextureCooker::SearchFolderForMaterialsAndGetTextures(const char* wildcard
 	EqString searchFolder(wildcard);
 	searchFolder.ReplaceSubstr("*", "");
 
-	Msg("Search MAT wildcard: %s\n", wildcard);
+	Msg("Search materials: %s\n", wildcard);
 
 	CFileSystemFind fsFind(wildcard, SP_ROOT);
 	while (fsFind.Next())
 	{
 		EqStringRef fileName = fsFind.GetPath();
-		if (fsFind.IsDirectory() && fileName != EqStringRef(".") && fileName != EqStringRef(".."))
+		if (fsFind.IsDirectory() && fileName[0] != '.')
 		{
 			const EqString searchTemplate = fnmPathCombine(searchFolder, fileName, "*");
 			SearchFolderForMaterialsAndGetTextures(searchTemplate);
