@@ -262,7 +262,7 @@ public:
 
 	T*					getData()							{ return m_dynamicStorage.getData() ? m_dynamicStorage.getData() : FixedStorage::getData(); }
 	const T*			getData() const						{ return m_dynamicStorage.getData() ? m_dynamicStorage.getData() : FixedStorage::getData(); }
-	const PPSourceLine	getSL() const 						{ return m_dynamicStorage.m_sl; }
+	const PPSourceLine	getSL() const 						{ return m_dynamicStorage.getSL(); }
 
 	DynamicArrayStorage<T>&			getDynamicStorage()			{ return m_dynamicStorage; }
 	const DynamicArrayStorage<T>&	getDynamicStorage() const	{ return m_dynamicStorage; }
