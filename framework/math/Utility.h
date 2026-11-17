@@ -59,6 +59,22 @@ float DistanceLineSegLineSeg(const Vector3D& L0, const Vector3D& L1, const Vecto
 
 void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& out);
 
+// signed area of the closed polygon: positive when its points go counter-clockwise with X to the right
+// and Y up (clockwise when Y goes down, as on screen), the hull of ConvexHull2D is positive
+float PolygonSignedArea2D(ArrayCRef<Vector2D> points);
+
+// splits the simple polygon (any winding, no self crossings) into convex parts of at most maxPartPoints
+// points: ear clipping, then the diagonals are removed while the merged parts stay convex (Hertel-Mehlhorn).
+// outPartIndices holds the polygon point indices of the parts one after another, outPartSizes their
+// counts; the parts have a positive PolygonSignedArea2D, collinear points may be dropped.
+// False when the polygon is degenerate or crosses itself, the outputs are empty then
+bool PolygonConvexPartition2D(ArrayCRef<Vector2D> points, int maxPartPoints, Array<int>& outPartIndices, Array<int>& outPartSizes);
+
+// offsets of the polyline points across it for a strip of unit half width: the normal (dir.y, -dir.x) of
+// the segment direction at the ends, along the bisector at a bend and longer there to keep the strip
+// width (the scale is limited to 2 at sharp bends); zero offsets for a polyline of less than 2 points
+void PolylineMiterOffsets2D(ArrayCRef<Vector2D> points, Array<Vector2D>& outOffsets);
+
 //---------------------------------------------------------------------------------
 
 float RectangleAlongAxisSeparation(const Vector2D& pos, const Vector2D& axis, float extent,
