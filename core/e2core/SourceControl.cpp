@@ -41,7 +41,9 @@ struct SCChangelistScope
 	EqString		desc;
 	Array<EqString>	pendingAdds{ PP_SL };		// SC_FILETYPE_AUTO
 	Array<EqString>	pendingBinaryAdds{ PP_SL };	// SC_FILETYPE_BINARY
+	Array<EqString>	pendingRemoves{ PP_SL };
 	Array<EqString>	pendingReverts{ PP_SL };
+	int				mergedDepth{ 0 };			// scopes with the same description pushed into this one
 
 	Array<EqString>& GetPendingAdds(ESourceControlFileType fileType)
 	{
@@ -54,8 +56,17 @@ static thread_local Array<SCChangelistScope> s_changelistScopes{ PP_SL };
 
 void ISourceControl::PushChangelist(EqStringRef description)
 {
+	EqString desc = ExpandDesc(description);
+
+	// work split into parts that open the same scope inside an outer one is sent by the outer scope
+	if (s_changelistScopes.numElem() && !s_changelistScopes.back().desc.CompareCaseIns(desc))
+	{
+		++s_changelistScopes.back().mergedDepth;
+		return;
+	}
+
 	SCChangelistScope& scope = s_changelistScopes.append();
-	scope.desc = ExpandDesc(description);
+	scope.desc = std::move(desc);
 }
 
 void ISourceControl::PopChangelist()
@@ -64,13 +75,22 @@ void ISourceControl::PopChangelist()
 	if (!s_changelistScopes.numElem())
 		return;
 
-	// the scope stays current while its files are added
 	SCChangelistScope& scope = s_changelistScopes.back();
+	if (scope.mergedDepth > 0)
+	{
+		--scope.mergedDepth;
+		return;
+	}
+
+	// the scope stays current while its files are added
 	if (scope.pendingAdds.numElem())
 		AddFiles(scope.pendingAdds, SC_FILETYPE_AUTO);
 
 	if (scope.pendingBinaryAdds.numElem())
 		AddFiles(scope.pendingBinaryAdds, SC_FILETYPE_BINARY);
+
+	if (scope.pendingRemoves.numElem())
+		RemoveFiles(scope.pendingRemoves);
 
 	if (scope.pendingReverts.numElem())
 		RevertUnchangedFiles(scope.pendingReverts);
@@ -132,6 +152,15 @@ void ISourceControl::DeferScopeRevertUnchanged(EqStringRef fullPath)
 	SCAppendUniquePath(s_changelistScopes.back().pendingReverts, fullPath);
 }
 
+bool ISourceControl::DeferScopeRemove(EqStringRef fullPath)
+{
+	if (!s_changelistScopes.numElem())
+		return false;
+
+	SCAppendUniquePath(s_changelistScopes.back().pendingRemoves, fullPath);
+	return true;
+}
+
 void ISourceControl::CancelScopeFile(EqStringRef fullPath)
 {
 	if (!s_changelistScopes.numElem())
@@ -140,7 +169,25 @@ void ISourceControl::CancelScopeFile(EqStringRef fullPath)
 	SCChangelistScope& scope = s_changelistScopes.back();
 	SCRemovePath(scope.pendingAdds, fullPath);
 	SCRemovePath(scope.pendingBinaryAdds, fullPath);
+	SCRemovePath(scope.pendingRemoves, fullPath);
 	SCRemovePath(scope.pendingReverts, fullPath);
+}
+
+void ISourceControl::CancelScopeRemove(EqStringRef fullPath)
+{
+	if (!s_changelistScopes.numElem())
+		return;
+
+	SCRemovePath(s_changelistScopes.back().pendingRemoves, fullPath);
+}
+
+void ISourceControl::SetStatus(ESourceControlStatus status, const char* error)
+{
+	if (Atomic::Exchange(m_status, static_cast<int>(status)) == status && !error)
+		return;
+
+	if (m_statusCallback)
+		m_statusCallback(status, error);
 }
 
 EqString ISourceControl::ExpandDesc(EqStringRef description)
@@ -209,14 +256,19 @@ ISourceControlPtr ISourceControl::Create(const KVSection& coreConfig, const KVSe
 		EqStringRef changelistDesc = "+auto $APP_NAME$";
 		EqStringRef executable;
 		bool addNewFiles = true;
+		int connectTimeout = 5;
+		int commandTimeout = 15;
 		if (scConfig)
 		{
 			scConfig->Get("DefaultChangelistDesc").GetValues(changelistDesc);
 			scConfig->Get("AddNewFiles").GetValues(addNewFiles);
 			scConfig->Get("Executable").GetValues(executable);
+			scConfig->Get("ConnectTimeout").GetValues(connectTimeout);
+			scConfig->Get("CommandTimeout").GetValues(commandTimeout);
 		}
 
-		sourceControl = ISourceControlPtr(CRefPtr_new(CSourceControlP4, workDir, executable, ExpandDesc(changelistDesc), addNewFiles));
+		sourceControl = ISourceControlPtr(CRefPtr_new(CSourceControlP4, workDir, executable, ExpandDesc(changelistDesc), addNewFiles,
+			max(connectTimeout, 1), max(commandTimeout, 1)));
 	}
 	else
 	{

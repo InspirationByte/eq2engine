@@ -26,16 +26,22 @@ public:
 	static EqString		ExpandDesc(EqStringRef description);
 
 	// Changelist scopes of the calling thread (see SourceControlScope in IFileSystem.h).
-	// Files added inside a scope are added by one command when the scope is popped, checked out
-	// files written inside a scope are reverted then if their contents did not change.
+	// Files added or removed inside a scope are added or deleted by one command when the scope is
+	// popped, checked out files written inside a scope are reverted then if their contents did not
+	// change. A scope pushed with the description of the innermost scope is merged into it.
 	void				PushChangelist(EqStringRef description);
 	void				PopChangelist();
 
+	ESourceControlStatus GetStatus() const { return static_cast<ESourceControlStatus>(Atomic::Load(m_status)); }
+	void				SetStatusCallback(const SourceControlStatusFunc& func) { m_statusCallback = func; }
+
 	virtual const char*	GetName() const = 0;
 
-	// connects to the server on the first call, false when the provider failed
-	// (no server, no login) and is disabled for the session
+	// connects to the server on the first call, false while the provider is offline
 	virtual bool		IsAvailable() = 0;
+
+	// see IFileSystem::SetSourceControlOnline
+	virtual ESourceControlStatus SetOnline(bool online) = 0;
 
 	// checks out all depot files of the directory recursively and caches the states of its files,
 	// so that writing many files there does not query the server per file
@@ -68,12 +74,28 @@ protected:
 	// queues the checked out file to be reverted if unchanged when the innermost scope is popped
 	static void			DeferScopeRevertUnchanged(EqStringRef fullPath);
 
-	// removes the file from the add and revert queues of the innermost scope
+	// queues the file to be deleted when the innermost scope is popped, false when there is no scope
+	static bool			DeferScopeRemove(EqStringRef fullPath);
+
+	// removes the file from the add, remove and revert queues of the innermost scope
 	static void			CancelScopeFile(EqStringRef fullPath);
+
+	// removes the file from the remove queue of the innermost scope (file written again)
+	static void			CancelScopeRemove(EqStringRef fullPath);
+
+	// stores the status and calls the status callback
+	void				SetStatus(ESourceControlStatus status, const char* error);
 
 	// adds files queued by a scope with the file type, called before the scope is popped
 	virtual void		AddFiles(ArrayCRef<EqString> fullPaths, ESourceControlFileType fileType) = 0;
 
 	// reverts files queued by a scope whose contents match the depot, called before the scope is popped
 	virtual void		RevertUnchangedFiles(ArrayCRef<EqString> fullPaths) = 0;
+
+	// deletes files queued by a scope, the workspace files are already removed
+	virtual void		RemoveFiles(ArrayCRef<EqString> fullPaths) = 0;
+
+private:
+	SourceControlStatusFunc	m_statusCallback;
+	volatile int			m_status{ SC_STATUS_NOT_CONNECTED };
 };

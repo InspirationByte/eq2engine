@@ -31,6 +31,21 @@ enum ESourceControlFileType : int
 	SC_FILETYPE_COUNT
 };
 
+// state of the file system source control
+enum ESourceControlStatus : int
+{
+	SC_STATUS_NONE = 0,			// not configured for the application
+	SC_STATUS_NOT_CONNECTED,	// configured, connects on the first write or IsSourceControlEnabled
+	SC_STATUS_CONNECTING,
+	SC_STATUS_ONLINE,
+	SC_STATUS_OFFLINE,			// server not reachable or not logged in, or set offline by the application
+};
+
+// Called when the source control status changes. 'error' is the reason when the provider went
+// offline because of a failure, nullptr otherwise. Called on the thread that ran the command
+// with the provider locked: the callback must only store the state and must not use the file system.
+using SourceControlStatusFunc = EqFunction<void(ESourceControlStatus status, const char* error)>;
+
 struct FSFindData;
 
 //------------------------------------------------------------------------------
@@ -120,6 +135,17 @@ public:
 
 	// true when written files are checked out and added, connects to the server on the first call
 	virtual bool			IsSourceControlEnabled() const = 0;
+
+	// current status, does not connect
+	virtual ESourceControlStatus GetSourceControlStatus() const = 0;
+
+	// Online connects to the server (blocks up to the connect timeout) and reconciles files written
+	// while offline. Offline runs no commands: written read-only files are made writable and
+	// remembered for the reconcile. Returns the resulting status.
+	virtual ESourceControlStatus SetSourceControlOnline(bool online) = 0;
+
+	// set before other threads write files, nullptr removes the callback
+	virtual void			SetSourceControlStatusCallback(const SourceControlStatusFunc& func) = 0;
 
 	// checks out a depot file, or all depot files of a directory recursively, into the current
 	// changelist. Writing many files of a checked out directory does not query the server per file.
@@ -217,7 +243,9 @@ inline bool CFileSystemFind::Next()
 
 // Files written by the calling thread while the scope exists go to the pending changelist
 // with the given description, it is created on the first file and reused when it exists.
-// New files are added by one command when the scope ends.
+// New and removed files are added and deleted by one command when the scope ends.
+// A scope with the description of the innermost scope of the thread is merged into it, so work
+// split into parts that open the scope again sends its files when the outer scope ends.
 // Does nothing when source control is not enabled.
 //
 //	SourceControlScope scScope("+export %s", levelName.ToCString());

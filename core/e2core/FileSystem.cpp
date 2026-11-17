@@ -845,6 +845,22 @@ bool CFileSystem::IsSourceControlEnabled() const
 	return m_sourceControl && m_sourceControl->IsAvailable();
 }
 
+ESourceControlStatus CFileSystem::GetSourceControlStatus() const
+{
+	return m_sourceControl ? m_sourceControl->GetStatus() : SC_STATUS_NONE;
+}
+
+ESourceControlStatus CFileSystem::SetSourceControlOnline(bool online)
+{
+	return m_sourceControl ? m_sourceControl->SetOnline(online) : SC_STATUS_NONE;
+}
+
+void CFileSystem::SetSourceControlStatusCallback(const SourceControlStatusFunc& func)
+{
+	if (m_sourceControl)
+		m_sourceControl->SetStatusCallback(func);
+}
+
 void CFileSystem::CheckoutSourceControlFiles(const char* fileOrDirName, ESearchPath search, ESourceControlFileType fileType)
 {
 	if (!m_sourceControl)

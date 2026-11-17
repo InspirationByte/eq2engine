@@ -33,6 +33,13 @@ struct P4KnownDir
 	int				generation{ 0 };	// states stored before this generation are outdated
 };
 
+// file written, removed or renamed while offline, reconciled when the provider is online again
+struct P4OfflineFile
+{
+	EqString		path;
+	EqString		changelistDesc;
+};
+
 struct P4Field
 {
 	EqString	key;
@@ -56,10 +63,12 @@ struct P4Result
 class CSourceControlP4 : public ISourceControl
 {
 public:
-	CSourceControlP4(EqStringRef workDir, EqStringRef executable, EqStringRef defaultChangelistDesc, bool addNewFiles);
+	CSourceControlP4(EqStringRef workDir, EqStringRef executable, EqStringRef defaultChangelistDesc, bool addNewFiles, int connectTimeout, int commandTimeout);
+	~CSourceControlP4();
 
 	const char*		GetName() const override { return "p4"; }
 	bool			IsAvailable() override;
+	ESourceControlStatus SetOnline(bool online) override;
 
 	void			CheckoutDir(EqStringRef fullPath) override;
 	void			PrepareFileWrite(EqStringRef fullPath, ESourceControlFileType fileType) override;
@@ -73,10 +82,12 @@ public:
 protected:
 	void			AddFiles(ArrayCRef<EqString> fullPaths, ESourceControlFileType fileType) override;
 	void			RevertUnchangedFiles(ArrayCRef<EqString> fullPaths) override;
+	void			RemoveFiles(ArrayCRef<EqString> fullPaths) override;
 
 private:
-	bool			RunCommand(EqStringRef args, P4Result& result, EqStringRef input = nullptr);
+	bool			RunCommand(EqStringRef args, P4Result& result, EqStringRef input = nullptr, int maxWait = 0);
 	bool			RunChangelistCommand(EqStringRef command, EqStringRef fileArgs, P4Result& result, EqStringRef input = nullptr);
+	bool			RunChangelistCommand(EqStringRef desc, EqStringRef command, EqStringRef fileArgs, P4Result& result, EqStringRef input);
 	bool			CheckConnectionError(const P4Result& result);
 
 	bool			EnsureConnected();
@@ -95,12 +106,24 @@ private:
 	void			AddNewFile(EqStringRef fullPath, ESourceControlFileType fileType);
 	bool			ReopenToCurrentChangelist(EqStringRef fullPath, const P4FileInfo& info, ESourceControlFileType fileType);
 	bool			RevertKeepFile(EqStringRef fullPath);
-	void			Disable(EqStringRef reason);
+
+	// stops running commands until SetOnline(true), reason is passed to the status callback
+	void			GoOffline(EqStringRef reason);
+	void			TrackOfflineFile(EqStringRef fullPath);
+	void			PrepareOfflineFileWrite(EqStringRef fullPath);
+
+	// operations while connected, the public ones handle the offline state after them
+	void			PrepareConnectedFileWrite(EqStringRef fullPath, ESourceControlFileType fileType);
+	void			FinishConnectedFileWrite(EqStringRef fullPath, ESourceControlFileType fileType);
+	bool			RemoveConnectedFile(EqStringRef fullPath);
+	bool			RenameConnectedFile(EqStringRef oldFullPath, EqStringRef newFullPath);
+	void			ReconcileOfflineFiles();
 
 	mutable Threading::CEqMutex	m_mutex;
 	Map<int, P4FileInfo>		m_fileInfos{ PP_SL };
 	Map<int, int>				m_changelists{ PP_SL };		// description hash to changelist number
 	Array<P4KnownDir>			m_knownDirs{ PP_SL };
+	Map<int, P4OfflineFile>		m_offlineFiles{ PP_SL };	// path hash to file
 	int							m_cacheGeneration{ 0 };
 
 	EqString		m_workDir;
@@ -110,7 +133,10 @@ private:
 	EqString		m_clientRoot;
 	EqString		m_userName;
 
+	int				m_connectTimeout{ 5 };		// net.maxwait seconds of the connection check
+	int				m_commandTimeout{ 15 };		// net.maxwait seconds of other commands
+
 	bool			m_connected{ false };
-	bool			m_failed{ false };
+	bool			m_offline{ false };
 	bool			m_addNewFiles{ true };
 };

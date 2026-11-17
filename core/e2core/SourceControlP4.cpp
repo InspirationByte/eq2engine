@@ -10,6 +10,7 @@
 #include <Windows.h>
 #else
 #include <unistd.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #endif
 
@@ -20,8 +21,8 @@
 
 using namespace Threading;
 
-// global options of every p4 call: script output, tagged fields, network wait limit
-static constexpr const char* P4_GLOBAL_OPTIONS = "-s -ztag -zprog=e2core -v net.maxwait=15 ";
+// global options of every p4 call: script output, tagged fields; RunCommand adds the network wait limit
+static constexpr const char* P4_GLOBAL_OPTIONS = "-s -ztag -zprog=e2core";
 
 // 'add', 'edit' or 'reopen' with the file type option, SC_FILETYPE_AUTO leaves the type to the server
 static EqString P4TypedCommand(const char* command, ESourceControlFileType fileType)
@@ -140,6 +141,19 @@ static int P4GetFileAccess(EqStringRef fullPath)
 	return (attributes & FILE_ATTRIBUTE_READONLY) ? 0 : 1;
 }
 
+// clears the read-only attribute p4 sets on files that are not opened
+static bool P4MakeWritable(EqStringRef fullPath)
+{
+	EqWString pathW;
+	AnsiUnicodeConverter(pathW, fullPath);
+
+	const DWORD attributes = GetFileAttributesW(pathW.ToCString());
+	if (attributes == INVALID_FILE_ATTRIBUTES)
+		return false;
+
+	return SetFileAttributesW(pathW.ToCString(), attributes & ~FILE_ATTRIBUTE_READONLY) != FALSE;
+}
+
 // p4.exe from PATH, otherwise from the Perforce installation directory (P4INSTROOT is set by the
 // installer). Debugging from Visual Studio replaces PATH with the binaries directory.
 static EqString P4FindExecutable()
@@ -254,6 +268,15 @@ static int P4GetFileAccess(EqStringRef fullPath)
 		return -1;
 
 	return access(fullPath, W_OK) == 0 ? 1 : 0;
+}
+
+static bool P4MakeWritable(EqStringRef fullPath)
+{
+	struct stat fileStat;
+	if (stat(fullPath, &fileStat) != 0)
+		return false;
+
+	return chmod(fullPath, fileStat.st_mode | S_IWUSR) == 0;
 }
 
 // the shell finds p4 in PATH
@@ -416,22 +439,30 @@ static void P4PrintMessages(const P4Result& result)
 // Provider
 //-------------------------------------------------------------------------------------------------
 
-CSourceControlP4::CSourceControlP4(EqStringRef workDir, EqStringRef executable, EqStringRef defaultChangelistDesc, bool addNewFiles)
+CSourceControlP4::CSourceControlP4(EqStringRef workDir, EqStringRef executable, EqStringRef defaultChangelistDesc, bool addNewFiles, int connectTimeout, int commandTimeout)
 	: m_workDir(workDir)
 	, m_executable(executable)
 	, m_defaultChangelistDesc(defaultChangelistDesc)
+	, m_connectTimeout(connectTimeout)
+	, m_commandTimeout(commandTimeout)
 	, m_addNewFiles(addNewFiles)
 {
 }
 
-bool CSourceControlP4::RunCommand(EqStringRef args, P4Result& result, EqStringRef input)
+CSourceControlP4::~CSourceControlP4()
+{
+	if (m_offlineFiles.size())
+		MsgWarning("Source control (p4): %d files were written offline, run 'p4 reconcile' for them\n", m_offlineFiles.size());
+}
+
+// maxWait is the network wait limit in seconds, 0 for the command timeout
+bool CSourceControlP4::RunCommand(EqStringRef args, P4Result& result, EqStringRef input, int maxWait)
 {
 	if (!m_executable.Length())
 		m_executable = P4FindExecutable();
 
 	EqString cmdLine(P4QuoteArg(m_executable));
-	cmdLine.Append(' ');
-	cmdLine.Append(P4_GLOBAL_OPTIONS);
+	cmdLine.AppendFmt(" %s -v net.maxwait=%d ", P4_GLOBAL_OPTIONS, maxWait > 0 ? maxWait : m_commandTimeout);
 	cmdLine.Append(args);
 
 	DevMsg(DEVMSG_FS, "%s\n", cmdLine.ToCString());
@@ -445,12 +476,12 @@ bool CSourceControlP4::RunCommand(EqStringRef args, P4Result& result, EqStringRe
 	return result.Succeeded();
 }
 
-// returns true and disables the provider when the server can not be used at all
+// returns true and sets the provider offline when the server can not be used at all
 bool CSourceControlP4::CheckConnectionError(const P4Result& result)
 {
 	if (!result.started)
 	{
-		Disable(EqString::Format("can not run '%s', set 'Executable' in the 'SourceControl p4' section of E2.CONFIG", m_executable.ToCString()));
+		GoOffline(EqString::Format("can not run '%s', set 'Executable' in the 'SourceControl p4' section of E2.CONFIG", m_executable.ToCString()));
 		return true;
 	}
 
@@ -468,32 +499,124 @@ bool CSourceControlP4::CheckConnectionError(const P4Result& result)
 			continue;
 
 		P4PrintMessages(result);
-		Disable("can not connect to the server, check P4PORT or run 'p4 login'");
+		GoOffline("can not connect to the server, check P4PORT or run 'p4 login'");
 		return true;
 	}
 
 	return false;
 }
 
-void CSourceControlP4::Disable(EqStringRef reason)
+void CSourceControlP4::GoOffline(EqStringRef reason)
 {
-	if (m_failed)
+	if (m_offline)
 		return;
 
-	m_failed = true;
-	MsgWarning("Source control (p4) is disabled: %s\n", reason.ToCString());
+	m_offline = true;
+	m_connected = false;
+	MsgWarning("Source control (p4) is offline: %s\n", reason.ToCString());
+	SetStatus(SC_STATUS_OFFLINE, reason);
+}
+
+// remembers a file written, removed or renamed while offline for ReconcileOfflineFiles
+void CSourceControlP4::TrackOfflineFile(EqStringRef fullPath)
+{
+	if (!IsUnderClientRoot(fullPath))
+		return;
+
+	P4OfflineFile& file = m_offlineFiles[P4PathHash(fullPath)];
+	file.path = fullPath;
+	file.changelistDesc = GetCurrentChangelistDesc();
+}
+
+// a file written while offline: p4 sets read-only files that are not opened, the write would fail
+void CSourceControlP4::PrepareOfflineFileWrite(EqStringRef fullPath)
+{
+	if (!IsUnderClientRoot(fullPath))
+		return;
+
+	if (P4GetFileAccess(fullPath) == 0)
+		P4MakeWritable(fullPath);
+
+	TrackOfflineFile(fullPath);
+}
+
+// opens the files written while offline in the changelists they were written for
+void CSourceControlP4::ReconcileOfflineFiles()
+{
+	if (!m_offlineFiles.size())
+		return;
+
+	Array<EqString> changelistDescs{ PP_SL };
+	for (auto it = m_offlineFiles.begin(); !it.atEnd(); ++it)
+	{
+		bool found = false;
+		for (const EqString& desc : changelistDescs)
+		{
+			if (!desc.CompareCaseIns(it->changelistDesc))
+			{
+				found = true;
+				break;
+			}
+		}
+
+		if (!found)
+			changelistDescs.append(it->changelistDesc);
+	}
+
+	// edited, new and removed files, file names are read from stdin
+	const char* command = m_addNewFiles ? "-x - reconcile" : "-x - reconcile -e -d";
+
+	int numOpened = 0;
+	for (const EqString& desc : changelistDescs)
+	{
+		EqString fileList;
+		for (auto it = m_offlineFiles.begin(); !it.atEnd(); ++it)
+		{
+			if (it->changelistDesc.CompareCaseIns(desc))
+				continue;
+
+			fileList.Append(it->path);
+			fileList.Append('\n');
+		}
+
+		P4Result result;
+		RunChangelistCommand(desc, command, "", result, fileList);
+
+		// offline again, the files are reconciled by the next attempt
+		if (m_offline)
+			return;
+
+		for (const P4Field& field : result.fields)
+		{
+			if (!field.key.Compare("clientFile"))
+				++numOpened;
+		}
+
+		// warnings are unchanged files
+		for (const EqString& message : result.messages)
+		{
+			if (!message.Left(6).Compare("error:"))
+				MsgWarning("p4: %s\n", message.ToCString());
+		}
+	}
+
+	MsgInfo("* Source control: reconciled %d files written offline, %d opened\n", m_offlineFiles.size(), numOpened);
+	m_offlineFiles.clear();
 }
 
 bool CSourceControlP4::EnsureConnected()
 {
-	if (m_failed)
+	if (m_offline)
 		return false;
 
 	if (m_connected)
 		return true;
 
+	SetStatus(SC_STATUS_CONNECTING, nullptr);
+
+	// a server that can not be reached fails by the short connection timeout
 	P4Result infoResult;
-	RunCommand("info", infoResult);
+	RunCommand("info", infoResult, nullptr, m_connectTimeout);
 	if (CheckConnectionError(infoResult))
 		return false;
 
@@ -503,20 +626,20 @@ bool CSourceControlP4::EnsureConnected()
 	if (!clientName || !userName || !clientName->value.Compare("*unknown*"))
 	{
 		P4PrintMessages(infoResult);
-		Disable("no p4 client workspace for the working directory");
+		GoOffline("no p4 client workspace for the working directory");
 		return false;
 	}
 
 	// 'p4 info' does not require a login, check the ticket explicitly
 	P4Result loginResult;
-	RunCommand("login -s", loginResult);
+	RunCommand("login -s", loginResult, nullptr, m_connectTimeout);
 	if (CheckConnectionError(loginResult))
 		return false;
 
 	if (!loginResult.Succeeded())
 	{
 		P4PrintMessages(loginResult);
-		Disable("not logged in, run 'p4 login'");
+		GoOffline("not logged in, run 'p4 login'");
 		return false;
 	}
 
@@ -533,6 +656,7 @@ bool CSourceControlP4::EnsureConnected()
 
 	m_connected = true;
 	MsgInfo("* Source control: p4 client '%s', user '%s'\n", m_clientName.ToCString(), m_userName.ToCString());
+	SetStatus(SC_STATUS_ONLINE, nullptr);
 
 	return true;
 }
@@ -622,7 +746,12 @@ int CSourceControlP4::EnsureChangelist(EqStringRef desc)
 bool CSourceControlP4::RunChangelistCommand(EqStringRef command, EqStringRef fileArgs, P4Result& result, EqStringRef input)
 {
 	const EqString desc(GetCurrentChangelistDesc());
+	return RunChangelistCommand(desc, command, fileArgs, result, input);
+}
 
+// runs '<command> -c <changelist> <fileArgs>' for the changelist with the description
+bool CSourceControlP4::RunChangelistCommand(EqStringRef desc, EqStringRef command, EqStringRef fileArgs, P4Result& result, EqStringRef input)
+{
 	// a cached changelist may be submitted or deleted meanwhile, then look it up again once
 	for (int attempt = 0; attempt < 2; ++attempt)
 	{
@@ -841,6 +970,37 @@ bool CSourceControlP4::IsAvailable()
 	return EnsureConnected();
 }
 
+ESourceControlStatus CSourceControlP4::SetOnline(bool online)
+{
+	CScopedMutex m(m_mutex);
+	if (!online)
+	{
+		if (!m_offline)
+		{
+			m_offline = true;
+			m_connected = false;
+			MsgInfo("* Source control: p4 is offline\n");
+			SetStatus(SC_STATUS_OFFLINE, nullptr);
+		}
+		return SC_STATUS_OFFLINE;
+	}
+
+	if (m_connected)
+		return SC_STATUS_ONLINE;
+
+	// files may be opened, submitted or reverted outside the application meanwhile
+	m_offline = false;
+	m_fileInfos.clear();
+	m_changelists.clear();
+	m_knownDirs.clear();
+
+	if (!EnsureConnected())
+		return SC_STATUS_OFFLINE;
+
+	ReconcileOfflineFiles();
+	return m_offline ? SC_STATUS_OFFLINE : SC_STATUS_ONLINE;
+}
+
 void CSourceControlP4::CheckoutDir(EqStringRef fullPath)
 {
 	CScopedMutex m(m_mutex);
@@ -973,7 +1133,7 @@ void CSourceControlP4::CheckoutDir(EqStringRef fullPath)
 void CSourceControlP4::AddFiles(ArrayCRef<EqString> fullPaths, ESourceControlFileType fileType)
 {
 	CScopedMutex m(m_mutex);
-	if (!fullPaths.numElem() || !EnsureConnected())
+	if (!fullPaths.numElem())
 		return;
 
 	EqString fileList;
@@ -985,9 +1145,15 @@ void CSourceControlP4::AddFiles(ArrayCRef<EqString> fullPaths, ESourceControlFil
 
 	// file names are read from stdin
 	P4Result result;
-	RunChangelistCommand(P4TypedCommand("-x - add", fileType), "", result, fileList);
-	if (m_failed)
+	if (EnsureConnected())
+		RunChangelistCommand(P4TypedCommand("-x - add", fileType), "", result, fileList);
+
+	if (m_offline)
+	{
+		for (const EqString& fullPath : fullPaths)
+			TrackOfflineFile(fullPath);
 		return;
+	}
 
 	const int change = EnsureChangelist(GetCurrentChangelistDesc());
 
@@ -1068,10 +1234,98 @@ void CSourceControlP4::RevertUnchangedFiles(ArrayCRef<EqString> fullPaths)
 	DevMsg(DEVMSG_FS, "p4: reverted %d unchanged of %d checked out files\n", numReverted, fullPaths.numElem());
 }
 
+// deletes files removed inside a changelist scope, their workspace files are already removed
+void CSourceControlP4::RemoveFiles(ArrayCRef<EqString> fullPaths)
+{
+	CScopedMutex m(m_mutex);
+	if (!fullPaths.numElem())
+		return;
+
+	if (!EnsureConnected())
+	{
+		for (const EqString& fullPath : fullPaths)
+			TrackOfflineFile(fullPath);
+		return;
+	}
+
+	// opened files are reverted first, files opened for add are not in the depot
+	EqString revertList;
+	EqString deleteList;
+	for (const EqString& fullPath : fullPaths)
+	{
+		const EP4FileState state = GetCachedFileInfo(fullPath).state;
+		if (state == P4_FILE_OPENED_ADD || state == P4_FILE_OPENED_EDIT)
+		{
+			revertList.Append(fullPath);
+			revertList.Append('\n');
+		}
+
+		if (state == P4_FILE_SYNCED || state == P4_FILE_OPENED_EDIT)
+		{
+			deleteList.Append(fullPath);
+			deleteList.Append('\n');
+		}
+	}
+
+	P4Result revertResult;
+	if (revertList.Length())
+		RunCommand("-x - revert -k", revertResult, revertList);
+
+	P4Result deleteResult;
+	if (!m_offline && deleteList.Length())
+		RunChangelistCommand("-x - delete", "", deleteResult, deleteList);
+
+	if (m_offline)
+	{
+		for (const EqString& fullPath : fullPaths)
+			TrackOfflineFile(fullPath);
+		return;
+	}
+
+	// files not reported are asked again when they are written
+	for (const EqString& fullPath : fullPaths)
+	{
+		auto it = m_fileInfos.find(P4PathHash(fullPath));
+		if (!it.atEnd())
+			m_fileInfos.remove(it);
+	}
+
+	const int change = EnsureChangelist(GetCurrentChangelistDesc());
+
+	int numDeleted = 0;
+	for (const P4Field& field : deleteResult.fields)
+	{
+		if (field.key.Compare("clientFile"))
+			continue;
+
+		SetFileInfo(field.value, P4_FILE_OPENED_DELETE, change);
+		++numDeleted;
+	}
+
+	P4PrintMessages(revertResult);
+	for (const EqString& message : deleteResult.messages)
+	{
+		if (!message.Left(6).Compare("error:") || !message.Left(8).Compare("warning:"))
+			MsgWarning("p4: %s\n", message.ToCString());
+	}
+
+	DevMsg(DEVMSG_FS, "p4: deleted %d of %d removed files\n", numDeleted, fullPaths.numElem());
+}
+
 void CSourceControlP4::PrepareFileWrite(EqStringRef fullPath, ESourceControlFileType fileType)
 {
 	CScopedMutex m(m_mutex);
-	if (!EnsureConnected() || !IsUnderClientRoot(fullPath))
+	if (EnsureConnected())
+		PrepareConnectedFileWrite(fullPath, fileType);
+
+	// the server went away while the file was checked out
+	if (m_offline)
+		PrepareOfflineFileWrite(fullPath);
+}
+
+void CSourceControlP4::PrepareConnectedFileWrite(EqStringRef fullPath, ESourceControlFileType fileType)
+{
+	if (!IsUnderClientRoot(fullPath))
 		return;
 
 	const int fileAccess = P4GetFileAccess(fullPath);
@@ -1113,8 +1367,20 @@ void CSourceControlP4::PrepareFileWrite(EqStringRef fullPath, ESourceControlFile
 void CSourceControlP4::FinishFileWrite(EqStringRef fullPath, ESourceControlFileType fileType)
 {
 	CScopedMutex m(m_mutex);
-	if (!EnsureConnected() || !IsUnderClientRoot(fullPath))
+	if (EnsureConnected())
+		FinishConnectedFileWrite(fullPath, fileType);
+
+	if (m_offline)
+		TrackOfflineFile(fullPath);
+}
+
+void CSourceControlP4::FinishConnectedFileWrite(EqStringRef fullPath, ESourceControlFileType fileType)
+{
+	if (!IsUnderClientRoot(fullPath))
 		return;
+
+	// a file removed in this scope and written again stays in the depot
+	CancelScopeRemove(fullPath);
 
 	// the file did not exist before, a cached state is outdated unless its directory is checked out
 	const P4FileInfo info = GetFileInfo(fullPath);
@@ -1142,13 +1408,40 @@ void CSourceControlP4::FinishFileWrite(EqStringRef fullPath, ESourceControlFileT
 bool CSourceControlP4::RemoveFile(EqStringRef fullPath)
 {
 	CScopedMutex m(m_mutex);
-	if (!EnsureConnected() || !IsUnderClientRoot(fullPath))
+	if (EnsureConnected())
+	{
+		if (RemoveConnectedFile(fullPath))
+			return true;
+	}
+
+	// removed by the caller, a read-only file can not be removed on Windows
+	if (m_offline && IsUnderClientRoot(fullPath))
+	{
+		P4MakeWritable(fullPath);
+		TrackOfflineFile(fullPath);
+	}
+
+	return false;
+}
+
+bool CSourceControlP4::RemoveConnectedFile(EqStringRef fullPath)
+{
+	if (!IsUnderClientRoot(fullPath))
 		return false;
 
 	// a file removed before its scope is popped must not be added or reverted
 	CancelScopeFile(fullPath);
 
 	const P4FileInfo info = GetFileInfo(fullPath);
+
+	// inside a scope the caller removes the file, it is deleted with the other files of the scope
+	const bool inDepotOrOpened = info.state == P4_FILE_SYNCED || info.state == P4_FILE_OPENED_EDIT || info.state == P4_FILE_OPENED_ADD;
+	if (inDepotOrOpened && DeferScopeRemove(fullPath))
+	{
+		P4MakeWritable(fullPath);
+		return false;
+	}
+
 	switch (info.state)
 	{
 		case P4_FILE_OPENED_ADD:
@@ -1183,7 +1476,22 @@ bool CSourceControlP4::RemoveFile(EqStringRef fullPath)
 bool CSourceControlP4::RenameFile(EqStringRef oldFullPath, EqStringRef newFullPath)
 {
 	CScopedMutex m(m_mutex);
-	if (!EnsureConnected() || !IsUnderClientRoot(oldFullPath) || !IsUnderClientRoot(newFullPath))
+	if (EnsureConnected())
+	{
+		if (RenameConnectedFile(oldFullPath, newFullPath))
+			return true;
+	}
+
+	// renamed by the caller, the new file is tracked by FinishFileWrite
+	if (m_offline)
+		TrackOfflineFile(oldFullPath);
+
+	return false;
+}
+
+bool CSourceControlP4::RenameConnectedFile(EqStringRef oldFullPath, EqStringRef newFullPath)
+{
+	if (!IsUnderClientRoot(oldFullPath) || !IsUnderClientRoot(newFullPath))
 		return false;
 
 	P4FileInfo info = GetFileInfo(oldFullPath);
@@ -1232,7 +1540,7 @@ void CSourceControlP4::PrintStatus() const
 {
 	CScopedMutex m(m_mutex);
 
-	Msg("Source control: p4%s\n", m_failed ? " (disabled)" : (m_connected ? "" : " (not connected yet)"));
+	Msg("Source control: p4%s\n", m_offline ? " (offline)" : (m_connected ? "" : " (not connected yet)"));
 	if (m_connected)
 	{
 		Msg("  client: %s, user: %s\n", m_clientName.ToCString(), m_userName.ToCString());
@@ -1241,6 +1549,8 @@ void CSourceControlP4::PrintStatus() const
 	Msg("  default changelist: '%s'\n", m_defaultChangelistDesc.ToCString());
 	Msg("  executable: %s\n", m_executable.Length() ? m_executable.ToCString() : "(not resolved yet)");
 	Msg("  add new files: %s\n", m_addNewFiles ? "yes" : "no");
+	Msg("  timeouts: connect %d s, commands %d s\n", m_connectTimeout, m_commandTimeout);
+	Msg("  files written offline: %d\n", m_offlineFiles.size());
 	Msg("  cached files: %d, changelists: %d, checked out directories: %d\n", m_fileInfos.size(), m_changelists.size(), m_knownDirs.numElem());
 	for (const P4KnownDir& dir : m_knownDirs)
 		Msg("    %s\n", dir.path.ToCString());

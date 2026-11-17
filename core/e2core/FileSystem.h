@@ -133,6 +133,9 @@ public:
 	void						PushSourceControlChangelist(const char* description);
 	void						PopSourceControlChangelist();
 	bool						IsSourceControlEnabled() const;
+	ESourceControlStatus		GetSourceControlStatus() const;
+	ESourceControlStatus		SetSourceControlOnline(bool online);
+	void						SetSourceControlStatusCallback(const SourceControlStatusFunc& func);
 	void						CheckoutSourceControlFiles(const char* fileOrDirName, ESearchPath search, ESourceControlFileType fileType);
 	void						AddSourceControlFile(const char* fileName, ESearchPath search, ESourceControlFileType fileType);
 

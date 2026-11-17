@@ -94,6 +94,8 @@ SourceControl p4
 	DefaultChangelistDesc	"+auto $APP_NAME$";	// pending changelist for written files
 	AddNewFiles 1;							// optional, 'p4 add' new files (default 1)
 	Executable "C:/Program Files/Perforce/p4.exe";	// optional, path to p4
+	ConnectTimeout 5;						// optional, net.maxwait seconds of the connection check (default 5)
+	CommandTimeout 15;						// optional, net.maxwait seconds of other commands (default 15)
 }
 ```
 
@@ -101,8 +103,10 @@ SourceControl p4
   `Applications`; `-nosourcecontrol` on the command line disables it. The `editorMode` argument of
   `Init` is not used for this.
 - `p4` runs in the base directory, so the client, port and user come from `P4CONFIG`, `p4 set` or
-  the environment. The connection is checked on the first write; when the server is not reachable
-  or the user is not logged in, a warning is printed and source control is off until restart.
+  the environment. The connection is checked on the first write or `IsSourceControlEnabled`
+  (`p4 info`, `p4 login -s` with `ConnectTimeout`); when the server is not reachable, the user is
+  not logged in or a command loses the connection, a warning is printed and the provider goes
+  offline (see [Online and offline](#online-and-offline)).
 - Only files under the client root are handled. Files outside the client view or matched by
   `P4IGNORE` are written as usual.
 
@@ -111,7 +115,7 @@ SourceControl p4
 | `Open` with `FS_OPEN_WRITE` / `FS_OPEN_APPEND`, file in depot | `p4 edit` before the file is opened |
 | `Open` for writing creates a file | `p4 add` (or `p4 edit` if the file is in depot) |
 | `FileCopy` | goes through `Open` |
-| `FileRemove`, file in depot | `p4 delete`; a file opened for add is reverted and removed |
+| `FileRemove`, file in depot | `p4 delete`; a file opened for add is reverted and removed; inside a scope the file is removed at once and deleted when the scope ends |
 | `Rename`, file in depot | `p4 edit` + `p4 move`; other files are renamed and added, directories are renamed without source control |
 | `CheckoutSourceControlFiles`, file | `p4 edit`, for writers that do not use `Open` (`CDPKFileWriter::Begin`) |
 | `CheckoutSourceControlFiles`, directory | `p4 fstat`, `p4 edit` and `p4 reopen` of `<dir>/...`: all depot files of the directory |
@@ -124,8 +128,8 @@ with `-t binary`, which also retypes a depot file stored as text. Files written 
 by its contents, so it can take a binary file for text and convert its line endings on sync.
 `CDPKFileWriter` passes `SC_FILETYPE_BINARY` for packages (`.epk`, `.shd`).
 
-`IsSourceControlEnabled` connects on the first call and tells whether written files are handled;
-the level editor uses it to skip its project backup.
+`IsSourceControlEnabled` connects on the first call and tells whether written files are handled
+(online). `GetSourceControlStatus` returns the status without connecting.
 
 A directory checked out with `CheckoutSourceControlFiles` keeps the states of all its depot files
 in the cache, so writing files there does not query the server per file; a file missing in its
@@ -137,7 +141,8 @@ and user with the same description is reused, otherwise it is created on the fir
 
 `SourceControlScope` sends the files of the calling thread to another changelist while it exists.
 Scopes nest; a file already opened in another changelist is moved to the scope changelist with
-`p4 reopen`:
+`p4 reopen`. A scope pushed with the description of the innermost scope of the thread is merged
+into it and sends nothing when it ends:
 
 ```cpp
 SourceControlScope scScope("+export %s", levelName.ToCString());
@@ -145,10 +150,36 @@ SaveLevelFiles(levelName);	// files go to the '+export <level>' changelist
 ```
 
 New files written inside a scope are added by one `p4 -x - add` per file type when the scope ends; outside a
-scope each file is added at once. Checked out files written inside a scope are passed to one
-`p4 -x - revert -a` when the scope ends, so files written without changes leave the changelist;
-outside a scope they stay opened. A changelist left without files is not deleted. Work split across frames or jobs opens the scope again in each
-part; the changelist is found by its description.
+scope each file is added at once. Files removed inside a scope are removed from the disk at once
+(made writable first) and deleted by one `p4 -x - revert -k` of the opened ones and one
+`p4 -x - delete` when the scope ends; a removed file written again in the scope stays in the depot.
+Checked out files written inside a scope are passed to one `p4 -x - revert -a` when the scope ends,
+so files written without changes leave the changelist; outside a scope they stay opened. A
+changelist left without files is not deleted. Work split across frames or jobs opens the scope again
+in each part; the changelist is found by its description. To send all parts with one command each,
+keep an outer scope with the same description open on the thread that runs the parts
+(`PushSourceControlChangelist` before the first part, `PopSourceControlChangelist` after the last);
+the level editor save does this.
 
 File states are cached. `fs_sc_status` prints the provider state, `fs_sc_reset` drops the cache
 after changes made in P4V or the command line (a read-only file is always queried again).
+
+### Online and offline
+
+`ESourceControlStatus` is `SC_STATUS_NONE` without a provider, `SC_STATUS_NOT_CONNECTED` until the
+first connection, then `SC_STATUS_CONNECTING`, `SC_STATUS_ONLINE` or `SC_STATUS_OFFLINE`.
+
+- A failure (no server within `ConnectTimeout` or `CommandTimeout`, no login, no client workspace,
+  `p4` not found) sets the provider offline. Only the first failing command waits for the timeout,
+  later writes run no commands.
+- `SetSourceControlOnline(false)` goes offline without a failure; `SetSourceControlOnline(true)`
+  drops the cached states and changelists, connects (blocking up to `ConnectTimeout`) and runs
+  `p4 -x - reconcile` (`-e -d` without `AddNewFiles`) of the files written offline, grouped by the
+  changelist description they were written with.
+- While offline a written file that exists and is read-only is made writable, so the write does not
+  fail, and every written, removed or renamed file under the client root is remembered for the
+  reconcile. Files remembered at shutdown are reported with a warning.
+- `SetSourceControlStatusCallback` receives every status change; `error` is the reason when the
+  provider went offline because of a failure and `nullptr` otherwise. It is called on the thread
+  that ran the command with the provider locked, so it must only store the state (the level editor
+  opens a prompt on the next frame).
