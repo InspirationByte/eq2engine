@@ -63,6 +63,9 @@ void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& out);
 // and Y up (clockwise when Y goes down, as on screen), the hull of ConvexHull2D is positive
 float PolygonSignedArea2D(ArrayCRef<Vector2D> points);
 
+// the point is inside the closed polygon of any winding (even-odd rule), false for less than 3 points
+bool IsPointInPolygon2D(ArrayCRef<Vector2D> points, const Vector2D& point);
+
 // splits the simple polygon (any winding, no self crossings) into convex parts of at most maxPartPoints
 // points: ear clipping, then the diagonals are removed while the merged parts stay convex (Hertel-Mehlhorn).
 // outPartIndices holds the polygon point indices of the parts one after another, outPartSizes their

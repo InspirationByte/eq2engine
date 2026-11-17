@@ -549,6 +549,24 @@ float PolygonSignedArea2D(ArrayCRef<Vector2D> points)
 	return doubleArea * 0.5f;
 }
 
+bool IsPointInPolygon2D(ArrayCRef<Vector2D> points, const Vector2D& point)
+{
+	const int numPoints = points.numElem();
+	if (numPoints < 3)
+		return false;
+
+	// crossings of the ray from the point along +X
+	bool inside = false;
+	for (int i = 0, j = numPoints - 1; i < numPoints; j = i++)
+	{
+		const Vector2D& a = points[i];
+		const Vector2D& b = points[j];
+		if ((a.y > point.y) != (b.y > point.y) && point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x)
+			inside = !inside;
+	}
+	return inside;
+}
+
 bool PolygonConvexPartition2D(ArrayCRef<Vector2D> points, int maxPartPoints, Array<int>& outPartIndices, Array<int>& outPartSizes)
 {
 	outPartIndices.clear();
