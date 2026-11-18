@@ -266,18 +266,23 @@ bool CNVRHISwapChainVK::SetBackbufferSize(int wide, int tall)
 
 bool CNVRHISwapChainVK::SwapBuffers()
 {
-	nvrhi::vulkan::DeviceHandle nvrhiDevice = CNVRHIRenderLibVK::Instance->m_nvrhiDevice;
+	CNVRHIRenderLibVK* renderLib = CNVRHIRenderLibVK::Instance;
 
-	void* pNext = nullptr;
+	// the per-image semaphore is signaled by the FIRST Graphics submission of the frame
+	// (BeginFrame registers the signal), while the actual rendering is submitted later;
+	// additionally wait for the frame-present semaphore, which the render library signals
+	// with an empty submission at the end of the frame, or the last drawn passes
+	// (console, HUD) race the presentation
+	vk::Semaphore vkWaitSemaphores[2] = { m_vkCurrentPresentSemaphore, renderLib->m_framePresentSemaphore };
+
 	vk::PresentInfoKHR info = vk::PresentInfoKHR()
-		.setWaitSemaphoreCount(1)
-		.setPWaitSemaphores(&m_vkCurrentPresentSemaphore)
+		.setWaitSemaphoreCount(2)
+		.setPWaitSemaphores(vkWaitSemaphores)
 		.setSwapchainCount(1)
 		.setPSwapchains(&m_vkSwapChain)
-		.setPImageIndices(&m_swapChainBufferIndex)
-		.setPNext(pNext);
+		.setPImageIndices(&m_swapChainBufferIndex);
 
-	const vk::Result res = CNVRHIRenderLibVK::Instance->m_vkPresentQueue.presentKHR(&info);
+	const vk::Result res = renderLib->m_vkPresentQueue.presentKHR(&info);
 	ASSERT_MSG(res == vk::Result::eSuccess || res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR, "Present failure");
 
 	// no semaphore rotation here: m_vkCurrentPresentSemaphore is selected

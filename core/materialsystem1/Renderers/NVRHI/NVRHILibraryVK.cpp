@@ -469,6 +469,12 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 	m_nvrhiFrameWaitQuery = m_nvrhiDevice->createEventQuery();
 	m_nvrhiDevice->setEventQuery(m_nvrhiFrameWaitQuery, nvrhi::CommandQueue::Graphics);
 
+	// the presentation waits these semaphores, which are signaled by an empty
+	// submission at the end of every frame (see EndFrame); one per frame in flight
+	for (VkSemaphore& semaphore : m_framePresentSemaphores)
+		semaphore = m_vkDevice.createSemaphore(vk::SemaphoreCreateInfo());
+	m_nvrhiFramePresentCmdList = m_nvrhiDevice->createCommandList();
+
 	return true;
 }
 
@@ -896,6 +902,17 @@ void CNVRHIRenderLibVK::ExitAPI()
 	CNVRHIRenderAPI::Instance.m_rhiDevice = nullptr;
 	m_nvrhiDevice = nullptr;
 	m_nvrhiFrameWaitQuery = nullptr;
+	m_nvrhiFramePresentCmdList = nullptr;
+	m_framePresentSemaphore = nullptr;
+
+	for (VkSemaphore& semaphore : m_framePresentSemaphores)
+	{
+		if (semaphore)
+		{
+			m_vkDevice.destroySemaphore(semaphore);
+			semaphore = nullptr;
+		}
+	}
 
 	if (m_vkDebugReportCallback)
 		m_vkInstance.destroyDebugReportCallbackEXT(m_vkDebugReportCallback);
@@ -946,6 +963,21 @@ void CNVRHIRenderLibVK::EndFrame()
 	stats.textureUpdateCount = 0;
 
 	g_renderWorker.Execute(__func__, [this]() {
+		// signal the frame-present semaphore from an empty submission: queue submissions
+		// execute in order, so it completes only after every pass of this frame, and the
+		// present (which waits it) cannot show a partially rendered image
+		if (m_nvrhiFramePresentCmdList)
+		{
+			VkSemaphore vkFramePresentSemaphore = m_framePresentSemaphores[m_framePresentSemaphoreIdx];
+			m_framePresentSemaphoreIdx = (m_framePresentSemaphoreIdx + 1) % uint32_t(std::size(m_framePresentSemaphores));
+			m_framePresentSemaphore = vkFramePresentSemaphore;
+			m_nvrhiDevice->queueSignalSemaphore(nvrhi::CommandQueue::Graphics, vkFramePresentSemaphore, 0);
+
+			m_nvrhiFramePresentCmdList->open();
+			m_nvrhiFramePresentCmdList->close();
+			m_nvrhiDevice->executeCommandList(m_nvrhiFramePresentCmdList);
+		}
+
 		m_currentSwapChain->SwapBuffers();
 
 		const int bufferCount = 3;// m_currentSwapChain->m_rhiSwapChainTextures.numElem();
