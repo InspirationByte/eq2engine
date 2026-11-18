@@ -1398,6 +1398,21 @@ void CWGPURenderAPI::Flush()
 	WGPU_INSTANCE_SPIN;
 }
 
+void CWGPURenderAPI::WaitForDeviceIdle()
+{
+	g_renderWorker.WaitForExecute(__func__, [this]() {
+		// wait for all submitted work on the queue
+		WGPUQueueWorkDoneCallbackInfo rhiCbInfo{};
+		rhiCbInfo.mode = WGPUCallbackMode_WaitAnyOnly;
+		WGPUFuture rhiWorkDoneFuture = wgpuQueueOnSubmittedWorkDone(m_rhiQueue, rhiCbInfo);
+
+		WGPUFutureWaitInfo rhiWaitInfo{};
+		rhiWaitInfo.future = rhiWorkDoneFuture;
+		wgpuInstanceWaitAny(m_rhiInstance, 1, &rhiWaitInfo, UINT64_MAX);
+		return 0;
+	});
+}
+
 static void CreateQuerySet()
 {
 	WGPUQuerySetDescriptor rhiQuerySetDesc = {};

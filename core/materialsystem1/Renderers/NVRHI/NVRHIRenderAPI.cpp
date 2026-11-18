@@ -53,6 +53,8 @@ DECLARE_CVAR_F(nvrhi_validation);
 
 static Threading::CEqMutex s_transientHeapsMutex;
 static Threading::CEqMutex s_cmdListMutex;
+// shader modules are created lazily from parallel job threads (async pipeline creation)
+static Threading::CEqMutex s_shaderModuleMutex;
 
 CNVRHIRenderAPI CNVRHIRenderAPI::Instance;
 ShaderAPI_Base& ShaderAPI_Base::Instance = CNVRHIRenderAPI::Instance;
@@ -101,7 +103,8 @@ void CNVRHIRenderAPI::Shutdown()
 
 	ASSERT_MSG(m_rhiCommandLists.numElem() == m_rhiFreeCommandLists.numElem(), "Found command lists were not executed. Tell programmer to fix that");
 
-	m_shaderCache.clear(true);
+	// release the RHI shader modules, plain clear would leak them
+	ClearShaderPackages();
 	m_rhiTransientTextureHeaps.clear(true);
 	m_rhiFreeTransientTextureHeaps.clear(true);
 	m_rhiTransientBufferHeaps.clear(true);
@@ -661,6 +664,9 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUComputePipeline* com
 
 const ShaderInfo::Module& CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInfo& shaderInfo, int shaderModuleIdx, const char* dbgName) const
 {
+	// guard against parallel pipeline creation jobs loading the same module twice
+	CScopedMutex m(s_shaderModuleMutex);
+
 	ShaderInfo::Module& mod = const_cast<ShaderInfo::Module&>(shaderInfo.modules[shaderModuleIdx]);
 	if (mod.rhiModule)
 		return mod;
@@ -1390,4 +1396,15 @@ Future<bool> CNVRHIRenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUComman
 void CNVRHIRenderAPI::Flush()
 {
 	g_renderWorker.SignalWork();
+}
+
+void CNVRHIRenderAPI::WaitForDeviceIdle()
+{
+	if (!m_rhiDevice)
+		return;
+
+	g_renderWorker.WaitForExecute(__func__, [this]() {
+		m_rhiDevice->waitForIdle();
+		return 0;
+	});
 }

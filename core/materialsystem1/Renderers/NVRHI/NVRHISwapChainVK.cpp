@@ -47,8 +47,21 @@ CNVRHISwapChainVK::~CNVRHISwapChainVK()
 	vk::Device vkDevice = CNVRHIRenderLibVK::Instance->m_vkDevice;
 	vk::Instance vkInstance = CNVRHIRenderLibVK::Instance->m_vkInstance;
 
+	// the swapchain must be destroyed before the surface it was created from
+	if (m_vkSwapChain)
+	{
+		vkDevice.waitIdle();
+		vkDevice.destroySwapchainKHR(m_vkSwapChain);
+		m_vkSwapChain = nullptr;
+	}
+
 	for(vk::Semaphore& vkImgSemaphore : m_vkPresentSemaphores)
 		vkDevice.destroySemaphore(vkImgSemaphore);
+	m_vkPresentSemaphores.clear();
+
+	for(vk::Semaphore& vkImgSemaphore : m_vkAcquireSemaphores)
+		vkDevice.destroySemaphore(vkImgSemaphore);
+	m_vkAcquireSemaphores.clear();
 	m_vkCurrentPresentSemaphore = vk::Semaphore{};
 
 	if (m_vkWindowSurface)
@@ -73,11 +86,19 @@ void CNVRHISwapChainVK::UpdateBackbufferView()
 	nvrhi::vulkan::DeviceHandle nvrhiDevice = CNVRHIRenderLibVK::Instance->m_nvrhiDevice;
 
 	vk::Device vkDevice = CNVRHIRenderLibVK::Instance->m_vkDevice;
+
+	// rotate the acquire semaphore: it stays signaled until the next graphics queue submit consumes it
+	vk::Semaphore& vkAcquireSemaphore = m_vkAcquireSemaphores[m_vkAcquireSemaphoreIndex];
+	m_vkAcquireSemaphoreIndex = (m_vkAcquireSemaphoreIndex + 1) % m_vkAcquireSemaphores.numElem();
+
 	const vk::Result res = vkDevice.acquireNextImageKHR(m_vkSwapChain,
 		std::numeric_limits<uint64_t>::max(),
-		m_vkCurrentPresentSemaphore,
+		vkAcquireSemaphore,
 		vk::Fence(),
 		&m_swapChainBufferIndex);
+
+	// consume the acquire semaphore on the next graphics queue submit even if this frame is skipped
+	nvrhiDevice->queueWaitForSemaphore(nvrhi::CommandQueue::Graphics, vkAcquireSemaphore, 0);
 
 	// not sure if this is fine
 	if (res != vk::Result::eNotReady)
@@ -92,8 +113,10 @@ void CNVRHISwapChainVK::UpdateBackbufferView()
 		m_textureRef->m_rhiTexture = m_rhiSwapChainTextures[m_swapChainBufferIndex];
 	}
 
+	// the semaphore is selected by the acquired image index, so it cannot be reused
+	// while the presented image has not been re-acquired
+	m_vkCurrentPresentSemaphore = m_vkPresentSemaphores[m_swapChainBufferIndex];
 	nvrhiDevice->queueSignalSemaphore(nvrhi::CommandQueue::Graphics, m_vkCurrentPresentSemaphore, 0);
-	nvrhiDevice->queueWaitForSemaphore(nvrhi::CommandQueue::Graphics, m_vkCurrentPresentSemaphore, 0);
 }
 
 void CNVRHISwapChainVK::GetBackbufferSize(int& wide, int& tall) const
@@ -162,6 +185,8 @@ bool CNVRHISwapChainVK::UpdateResize()
 
 	const bool enableSwapChainSharing = queues.numElem() > 1;
 
+	const vk::SwapchainKHR vkOldSwapChain = m_vkSwapChain;
+
 	auto desc = vk::SwapchainCreateInfoKHR()
 		.setSurface(m_vkWindowSurface)
 		.setMinImageCount(CNVRHIRenderLibVK::Instance->m_swapChainBufferCount)
@@ -177,17 +202,20 @@ bool CNVRHISwapChainVK::UpdateResize()
 		.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
 		.setPresentMode(presentMode)
 		.setClipped(true)
-		.setOldSwapchain(m_vkSwapChain);
+		.setOldSwapchain(vkOldSwapChain);
 
 	m_rhiSwapChainTextures.clear();
 	m_vkSwapChainBuffers.clear();
-	
+
 	for (vk::Semaphore& vkImgSemaphore : m_vkPresentSemaphores)
 		vkDevice.destroySemaphore(vkImgSemaphore);
 	m_vkPresentSemaphores.clear();
-	m_vkCurrentPresentSemaphore = vk::Semaphore{};
 
-	m_vkSwapChain = nullptr;
+	for (vk::Semaphore& vkImgSemaphore : m_vkAcquireSemaphores)
+		vkDevice.destroySemaphore(vkImgSemaphore);
+	m_vkAcquireSemaphores.clear();
+	m_vkCurrentPresentSemaphore = vk::Semaphore{};
+	m_vkAcquireSemaphoreIndex = 0;
 	m_swapChainBufferIndex = 0;
 
 	const vk::Result res = vkDevice.createSwapchainKHR(&desc, nullptr, &m_vkSwapChain);
@@ -217,8 +245,12 @@ bool CNVRHISwapChainVK::UpdateResize()
 
 		// Give each swapchain image its own semaphore in case of overlap (e.g.MoltenVK async queue submit)
 		m_vkPresentSemaphores.append(vkDevice.createSemaphore(vk::SemaphoreCreateInfo()));
+		m_vkAcquireSemaphores.append(vkDevice.createSemaphore(vk::SemaphoreCreateInfo()));
 	}
-	m_vkCurrentPresentSemaphore = m_vkPresentSemaphores.front();
+
+	// the old swapchain was retired by the new one and must be destroyed
+	if (vkOldSwapChain)
+		vkDevice.destroySwapchainKHR(vkOldSwapChain);
 
 	m_textureRef->m_rhiTexture = nullptr;
 
@@ -248,10 +280,8 @@ bool CNVRHISwapChainVK::SwapBuffers()
 	const vk::Result res = CNVRHIRenderLibVK::Instance->m_vkPresentQueue.presentKHR(&info);
 	ASSERT_MSG(res == vk::Result::eSuccess || res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR, "Present failure");
 
-	// cycle the semaphore queue and setup m_PresentSemaphore for the next swapchain image
-	m_vkPresentSemaphores.popFront();
-	m_vkPresentSemaphores.append(m_vkCurrentPresentSemaphore);
-	m_vkCurrentPresentSemaphore = m_vkPresentSemaphores.front();
+	// no semaphore rotation here: m_vkCurrentPresentSemaphore is selected
+	// by the acquired image index in UpdateBackbufferView
 
 	return true;
 }
