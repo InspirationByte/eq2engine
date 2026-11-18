@@ -12,8 +12,9 @@ void nvrhiFillSamplerDesc(const SamplerStateParams& samplerParams, nvrhi::Sample
 	ASSERT(samplerParams.maxAnisotropy > 0);
 
 	rhiSamplerDesc
+		// comparison is disabled for a standard sampler, but the compare op must still be a valid enum
+		.setComparisonFunc(samplerParams.compareFunc == COMPFUNC_NONE ? nvrhi::ComparisonFunc::Never : g_nvrhiCompareFunc[samplerParams.compareFunc])
 		.setReductionType(samplerParams.compareFunc == COMPFUNC_NONE ? nvrhi::SamplerReductionType::Standard : nvrhi::SamplerReductionType::Comparison)
-		.setComparisonFunc(g_nvrhiCompareFunc[samplerParams.compareFunc])
 		.setAddressU(g_nvrhiAddressMode[samplerParams.addressU])
 		.setAddressV(g_nvrhiAddressMode[samplerParams.addressV])
 		.setAddressW(g_nvrhiAddressMode[samplerParams.addressW])

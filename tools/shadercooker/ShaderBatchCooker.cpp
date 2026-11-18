@@ -874,8 +874,18 @@ bool CShaderCooker::CompileShaderSlang(
 	slangAddSourceFile("ShaderCooker", "ShaderCooker");
 	if (vertexLayout.name != "Default" && entryPoint.kind != SHADERKIND_COMPUTE)
 	{
-		slangAddSourceFile("IVertex", fnmPathCombine("VertexLayouts", "IVertex.h"));
-		slangAddSourceFile("VertexLayout", fnmPathCombine("VertexLayouts", vertexLayout.name + ".h"));
+		// vertex layouts without a header only select a shader variant (e.g. SMAA passes),
+		// such shaders must not import VertexLayout
+		const EqString vertexLayoutFileName = fnmPathCombine("VertexLayouts", vertexLayout.name + ".h");
+		const bool hasVertexLayoutFile = arrayFindIndexF(m_targetProps.includePaths, [&](const EqString& path) {
+			return g_fileSystem->FileExist(fnmPathCombine(path, vertexLayoutFileName), SP_ROOT);
+		}) != -1;
+
+		if (hasVertexLayoutFile)
+		{
+			slangAddSourceFile("IVertex", fnmPathCombine("VertexLayouts", "IVertex.h"));
+			slangAddSourceFile("VertexLayout", vertexLayoutFileName);
+		}
 	}
 
 	{

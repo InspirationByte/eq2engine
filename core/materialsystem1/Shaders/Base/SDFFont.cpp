@@ -51,6 +51,7 @@ BEGIN_SHADER_CLASS(
 		m_shadowParamsVar = GetMaterialVar("ShadowParams", "[0.94 0.95 0, 1]");
 		m_shadowColor = GetMaterialVar("ShadowColor", "[0 0 0 1]");
 		m_shadowOffset = GetMaterialVar("ShadowOffset", "[0 0]");
+		m_msdfParams = GetMaterialVar("MsdfParams", "[0 0 0 0]");
 	}
 
 	SHADER_INIT_RESOURCES()
@@ -174,6 +175,7 @@ BEGIN_SHADER_CLASS(
 			bufferData.append(m_shadowColor.Get());
 			bufferData.append(m_shadowParamsVar.Get());
 			bufferData.append(Vector4D(m_shadowOffset.Get(), 0.0f));
+			bufferData.append(m_msdfParams.Get());
 
 			GPUBufferView cameraParamsBuffer;
 			for (const RenderBufferInfo& rendBuffer : setupParams.uniformBuffers)
@@ -220,4 +222,5 @@ BEGIN_SHADER_CLASS(
 	MatVec4Proxy		m_shadowColor;
 	MatVec4Proxy		m_shadowParamsVar;
 	MatVec2Proxy		m_shadowOffset;
+	MatVec4Proxy		m_msdfParams;
 END_SHADER_CLASS

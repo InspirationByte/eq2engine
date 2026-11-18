@@ -178,6 +178,7 @@ bool CEqFontCache::Init()
 	m_shadowParams = m_sdfMaterial->GetMaterialVar("ShadowParams", "[0.94 0.95 0, 1]");
 	m_shadowColor = m_sdfMaterial->GetMaterialVar("ShadowColor", "[0 0 0 1]");
 	m_shadowOffset = m_sdfMaterial->GetMaterialVar("ShadowOffset", "[0 0]");
+	m_msdfParams = m_sdfMaterial->GetMaterialVar("MsdfParams", "[0 0 0 0]");
 
 	m_sdfMaterial->LoadShaderAndTextures();
 

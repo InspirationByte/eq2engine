@@ -80,7 +80,7 @@ Public interfaces are declared in `public/` and implemented in `core/` or `share
 | `public/{audio,font,input,physics,render,egf}/` | Public headers of the corresponding `shared/` libraries |
 | `shared/dpk/` | DPK package and ZIP readers/writer |
 | `shared/font/` | Font loading, caching and text layout |
-| `shared/render/` | Render utilities: debug overlay, particles, decals, sprites, render lists, blur/sort compute |
+| `shared/render/` | Render utilities: debug overlay, particles, decals, sprites, render lists, blur/sort compute, full-screen FXAA / SMAA |
 | `shared/grim/` | GRIM — GPU-driven rendering instance manager |
 | `shared/studiofile/`, `shared/studio/` | EGF model loading and studio geometry cache |
 | `shared/egf/` | EGF/motion package generator and source model loaders (ESM, FBX, OBJ) — tools only |
@@ -202,7 +202,7 @@ All are static libraries using `public` and `shared` include paths.
 |---|---|---|
 | `dpkLib` | `dpk/**` | (lz4, zlib) |
 | `fontLib` | `font/**` | — |
-| `renderUtilLib` | `render/**` | — |
+| `renderUtilLib` | `render/**` | (smaa) |
 | `grimLib` | `grim/**` | renderUtilLib (imgui) |
 | `studioFileLib` | `studiofile/**` | (bullet2, zlib) |
 | `studioLib` | `studio/**` | studioFileLib |

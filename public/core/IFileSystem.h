@@ -22,6 +22,30 @@ enum ESearchPath : int
 	SP_IGNORE_PACKAGE	= (1 << 4),	// ignore files from packages
 };
 
+// file type a file is added or checked out with by the source control
+enum ESourceControlFileType : int
+{
+	SC_FILETYPE_AUTO = 0,	// type of the depot file, new files are detected by the server
+	SC_FILETYPE_BINARY,		// binary, no line ending conversion on sync
+
+	SC_FILETYPE_COUNT
+};
+
+// state of the file system source control
+enum ESourceControlStatus : int
+{
+	SC_STATUS_NONE = 0,			// not configured for the application
+	SC_STATUS_NOT_CONNECTED,	// configured, connects on the first write or IsSourceControlEnabled
+	SC_STATUS_CONNECTING,
+	SC_STATUS_ONLINE,
+	SC_STATUS_OFFLINE,			// server not reachable or not logged in, or set offline by the application
+};
+
+// Called when the source control status changes. 'error' is the reason when the provider went
+// offline because of a failure, nullptr otherwise. Called on the thread that ran the command
+// with the provider locked: the callback must only store the state and must not use the file system.
+using SourceControlStatusFunc = EqFunction<void(ESourceControlStatus status, const char* error)>;
+
 struct FSFindData;
 
 //------------------------------------------------------------------------------
@@ -32,7 +56,7 @@ class IFileSystem : public IEqCoreModule
 {
 	friend class CFileSystemFind;
 public:
-	CORE_INTERFACE("E2_Filesystem_011")
+	CORE_INTERFACE("E2_Filesystem_012")
 
     // Initialization of filesystem
     virtual bool			Init(bool bEditorMode) = 0;
@@ -99,6 +123,38 @@ public:
 
 	// opens package for further reading. Does not add package as FS layer.
 	virtual IPackFileReaderPtr OpenPackage(const char* packageName, int searchFlags = -1) = 0;
+
+	//------------------------------------------------------------
+	// Source control
+	//------------------------------------------------------------
+
+	// files written, removed or renamed by the calling thread go to the pending changelist
+	// with this description until the scope is popped. Use SourceControlScope.
+	virtual void			PushSourceControlChangelist(const char* description) = 0;
+	virtual void			PopSourceControlChangelist() = 0;
+
+	// true when written files are checked out and added, connects to the server on the first call
+	virtual bool			IsSourceControlEnabled() const = 0;
+
+	// current status, does not connect
+	virtual ESourceControlStatus GetSourceControlStatus() const = 0;
+
+	// Online connects to the server (blocks up to the connect timeout) and reconciles files written
+	// while offline. Offline runs no commands: written read-only files are made writable and
+	// remembered for the reconcile. Returns the resulting status.
+	virtual ESourceControlStatus SetSourceControlOnline(bool online) = 0;
+
+	// set before other threads write files, nullptr removes the callback
+	virtual void			SetSourceControlStatusCallback(const SourceControlStatusFunc& func) = 0;
+
+	// checks out a depot file, or all depot files of a directory recursively, into the current
+	// changelist. Writing many files of a checked out directory does not query the server per file.
+	// Also used by writers which do not open files with Open.
+	// A checked out file gets the file type unless it is SC_FILETYPE_AUTO, directories ignore it.
+	virtual void			CheckoutSourceControlFiles(const char* fileOrDirName, ESearchPath search, ESourceControlFileType fileType = SC_FILETYPE_AUTO) = 0;
+
+	// adds a file created without Open with the file type, or checks it out when it is in the depot
+	virtual void			AddSourceControlFile(const char* fileName, ESearchPath search, ESourceControlFileType fileType = SC_FILETYPE_AUTO) = 0;
 
 protected:
 	//------------------------------------------------------------
@@ -180,3 +236,37 @@ inline bool CFileSystemFind::Next()
 
 	return (m_fd && m_curPath);
 }
+
+//-----------------------------------------------------------------------------------------
+// Source control changelist scope
+//-----------------------------------------------------------------------------------------
+
+// Files written by the calling thread while the scope exists go to the pending changelist
+// with the given description, it is created on the first file and reused when it exists.
+// New and removed files are added and deleted by one command when the scope ends.
+// A scope with the description of the innermost scope of the thread is merged into it, so work
+// split into parts that open the scope again sends its files when the outer scope ends.
+// Does nothing when source control is not enabled.
+//
+//	SourceControlScope scScope("+export %s", levelName.ToCString());
+class SourceControlScope
+{
+public:
+	SourceControlScope(const char* descFormat, ...)
+	{
+		va_list argList;
+		va_start(argList, descFormat);
+		const EqString description(EqString::FormatV(descFormat, argList));
+		va_end(argList);
+
+		g_fileSystem->PushSourceControlChangelist(description);
+	}
+
+	~SourceControlScope()
+	{
+		g_fileSystem->PopSourceControlChangelist();
+	}
+
+	SourceControlScope(const SourceControlScope&) = delete;
+	SourceControlScope& operator=(const SourceControlScope&) = delete;
+};

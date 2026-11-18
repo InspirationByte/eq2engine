@@ -143,6 +143,7 @@ private:
 	TargetProperties	m_targetProps;
 
 	Array<TexInfo>		m_textureList{ PP_SL };
+	Array<EqString>		m_fontTextureList{ PP_SL };
 };
 
 //-----------------------------------------------------------------------
@@ -381,6 +382,11 @@ void CTextureCooker::SearchFolderForAtlasesAndConvert(const char* wildcard)
 			const EqString fullAtlPath = fnmPathCombine(searchFolder, fileName);
 			ProcessAtlasFile(fullAtlPath, m_targetProps.sourceMaterialPath);
 		}
+		else if (fnmPathExtractExt(fileName) == s_fontDescFileExt)
+		{
+			const EqString fullFontPath = fnmPathCombine(searchFolder, fileName);
+			ProcessFontFile(fullFontPath, m_targetProps.sourceMaterialPath, m_fontTextureList);
+		}
 	}
 }
 
@@ -389,13 +395,13 @@ void CTextureCooker::SearchFolderForMaterialsAndGetTextures(const char* wildcard
 	EqString searchFolder(wildcard);
 	searchFolder.ReplaceSubstr("*", "");
 
-	Msg("Search MAT wildcard: %s\n", wildcard);
+	Msg("Search materials: %s\n", wildcard);
 
 	CFileSystemFind fsFind(wildcard, SP_ROOT);
 	while (fsFind.Next())
 	{
 		EqStringRef fileName = fsFind.GetPath();
-		if (fsFind.IsDirectory() && fileName != EqStringRef(".") && fileName != EqStringRef(".."))
+		if (fsFind.IsDirectory() && fileName[0] != '.')
 		{
 			const EqString searchTemplate = fnmPathCombine(searchFolder, fileName, "*");
 			SearchFolderForMaterialsAndGetTextures(searchTemplate);
@@ -652,8 +658,12 @@ void CTextureCooker::Execute(CEqJobManager& jobMng)
 
 	const EqString searchTemplate = fnmPathCombine(m_targetProps.sourceMaterialPath, "*");
 
-	// convert atlas sources first
+	// convert atlas and font sources first
 	SearchFolderForAtlasesAndConvert(searchTemplate);
+
+	// font atlas textures are converted through the fonts material
+	if (m_fontTextureList.numElem())
+		UpdateFontsMaterial(m_targetProps.sourceMaterialPath, m_fontTextureList);
 
 	// walk up material files
 	SearchFolderForMaterialsAndGetTextures(searchTemplate);

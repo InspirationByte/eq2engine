@@ -189,7 +189,7 @@ inline bool operator == (const TVec2D<T> &u, const TVec2D<T2> &v)
 template <typename T, typename T2>
 inline bool operator != (const TVec2D<T>& u, const TVec2D<T2>& v)
 {
-	return (u.x != v.x && u.y != v.y);
+	return (u.x != v.x || u.y != v.y);
 }
 
 /* --------------------------------------------------------------------------------- */
@@ -360,7 +360,7 @@ inline bool operator == (const TVec3D<T> &u, const TVec3D<T2> &v)
 template <typename T, typename T2>
 inline bool operator != (const TVec3D<T>& u, const TVec3D<T2>& v)
 {
-	return (u.x != v.x && u.y != v.y && u.z != v.z);
+	return (u.x != v.x || u.y != v.y || u.z != v.z);
 }
 
 template <typename T, typename T2>
@@ -563,7 +563,7 @@ inline bool operator == (const TVec4D<T> &u, const TVec4D<T2> &v)
 template <typename T, typename T2>
 inline bool operator != (const TVec4D<T>& u, const TVec4D<T2>& v)
 {
-	return (u.x != v.x && u.y != v.y && u.z != v.z && u.w != v.w);
+	return (u.x != v.x || u.y != v.y || u.z != v.z || u.w != v.w);
 }
 
 /* --------------------------------------------------------------------------------- */

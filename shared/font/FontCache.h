@@ -68,4 +68,5 @@ protected:
 	MatVec4Proxy		m_shadowColor;
 	MatVec4Proxy		m_shadowParams;
 	MatVec2Proxy		m_shadowOffset;
+	MatVec4Proxy		m_msdfParams;
 };

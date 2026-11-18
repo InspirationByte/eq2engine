@@ -157,17 +157,14 @@ inline float RemapVal(float val, float A, float B, float C, float D)
 }
 
 // Remap a value in the range [A,B] to [C,D] and clamp result to [C,D]
+// Either range may be descending (B < A or D < C). An empty range A == B gives C below A, D otherwise.
 inline float RemapValClamp(float val, float A, float B, float C, float D)
 {
-	if (D < C)
-	{
-		QuickSwap(A, B);
-		QuickSwap(C, D);
-	}
+	if (A == B)
+		return val < A ? C : D;
 
-	if (val < A) return C;
-	if (val > B) return D;
-	return RemapVal(val, A, B, C, D);
+	const float t = min(max((val - A) / (B - A), 0.0f), 1.0f);
+	return C + (D - C) * t;
 }
 
 template<typename T>

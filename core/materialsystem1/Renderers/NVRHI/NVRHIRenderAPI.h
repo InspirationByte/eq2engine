@@ -49,6 +49,7 @@ public:
 
 	// Synchronization
 	void						Flush();
+	void						WaitForDeviceIdle();
 
 //-------------------------------------------------------------
 // Shaders

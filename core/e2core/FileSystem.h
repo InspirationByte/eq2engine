@@ -8,6 +8,7 @@
 #pragma once
 #include "core/IFileSystem.h"
 #include "core/platform/OSFile.h"
+#include "SourceControl.h"
 
 class CBasePackageReader;
 struct FSSearchPathInfo;
@@ -124,7 +125,22 @@ public:
 	void						FindClose(FSFindData* findData);
 	bool						FindIsDirectory(FSFindData* findData) const;
 	int							FindGetDirIndex(FSFindData* findData) const;
-	
+
+	//------------------------------------------------------------
+	// Source control
+	//------------------------------------------------------------
+
+	void						PushSourceControlChangelist(const char* description);
+	void						PopSourceControlChangelist();
+	bool						IsSourceControlEnabled() const;
+	ESourceControlStatus		GetSourceControlStatus() const;
+	ESourceControlStatus		SetSourceControlOnline(bool online);
+	void						SetSourceControlStatusCallback(const SourceControlStatusFunc& func);
+	void						CheckoutSourceControlFiles(const char* fileOrDirName, ESearchPath search, ESourceControlFileType fileType);
+	void						AddSourceControlFile(const char* fileName, ESearchPath search, ESourceControlFileType fileType);
+
+	ISourceControl*				GetSourceControl() const { return m_sourceControl.Ptr(); }
+
 	//-------------------------
 	bool						IsInitialized() const { return m_isInit; }
 	
@@ -147,7 +163,9 @@ protected:
 	Array<IPackFileReaderPtr>	m_fsPackages{ PP_SL };		// package serving as FS layers
 	
 	Array<FSFindData*>			m_findDatas{ PP_SL };
-	
+
+	ISourceControlPtr			m_sourceControl;
+
 	bool						m_isInit{ false };
 };
 

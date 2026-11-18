@@ -46,10 +46,14 @@ protected:
 
 	Array<nvrhi::TextureHandle>	m_rhiSwapChainTextures{ PP_SL };
 	Array<vk::Image>			m_vkSwapChainBuffers{ PP_SL };
+	// one signal semaphore per swapchain image, selected by the acquired image index
 	Array<vk::Semaphore>		m_vkPresentSemaphores{ PP_SL };
+	// acquire semaphores are consumed by the next graphics queue submit, so they rotate
+	Array<vk::Semaphore>		m_vkAcquireSemaphores{ PP_SL };
 	vk::Semaphore				m_vkCurrentPresentSemaphore;
 
 	uint						m_swapChainBufferIndex{ COM_UINT_MAX };
+	uint						m_vkAcquireSemaphoreIndex{ 0 };
 
 	nvrhi::Format				m_swapChainFormat{ nvrhi::Format::RGBA8_UNORM };
 	CRefPtr<CNVRHITexture>		m_textureRef;

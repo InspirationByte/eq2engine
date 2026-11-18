@@ -36,6 +36,8 @@ include "nestegg"
 include "lua54"
 
 include "meshoptimizer"
+include "msdfgen"
+include "smaa"
 include "recast"
 include "bullet2"
 include "OpenFBX"

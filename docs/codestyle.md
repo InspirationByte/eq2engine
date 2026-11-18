@@ -112,6 +112,9 @@ The reference shows the general layout; where it disagrees with this document, t
   ones in the narrowest scope (class or function).
 - Use `const` for locals that are not modified after initialization.
 - Initialize members in the class declaration with brace initializers: `int m_fileIdx{ -1 };`.
+- In size computations take `sizeof` of the variable or element rather than of its type, when
+  possible: `arr.numElem() * sizeof(arr[0])`, not `arr.numElem() * sizeof(ushort)`. The size then
+  follows a change of the element type.
 
 ## Engine facilities
 

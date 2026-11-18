@@ -148,6 +148,37 @@ frame the loop sleeps `sys_sleep` ms (default 1).
 7. `EndScene`: `g_matSystem->EndFrame()`.
 8. Pending fullscreen toggle, `g_onEndFrame`.
 
+### Full-screen anti-aliasing — `shared/render/EdgeAA.cpp`
+
+`CRenderFullScreenEdgeAA` (`g_fullScreenEdgeAA`) anti-aliases the back buffer after the scene and
+EqUI, before the debug overlay, console and ImGui. It is skipped while a state viewport is visible
+(the viewport target is not a storage texture). `r_aa` selects the mode:
+
+| `r_aa` | Mode | Passes |
+|---|---|---|
+| 0 | Off | — |
+| 1 | FXAA 3.11 | `EdgeAA` compute: back buffer → `_rt_AAFramebuffer` with luma in alpha; `EdgeAA` material draws into the back buffer (`r_fxaaQualitySubpix`, `r_fxaaQualityEdgeThreshold`, `r_fxaaQualityEdgeThresholdMin`) |
+| 2 (default) | SMAA 1x | Same back buffer copy, then `SMAA` shader passes `EdgeDetection` (luma edges → `_rt_SMAAEdges`, RG8), `BlendingWeight` (→ `_rt_SMAABlend`, RGBA8), `NeighborhoodBlending` into the back buffer |
+
+- `r_aa` is declared in `sys_host.cpp`: `CGameHost::InitSystems` passes it to `Init(mode)`, and its
+  change callback calls `SetMode(mode)`, which re-creates the resources (`Shutdown` + `Init`) once
+  initialized. `Init` creates only the resources of the mode (none for 0, FXAA ones for 1, FXAA and
+  SMAA ones for 2).
+- `PreRender(cmdRecorder)` records the copy and, for SMAA, the edge and weight passes;
+  `Render(rendPassRecorder)` draws the final pass inside the host's back buffer render pass.
+- SMAA tuning: `r_smaaThreshold` (0.1), `r_smaaMaxSearchSteps` (16), `r_smaaMaxSearchStepsDiag` (8),
+  `r_smaaCornerRounding` (25) — the defaults are the SMAA `HIGH` preset, `0.05` / `32` / `16` / `25`
+  is `ULTRA`. They are written into the `SMAAParams` uniform buffer every frame.
+- The SMAA shader is E2Base `shadersSRC/SMAA.def` / `source_SMAA.fx`; the pass is a vertex layout
+  without a layout file (`EdgeDetection`, `BlendingWeight`, `NeighborhoodBlending`), selected by
+  `ShaderVertexLayoutId` of the render pipeline. `common/smaa.h` is the unmodified reference
+  `SMAA.hlsl` (iryoku/smaa, MIT), set up for Slang at the top of `source_SMAA.fx`. Every texture is
+  sampled with one linear clamp sampler at level 0, because WGSL forbids implicit-derivative sampling
+  after the `discard` of the edge detection pass. The C++ `SMAAParams` must match the shader struct.
+- The area and search lookup textures come from `src_dependency/smaa` (`AreaTex.h`, `SearchTex.h`)
+  and are created at `Init` as procedural textures `_smaaAreaTex` (RG8) and `_smaaSearchTex` (R8).
+- If the SMAA pipelines cannot be created, `r_aa 2` falls back to FXAA.
+
 The ImGui renderer backend (`imgui_impl_matsystem.cpp`) draws through material system dynamic meshes,
 which hold up to 32767 vertices and indices. It sets `ImGuiBackendFlags_RendererHasVtxOffset`, so
 ImGui can put more than 65535 vertices into one draw list with 16-bit indices, and splits draw

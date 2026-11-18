@@ -110,6 +110,9 @@ public:
 //-------------------------------------------------------------
 
 	virtual void						Flush() = 0;
+	// waits until all queued GPU work has been completed. Use before freeing resources
+	// that can still be referenced by the queued command buffers
+	virtual void						WaitForDeviceIdle() = 0;
 
 //-------------------------------------------------------------
 // Buffer management

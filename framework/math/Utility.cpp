@@ -535,6 +535,230 @@ void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
 	hull.setNum(k - 1);
 }
 
+float PolygonSignedArea2D(ArrayCRef<Vector2D> points)
+{
+	const int numPoints = points.numElem();
+	if (numPoints < 3)
+		return 0.0f;
+
+	// shoelace formula
+	float doubleArea = 0.0f;
+	for (int i = 0, j = numPoints - 1; i < numPoints; j = i++)
+		doubleArea += points[j].x * points[i].y - points[i].x * points[j].y;
+
+	return doubleArea * 0.5f;
+}
+
+bool IsPointInPolygon2D(ArrayCRef<Vector2D> points, const Vector2D& point)
+{
+	const int numPoints = points.numElem();
+	if (numPoints < 3)
+		return false;
+
+	// crossings of the ray from the point along +X
+	bool inside = false;
+	for (int i = 0, j = numPoints - 1; i < numPoints; j = i++)
+	{
+		const Vector2D& a = points[i];
+		const Vector2D& b = points[j];
+		if ((a.y > point.y) != (b.y > point.y) && point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x)
+			inside = !inside;
+	}
+	return inside;
+}
+
+bool PolygonConvexPartition2D(ArrayCRef<Vector2D> points, int maxPartPoints, Array<int>& outPartIndices, Array<int>& outPartSizes)
+{
+	outPartIndices.clear();
+	outPartSizes.clear();
+
+	const int numPoints = points.numElem();
+	const float signedArea = PolygonSignedArea2D(points);
+	if (numPoints < 3 || maxPartPoints < 3 || fabsf(signedArea) < F_EPS)
+		return false;
+
+	// the turns are measured relative to the polygon size
+	AARectangle bounds;
+	for (const Vector2D& point : points)
+		bounds.AddVertex(point);
+	const float eps = max(lengthSqr(bounds.GetSize()), 1.0f) * 1e-6f;
+
+	// working in the positive winding
+	Array<int> remaining(PP_SL);
+	remaining.reserve(numPoints);
+	for (int i = 0; i < numPoints; ++i)
+		remaining.append(signedArea > 0.0f ? i : numPoints - 1 - i);
+
+	auto isInsideTriangle = [&](int a, int b, int c, int pointIdx) {
+		const Vector2D& p = points[pointIdx];
+		if (distanceSqr(p, points[a]) < eps || distanceSqr(p, points[b]) < eps || distanceSqr(p, points[c]) < eps)
+			return false;
+
+		return ConvexOrient2D(points[a], points[b], p) >= -eps
+			&& ConvexOrient2D(points[b], points[c], p) >= -eps
+			&& ConvexOrient2D(points[c], points[a], p) >= -eps;
+	};
+
+	// ear clipping, a collinear point is dropped when there is no ear
+	using Part = FixedArray<int, 64>;
+	Array<Part> parts(PP_SL);
+	while (remaining.numElem() > 3)
+	{
+		const int count = remaining.numElem();
+		int earIdx = -1;
+		int collinearIdx = -1;
+		for (int i = 0; i < count && earIdx == -1; ++i)
+		{
+			const int a = remaining[(i + count - 1) % count];
+			const int b = remaining[i];
+			const int c = remaining[(i + 1) % count];
+
+			const float turn = ConvexOrient2D(points[a], points[b], points[c]);
+			if (turn <= eps)
+			{
+				if (turn >= -eps && collinearIdx == -1)
+					collinearIdx = i;
+				continue;
+			}
+
+			bool isEar = true;
+			for (int j = 0; j < count && isEar; ++j)
+			{
+				const int other = remaining[j];
+				if (other != a && other != b && other != c && isInsideTriangle(a, b, c, other))
+					isEar = false;
+			}
+
+			if (isEar)
+				earIdx = i;
+		}
+
+		if (earIdx == -1 && collinearIdx == -1)
+			return false;
+
+		if (earIdx != -1)
+		{
+			Part& triangle = parts.append();
+			triangle.append(remaining[(earIdx + count - 1) % count]);
+			triangle.append(remaining[earIdx]);
+			triangle.append(remaining[(earIdx + 1) % count]);
+			remaining.removeIndex(earIdx);
+		}
+		else
+		{
+			remaining.removeIndex(collinearIdx);
+		}
+	}
+
+	if (ConvexOrient2D(points[remaining[0]], points[remaining[1]], points[remaining[2]]) > eps)
+	{
+		Part& triangle = parts.append();
+		triangle.append(remaining[0]);
+		triangle.append(remaining[1]);
+		triangle.append(remaining[2]);
+	}
+
+	if (!parts.numElem())
+		return false;
+
+	auto isConvex = [&](const Part& part) {
+		const int count = part.numElem();
+		for (int i = 0; i < count; ++i)
+		{
+			if (ConvexOrient2D(points[part[i]], points[part[(i + 1) % count]], points[part[(i + 2) % count]]) < -eps)
+				return false;
+		}
+		return true;
+	};
+
+	// merging the parts over their shared diagonals while they stay convex
+	const int maxPoints = min(maxPartPoints, Part().numAllocated());
+	bool merged = true;
+	while (merged)
+	{
+		merged = false;
+		for (int p = 0; p < parts.numElem() && !merged; ++p)
+		{
+			for (int q = p + 1; q < parts.numElem() && !merged; ++q)
+			{
+				const Part& partP = parts[p];
+				const Part& partQ = parts[q];
+				const int countP = partP.numElem();
+				const int countQ = partQ.numElem();
+				if (countP + countQ - 2 > maxPoints)
+					continue;
+
+				// the diagonal goes u -> v in P and v -> u in Q
+				for (int i = 0; i < countP && !merged; ++i)
+				{
+					const int u = partP[i];
+					const int v = partP[(i + 1) % countP];
+					for (int j = 0; j < countQ && !merged; ++j)
+					{
+						if (partQ[j] != v || partQ[(j + 1) % countQ] != u)
+							continue;
+
+						// P from v around to u, then Q after u up to v
+						Part mergedPart;
+						for (int k = 0; k < countP; ++k)
+							mergedPart.append(partP[(i + 1 + k) % countP]);
+						for (int k = 2; k < countQ; ++k)
+							mergedPart.append(partQ[(j + k) % countQ]);
+
+						if (!isConvex(mergedPart))
+							break;
+
+						parts[p] = mergedPart;
+						parts.fastRemoveIndex(q);
+						merged = true;
+					}
+				}
+			}
+		}
+	}
+
+	for (const Part& part : parts)
+	{
+		outPartIndices.append(part.ptr(), part.numElem());
+		outPartSizes.append(part.numElem());
+	}
+	return true;
+}
+
+void PolylineMiterOffsets2D(ArrayCRef<Vector2D> points, Array<Vector2D>& outOffsets)
+{
+	const int numPoints = points.numElem();
+	outOffsets.setNum(numPoints);
+	if (numPoints < 2)
+	{
+		for (Vector2D& offset : outOffsets)
+			offset = vec2_zero;
+		return;
+	}
+
+	auto getSegmentDir = [&](int segmentIdx) {
+		return normalize(points[segmentIdx + 1] - points[segmentIdx]);
+	};
+
+	for (int i = 0; i < numPoints; ++i)
+	{
+		Vector2D dir;
+		float miterScale = 1.0f;
+		if (i == 0)
+			dir = getSegmentDir(0);
+		else if (i == numPoints - 1)
+			dir = getSegmentDir(numPoints - 2);
+		else
+		{
+			const Vector2D segmentDir = getSegmentDir(i);
+			dir = normalize(getSegmentDir(i - 1) + segmentDir);
+			miterScale = 1.0f / max(dot(dir, segmentDir), 0.5f);
+		}
+
+		outOffsets[i] = Vector2D(dir.y, -dir.x) * miterScale;
+	}
+}
+
 float RectangleAlongAxisSeparation(
 	const Vector2D& pos, const Vector2D& axis, float extent,
 	const Vector2D& otherDir, const Vector2D& otherPerpDir, const Vector2D& otherExtents)
