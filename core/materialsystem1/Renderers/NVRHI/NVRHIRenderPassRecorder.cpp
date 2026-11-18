@@ -342,7 +342,7 @@ static void NVRHIBeginRenderPass(const RenderPassDesc& renderPassDesc, nvrhi::Co
 			.setTexture(depthTexture->GetNVRHITextureHandle())
 			.setReadOnly(renderPassDesc.depthReadOnly);
 
-		rhiFramebufferDesc.setDepthAttachment(depthTexture->GetNVRHITextureHandle());
+		rhiFramebufferDesc.setDepthAttachment(rhiDepthAttachment);
 
 		const bool clearDepth = !renderPassDesc.depthReadOnly && renderPassDesc.depthLoadOp == LOADFUNC_CLEAR;
 		const bool clearStencil = !renderPassDesc.stencilReadOnly && IsStencilFormat(renderPassDesc.depthStencil.texture->GetFormat()) && renderPassDesc.stencilLoadOp == LOADFUNC_CLEAR;

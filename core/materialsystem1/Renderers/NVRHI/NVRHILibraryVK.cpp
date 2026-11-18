@@ -231,6 +231,17 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 	}
 #endif
 
+#ifdef NVRHI_WITH_VALIDATION
+	// synchronization validation reports buffer/image hazards that the default
+	// validation layer does not catch (write-after-read across submissions etc)
+	if (vulkan_validation.GetBool() && arrayFindIndex(m_optionalExtensions.instance, VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME) != -1)
+	{
+		m_enabledExtensions.instance.append(VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME);
+		m_validationFeatures.setEnabledValidationFeatures({ 1u, &m_syncValidationEnable });
+		m_useSyncValidation = true;
+	}
+#endif
+
 	Array<const char*> vkInstExtNames(PP_SL);
 	Array<const char*> vkLayerNames(PP_SL);
 
@@ -310,6 +321,11 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 			.setEnabledExtensionCount(vkInstExtNames.numElem())
 			.setPpEnabledExtensionNames(vkInstExtNames.ptr())
 			.setPApplicationInfo(&applicationInfo);
+
+#ifdef NVRHI_WITH_VALIDATION
+		if (m_useSyncValidation)
+			info.setPNext(&m_validationFeatures);
+#endif
 
 		const vk::Result res = vk::createInstance(&info, nullptr, &m_vkInstance);
 		if (res != vk::Result::eSuccess)
@@ -583,6 +599,13 @@ bool CNVRHIRenderLibVK::FindQueueFamilies(vk::PhysicalDevice vkPhysicalDevice, v
 	// TODO: ShaderAPIParams
 	const bool enableComputeQueue = false;
 	const bool enableCopyQueue = false;
+
+	// this may be called multiple times (device probing and the final call for the
+	// picked device), so the families must be rediscovered from scratch
+	m_vkGraphicsQueueFamily = -1;
+	m_vkComputeQueueFamily = -1;
+	m_vkTransferQueueFamily = -1;
+	m_vkPresentQueueFamily = -1;
 
 	auto queueFamiliyProps = vkPhysicalDevice.getQueueFamilyProperties();
 

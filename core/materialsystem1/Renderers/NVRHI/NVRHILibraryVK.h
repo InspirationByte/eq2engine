@@ -79,6 +79,11 @@ protected:
 
 	vk::Instance				m_vkInstance;
 	vk::DebugReportCallbackEXT	m_vkDebugReportCallback;
+#ifdef NVRHI_WITH_VALIDATION
+	vk::ValidationFeaturesEXT	m_validationFeatures;
+	vk::ValidationFeatureEnableEXT	m_syncValidationEnable{ vk::ValidationFeatureEnableEXT::eSynchronizationValidation };
+	bool						m_useSyncValidation{ false };
+#endif
 	vk::PhysicalDevice			m_vkPhysicalDevice;
 	vk::Device					m_vkDevice;
 	vk::Queue					m_vkGraphicsQueue;
