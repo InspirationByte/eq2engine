@@ -12,7 +12,19 @@ the user's current request wins, followed by this file, then the subsystem docum
   evidence, compatibility constraints and validation. The human creates the pull request, answers
   review questions and takes responsibility for the submission; agent assistance does not transfer
   that responsibility.
-  
+
+## Design philosophy
+
+Equilibrium means simplicity and functionality in balance. Prefer the smallest design that
+fully covers the feature:
+
+- Reuse existing engine facilities (`IGraph`, containers, math helpers) instead of writing
+  parallel implementations.
+- Data comes first: prefer simple data representations and reuse of existing data. Keep only
+  what is needed or what fits the task best, without sacrificing performance.
+- Less code with the same behavior is the better solution; do not trade away required
+  functionality for brevity.
+
 ## Mandatory preflight
 
 Before editing:
