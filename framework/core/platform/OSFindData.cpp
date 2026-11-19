@@ -11,12 +11,53 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #else
+#include <ctype.h>
 #include <unistd.h> // rmdir()
 #include <dirent.h> // opendir, readdir
 #include <sys/stat.h>
 #endif
 
 #include "OSFindData.h"
+
+#if !defined(PLAT_WIN)
+// matches the entry name against a wildcard file name pattern;
+// '*' matches any sequence of characters (including empty) and '?' matches any
+// single character, case-insensitive - same as the Windows FindFirstFile behavior
+static bool MatchWildcardName(const char* pattern, const char* name)
+{
+	const char* starPattern = nullptr;
+	const char* starName = nullptr;
+
+	while (*name != 0)
+	{
+		if (*pattern == '*')
+		{
+			// remember the star position and try to match the rest with an empty sequence
+			starPattern = ++pattern;
+			starName = name;
+		}
+		else if (*pattern == '?' || CType::LowerChar(*pattern) == CType::LowerChar(*name))
+		{
+			++pattern;
+			++name;
+		}
+		else if (starPattern != nullptr)
+		{
+			// backtrack: let the last star consume one more character
+			pattern = starPattern;
+			name = ++starName;
+		}
+		else
+			return false;
+	}
+
+	// trailing stars match an empty sequence
+	while (*pattern == '*')
+		++pattern;
+
+	return *pattern == 0;
+}
+#endif
 
 OSFindData::~OSFindData()
 {
@@ -74,18 +115,9 @@ bool OSFindData::GetNext()
 		if (*m_entry->d_name == 0)
 			continue;
 
-		const int wildcardFileStart = m_wildcard.Find("*");
-		if (wildcardFileStart != -1)
-		{
-			const char* wildcardFile = m_wildcard.ToCString() + wildcardFileStart + 1;
-			if (*wildcardFile == 0)
-				break;
-
-			const char* found = CString::SubStringCaseIns(m_entry->d_name, wildcardFile);
-			if (found && strlen(found) == strlen(wildcardFile))
-				break;
-		}
-		else
+		// only the file name part of the wildcard is matched against the entry name
+		const EqStringRef wildcardName = fnmPathExtractName(m_wildcard);
+		if (MatchWildcardName(wildcardName, m_entry->d_name))
 			break;
 	} while (true);
 
