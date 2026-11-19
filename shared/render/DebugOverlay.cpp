@@ -24,8 +24,12 @@ static constexpr const int DRAW_MAX_VERTS = 8192;
 
 static constexpr const int BOXES_DRAW_SUBDIV = 4096 / 16;
 static constexpr const int LINES_DRAW_SUBDIV = 2048;
+static constexpr const int THICK_LINES_DRAW_SUBDIV = DRAW_MAX_VERTS / 4;	// a thick line is a quad of 4 vertices
 static constexpr const int POLYS_DRAW_SUBDIV = 256;
 static constexpr const int GRAPH_MAX_VALUES = 400;
+
+// lines with a width up to this value are drawn as regular lines
+static constexpr const float THICK_LINE_MIN_WIDTH = 1.0f;
 
 static constexpr const int MAX_MINICON_MESSAGES = 32;
 
@@ -279,7 +283,99 @@ void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 }
 
 #ifdef ENABLE_DEBUG_DRAWING_PROFILE
-static void DrawLineArray(ArrayRef<DDLine> lines, float frametime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
+static Vector3D ClipToWorld(const Matrix4x4& invViewProj, const Vector4D& clip)
+{
+	const Vector4D world = invViewProj * clip;
+	return world.xyz() / world.w;
+}
+
+// makes a quad expanded across the line in screen space, so the width stays in pixels
+static bool DrawThickLine(CMeshBuilder& meshBuilder, const DDLine& line, const Matrix4x4& viewProj, const Matrix4x4& invViewProj, const Vector2D& screenSize)
+{
+	Vector4D clipStart = viewProj * Vector4D(line.start, 1.0f);
+	Vector4D clipEnd = viewProj * Vector4D(line.end, 1.0f);
+
+	uint startColor = line.color1;
+	uint endColor = line.color2;
+
+	// the perspective divide requires a positive w, so clip the part behind the camera
+	constexpr float CLIP_W_EPSILON = 0.0001f;
+	if (clipStart.w < CLIP_W_EPSILON && clipEnd.w < CLIP_W_EPSILON)
+		return false;
+
+	if (clipStart.w < CLIP_W_EPSILON)
+	{
+		const float t = (CLIP_W_EPSILON - clipStart.w) / (clipEnd.w - clipStart.w);
+		clipStart = lerp(clipStart, clipEnd, t);
+		startColor = lerpRGBAPacked(startColor, endColor, t);
+	}
+	else if (clipEnd.w < CLIP_W_EPSILON)
+	{
+		const float t = (CLIP_W_EPSILON - clipEnd.w) / (clipStart.w - clipEnd.w);
+		clipEnd = lerp(clipEnd, clipStart, t);
+		endColor = lerpRGBAPacked(endColor, startColor, t);
+	}
+
+	const Vector2D screenStart = Vector2D(
+		(screenSize.x + screenSize.x * clipStart.x / clipStart.w) * 0.5f,
+		(screenSize.y - screenSize.y * clipStart.y / clipStart.w) * 0.5f);
+	const Vector2D screenEnd = Vector2D(
+		(screenSize.x + screenSize.x * clipEnd.x / clipEnd.w) * 0.5f,
+		(screenSize.y - screenSize.y * clipEnd.y / clipEnd.w) * 0.5f);
+
+	const Vector2D screenDir = screenEnd - screenStart;
+	const float screenLength = length(screenDir);
+	if (screenLength < 0.001f)	// the line points at the camera and has no direction on screen
+		return false;
+
+	// half width offset in pixels, perpendicular to the line on screen
+	const Vector2D pixelOffset = Vector2D(-screenDir.y, screenDir.x) * (line.width * 0.5f / screenLength);
+	const Vector2D ndcOffset = Vector2D(pixelOffset.x * 2.0f / screenSize.x, -pixelOffset.y * 2.0f / screenSize.y);
+
+	Vector4D clipStartLeft = clipStart;
+	Vector4D clipStartRight = clipStart;
+	clipStartLeft.x -= ndcOffset.x * clipStart.w;
+	clipStartLeft.y -= ndcOffset.y * clipStart.w;
+	clipStartRight.x += ndcOffset.x * clipStart.w;
+	clipStartRight.y += ndcOffset.y * clipStart.w;
+
+	Vector4D clipEndLeft = clipEnd;
+	Vector4D clipEndRight = clipEnd;
+	clipEndLeft.x -= ndcOffset.x * clipEnd.w;
+	clipEndLeft.y -= ndcOffset.y * clipEnd.w;
+	clipEndRight.x += ndcOffset.x * clipEnd.w;
+	clipEndRight.y += ndcOffset.y * clipEnd.w;
+
+	const Vector3D startLeft = ClipToWorld(invViewProj, clipStartLeft);
+	const Vector3D startRight = ClipToWorld(invViewProj, clipStartRight);
+	const Vector3D endLeft = ClipToWorld(invViewProj, clipEndLeft);
+	const Vector3D endRight = ClipToWorld(invViewProj, clipEndRight);
+
+	meshBuilder.Color4(MColor(startColor));
+	meshBuilder.Position3fv(startLeft);
+	const int firstVert = meshBuilder.AdvanceVertex();
+
+	meshBuilder.Color4(MColor(startColor));
+	meshBuilder.Position3fv(startRight);
+	meshBuilder.AdvanceVertex();
+
+	meshBuilder.Color4(MColor(endColor));
+	meshBuilder.Position3fv(endLeft);
+	meshBuilder.AdvanceVertex();
+
+	meshBuilder.Color4(MColor(endColor));
+	meshBuilder.Position3fv(endRight);
+	meshBuilder.AdvanceVertex();
+
+	// two triangles, same vertex order as Quad3
+	static const int quadIndices[] = { 0, 1, 2, 2, 1, 3 };
+	for (int idx : quadIndices)
+		meshBuilder.AdvanceVertexIndex(firstVert + idx);
+
+	return true;
+}
+
+static void DrawLineArray(ArrayRef<DDLine> lines, float frametime, const Volume& frustum, const Vector2D& screenSize, const Matrix4x4& viewProj, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!lines.numElem())
 		return;
@@ -297,6 +393,9 @@ static void DrawLineArray(ArrayRef<DDLine> lines, float frametime, const Volume&
 		for(DDLine& line : lines)
 		{
 			line.lifetime -= frametime;
+			if (line.width > THICK_LINE_MIN_WIDTH)
+				continue;
+
 			if (!frustum.IsBoxInside(line.start, line.end))
 				continue;
 
@@ -312,6 +411,38 @@ static void DrawLineArray(ArrayRef<DDLine> lines, float frametime, const Volume&
 		}
 
 	if(meshBuilder.End(drawCmd))
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+
+	// thick lines are drawn as screen-facing quads
+	meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
+	meshBuilder.Begin(PRIM_TRIANGLES);
+
+	const Matrix4x4 invViewProj = inverse(viewProj);
+
+	int thickLinesDrawn = 0;
+	for (DDLine& line : lines)
+	{
+		if (line.width <= THICK_LINE_MIN_WIDTH)
+			continue;
+
+		if (!frustum.IsBoxInside(line.start, line.end))
+			continue;
+
+		if (thickLinesDrawn > 0 && (thickLinesDrawn % THICK_LINES_DRAW_SUBDIV) == 0)
+		{
+			if (meshBuilder.End(drawCmd))
+				g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+
+			// start with new mesh
+			meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
+			meshBuilder.Begin(PRIM_TRIANGLES);
+		}
+
+		if (DrawThickLine(meshBuilder, line, viewProj, invViewProj, screenSize))
+			++thickLinesDrawn;
+	}
+
+	if (meshBuilder.End(drawCmd))
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
@@ -1225,7 +1356,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale, ITexture* co
 
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawLineArray(m_LineList, m_frameTime, m_frustum, rendPassRecorder);
+		DrawLineArray(m_LineList, m_frameTime, m_frustum, Vector2D(winWide, winTall), m_projMat * m_viewMat, rendPassRecorder);
 	}
 
 	{

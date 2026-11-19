@@ -216,11 +216,13 @@ struct DDLine : DDNodeBase
 	DDLine& Color(const MColor& v) { color1 = color2 = v.pack(); return *this; }
 	DDLine& ColorStart(const MColor& v) { color1 = v.pack(); return *this; }
 	DDLine& ColorEnd(const MColor& v) { color2 = v.pack(); return *this; }
+	DDLine& Width(float v) { width = v; return *this; }
 
 	Vector3D		start;
 	Vector3D		end;
 	uint			color1{ color_white.pack() };
 	uint			color2{ color_white.pack() };
+	float			width{ 0.0f };	// line width in pixels, up to 1 draws a regular line
 };
 
 struct DDPoly : DDNodeBase

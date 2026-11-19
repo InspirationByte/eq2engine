@@ -201,13 +201,16 @@ if (snd_scriptsound_debug.GetBool())
 | Builder | Shape | Setters |
 |---|---|---|
 | `DbgText3D()` | Text at a 3D position | `Text(fmt, ...)`, `Position`, `Distance` (max visible distance), `Color` |
-| `DbgLine()` | Line | `Start`, `End`, `Color`, `ColorStart`, `ColorEnd` |
+| `DbgLine()` | Line | `Start`, `End`, `Color`, `ColorStart`, `ColorEnd`, `Width` (pixels, up to 1 is a regular line) |
 | `DbgBox()` | Axis-aligned box | `Box(bbox)`, `Mins`, `Maxs`, `CenterSize`, `Color`, `Fill` |
 | `DbgOriBox()` | Oriented box | box setters + `Position`, `Rotation(quaternion)` |
 | `DbgSphere()` | Sphere | `Position`, `Radius`, `Color`, `Fill` |
 | `DbgCylinder()` | Cylinder | `Position`, `Radius`, `Height`, `Color` |
 | `DbgPoly()` | Polygon (up to 20 points) | `Point`, `Points`, `ClipPlane(plane, origin, size)`, `Color`, `Fill`, `Outline` |
 | `DbgVolume()` | Convex volume from planes | `Planes`, `Volume(volume)`, `Color` |
+
+`Width(px)` sets the line thickness in pixels: a line wider than one pixel is drawn as a quad
+expanded in screen space and keeps its pixel width at any distance, otherwise it is a regular line.
 
 Common setters (call them last, they return the base builder):
 
