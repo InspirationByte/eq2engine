@@ -11,7 +11,7 @@ pipelines and binds the bind groups for each draw. Each material shader has a ma
 |---|---|
 | Interface | `public/materialsystem1/IMatSysShader.h` — `IMatSystemShader`, `EBindGroupId`, `IShaderMeshInstanceProvider`, registration macros |
 | Base class | `public/materialsystem1/BaseShader.h/.cpp` (`BaseShader` static library) — `CBaseShader`, `BEGIN_SHADER_CLASS` |
-| Engine shaders | `core/materialsystem1/Shaders/Base` (`eqBaseShaders`), material system built-ins (`DefaultShader.cpp`) |
+| Engine shaders | `core/materialsystem1/Shaders/Base` (`eqBaseShaders`), material system built-ins (`DefaultShader.cpp`: `Default`, `DebugDraw` for the debug overlay) |
 | Application shaders | Any project that links `BaseShader`, e.g. `samples/GPUDriven/shader_baseunlit.cpp` |
 | GPU shader sources | Game data `shadersSRC` folders (e.g. E2DevMain `build/E2Base/shadersSRC`, `build/GpuDriven/shadersSRC`) |
 

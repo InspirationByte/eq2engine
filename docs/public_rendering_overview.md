@@ -201,16 +201,50 @@ if (snd_scriptsound_debug.GetBool())
 | Builder | Shape | Setters |
 |---|---|---|
 | `DbgText3D()` | Text at a 3D position | `Text(fmt, ...)`, `Position`, `Distance` (max visible distance), `Color` |
-| `DbgLine()` | Line | `Start`, `End`, `Color`, `ColorStart`, `ColorEnd`, `Width` (pixels, up to 1 is a regular line) |
-| `DbgBox()` | Axis-aligned box | `Box(bbox)`, `Mins`, `Maxs`, `CenterSize`, `Color`, `Fill` |
+| `DbgLine()` | Line | `Start`, `End`, `Color`, `ColorStart`, `ColorEnd`, `Width` (pixels, up to 1 is a regular line), `Dash` (dash and gap length in pixels, 0 is solid) |
+| `DbgBox()` | Axis-aligned box | `Box(bbox)`, `Mins`, `Maxs`, `CenterSize`, `Color`, `Fill`, `Lit` |
 | `DbgOriBox()` | Oriented box | box setters + `Position`, `Rotation(quaternion)` |
-| `DbgSphere()` | Sphere | `Position`, `Radius`, `Color`, `Fill` |
+| `DbgSphere()` | Sphere | `Position`, `Radius`, `Color`, `Fill`, `Lit` |
 | `DbgCylinder()` | Cylinder | `Position`, `Radius`, `Height`, `Color` |
-| `DbgPoly()` | Polygon (up to 20 points) | `Point`, `Points`, `ClipPlane(plane, origin, size)`, `Color`, `Fill`, `Outline` |
+| `DbgPoly()` | Polygon (up to 20 points) | `Point`, `Points`, `ClipPlane(plane, origin, size)`, `Color`, `Fill`, `Outline`, `Lit` |
 | `DbgVolume()` | Convex volume from planes | `Planes`, `Volume(volume)`, `Color` |
 
 `Width(px)` sets the line thickness in pixels: a line wider than one pixel is drawn as a quad
 expanded in screen space and keeps its pixel width at any distance, otherwise it is a regular line.
+
+The 3D primitives are drawn with the `DebugDraw` shader (`core/materialsystem1/DefaultShader.cpp`,
+GPU source `E2Base/shadersSRC/source_DebugDraw.fx`): the `Default` shader pipelines and bindings plus
+the viewport size and the camera position in the material parameters. The effects add no geometry:
+the effect of a primitive is packed into its `DynMeshVertex` vertices by `DbgSetupEffect` and
+`DbgLineVertex` in `shared/render/DebugOverlay.cpp`:
+
+| Vertex value | Lines | Other primitives |
+|---|---|---|
+| `_position.xyz` | Line end | Position |
+| `_position.w` | Thick line width in pixels, the sign is the quad side; `0` for a regular line | — |
+| `_normal.xyz` (half) | Vector to the other end | `0` |
+| `_normal.w` (half) | `Dash` in pixels, negative at the end vertices | `Lit` |
+| `_texCoord.x` (half) | `pattern * 256 + size` (pattern size in whole pixels up to 255) | same |
+| `_texCoord.y` (half) | `GapAlpha` | same |
+
+The vertex shader clips a line by the camera (the vertex behind it moves to the clip point), expands
+a thick line across its screen direction and passes the dash start on screen: the line start, or
+its end when the start is behind the camera. The dashes stay in place at that point when the
+camera moves.
+
+Effect setters of the 3D builders (all but `DbgText3D` and `DbgVolume`):
+
+- `Pattern(pattern, sizePx = 4)` — screen-space transparency pattern: `DBG_PATTERN_CHECKER`,
+  `DBG_PATTERN_HATCH` (diagonal stripes), `DBG_PATTERN_DOTS`.
+- `GapAlpha(alpha)` — alpha multiplier of the pattern holes and the dash gaps, `0` (default) cuts
+  them out.
+- `Occluded(pattern = DBG_PATTERN_HATCH)` — the parts behind the scene geometry are drawn too, with
+  this pattern (`DBG_PATTERN_NONE` draws them solid). The overlay draws the primitives in two
+  passes: the visible parts, then the occluded parts with the inverted depth test.
+- `Lit()` of the filled boxes, spheres and polygons — shades the faces by the angle to the camera
+  (the face normal comes from the screen derivatives of the world position).
+
+Scripts get the same setters and the `DBG_PATTERN_*` constants.
 
 Common setters (call them last, they return the base builder):
 

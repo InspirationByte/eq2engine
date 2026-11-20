@@ -273,6 +273,7 @@ uint lerpRGBAPacked(uint a, uint b, float v)
    const uint f2 = 256 * v;
    const uint f1 = 256 - f2;
 
-   return   ((((( a & MASK1 ) * f1 ) + ( ( b & MASK1 ) * f2 )) >> 8 ) & MASK1 ) 
-          | ((((( a & MASK2 ) * f1 ) + ( ( b & MASK2 ) * f2 )) >> 8 ) & MASK2 );
+   // alpha and green are shifted down first, alpha * 256 overflows 32 bits in place
+   return   ((((( a & MASK1 ) * f1 ) + ( ( b & MASK1 ) * f2 )) >> 8 ) & MASK1 )
+          | (((( ( a >> 8 ) & MASK1 ) * f1 ) + ( ( ( b >> 8 ) & MASK1 ) * f2 )) & MASK2 );
 }

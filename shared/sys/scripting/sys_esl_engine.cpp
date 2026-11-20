@@ -79,6 +79,27 @@ static T& S_DDNode_Time(const esl::ScriptState& state, T& builder, float time)
 	return static_cast<T&>(builder.Time(time));
 }
 
+// the pattern is a DBG_PATTERN_* value
+template<typename T>
+static T& S_DDShape_Pattern(const esl::ScriptState& state, T& builder, int pattern, float sizePx)
+{
+	return builder.Pattern(static_cast<EDbgPattern>(pattern), sizePx);
+}
+
+template<typename T>
+static T& S_DDShape_GapAlpha(const esl::ScriptState& state, T& builder, float alpha)
+{
+	return builder.GapAlpha(alpha);
+}
+
+template<typename T>
+static T& S_DDShape_Occluded(const esl::ScriptState& state, T& builder, int pattern)
+{
+	return builder.Occluded(static_cast<EDbgPattern>(pattern));
+}
+
+#define EQSCRIPT_BIND_DDSHAPE_FUNCS(type) 	EQSCRIPT_BIND_STATIC_FUNC("Pattern", S_DDShape_Pattern<type>) 	EQSCRIPT_BIND_STATIC_FUNC("GapAlpha", S_DDShape_GapAlpha<type>) 	EQSCRIPT_BIND_STATIC_FUNC("Occluded", S_DDShape_Occluded<type>)
+
 EQSCRIPT_TYPE_BEGIN( IDebugOverlay )
 	EQSCRIPT_BIND_STATIC_FUNC("Text", S_IDebugOverlay_Text)
 	EQSCRIPT_BIND_STATIC_FUNC("TextFadeOut", S_IDebugOverlay_TextFadeOut)
@@ -107,8 +128,10 @@ EQSCRIPT_TYPE_BEGIN(DDBox)
 	EQSCRIPT_BIND_FUNC(Maxs)
 	EQSCRIPT_BIND_FUNC(Color)
 	EQSCRIPT_BIND_FUNC(Fill)
+	EQSCRIPT_BIND_FUNC(Lit)
 	EQSCRIPT_BIND_STATIC_FUNC("Time", S_DDNode_Time<DDBox>)
 	EQSCRIPT_BIND_STATIC_FUNC("Name", S_DDNode_Name<DDBox>)
+	EQSCRIPT_BIND_DDSHAPE_FUNCS(DDBox)
 EQSCRIPT_TYPE_END
 
 static DDBox* S_DbgBox() { return PPNew DDBox(PP_SL); }
@@ -122,8 +145,10 @@ EQSCRIPT_TYPE_BEGIN(DDOrientedBox)
 	EQSCRIPT_BIND_FUNC(Rotation)
 	EQSCRIPT_BIND_FUNC(Color)
 	EQSCRIPT_BIND_FUNC(Fill)
+	EQSCRIPT_BIND_FUNC(Lit)
 	EQSCRIPT_BIND_STATIC_FUNC("Time", S_DDNode_Time<DDOrientedBox>)
 	EQSCRIPT_BIND_STATIC_FUNC("Name", S_DDNode_Name<DDOrientedBox>)
+	EQSCRIPT_BIND_DDSHAPE_FUNCS(DDOrientedBox)
 EQSCRIPT_TYPE_END
 
 static DDOrientedBox* S_DbgOriBox() { return PPNew DDOrientedBox(PP_SL); }
@@ -135,8 +160,10 @@ EQSCRIPT_TYPE_BEGIN(DDSphere)
 	EQSCRIPT_BIND_FUNC(Radius)
 	EQSCRIPT_BIND_FUNC(Color)
 	EQSCRIPT_BIND_FUNC(Fill)
+	EQSCRIPT_BIND_FUNC(Lit)
 	EQSCRIPT_BIND_STATIC_FUNC("Time", S_DDNode_Time<DDSphere>)
 	EQSCRIPT_BIND_STATIC_FUNC("Name", S_DDNode_Name<DDSphere>)
+	EQSCRIPT_BIND_DDSHAPE_FUNCS(DDSphere)
 EQSCRIPT_TYPE_END
 
 static DDSphere* S_DbgSphere() { return PPNew DDSphere(PP_SL); }
@@ -150,6 +177,7 @@ EQSCRIPT_TYPE_BEGIN(DDCylinder)
 	EQSCRIPT_BIND_FUNC(Color)
 	EQSCRIPT_BIND_STATIC_FUNC("Time", S_DDNode_Time<DDCylinder>)
 	EQSCRIPT_BIND_STATIC_FUNC("Name", S_DDNode_Name<DDCylinder>)
+	EQSCRIPT_BIND_DDSHAPE_FUNCS(DDCylinder)
 EQSCRIPT_TYPE_END
 
 static DDCylinder* S_DbgCylinder() { return PPNew DDCylinder(PP_SL); }
@@ -163,8 +191,10 @@ EQSCRIPT_TYPE_BEGIN(DDLine)
 	EQSCRIPT_BIND_FUNC(ColorStart)
 	EQSCRIPT_BIND_FUNC(ColorEnd)
 	EQSCRIPT_BIND_FUNC(Width)
+	EQSCRIPT_BIND_FUNC(Dash)
 	EQSCRIPT_BIND_STATIC_FUNC("Time", S_DDNode_Time<DDLine>)
 	EQSCRIPT_BIND_STATIC_FUNC("Name", S_DDNode_Name<DDLine>)
+	EQSCRIPT_BIND_DDSHAPE_FUNCS(DDLine)
 EQSCRIPT_TYPE_END
 
 static DDLine* S_DbgLine() { return PPNew DDLine(PP_SL); }
@@ -176,8 +206,10 @@ EQSCRIPT_TYPE_BEGIN(DDPoly)
 	EQSCRIPT_BIND_FUNC(Color)
 	EQSCRIPT_BIND_FUNC(Fill)
 	EQSCRIPT_BIND_FUNC(Outline)
+	EQSCRIPT_BIND_FUNC(Lit)
 	EQSCRIPT_BIND_STATIC_FUNC("Time", S_DDNode_Time<DDPoly>)
 	EQSCRIPT_BIND_STATIC_FUNC("Name", S_DDNode_Name<DDPoly>)
+	EQSCRIPT_BIND_DDSHAPE_FUNCS(DDPoly)
 EQSCRIPT_TYPE_END
 
 static DDPoly* S_DbgPoly() { return PPNew DDPoly(PP_SL); }
@@ -769,6 +801,11 @@ bool eslSysDebugDrawingInit(const esl::ScriptState& state)
 	state.SetGlobal("DbgCylinder", EQSCRIPT_CFUNC(S_DbgCylinder, esl::ToLua<DDCylinder>, void));
 	state.SetGlobal("DbgLine", EQSCRIPT_CFUNC(S_DbgLine, esl::ToLua<DDLine>, void));
 	state.SetGlobal("DbgPoly", EQSCRIPT_CFUNC(S_DbgPoly, esl::ToLua<DDPoly>, void));
+
+	state.SetGlobal("DBG_PATTERN_NONE", static_cast<int>(DBG_PATTERN_NONE));
+	state.SetGlobal("DBG_PATTERN_CHECKER", static_cast<int>(DBG_PATTERN_CHECKER));
+	state.SetGlobal("DBG_PATTERN_HATCH", static_cast<int>(DBG_PATTERN_HATCH));
+	state.SetGlobal("DBG_PATTERN_DOTS", static_cast<int>(DBG_PATTERN_DOTS));
 
 #ifdef IMGUI_ENABLED
 	imGuilState = state;

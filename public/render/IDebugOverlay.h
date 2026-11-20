@@ -69,6 +69,38 @@ struct DDNodeBase
 	DDNodeBase&		Name(const char* name) { nameHash = StringId24(name); return *this; }
 };
 
+// screen space pattern of the debug geometry, its holes are drawn with DDEffect::gapAlpha
+enum EDbgPattern : uint8
+{
+	DBG_PATTERN_NONE = 0,
+	DBG_PATTERN_CHECKER,	// checker board of pattern size cells
+	DBG_PATTERN_HATCH,		// diagonal stripes of pattern size width
+	DBG_PATTERN_DOTS,		// dots in pattern size cells
+};
+
+// the effect of a debug primitive, drawn by the DebugDraw shader
+struct DDEffect
+{
+	float			patternSize{ 4.0f };				// pattern cell size in pixels
+	float			gapAlpha{ 0.0f };					// alpha multiplier of the pattern holes and the line dash gaps
+	EDbgPattern		pattern{ DBG_PATTERN_NONE };
+	EDbgPattern		occludedPattern{ DBG_PATTERN_NONE };	// pattern of the occluded parts
+	bool			occluded{ false };					// the parts behind the scene geometry are drawn too
+};
+
+// a debug primitive with the DebugDraw shader effects
+template<typename T>
+struct DDShapeBase : DDNodeBase
+{
+	DDShapeBase(PPSourceLine sl) : DDNodeBase(sl) {}
+
+	T& Pattern(EDbgPattern v, float sizePx = 4.0f) { effect.pattern = v; effect.patternSize = sizePx; return static_cast<T&>(*this); }
+	T& GapAlpha(float v) { effect.gapAlpha = v; return static_cast<T&>(*this); }
+	T& Occluded(EDbgPattern v = DBG_PATTERN_HATCH) { effect.occluded = true; effect.occludedPattern = v; return static_cast<T&>(*this); }
+
+	DDEffect		effect;
+};
+
 struct DDText3D : DDNodeBase
 {
 	~DDText3D()
@@ -100,7 +132,7 @@ struct DDText3D : DDNodeBase
 	uint			color{ color_white.pack() };
 };
 
-struct DDBox : DDNodeBase
+struct DDBox : DDShapeBase<DDBox>
 {
 	~DDBox()
 	{
@@ -108,7 +140,7 @@ struct DDBox : DDNodeBase
 			Dispatch();
 	}
 
-	DDBox(PPSourceLine sl) : DDNodeBase(sl) {}
+	DDBox(PPSourceLine sl) : DDShapeBase(sl) {}
 
 	void Dispatch();
 
@@ -118,14 +150,16 @@ struct DDBox : DDNodeBase
 	DDBox& Maxs(const Vector3D& v) { maxs = v; return *this; }
 	DDBox& Color(const MColor& v) { color = v.pack(); return *this; }
 	DDBox& Fill(bool value) { fill = value; return *this; }
+	DDBox& Lit(bool v = true) { lit = v; return *this; }	// the filled faces are lit from the camera
 
 	Vector3D		mins;
 	Vector3D		maxs;
 	uint			color{ color_white.pack() };
 	bool			fill{ false };
+	bool			lit{ false };
 };
 
-struct DDOrientedBox : DDNodeBase
+struct DDOrientedBox : DDShapeBase<DDOrientedBox>
 {
 	~DDOrientedBox()
 	{
@@ -133,7 +167,7 @@ struct DDOrientedBox : DDNodeBase
 			Dispatch();
 	}
 
-	DDOrientedBox(PPSourceLine sl) : DDNodeBase(sl) {}
+	DDOrientedBox(PPSourceLine sl) : DDShapeBase(sl) {}
 
 	void Dispatch();
 
@@ -145,15 +179,17 @@ struct DDOrientedBox : DDNodeBase
 	DDOrientedBox& Rotation(const Quaternion& r) { rotation = r; return *this; }
 	DDOrientedBox& Color(const MColor& v) { color = v.pack(); return *this; }
 	DDOrientedBox& Fill(bool value) { fill = value; return *this; }
+	DDOrientedBox& Lit(bool v = true) { lit = v; return *this; }	// the filled faces are lit from the camera
 
 	Vector3D		mins, maxs;
 	Quaternion		rotation{ qidentity };
 	Vector3D		position;
 	uint			color{ color_white.pack() };
 	bool			fill{ false };
+	bool			lit{ false };
 };
 
-struct DDSphere : DDNodeBase
+struct DDSphere : DDShapeBase<DDSphere>
 {
 	~DDSphere()
 	{
@@ -161,7 +197,7 @@ struct DDSphere : DDNodeBase
 			Dispatch();
 	}
 
-	DDSphere(PPSourceLine sl) : DDNodeBase(sl) {}
+	DDSphere(PPSourceLine sl) : DDShapeBase(sl) {}
 
 	void Dispatch();
 
@@ -169,14 +205,16 @@ struct DDSphere : DDNodeBase
 	DDSphere& Radius(float v) { radius = v; return *this; }
 	DDSphere& Color(const MColor& v) { color = v.pack(); return *this; }
 	DDSphere& Fill(bool value) { fill = value; return *this; }
+	DDSphere& Lit(bool v = true) { lit = v; return *this; }	// the filled faces are lit from the camera
 
 	Vector3D		origin;
 	float			radius{ 1.0f };
 	uint			color{ color_white.pack() };
 	bool			fill{ false };
+	bool			lit{ false };
 };
 
-struct DDCylinder : DDNodeBase
+struct DDCylinder : DDShapeBase<DDCylinder>
 {
 	~DDCylinder()
 	{
@@ -184,7 +222,7 @@ struct DDCylinder : DDNodeBase
 			Dispatch();
 	}
 
-	DDCylinder(PPSourceLine sl) : DDNodeBase(sl) {}
+	DDCylinder(PPSourceLine sl) : DDShapeBase(sl) {}
 
 	void Dispatch();
 
@@ -199,7 +237,7 @@ struct DDCylinder : DDNodeBase
 	uint			color{ color_white.pack() };
 };
 
-struct DDLine : DDNodeBase
+struct DDLine : DDShapeBase<DDLine>
 {
 	~DDLine()
 	{
@@ -207,7 +245,7 @@ struct DDLine : DDNodeBase
 			Dispatch();
 	}
 
-	DDLine(PPSourceLine sl) : DDNodeBase(sl) {}
+	DDLine(PPSourceLine sl) : DDShapeBase(sl) {}
 
 	void Dispatch();
 
@@ -217,15 +255,17 @@ struct DDLine : DDNodeBase
 	DDLine& ColorStart(const MColor& v) { color1 = v.pack(); return *this; }
 	DDLine& ColorEnd(const MColor& v) { color2 = v.pack(); return *this; }
 	DDLine& Width(float v) { width = v; return *this; }
+	DDLine& Dash(float v) { dash = v; return *this; }
 
 	Vector3D		start;
 	Vector3D		end;
 	uint			color1{ color_white.pack() };
 	uint			color2{ color_white.pack() };
 	float			width{ 0.0f };	// line width in pixels, up to 1 draws a regular line
+	float			dash{ 0.0f };	// dash and gap length in pixels, 0 draws a solid line
 };
 
-struct DDPoly : DDNodeBase
+struct DDPoly : DDShapeBase<DDPoly>
 {
 	~DDPoly()
 	{
@@ -233,7 +273,7 @@ struct DDPoly : DDNodeBase
 			Dispatch();
 	}
 
-	DDPoly(PPSourceLine sl) : DDNodeBase(sl) {}
+	DDPoly(PPSourceLine sl) : DDShapeBase(sl) {}
 
 	void Dispatch();
 
@@ -242,11 +282,13 @@ struct DDPoly : DDNodeBase
 	DDPoly& Points(const ArrayCRef<Vector3D> _verts) { verts.append(_verts.ptr(), _verts.numElem()); return *this; }
 	DDPoly& Color(const MColor& v) { color = v.pack(); return *this; }
 	DDPoly& Fill(bool v = true) { fill = v; return *this; }
+	DDPoly& Lit(bool v = true) { lit = v; return *this; }	// the filled faces are lit from the camera
 	DDPoly& Outline(bool v = true) { outline = v; return *this; }
 
 	FixedArray<Vector3D, 20> verts;
 	uint			color{ color_white.pack() };
 	bool			fill{ true };
+	bool			lit{ false };
 	bool			outline{ false };
 };
 
