@@ -498,6 +498,113 @@ float DistanceLineSegLineSeg(const Vector3D& L0, const Vector3D& L1, const Vecto
 	return distance(ln, sn);
 }
 
+float DistanceSegSeg2D(const Vector2D& sA0, const Vector2D& sA1, const Vector2D& sB0, const Vector2D& sB1, float* outFA, float* outFB)
+{
+	// dist3D_Segment_to_Segment by Dan Sunday reduced to the plane, the 2D variant of
+	// DistanceLineSegLineSeg
+	const Vector2D u = sA1 - sA0;
+	const Vector2D v = sB1 - sB0;
+	const Vector2D w = sA0 - sB0;
+
+	const float a = dot(u, u);
+	const float b = dot(u, v);
+	const float c = dot(v, v);
+	const float d = dot(u, w);
+	const float e = dot(v, w);
+
+	// the degenerate segments keep their start as the closest point
+	if (a < F_EPS && c < F_EPS)
+	{
+		if (outFA) *outFA = 0.0f;
+		if (outFB) *outFB = 0.0f;
+		return length(w);
+	}
+	if (c < F_EPS) // B is a point, its projection on A
+	{
+		const float s = clamp(-d / a, 0.0f, 1.0f);
+		if (outFA) *outFA = s;
+		if (outFB) *outFB = 0.0f;
+		return length(lerp(sA0, sA1, s) - sB0);
+	}
+
+	const float D = a * c - b * b;
+	float sN = 0.0f;
+	float sD = D;
+	float tN = 0.0f;
+	float tD = D;
+
+	if (D < F_EPS) // the segments are almost parallel
+	{
+		sN = 0.0f;
+		tN = e;
+		tD = c;
+		sD = c;
+	}
+	else                  // get the closest points on the infinite lines
+	{
+		sN = (b * e - c * d);
+		tN = (a * e - b * d);
+		if (sN < 0.0f)    // sc < 0 => the s=0 edge is visible
+		{
+			sN = 0.0f;
+			tN = e;
+			tD = c;
+		}
+		else if (sN > sD) // sc > 1 => the s=1 edge is visible
+		{
+			sN = sD;
+			tN = e + b;
+			tD = c;
+		}
+	}
+
+	if (tN < 0.0f)        // tc < 0 => the t=0 edge is visible
+	{
+		tN = 0.0f;
+		// recompute sc for this edge
+		if (-d < 0.0f)
+		{
+			sN = 0.0f;
+		}
+		else if (-d > a)
+		{
+			sN = sD;
+		}
+		else
+		{
+			sN = -d;
+			sD = a;
+		}
+	}
+	else if (tN > tD)     // tc > 1 => the t=1 edge is visible
+	{
+		tN = tD;
+		// recompute sc for this edge
+		if ((-d + b) < 0.0f)
+		{
+			sN = 0.0f;
+		}
+		else if ((-d + b) > a)
+		{
+			sN = sD;
+		}
+		else
+		{
+			sN = (-d + b);
+			sD = a;
+		}
+	}
+
+	// finally do the division to get sc and tc
+	const float sc = (fabsf(sD) > F_EPS) ? sN / sD : 0.0f;
+	const float tc = (fabsf(tD) > F_EPS) ? tN / tD : 0.0f;
+
+	if (outFA) *outFA = sc;
+	if (outFB) *outFB = tc;
+
+	return length(lerp(sA0, sA1, sc) - lerp(sB0, sB1, tc));
+}
+
 static float ConvexOrient2D(const Vector2D& o, const Vector2D& a, const Vector2D& b)
 {
 	return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
