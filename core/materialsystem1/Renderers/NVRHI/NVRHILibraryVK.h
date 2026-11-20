@@ -76,9 +76,22 @@ protected:
 	PFN_vkGetInstanceProcAddr	m_vkGetInstanceProcAddr = nullptr;
 	nvrhi::vulkan::DeviceHandle	m_nvrhiDevice;
 	nvrhi::EventQueryHandle		m_nvrhiFrameWaitQuery;
+	// signaled by an empty submission at the end of the frame, the presentation
+	// waits it so the late passes (console, HUD) don't race the present;
+	// rotated per frame in flight (same scheme as the swapchain semaphores)
+	VkSemaphore					m_framePresentSemaphores[3];
+	uint32_t					m_framePresentSemaphoreIdx = 0;
+	// the semaphore signaled for the current frame (set in EndFrame before the present)
+	VkSemaphore					m_framePresentSemaphore = nullptr;
+	nvrhi::CommandListHandle	m_nvrhiFramePresentCmdList;
 
 	vk::Instance				m_vkInstance;
 	vk::DebugReportCallbackEXT	m_vkDebugReportCallback;
+#ifdef NVRHI_WITH_VALIDATION
+	vk::ValidationFeaturesEXT	m_validationFeatures;
+	vk::ValidationFeatureEnableEXT	m_syncValidationEnable{ vk::ValidationFeatureEnableEXT::eSynchronizationValidation };
+	bool						m_useSyncValidation{ false };
+#endif
 	vk::PhysicalDevice			m_vkPhysicalDevice;
 	vk::Device					m_vkDevice;
 	vk::Queue					m_vkGraphicsQueue;

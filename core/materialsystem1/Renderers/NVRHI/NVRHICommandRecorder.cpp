@@ -108,7 +108,7 @@ void CNVRHICommandRecorder::ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 
 void CNVRHICommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, const TextureCopyInfo& destination, const TextureExtent& copySize) const
 {
 	ASSERT(source.origin.x >= 0 && source.origin.y >= 0 && source.origin.arraySlice >= 0);
-	ASSERT(copySize.width >= 0 && copySize.height >= 0 && copySize.arraySize >= 0);
+	ASSERT(copySize.arraySize >= 0);
 
 	CNVRHITexture* srcTexture = static_cast<CNVRHITexture*>(source.texture);
 	CNVRHITexture* dstTexture = static_cast<CNVRHITexture*>(destination.texture);
@@ -122,25 +122,29 @@ void CNVRHICommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, 
 	ASSERT_MSG(srcTexture->GetFlags() & TEXFLAG_COPY_SRC, "%s don't have TEXFLAG_COPY_SRC flag", srcTexture->GetName());
 	ASSERT_MSG(dstTexture->GetFlags() & TEXFLAG_COPY_DST, "%s don't have TEXFLAG_COPY_DST flag", dstTexture->GetName());
 
-	ASSERT_MSG(source.origin.x + copySize.width <= srcTexture->GetWidth() && source.origin.y + copySize.height >= srcTexture->GetHeight() && source.origin.arraySlice + copySize.arraySize <= srcTexture->GetArrayLayersSize(),
+	// a negative extent size copies the whole texture, like the TextureExtent defaults
+	const int copyWidth = copySize.width < 0 ? srcTexture->GetWidth() : copySize.width;
+	const int copyHeight = copySize.height < 0 ? srcTexture->GetHeight() : copySize.height;
+
+	ASSERT_MSG(source.origin.x + copyWidth <= srcTexture->GetWidth() && source.origin.y + copyHeight <= srcTexture->GetHeight() && source.origin.arraySlice + copySize.arraySize <= srcTexture->GetArrayLayersSize(),
 		"source texture origin and size outside of source texture size range");
-	ASSERT_MSG(destination.origin.x + copySize.width <= dstTexture->GetWidth() && destination.origin.y + copySize.height >= dstTexture->GetHeight() && destination.origin.arraySlice + copySize.arraySize <= dstTexture->GetArrayLayersSize(),
+	ASSERT_MSG(destination.origin.x + copyWidth <= dstTexture->GetWidth() && destination.origin.y + copyHeight <= dstTexture->GetHeight() && destination.origin.arraySlice + copySize.arraySize <= dstTexture->GetArrayLayersSize(),
 		"dest texture origin and size outside of dest texture size range");
 
 	nvrhi::TextureSlice rhiImageSrc{};
-	rhiImageSrc.width = copySize.width;
-	rhiImageSrc.height = copySize.height;
+	rhiImageSrc.width = copyWidth;
+	rhiImageSrc.height = copyHeight;
 	rhiImageSrc.mipLevel = source.origin.mipLevel;
 	rhiImageSrc.x = source.origin.x;
 	rhiImageSrc.y = source.origin.y;
 
 	nvrhi::TextureSlice rhiImageDst{};
-	rhiImageSrc.width = copySize.width;
-	rhiImageSrc.height = copySize.height;
-	rhiImageSrc.mipLevel = destination.origin.mipLevel;
-	rhiImageSrc.x = destination.origin.x;
-	rhiImageSrc.y = destination.origin.y;
-	
+	rhiImageDst.width = copyWidth;
+	rhiImageDst.height = copyHeight;
+	rhiImageDst.mipLevel = destination.origin.mipLevel;
+	rhiImageDst.x = destination.origin.x;
+	rhiImageDst.y = destination.origin.y;
+
 	for(int i = 0; i < copySize.arraySize; ++i)
 	{
 		rhiImageSrc.arraySlice = source.origin.arraySlice + i;

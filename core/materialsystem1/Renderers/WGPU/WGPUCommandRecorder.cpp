@@ -80,7 +80,7 @@ void CWGPUCommandRecorder::ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 s
 void CWGPUCommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, const TextureCopyInfo& destination, const TextureExtent& copySize) const
 {
 	ASSERT(source.origin.x >= 0 && source.origin.y >= 0 && source.origin.arraySlice >= 0);
-	ASSERT(copySize.width >= 0 && copySize.height >= 0 && copySize.arraySize >= 0);
+	ASSERT(copySize.arraySize >= 0);
 
 	CWGPUTexture* srcTexture = static_cast<CWGPUTexture*>(source.texture);
 	CWGPUTexture* dstTexture = static_cast<CWGPUTexture*>(destination.texture);
@@ -94,9 +94,13 @@ void CWGPUCommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, c
 	ASSERT_MSG(srcTexture->GetFlags() & TEXFLAG_COPY_SRC, "%s don't have TEXFLAG_COPY_SRC flag", srcTexture->GetName());
 	ASSERT_MSG(dstTexture->GetFlags() & TEXFLAG_COPY_DST, "%s don't have TEXFLAG_COPY_DST flag", dstTexture->GetName());
 
-	ASSERT_MSG(source.origin.x + copySize.width <= srcTexture->GetWidth() && source.origin.y + copySize.height >= srcTexture->GetHeight() && source.origin.arraySlice + copySize.arraySize <= srcTexture->GetArrayLayersSize(),
+	// a negative extent size copies the whole texture, like the TextureExtent defaults
+	const int copyWidth = copySize.width < 0 ? srcTexture->GetWidth() : copySize.width;
+	const int copyHeight = copySize.height < 0 ? srcTexture->GetHeight() : copySize.height;
+
+	ASSERT_MSG(source.origin.x + copyWidth <= srcTexture->GetWidth() && source.origin.y + copyHeight <= srcTexture->GetHeight() && source.origin.arraySlice + copySize.arraySize <= srcTexture->GetArrayLayersSize(),
 		"source texture origin and size outside of source texture size range");
-	ASSERT_MSG(destination.origin.x + copySize.width <= dstTexture->GetWidth() && destination.origin.y + copySize.height >= dstTexture->GetHeight() && destination.origin.arraySlice + copySize.arraySize <= dstTexture->GetArrayLayersSize(),
+	ASSERT_MSG(destination.origin.x + copyWidth <= dstTexture->GetWidth() && destination.origin.y + copyHeight <= dstTexture->GetHeight() && destination.origin.arraySlice + copySize.arraySize <= dstTexture->GetArrayLayersSize(),
 		"dest texture origin and size outside of dest texture size range");
 
 	WGPUTexelCopyTextureInfo rhiImageSrc{};
@@ -113,8 +117,8 @@ void CWGPUCommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, c
 	
 	WGPUExtent3D rhiCopySize;
 	rhiCopySize.depthOrArrayLayers = copySize.arraySize;
-	rhiCopySize.width = copySize.width;
-	rhiCopySize.height = copySize.height;
+	rhiCopySize.width = copyWidth;
+	rhiCopySize.height = copyHeight;
 	
 	wgpuCommandEncoderCopyTextureToTexture(m_rhiCommandEncoder, &rhiImageSrc, &rhiImageDst, &rhiCopySize);
 

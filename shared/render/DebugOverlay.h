@@ -10,6 +10,8 @@
 
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
+class IMaterial;
+using IMaterialPtr = CRefPtr<IMaterial>;
 
 struct DebugTextNode_t
 {
@@ -87,6 +89,7 @@ private:
 
 	Map<int, uint>					m_newNames{ PP_SL };
 	ITexturePtr						m_dbgTexture;
+	IMaterialPtr					m_debugMaterial;	// DebugDraw shader of the 3D primitives
 
 	CEqTimer						m_timer;
 	IEqFont*						m_debugFont{ nullptr };

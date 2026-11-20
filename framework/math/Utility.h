@@ -55,6 +55,10 @@ float DistancePointPoly2D(const Vector2D& point, ArrayCRef<Vector2D> edgeVerts, 
 float DistanceLineLine(const Vector3D& lB1, const Vector3D& lE1, const Vector3D& lB2, const Vector3D& lE2);
 float DistanceLineSegLineSeg(const Vector3D& L0, const Vector3D& L1, const Vector3D& S0, const Vector3D& S1, float* Lt = nullptr, Vector3D* Ln = nullptr, float* St = nullptr, Vector3D* Sn = nullptr);
 
+// distance between the two segments in the plane, the fractions of the closest points along them
+// (Dan Sunday's segment to segment distance, the degenerate segments keep their start)
+float DistanceSegSeg2D(const Vector2D& sA0, const Vector2D& sA1, const Vector2D& sB0, const Vector2D& sB1, float* outFA = nullptr, float* outFB = nullptr);
+
 //---------------------------------------------------------------------------------
 
 void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& out);

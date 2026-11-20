@@ -9,6 +9,7 @@
 #include "core/ConVar.h"
 #include "math/Utility.h"
 #include "math/Rectangle.h"
+#include "utils/KeyValues.h"
 #include "DebugOverlay.h"
 
 #include "font/IFontCache.h"
@@ -24,8 +25,12 @@ static constexpr const int DRAW_MAX_VERTS = 8192;
 
 static constexpr const int BOXES_DRAW_SUBDIV = 4096 / 16;
 static constexpr const int LINES_DRAW_SUBDIV = 2048;
+static constexpr const int THICK_LINES_DRAW_SUBDIV = DRAW_MAX_VERTS / 4;	// a thick line is a quad of 4 vertices
 static constexpr const int POLYS_DRAW_SUBDIV = 256;
 static constexpr const int GRAPH_MAX_VALUES = 400;
+
+// lines with a width up to this value are drawn as regular lines
+static constexpr const float THICK_LINE_MIN_WIDTH = 1.0f;
 
 static constexpr const int MAX_MINICON_MESSAGES = 32;
 
@@ -98,6 +103,7 @@ void CDebugOverlay::Shutdown()
 {
 #ifdef ENABLE_DEBUG_DRAWING_PROFILE
 	m_dbgTexture = nullptr;
+	m_debugMaterial = nullptr;
 	Clear();
 #endif // ENABLE_DEBUG_DRAWING_PROFILE
 }
@@ -279,40 +285,151 @@ void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 }
 
 #ifdef ENABLE_DEBUG_DRAWING_PROFILE
-static void DrawLineArray(ArrayRef<DDLine> lines, float frametime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
+
+// a 3D drawing pass of the debug overlay: the visible parts of the primitives,
+// or the occluded parts of the primitives with DDEffect::occluded
+struct DbgDrawPass
+{
+	IGPURenderPassRecorder*	recorder{ nullptr };
+	IMaterial*				material{ nullptr };
+	const Volume&			frustum;
+	float					frameTime{ 0.0f };	// zero in the occluded pass, the lifetime is spent once a frame
+	bool					occluded{ false };
+};
+
+static MatSysDefaultRenderPass DbgRenderPassData(const DbgDrawPass& pass, ECullMode cullMode = CULL_NONE)
+{
+	MatSysDefaultRenderPass renderPass;
+	renderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	renderPass.cullMode = cullMode;
+	renderPass.depthTest = true;
+	renderPass.depthWrite = false;
+	if (pass.occluded)
+		renderPass.depthFunc = COMPFUNC_LESS;	// behind the scene geometry, the depth is reversed
+	return renderPass;
+}
+
+// sets up the effect of the next vertices for the DebugDraw shader (source_DebugDraw.fx),
+// false when the primitive is not drawn in this pass
+static bool DbgSetupEffect(CMeshBuilder& meshBuilder, const DbgDrawPass& pass, const DDEffect& effect, bool lit = false)
+{
+	if (pass.occluded && !effect.occluded)
+		return false;
+
+	// the pattern and its whole pixel size are exact in half
+	const EDbgPattern pattern = pass.occluded ? effect.occludedPattern : effect.pattern;
+	const float patternSize = clamp(roundf(effect.patternSize), 1.0f, 255.0f);
+	meshBuilder.TexCoord2f(pattern * 256.0f + patternSize, effect.gapAlpha);
+	meshBuilder.Normal4fv(Vector4D(0.0f, 0.0f, 0.0f, lit ? 1.0f : 0.0f));
+	return true;
+}
+
+// a line end vertex, the shader clips the line by the camera, expands it by the width and draws the dashes;
+// side is the quad side of a thick line, the dash sign tells the start from the end
+static void DbgLineVertex(CMeshBuilder& meshBuilder, const DDLine& line, bool atStart, float side)
+{
+	const Vector3D& position = atStart ? line.start : line.end;
+	const Vector3D& other = atStart ? line.end : line.start;
+
+	meshBuilder.Color4(MColor(atStart ? line.color1 : line.color2));
+	meshBuilder.Normal4fv(Vector4D(other - position, atStart ? line.dash : -line.dash));
+	meshBuilder.Position4fv(Vector4D(position, line.width * side));
+}
+
+// a regular line
+static void DrawThinLine(CMeshBuilder& meshBuilder, const DDLine& line)
+{
+	DbgLineVertex(meshBuilder, line, true, 0.0f);
+	meshBuilder.AdvanceVertex();
+
+	DbgLineVertex(meshBuilder, line, false, 0.0f);
+	meshBuilder.AdvanceVertex();
+}
+
+// a quad expanded across the line in screen space by the shader, so the width stays in pixels
+static void DrawThickLine(CMeshBuilder& meshBuilder, const DDLine& line)
+{
+	// the side is from the direction to the other end, so it is mirrored at the end
+	DbgLineVertex(meshBuilder, line, true, -1.0f);
+	const int firstVert = meshBuilder.AdvanceVertex();
+
+	DbgLineVertex(meshBuilder, line, true, 1.0f);
+	meshBuilder.AdvanceVertex();
+
+	DbgLineVertex(meshBuilder, line, false, 1.0f);
+	meshBuilder.AdvanceVertex();
+
+	DbgLineVertex(meshBuilder, line, false, -1.0f);
+	meshBuilder.AdvanceVertex();
+
+	// two triangles, same vertex order as Quad3
+	static const int quadIndices[] = { 0, 1, 2, 2, 1, 3 };
+	for (int idx : quadIndices)
+		meshBuilder.AdvanceVertexIndex(firstVert + idx);
+}
+
+static void DrawLineArray(ArrayRef<DDLine> lines, const DbgDrawPass& pass)
 {
 	if(!lines.numElem())
 		return;
 
 	RenderDrawCmd drawCmd;
-	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
+	drawCmd.SetMaterial(pass.material);
 
-	MatSysDefaultRenderPass defaultRenderPass;
-	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.depthTest = true;
-	defaultRenderPass.depthWrite = false;
+	MatSysDefaultRenderPass defaultRenderPass = DbgRenderPassData(pass);
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 	meshBuilder.Begin(PRIM_LINES);
 		for(DDLine& line : lines)
 		{
-			line.lifetime -= frametime;
-			if (!frustum.IsBoxInside(line.start, line.end))
+			line.lifetime -= pass.frameTime;
+			if (line.width > THICK_LINE_MIN_WIDTH)
 				continue;
 
-			meshBuilder.Color4(line.color1);
-			meshBuilder.Position3fv(line.start);
+			if (!pass.frustum.IsBoxInside(line.start, line.end))
+				continue;
 
-			meshBuilder.AdvanceVertex();
+			if (!DbgSetupEffect(meshBuilder, pass, line.effect))
+				continue;
 
-			meshBuilder.Color4(line.color2);
-			meshBuilder.Position3fv(line.end);
-
-			meshBuilder.AdvanceVertex();
+			DrawThinLine(meshBuilder, line);
 		}
 
 	if(meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(pass.recorder, &defaultRenderPass));
+
+	// thick lines are drawn as screen-facing quads
+	meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
+	meshBuilder.Begin(PRIM_TRIANGLES);
+
+	int thickLinesDrawn = 0;
+	for (DDLine& line : lines)
+	{
+		if (line.width <= THICK_LINE_MIN_WIDTH)
+			continue;
+
+		if (!pass.frustum.IsBoxInside(line.start, line.end))
+			continue;
+
+		if (thickLinesDrawn > 0 && (thickLinesDrawn % THICK_LINES_DRAW_SUBDIV) == 0)
+		{
+			if (meshBuilder.End(drawCmd))
+				g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(pass.recorder, &defaultRenderPass));
+
+			// start with new mesh
+			meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
+			meshBuilder.Begin(PRIM_TRIANGLES);
+		}
+
+		if (!DbgSetupEffect(meshBuilder, pass, line.effect))
+			continue;
+
+		DrawThickLine(meshBuilder, line);
+		++thickLinesDrawn;
+	}
+
+	if (meshBuilder.End(drawCmd))
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(pass.recorder, &defaultRenderPass));
 }
 
 static void DrawBoxWire(CMeshBuilder& meshBuilder, const Vector3D& position, const Vector3D& mins, const Vector3D& maxs, const MColor& color, const Quaternion& orientation)
@@ -408,18 +525,15 @@ static void DrawBoxFilled(CMeshBuilder& meshBuilder, const Vector3D& position, c
 		meshBuilder.AdvanceVertexIndex(firstVert + idx);
 }
 
-static void DrawOrientedBoxArray(ArrayRef<DDOrientedBox> boxes, float frametime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawOrientedBoxArray(ArrayRef<DDOrientedBox> boxes, const DbgDrawPass& pass)
 {
 	if (!boxes.numElem())
 		return;
 
 	RenderDrawCmd drawCmd;
-	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
+	drawCmd.SetMaterial(pass.material);
 
-	MatSysDefaultRenderPass defaultRenderPass;
-	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.depthTest = true;
-	defaultRenderPass.depthWrite = false;
+	MatSysDefaultRenderPass defaultRenderPass = DbgRenderPassData(pass);
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 	{
@@ -431,26 +545,29 @@ static void DrawOrientedBoxArray(ArrayRef<DDOrientedBox> boxes, float frametime,
 			if (node.fill)
 				continue;
 
-			node.lifetime -= frametime;
+			node.lifetime -= pass.frameTime;
 
-			if (!frustum.IsBoxInside(node.position + node.mins, node.position + node.maxs, 1.0f))
+			if (!pass.frustum.IsBoxInside(node.position + node.mins, node.position + node.maxs, 1.0f))
 				continue;
 
 			if (i > 0 && (i % BOXES_DRAW_SUBDIV) == 0)
 			{
 				if (meshBuilder.End(drawCmd))
-					g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+					g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(pass.recorder, &defaultRenderPass));
 
 				// start with new mesh
 				meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 				meshBuilder.Begin(PRIM_LINES);
 			}
 
+			if (!DbgSetupEffect(meshBuilder, pass, node.effect))
+				continue;
+
 			DrawBoxWire(meshBuilder, node.position, node.mins, node.maxs, node.color, node.rotation);
 		}
 
 		if (meshBuilder.End(drawCmd))
-			g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+			g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(pass.recorder, &defaultRenderPass));
 	}
 
 	meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
@@ -463,31 +580,31 @@ static void DrawOrientedBoxArray(ArrayRef<DDOrientedBox> boxes, float frametime,
 			if (!node.fill)
 				continue;
 
-			node.lifetime -= frametime;
+			node.lifetime -= pass.frameTime;
 
-			if (!frustum.IsBoxInside(node.position + node.mins, node.position + node.maxs, 1.0f))
+			if (!pass.frustum.IsBoxInside(node.position + node.mins, node.position + node.maxs, 1.0f))
+				continue;
+
+			if (!DbgSetupEffect(meshBuilder, pass, node.effect, node.lit))
 				continue;
 
 			DrawBoxFilled(meshBuilder, node.position, node.mins, node.maxs, node.color, node.rotation);
 		}
 
 		if (meshBuilder.End(drawCmd))
-			g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+			g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(pass.recorder, &defaultRenderPass));
 	}
 }
 
-static void DrawBoxArray(ArrayRef<DDBox> boxes, float frametime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawBoxArray(ArrayRef<DDBox> boxes, const DbgDrawPass& pass)
 {
 	if(!boxes.numElem())
 		return;
 
 	RenderDrawCmd drawCmd;
-	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
+	drawCmd.SetMaterial(pass.material);
 
-	MatSysDefaultRenderPass defaultRenderPass;
-	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.depthTest = true;
-	defaultRenderPass.depthWrite = false;
+	MatSysDefaultRenderPass defaultRenderPass = DbgRenderPassData(pass);
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 	{
@@ -499,26 +616,29 @@ static void DrawBoxArray(ArrayRef<DDBox> boxes, float frametime, const Volume& f
 			if (node.fill)
 				continue;
 
-			node.lifetime -= frametime;
+			node.lifetime -= pass.frameTime;
 
-			if (!frustum.IsBoxInside(node.mins, node.maxs, 1.0f))
+			if (!pass.frustum.IsBoxInside(node.mins, node.maxs, 1.0f))
 				continue;
 
 			if (i > 0 && (i % BOXES_DRAW_SUBDIV) == 0)
 			{
 				if (meshBuilder.End(drawCmd))
-					g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+					g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(pass.recorder, &defaultRenderPass));
 
 				// start with new mesh
 				meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 				meshBuilder.Begin(PRIM_LINES);
 			}
 
+			if (!DbgSetupEffect(meshBuilder, pass, node.effect))
+				continue;
+
 			DrawBoxWire(meshBuilder, vec3_zero, node.mins, node.maxs, node.color, qidentity);
 		}
 
 		if (meshBuilder.End(drawCmd))
-			g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+			g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(pass.recorder, &defaultRenderPass));
 	}
 
 	meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
@@ -531,20 +651,23 @@ static void DrawBoxArray(ArrayRef<DDBox> boxes, float frametime, const Volume& f
 			if (!node.fill)
 				continue;
 
-			node.lifetime -= frametime;
+			node.lifetime -= pass.frameTime;
 
-			if (!frustum.IsBoxInside(node.mins, node.maxs, 1.0f))
+			if (!pass.frustum.IsBoxInside(node.mins, node.maxs, 1.0f))
+				continue;
+
+			if (!DbgSetupEffect(meshBuilder, pass, node.effect, node.lit))
 				continue;
 
 			DrawBoxFilled(meshBuilder, vec3_zero, node.mins, node.maxs, node.color, qidentity);
 		}
 
 		if (meshBuilder.End(drawCmd))
-			g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+			g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(pass.recorder, &defaultRenderPass));
 	}
 }
 
-static void DrawCylinder(CMeshBuilder& meshBuilder, DDCylinder& cylinder, float frametime)
+static void DrawCylinder(CMeshBuilder& meshBuilder, DDCylinder& cylinder)
 {
 	static const int NUM_SEG = 8;
 	static float dir[NUM_SEG * 2];
@@ -590,7 +713,7 @@ static void DrawCylinder(CMeshBuilder& meshBuilder, DDCylinder& cylinder, float 
 	}
 }
 
-static void DrawCylinderArray(ArrayRef<DDCylinder> cylArray, float frametime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawCylinderArray(ArrayRef<DDCylinder> cylArray, const DbgDrawPass& pass)
 {
 	if (!cylArray.numElem())
 		return;
@@ -598,38 +721,38 @@ static void DrawCylinderArray(ArrayRef<DDCylinder> cylArray, float frametime, co
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 
 	RenderDrawCmd drawCmd;
-	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
+	drawCmd.SetMaterial(pass.material);
 
-	MatSysDefaultRenderPass defaultRenderPass;
-	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.depthTest = true;
-	defaultRenderPass.depthWrite = false;
+	MatSysDefaultRenderPass defaultRenderPass = DbgRenderPassData(pass);
 
 	meshBuilder.Begin(PRIM_LINES);
 
 	for (int i = 0; i < cylArray.numElem(); ++i)
 	{
 		DDCylinder& node = cylArray[i];
-		node.lifetime -= frametime;
+		node.lifetime -= pass.frameTime;
 
-		if (!frustum.IsSphereInside(node.origin, max(node.radius, node.height)))
+		if (!pass.frustum.IsSphereInside(node.origin, max(node.radius, node.height)))
 			continue;
 
 		if (i > 0 && (i % BOXES_DRAW_SUBDIV) == 0)
 		{
 			if (meshBuilder.End(drawCmd))
-				g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+				g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(pass.recorder, &defaultRenderPass));
 
 			// start with new mesh
 			meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 			meshBuilder.Begin(PRIM_LINES);
 		}
 
-		DrawCylinder(meshBuilder, cylArray[i], frametime);
+		if (!DbgSetupEffect(meshBuilder, pass, node.effect))
+			continue;
+
+		DrawCylinder(meshBuilder, node);
 	}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(pass.recorder, &defaultRenderPass));
 }
 
 static void DrawGraph(DDGraphBucket* graph, int position, IEqFont* pFont, float frame_time, IGPURenderPassRecorder* rendPassRecorder)
@@ -721,21 +844,17 @@ static void DrawGraph(DDGraphBucket* graph, int position, IEqFont* pFont, float 
 
 }
 
-static void DrawPolygons(ArrayRef<DDPoly> polygons, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawPolygons(ArrayRef<DDPoly> polygons, const DbgDrawPass& pass)
 {
 	if(!polygons.numElem())
 		return;
 
 	RenderDrawCmd drawCmd;
-	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
+	drawCmd.SetMaterial(pass.material);
 
-	MatSysDefaultRenderPass defaultRenderPass;
-	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.cullMode = CULL_BACK;
-	defaultRenderPass.depthTest = true;
-	defaultRenderPass.depthWrite = false;
+	MatSysDefaultRenderPass defaultRenderPass = DbgRenderPassData(pass, CULL_BACK);
 
-	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
+	RenderPassContext defaultPassContext(pass.recorder, &defaultRenderPass);
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 	meshBuilder.Begin(PRIM_TRIANGLES);
@@ -745,7 +864,7 @@ static void DrawPolygons(ArrayRef<DDPoly> polygons, float frameTime, IGPURenderP
 			DDPoly& node = polygons[i];
 			if (!node.fill)
 				continue;
-			node.lifetime -= frameTime;
+			node.lifetime -= pass.frameTime;
 
 			if (i > 0 && (i % POLYS_DRAW_SUBDIV) == 0)
 			{
@@ -756,6 +875,9 @@ static void DrawPolygons(ArrayRef<DDPoly> polygons, float frameTime, IGPURenderP
 				meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 				meshBuilder.Begin(PRIM_TRIANGLES);
 			}
+
+			if (!DbgSetupEffect(meshBuilder, pass, node.effect, node.lit))
+				continue;
 
 			meshBuilder.Color4(node.color);
 
@@ -772,7 +894,7 @@ static void DrawPolygons(ArrayRef<DDPoly> polygons, float frameTime, IGPURenderP
 			DDPoly& node = polygons[i];
 			if (!node.outline)
 				continue;
-			node.lifetime -= frameTime;
+			node.lifetime -= pass.frameTime;
 
 			if (i > 0 && (i % LINES_DRAW_SUBDIV) == 0)
 			{
@@ -783,6 +905,9 @@ static void DrawPolygons(ArrayRef<DDPoly> polygons, float frameTime, IGPURenderP
 				meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 				meshBuilder.Begin(PRIM_LINES);
 			}
+
+			if (!DbgSetupEffect(meshBuilder, pass, node.effect))
+				continue;
 
 			meshBuilder.Color4(node.color);
 
@@ -1083,20 +1208,17 @@ static void DrawSphereFilled(CMeshBuilder& meshBuilder, DDSphere& sphere, int si
 	}
 }
 
-static void DrawSphereArray(ArrayRef<DDSphere> spheres, float frameTime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawSphereArray(ArrayRef<DDSphere> spheres, const DbgDrawPass& pass)
 {
 	if(!spheres.numElem())
 		return;
 
 	RenderDrawCmd drawCmd;
-	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
+	drawCmd.SetMaterial(pass.material);
 
-	MatSysDefaultRenderPass defaultRenderPass;
-	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.depthTest = true;
-	defaultRenderPass.depthWrite = false;
+	MatSysDefaultRenderPass defaultRenderPass = DbgRenderPassData(pass);
 
-	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
+	RenderPassContext defaultPassContext(pass.recorder, &defaultRenderPass);
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 	meshBuilder.Begin(PRIM_LINES);
@@ -1107,12 +1229,15 @@ static void DrawSphereArray(ArrayRef<DDSphere> spheres, float frameTime, const V
 		if (sphere.fill)
 			continue;
 
-		sphere.lifetime -= frameTime;
+		sphere.lifetime -= pass.frameTime;
 
-		if (!frustum.IsSphereInside(sphere.origin, sphere.radius))
+		if (!pass.frustum.IsSphereInside(sphere.origin, sphere.radius))
 			continue;
 
-		DrawSphereWireframe(meshBuilder, spheres[i], 20);
+		if (!DbgSetupEffect(meshBuilder, pass, sphere.effect))
+			continue;
+
+		DrawSphereWireframe(meshBuilder, sphere, 20);
 	}
 
 	if (meshBuilder.End(drawCmd))
@@ -1127,12 +1252,15 @@ static void DrawSphereArray(ArrayRef<DDSphere> spheres, float frameTime, const V
 		if (!sphere.fill)
 			continue;
 
-		sphere.lifetime -= frameTime;
+		sphere.lifetime -= pass.frameTime;
 
-		if (!frustum.IsSphereInside(sphere.origin, sphere.radius))
+		if (!pass.frustum.IsSphereInside(sphere.origin, sphere.radius))
 			continue;
 
-		DrawSphereFilled(meshBuilder, spheres[i], 20);
+		if (!DbgSetupEffect(meshBuilder, pass, sphere.effect, sphere.lit))
+			continue;
+
+		DrawSphereFilled(meshBuilder, sphere, 20);
 	}
 
 	if (meshBuilder.End(drawCmd))
@@ -1200,37 +1328,32 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale, ITexture* co
 	// draw all of 3d stuff
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawBoxArray(m_BoxList, m_frameTime, m_frustum, rendPassRecorder);
-	}
-
-	{
-		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawCylinderArray(m_CylinderList, m_frameTime, m_frustum, rendPassRecorder);
-	}
-
-	{
-		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawOrientedBoxArray(m_OrientedBoxList, m_frameTime, m_frustum, rendPassRecorder);
-	}
-
-	{
-		Threading::CScopedMutex m(s_debugOverlayMutex);
 		DrawVolumes(m_volumes, m_frameTime, rendPassRecorder);
 	}
 
+	if (!m_debugMaterial)
 	{
-		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawSphereArray(m_SphereList, m_frameTime, m_frustum, rendPassRecorder);
+		KVSection debugParams;
+		debugParams.SetName("DebugDraw");
+		m_debugMaterial = g_matSystem->CreateMaterial("_debugDraw", &debugParams);
+		m_debugMaterial->LoadShaderAndTextures();
 	}
 
-	{
-		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawLineArray(m_LineList, m_frameTime, m_frustum, rendPassRecorder);
-	}
+	DbgDrawPass pass{ rendPassRecorder.Ptr(), m_debugMaterial.Ptr(), m_frustum, m_frameTime, false };
 
+	// the visible parts, then the occluded parts of the primitives that have them
+	for (int i = 0; i < 2; ++i)
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawPolygons(m_polygons, m_frameTime, rendPassRecorder);
+		DrawBoxArray(m_BoxList, pass);
+		DrawCylinderArray(m_CylinderList, pass);
+		DrawOrientedBoxArray(m_OrientedBoxList, pass);
+		DrawSphereArray(m_SphereList, pass);
+		DrawLineArray(m_LineList, pass);
+		DrawPolygons(m_polygons, pass);
+
+		pass.frameTime = 0.0f;
+		pass.occluded = true;
 	}
 
 	// now rendering 2D stuff
