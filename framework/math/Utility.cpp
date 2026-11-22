@@ -607,7 +607,7 @@ float DistanceSegSeg2D(const Vector2D& sA0, const Vector2D& sA1, const Vector2D&
 
 static float ConvexOrient2D(const Vector2D& o, const Vector2D& a, const Vector2D& b)
 {
-	return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+	return cross(a - o, b - o);
 }
 
 void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
@@ -674,21 +674,25 @@ bool IsPointInPolygon2D(ArrayCRef<Vector2D> points, const Vector2D& point)
 	return inside;
 }
 
-bool PolygonConvexPartition2D(ArrayCRef<Vector2D> points, int maxPartPoints, Array<int>& outPartIndices, Array<int>& outPartSizes)
+// the turn tolerance relative to the polygon size
+static float PolygonTurnEps2D(ArrayCRef<Vector2D> points)
 {
-	outPartIndices.clear();
-	outPartSizes.clear();
-
-	const int numPoints = points.numElem();
-	const float signedArea = PolygonSignedArea2D(points);
-	if (numPoints < 3 || maxPartPoints < 3 || fabsf(signedArea) < F_EPS)
-		return false;
-
-	// the turns are measured relative to the polygon size
 	AARectangle bounds;
 	for (const Vector2D& point : points)
 		bounds.AddVertex(point);
-	const float eps = max(lengthSqr(bounds.GetSize()), 1.0f) * 1e-6f;
+	return max(lengthSqr(bounds.GetSize()), 1.0f) * 1e-6f;
+}
+
+bool PolygonTriangulate2D(ArrayCRef<Vector2D> points, Array<int>& outIndices)
+{
+	outIndices.clear();
+
+	const int numPoints = points.numElem();
+	const float signedArea = PolygonSignedArea2D(points);
+	if (numPoints < 3 || fabsf(signedArea) < F_EPS)
+		return false;
+
+	const float eps = PolygonTurnEps2D(points);
 
 	// working in the positive winding
 	Array<int> remaining(PP_SL);
@@ -707,8 +711,6 @@ bool PolygonConvexPartition2D(ArrayCRef<Vector2D> points, int maxPartPoints, Arr
 	};
 
 	// ear clipping, a collinear point is dropped when there is no ear
-	using Part = FixedArray<int, 64>;
-	Array<Part> parts(PP_SL);
 	while (remaining.numElem() > 3)
 	{
 		const int count = remaining.numElem();
@@ -741,14 +743,16 @@ bool PolygonConvexPartition2D(ArrayCRef<Vector2D> points, int maxPartPoints, Arr
 		}
 
 		if (earIdx == -1 && collinearIdx == -1)
+		{
+			outIndices.clear();
 			return false;
+		}
 
 		if (earIdx != -1)
 		{
-			Part& triangle = parts.append();
-			triangle.append(remaining[(earIdx + count - 1) % count]);
-			triangle.append(remaining[earIdx]);
-			triangle.append(remaining[(earIdx + 1) % count]);
+			outIndices.append(remaining[(earIdx + count - 1) % count]);
+			outIndices.append(remaining[earIdx]);
+			outIndices.append(remaining[(earIdx + 1) % count]);
 			remaining.removeIndex(earIdx);
 		}
 		else
@@ -759,14 +763,37 @@ bool PolygonConvexPartition2D(ArrayCRef<Vector2D> points, int maxPartPoints, Arr
 
 	if (ConvexOrient2D(points[remaining[0]], points[remaining[1]], points[remaining[2]]) > eps)
 	{
-		Part& triangle = parts.append();
-		triangle.append(remaining[0]);
-		triangle.append(remaining[1]);
-		triangle.append(remaining[2]);
+		outIndices.append(remaining[0]);
+		outIndices.append(remaining[1]);
+		outIndices.append(remaining[2]);
 	}
 
-	if (!parts.numElem())
+	return outIndices.numElem() > 0;
+}
+
+bool PolygonConvexPartition2D(ArrayCRef<Vector2D> points, int maxPartPoints, Array<int>& outPartIndices, Array<int>& outPartSizes)
+{
+	outPartIndices.clear();
+	outPartSizes.clear();
+
+	if (maxPartPoints < 3)
 		return false;
+
+	Array<int> triangles(PP_SL);
+	if (!PolygonTriangulate2D(points, triangles))
+		return false;
+
+	const float eps = PolygonTurnEps2D(points);
+
+	using Part = FixedArray<int, 64>;
+	Array<Part> parts(PP_SL);
+	for (int i = 0; i < triangles.numElem(); i += 3)
+	{
+		Part& triangle = parts.append();
+		triangle.append(triangles[i]);
+		triangle.append(triangles[i + 1]);
+		triangle.append(triangles[i + 2]);
+	}
 
 	auto isConvex = [&](const Part& part) {
 		const int count = part.numElem();

@@ -70,6 +70,12 @@ float PolygonSignedArea2D(ArrayCRef<Vector2D> points);
 // the point is inside the closed polygon of any winding (even-odd rule), false for less than 3 points
 bool IsPointInPolygon2D(ArrayCRef<Vector2D> points, const Vector2D& point);
 
+// splits the simple polygon (any winding, no self crossings) into triangles by ear clipping: outIndices holds
+// three polygon point indices per triangle, the triangles have a positive PolygonSignedArea2D. A collinear
+// point stays a triangle point while the polygon has an ear, else it is dropped and lies on a triangle edge.
+// False when the polygon is degenerate or crosses itself, outIndices is empty then
+bool PolygonTriangulate2D(ArrayCRef<Vector2D> points, Array<int>& outIndices);
+
 // splits the simple polygon (any winding, no self crossings) into convex parts of at most maxPartPoints
 // points: ear clipping, then the diagonals are removed while the merged parts stay convex (Hertel-Mehlhorn).
 // outPartIndices holds the polygon point indices of the parts one after another, outPartSizes their

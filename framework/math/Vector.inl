@@ -1135,6 +1135,12 @@ inline TVec3D<T> cross(const TVec3D<T> &u, const TVec3D<T> &v)
 }
 
 template <typename T>
+inline T cross(const TVec2D<T> &u, const TVec2D<T> &v)
+{
+	return u.x * v.y - u.y * v.x;
+}
+
+template <typename T>
 inline T lineProjection(const TVec2D<T> &start, const TVec2D<T> &end, const TVec2D<T> &point)
 {
 	TVec2D<T> v = end - start;

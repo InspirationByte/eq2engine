@@ -39,7 +39,8 @@ Unlike most engine code, math free functions and vector/matrix methods use lower
   conversion between element types: `IVector2D iv = Vector2D(...)`.
 - Component-wise operators `+ - * /` with vectors and scalars, compound assignment, comparison.
 - Free functions (overloaded for 2D/3D/4D):
-  - `dot`, `cross` (3D), `length`, `lengthSqr`, `distance`, `distanceSqr`;
+  - `dot`, `cross` (3D; for 2D the scalar `u.x * v.y - u.y * v.x`, positive when `v` turns
+    counter-clockwise from `u`), `length`, `lengthSqr`, `distance`, `distanceSqr`;
   - `normalize`, `normalizeSelf` (returns the old length), `fastNormalize`;
   - `lerp`, `cerp` (cubic), `bezierQuadratic`, `bezierCubic`, `sCurve`, `approachValue`;
   - `clamp`, `sign`, `vecSimilar(u, v, eps)`, `vecIsValid`, `vecIsFinite`;
@@ -146,9 +147,10 @@ Implemented in `Utility.cpp`:
 - 2D: `LineIntersectsLine2D`, `LineSegIntersectsLineSeg2D`, `LineSegIntersectsCircle2D`,
   `DistancePointPoly2D`, `ConvexHull2D`, `RectangleRectangleSeparation` (negative when overlapping).
 - 2D polygons: `PolygonSignedArea2D` (positive counter-clockwise with Y up, as the `ConvexHull2D`
-  hull), `PolygonConvexPartition2D` (a simple polygon of any winding split into convex parts of
-  limited size, as point indices: ear clipping, then Hertel-Mehlhorn merging; false for a
-  self-crossing or degenerate polygon), `PolylineMiterOffsets2D` (per-point offsets of a unit half
+  hull), `PolygonTriangulate2D` (a simple polygon of any winding split into positive triangles by
+  ear clipping, three point indices each; collinear points stay triangle points while there is an
+  ear; false for a self-crossing or degenerate polygon), `PolygonConvexPartition2D` (the same
+  triangles merged into convex parts of limited size, Hertel-Mehlhorn), `PolylineMiterOffsets2D` (per-point offsets of a unit half
   width strip along a polyline, mitered at the bends).
 - 3D distances: `DistanceLineLine`, `DistanceLineSegLineSeg` (optional closest-point outputs).
 - Angles (degrees unless the name says `Rad`/`PI`): `ConstrainAngle180`, `ConstrainAnglePI`,
