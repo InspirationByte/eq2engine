@@ -76,6 +76,14 @@ bool IsPointInPolygon2D(ArrayCRef<Vector2D> points, const Vector2D& point);
 // False when the polygon is degenerate or crosses itself, outIndices is empty then
 bool PolygonTriangulate2D(ArrayCRef<Vector2D> points, Array<int>& outIndices);
 
+// splits the simple polygon into the most even triangles: the smallest triangle angle, measured on points3D,
+// is as big as it can be, the diagonals go inside the polygon on points2D (any winding; the points of a
+// steep or curved polygon can go there by their lengths across and along it). Unlike PolygonTriangulate2D
+// (fast ear clipping, any triangles that fit) it picks the triangles by their shape in 3D, with n^3 time
+// and n^2 memory, for polygons of a few tens of points. outIndices holds three point indices per
+// triangle. False when the polygon is degenerate or no diagonals make it (it crosses itself)
+bool PolygonTriangulateMinAngle(ArrayCRef<Vector2D> points2D, ArrayCRef<Vector3D> points3D, Array<int>& outIndices);
+
 // splits the simple polygon (any winding, no self crossings) into convex parts of at most maxPartPoints
 // points: ear clipping, then the diagonals are removed while the merged parts stay convex (Hertel-Mehlhorn).
 // outPartIndices holds the polygon point indices of the parts one after another, outPartSizes their

@@ -859,6 +859,148 @@ bool PolygonConvexPartition2D(ArrayCRef<Vector2D> points, int maxPartPoints, Arr
 	return true;
 }
 
+bool PolygonTriangulateMinAngle(ArrayCRef<Vector2D> points2D, ArrayCRef<Vector3D> points3D, Array<int>& outIndices)
+{
+	static constexpr float AREA_EPS = 0.000001f;
+
+	outIndices.clear();
+	const int n = points2D.numElem();
+	if (n < 3)
+		return false;
+
+	float area = 0.0f;
+	for (int i = 0; i < n; ++i)
+		area += cross(points2D[i], points2D[(i + 1) % n]);
+	if (fabsf(area) < AREA_EPS)
+		return false;
+
+	// counter clockwise in the plane
+	const float sign = area > 0.0f ? 1.0f : -1.0f;
+	auto area2 = [&](int a, int b, int c) { return cross(points2D[b] - points2D[a], points2D[c] - points2D[a]) * sign; };
+	auto left = [&](int a, int b, int c) { return area2(a, b, c) > AREA_EPS; };
+	auto leftOn = [&](int a, int b, int c) { return area2(a, b, c) > -AREA_EPS; };
+	auto collinear = [&](int a, int b, int c) { return fabsf(area2(a, b, c)) <= AREA_EPS; };
+	auto between = [&](int a, int b, int c) {
+		if (!collinear(a, b, c))
+			return false;
+		const Vector2D ab = points2D[b] - points2D[a];
+		const float t = dot(points2D[c] - points2D[a], ab);
+		return t >= 0.0f && t <= lengthSqr(ab);
+	};
+	auto intersects = [&](int a, int b, int c, int d) {
+		if (!collinear(a, b, c) && !collinear(a, b, d) && !collinear(c, d, a) && !collinear(c, d, b))
+			return (left(a, b, c) != left(a, b, d)) && (left(c, d, a) != left(c, d, b));
+		return between(a, b, c) || between(a, b, d) || between(c, d, a) || between(c, d, b);
+	};
+	auto inCone = [&](int a, int b) {
+		const int a0 = (a + n - 1) % n;
+		const int a1 = (a + 1) % n;
+		if (leftOn(a, a1, a0))
+			return left(a, b, a0) && left(b, a, a1);
+		return !(leftOn(a, b, a1) && leftOn(b, a, a0));
+	};
+	auto isDiagonal = [&](int a, int b) {
+		if (!inCone(a, b) || !inCone(b, a))
+			return false;
+		for (int k = 0; k < n; ++k)
+		{
+			const int k1 = (k + 1) % n;
+			if (k != a && k1 != a && k != b && k1 != b && intersects(a, b, k, k1))
+				return false;
+		}
+		return true;
+	};
+
+	// the triangle quality: minus the largest cosine of its angles, a flat one is the worst
+	auto quality = [&](int a, int b, int c) {
+		if (!left(a, b, c))
+			return -2.0f;
+
+		const Vector3D& pa = points3D[a];
+		const Vector3D& pb = points3D[b];
+		const Vector3D& pc = points3D[c];
+		const float lab = length(pb - pa);
+		const float lbc = length(pc - pb);
+		const float lca = length(pa - pc);
+		if (lab < F_EPS || lbc < F_EPS || lca < F_EPS)
+			return -2.0f;
+
+		const float cosA = dot(pb - pa, pc - pa) / (lab * lca);
+		const float cosB = dot(pa - pb, pc - pb) / (lab * lbc);
+		const float cosC = dot(pa - pc, pb - pc) / (lca * lbc);
+		return -max(cosA, max(cosB, cosC));
+	};
+
+	// best[i * n + j]: the quality of the polygon part from i to j closed by the diagonal j - i
+	Array<float> best(PP_SL);
+	Array<int> splits(PP_SL);
+	best.setNum(n * n);
+	splits.setNum(n * n);
+	for (int i = 0; i < n * n; ++i)
+	{
+		best[i] = -FLT_MAX;
+		splits[i] = -1;
+	}
+	for (int i = 0; i + 1 < n; ++i)
+		best[i * n + i + 1] = FLT_MAX;
+
+	for (int gap = 2; gap < n; ++gap)
+	{
+		for (int i = 0; i + gap < n; ++i)
+		{
+			const int j = i + gap;
+			if (gap < n - 1 && !isDiagonal(i, j))
+				continue;
+
+			float bestQuality = -FLT_MAX;
+			int bestSplit = -1;
+			for (int k = i + 1; k < j; ++k)
+			{
+				const float first = best[i * n + k];
+				const float second = best[k * n + j];
+				if (first == -FLT_MAX || second == -FLT_MAX)
+					continue;
+
+				const float value = min(min(first, second), quality(i, k, j));
+				if (value > bestQuality)
+				{
+					bestQuality = value;
+					bestSplit = k;
+				}
+			}
+			best[i * n + j] = bestQuality;
+			splits[i * n + j] = bestSplit;
+		}
+	}
+
+	if (splits[n - 1] == -1)
+		return false;
+
+	outIndices.reserve((n - 2) * 3);
+
+	Array<int> stack(PP_SL);
+	stack.reserve(n * 2);
+	stack.append(0);
+	stack.append(n - 1);
+	while (stack.numElem())
+	{
+		const int j = stack.popBack();
+		const int i = stack.popBack();
+		if (j - i < 2)
+			continue;
+
+		const int k = splits[i * n + j];
+		outIndices.append(i);
+		outIndices.append(k);
+		outIndices.append(j);
+		stack.append(i);
+		stack.append(k);
+		stack.append(k);
+		stack.append(j);
+	}
+	return true;
+}
+
 void PolylineMiterOffsets2D(ArrayCRef<Vector2D> points, Array<Vector2D>& outOffsets)
 {
 	const int numPoints = points.numElem();

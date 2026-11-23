@@ -149,7 +149,9 @@ Implemented in `Utility.cpp`:
 - 2D polygons: `PolygonSignedArea2D` (positive counter-clockwise with Y up, as the `ConvexHull2D`
   hull), `PolygonTriangulate2D` (a simple polygon of any winding split into positive triangles by
   ear clipping, three point indices each; collinear points stay triangle points while there is an
-  ear; false for a self-crossing or degenerate polygon), `PolygonConvexPartition2D` (the same
+  ear; false for a self-crossing or degenerate polygon), `PolygonTriangulateMinAngle` (the most even
+  triangles: the smallest angle on the 3D points as big as it can be, the diagonals checked on the 2D
+  points; n^3, for small polygons where the triangle shape matters, such as the generated road faces), `PolygonConvexPartition2D` (the same
   triangles merged into convex parts of limited size, Hertel-Mehlhorn), `PolylineMiterOffsets2D` (per-point offsets of a unit half
   width strip along a polyline, mitered at the bends).
 - 3D distances: `DistanceLineLine`, `DistanceLineSegLineSeg` (optional closest-point outputs).
