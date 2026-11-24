@@ -30,6 +30,8 @@ Related documents:
 | [physics_overview.md](physics_overview.md) | Physics (`shared/physics`, eqPhysics): world, collision objects, rigid bodies, ray tests, constraints |
 | [sound_emitter_system_overview.md](sound_emitter_system_overview.md) | Sound emitter system: script banks, sounding objects, parameter graphs, audio system |
 | [scripting_esl_overview.md](scripting_esl_overview.md) | ESL (Eq Script Library): Lua bindings, engine Lua state |
+| [network_transport_overview.md](network_transport_overview.md) | Design draft, not implemented: message transport (`INetTransport`) with TCP, loopback and GameNetworkingSockets backends |
+| [network_rpc_overview.md](network_rpc_overview.md) | Design draft, not implemented: RPC endpoints and protocols over the transport, payload streams, binary KeyValues messages |
 | [tools_overview.md](tools_overview.md) | Content tools: egfCA, animCA, EGFMan2, FCompress, ShaderCooker, TexCooker, localization tool |
 
 ## Overview
