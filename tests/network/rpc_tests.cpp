@@ -506,3 +506,127 @@ TEST(RPC_TESTS, OverTCP)
 	EXPECT_EQ(size, payloadSize);
 	EXPECT_TRUE(client.IsConnected());
 }
+
+//-------------------------------------------------------------------------------------------------
+// The engine side of the Python eqrpc interop tests (tools/python/eqrpc/tests/test_engine.py),
+// started by them: listens on a free port of 127.0.0.1, prints "EQRPC_PORT <port>" and serves the
+// "interop" protocol until the Quit notify or a timeout.
+
+TEST(RPC_TESTS, DISABLED_ServePython)
+{
+	CRefPtr<CNetTransportTCP> transport = CRefPtr_new(CNetTransportTCP);
+	RPCEndpoint server(RPCEndpoint::SERVER, INetTransportPtr(transport.Ptr()));
+
+	bool quit = false;
+	RPCProtocol protocol("interop", 3);
+	protocol
+		.Method("Echo", [](RPCCallContext& ctx, const KVSection& params, IFileStreamPtr payload) {
+			ctx.Reply(params, payload);
+		})
+		.Method("Engine", [](RPCCallContext& ctx, const KVSection& params, IFileStreamPtr payload) {
+			// every kind of KeyValues data, as engine code builds it
+			KVSection result;
+			result.SetKey("int", 42);
+			result.SetKey("float", 0.5f);
+			result.SetKey("bool", true);
+			result.SetKey("string", "Привет, \"world\"");
+			result.SetKey("position", Vector3D(1.0f, -2.0f, 3.5f));
+			result.AddKey("model", "a");
+			result.AddKey("model", "b");
+			result.CreateSection("empty");
+			result.CreateSection("straight", "main").SetKey("lanes", 2);
+			KVSection& nested = result.CreateSection("nested");
+			nested.CreateSection("deeper").SetKey("depth", 2);
+
+			KVSection inner;
+			inner.SetKey("x", 1);
+			result.CreateSection("value", nullptr, KVPAIR_SECTION).AddValue(inner);
+
+			// Array<Vector3D> and Array<int>, the WriteObj layout
+			Array<Vector3D> positions(PP_SL);
+			Array<int> indices(PP_SL);
+			positions.append(Vector3D(0.0f, 0.0f, 0.0f));
+			positions.append(Vector3D(1.0f, 2.0f, 3.0f));
+			indices.append(0);
+			indices.append(1);
+			indices.append(-1);
+
+			CRefPtr<CMemoryStream> data = CRefPtr_new(CMemoryStream);
+			data->Open(FS_OPEN_READ | FS_OPEN_WRITE, nullptr, 0);
+			data->WriteObj(positions);
+			data->WriteObj(indices);
+			ctx.Reply(result, IFileStreamPtr(data.Ptr()));
+		})
+		.Method("Check", [](RPCCallContext& ctx, const KVSection& params, IFileStreamPtr payload) {
+			// what the engine reads from the Python messages
+			int intValue = 0;
+			float floatValue = 0.0f;
+			bool boolValue = false;
+			const char* stringValue = "";
+			float mixed[3] = { 0.0f, 0.0f, 0.0f };
+			const char* lanes = "";
+			int depth = 0;
+			params.Get("int").GetValues(intValue);
+			params.Get("float").GetValues(floatValue);
+			params.Get("bool").GetValues(boolValue);
+			params.Get("string").GetValues(stringValue);
+			params.Get("mixed").GetValues(mixed[0], mixed[1], mixed[2]);
+			params.Get("straight").GetValues(lanes);
+			params.Get("nested").Get("deeper").Get("depth").GetValues(depth);
+
+			int models = 0;
+			for (const KVSection* key : params.keys)
+				models += CString::Compare(key->GetName(), "model") == 0 ? 1 : 0;
+
+			KVSection result;
+			result.SetKey("int", intValue);
+			result.SetKey("float", floatValue);
+			result.SetKey("bool", boolValue);
+			result.SetKey("string", stringValue);
+			result.SetKey("mixed", Vector3D(mixed[0], mixed[1], mixed[2]));
+			result.SetKey("straight", lanes);
+			result.SetKey("depth", depth);
+			result.SetKey("models", models);
+			result.SetKey("payload", payload ? static_cast<int>(payload->GetSize()) : -1);
+			ctx.Reply(result);
+		})
+		.Method("CallBack", [&protocol](RPCCallContext& ctx, const KVSection& params, IFileStreamPtr payload) {
+			// calls the Python client and replies with its result
+			int value = 0;
+			params.Get("value").GetValues(value);
+
+			KVSection callParams;
+			callParams.SetKey("value", value);
+			RPCDeferredReply reply = ctx.Defer();
+			protocol.RemoteCall(ctx.GetConnectionId(), "Twice", callParams).AddCallback([reply](const FutureResult<RPCResponse>& response) {
+				if (response.IsError())
+				{
+					reply.ReplyError(response.GetErrorCode(), response.GetErrorMessage());
+					return;
+				}
+				reply.Reply(response->GetResult());
+			});
+		})
+		.Method("Quit", [&quit](RPCCallContext& ctx, const KVSection& params, IFileStreamPtr payload) {
+			quit = true;
+		});
+	server.AddProtocol(protocol);
+
+	ASSERT_TRUE(server.Listen("127.0.0.1:0"));
+	printf("EQRPC_PORT %d\n", transport->GetListenPort());
+	fflush(stdout);
+
+	for (int i = 0; i < 60000 && !quit; ++i)
+	{
+		server.Update();
+		Platform_Sleep(1);
+	}
+
+	// sends what is queued before the endpoint is destroyed
+	for (int i = 0; i < 100; ++i)
+	{
+		server.Update();
+		Platform_Sleep(1);
+	}
+	EXPECT_TRUE(quit);
+}

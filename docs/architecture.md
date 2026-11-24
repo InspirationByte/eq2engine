@@ -97,7 +97,7 @@ Public interfaces are declared in `public/` and implemented in `core/` or `share
 | `shared/input/` | Input command binder |
 | `shared/sys/` | Application host: main loop, window, states, console, joystick, config loader; `sys/scripting/` exposes engine subsystems to ESL |
 | `shared/components/`, `shared/entity/` | Component system and data tables (no engine project; compiled by consumers) |
-| `tools/` | Content tools (see below); `localization_tool/` is a separate C# project, `imp-exp blender/` is a Blender add-on |
+| `tools/` | Content tools (see below); `localization_tool/` is a separate C# project, `imp-exp blender/` is a Blender add-on, `python/eqrpc/` the Python side of the RPC ([network_rpc_overview.md](network_rpc_overview.md)) |
 | `samples/` | Sample applications, each with its own workspace `premake5.lua` |
 | `tests/` | GoogleTest-based test applications |
 | `src_dependency/` | Third-party libraries, each with its own `premake5.lua` |
@@ -232,7 +232,7 @@ Tools are not built in `Profile` and `Retail` configurations.
 Workspace `auto_tests` (tools and material system off, single-file build), generated into
 `build/auto_tests/`. Projects: `testsCommonLib`, `ds_tests` (`tests/ds/`), `ppmem_tests`
 (`tests/ppmem/`), `scripting_tests` (`tests/scripting/`), `network_tests` (`tests/network/`), all on
-GoogleTest. PPMem is enabled only in
+GoogleTest; the Python RPC package has unittest tests in `tools/python/eqrpc/tests/`. PPMem is enabled only in
 `Debug`; other configurations define `PPMEM_DISABLED` and `ppmem_tests` skips there.
 
 ### Samples

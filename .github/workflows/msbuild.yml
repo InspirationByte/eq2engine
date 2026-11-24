@@ -79,3 +79,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { $failed += $test }
         }
         if ($failed) { Write-Error "Failed tests: $failed"; exit 1 }
+
+    - name: Run eqrpc Python tests
+      working-directory: tools\python
+      shell: pwsh
+      timeout-minutes: 5
+      run: |
+        $env:EQRPC_NETWORK_TESTS = (Resolve-Path "..\..\build\${{env.PROJECT_NAME}}\bin\${{env.BUILD_PLATFORM}}\${{matrix.configuration}}\network_tests.exe").Path
+        python -m unittest discover -s eqrpc/tests -t .
+        if ($LASTEXITCODE -ne 0) { exit 1 }

@@ -6,8 +6,8 @@ notifications and binary payload streams, over any transport of
 Blender link of the game (`docs/blender_link_design.md` of the game repository); later the game uses
 it for its servers (rendez-vous, lobby, statistics) next to the multiplayer data channels.
 
-Status: the C++ endpoint and protocols are implemented and tested; the Python side
-(`tools/python/eqrpc/`) is designed, not implemented yet.
+Status: the C++ endpoint and protocols and the Python side (`tools/python/eqrpc/`) are implemented
+and tested, also against each other.
 
 | File | Contents |
 |---|---|
@@ -15,7 +15,8 @@ Status: the C++ endpoint and protocols are implemented and tested; the Python si
 | `shared/network/rpc/RPCProtocol.*` | `RPCProtocol`, `RPCCallContext`, `RPCDeferredReply`, `RPCResponse`, `RPCMessage`, `ERPCError` |
 | `framework/utils/KeyValues.cpp` | binary KeyValues (`WriteBinary` / `ParseBinary`), the wire format of the messages |
 | `tests/network/rpc_tests.cpp` | endpoint tests over the loopback and TCP transports |
-| `tools/python/eqrpc/` | planned: Python client and server of the same protocol (standard library only), used by the Blender addon of the game |
+| `tools/python/eqrpc/` | Python client and server of the same protocol (standard library only), used by the Blender addon of the game |
+| `tools/python/eqrpc/tests/` | Python tests: binary KeyValues, the JSON view, endpoints over TCP, interop with the engine endpoint |
 
 The files are part of `networkLib`.
 
@@ -105,6 +106,7 @@ public:
   | `RPC_ERROR_PAYLOAD_TOO_LARGE` | the peer refused the payload size |
   | `RPC_ERROR_NOT_CONNECTED` | no connection, or the protocol is not added to an endpoint |
   | `RPC_ERROR_SEND_FAILED` | the message is larger than the transport allows |
+  | `RPC_ERROR_METHOD_FAILED` | the method failed: a Python method raised an exception (the message has it) |
 
 - **Broken input**: a message that does not parse, a payload chunk without its header or a stream
   longer or shorter than announced closes the connection.
@@ -352,6 +354,9 @@ values and prints messages for logs and debugging with `json.dumps`. The view ma
 - An array of scalars (and `_kv` values) is the values of one key; an array of only objects or only
   arrays is a repeated key.
 - Python `int` becomes `INT`, `float` becomes `FLOAT`.
+- The engine reader gives the values of a key the type of its section (`KVSection::CreateValue`), so
+  the values of one key have one type; numbers may mix: `[1, 2.5]` is written as a `FLOAT` section
+  and read as `1, 2.5`.
 - The view loses only the interleaving of different repeated keys (`a, b, a`); messages built from
   `kv.Section` directly keep it.
 - The engine prints messages as KeyValues text in its logs; a C++ JSON printer is added only if a
@@ -388,33 +393,57 @@ checks the ticket asynchronously (a platform web API or an account service) and 
 The parser of the binary KeyValues already checks the input (see [Binary KeyValues](#binary-keyvalues)). The message
 format does not change: tickets and tokens go in `params`.
 
-## Python side (planned)
+## Python side
 
-`tools/python/eqrpc/` implements the same protocol in Python with the standard library (`socket`,
-`struct`) over the TCP frames, so the Blender addon needs no wheels:
+`tools/python/eqrpc/` implements the same protocol in Python 3 with the standard library (`socket`,
+`select`, `struct`) over the TCP frames, so the Blender addon needs no wheels. numpy is used only
+when a payload reader is given a numpy dtype.
+
+| File | Contents |
+|---|---|
+| `kv.py` | `Section`: binary KeyValues and the JSON view |
+| `payload.py` | `PayloadReader`, `PayloadWriter`: the `WriteObj` / `ReadObj` layout |
+| `transport.py` | `TcpTransport`: the frames and lanes of `CNetTransportTCP`, non-blocking sockets |
+| `endpoint.py` | `Endpoint`, `Protocol`, `CallContext`, `DeferredReply`, `Future`, `Response`, `RPCError`, the error codes |
 
 ```python
-endpoint = eqrpc.Endpoint.connect("127.0.0.1", 27100)
+endpoint = eqrpc.Endpoint(eqrpc.Endpoint.CLIENT)
 defs = eqrpc.Protocol("defs")
-endpoint.add_protocol(defs)
+endpoint.add_protocol(defs)          # before connect: announced by rpc.Hello
+endpoint.connect("127.0.0.1:27100")  # returns at once, calls made before are queued
 
 @defs.method("Changed")
-def on_changed(ctx, params, payload): ...
+def on_changed(ctx, params, payload):
+    return {"ok": True}              # the result, unless the method replied or deferred
 
-defs.remote_call("SetMesh", {"def": 12}, payload=data).then(lambda r: ...)
+defs.remote_call("SetMesh", {"def": 12}, payload=data).then(lambda response: ..., lambda error: ...)
 defs.remote_notify("SelectionChanged", {"ids": [1, 2]})
 
 endpoint.update()   # from the main thread (in Blender: bpy.app.timers)
 ```
 
-- `eqrpc.kv.Section` mirrors `KVSection` (`name`, `values`, `keys`, `find`, `value`, `add`) and reads
-  and writes the binary form. Methods get a `Section`; `remote_call` and `remote_notify` take a
-  `Section` or a `dict` converted by the JSON view; `section.to_json()` gives the view for logs.
-- A value is written with its own type and the section type is the type of its first value: the
-  engine reader gives the values of a section the type of the section.
+- **Same contract as C++**: roles, call ids, `Hello` / `Ping` / `CancelStream`, the default empty
+  reply, deferred replies, payload streams of 64 KB chunks while the payload lane has less than four
+  queued, `max_payload_size` (256 MB) with the refusal, failed futures on a disconnect or a removed
+  protocol. `connect` / `listen` take `host:port` like the C++ transport.
+- **Threads**: one thread. `update` polls the sockets, runs the methods, resolves the futures (their
+  `then` callbacks run there, or at once on a future that is done) and sends the payload chunks.
+  `Future.wait(timeout)` updates the endpoint until the reply, for scripts and tests; it is refused
+  inside `update`.
+- **Methods** are `func(ctx, params, payload)`; `params` is a `Section`, `payload` a `memoryview` of
+  the received bytes or None. A method returns the result (a `Section`, a `dict` of the JSON view or
+  None for an empty one), or answers with `ctx.reply(result, payload)` / `ctx.reply_error(code,
+  message)` / `ctx.defer()`. An exception is logged and replied with `RPC_ERROR_METHOD_FAILED`.
+- **Messages**: `kv.Section` mirrors `KVSection` (`name`, `values`, `keys`, `add`, `set`, `find`,
+  `find_all`, `value`) and reads and writes the binary form with the same checks as the engine
+  (`KVError`). `remote_call`, `remote_notify` and the replies take a `Section` or a `dict` converted
+  by the JSON view; `section.to_json()` gives the view for logs.
+- **Payloads**: any bytes-like object or a `PayloadWriter` is sent; it is not copied, so it is not
+  changed until sent. `PayloadReader.read_array("f", 3)` reads an engine array (the `int32` count and
+  the elements) as a `memoryview`, `read_array(numpy.float32, 3)` as a numpy array view of shape
+  (count, 3) without a copy; `PayloadWriter.write_array` writes numpy arrays or buffers.
+- **Logs** go to the `eqrpc` logger of `logging`.
 - A protocol documents its parameters in KeyValues text.
-- The payload is a `memoryview`; a reader reads the engine layout: `read_array(np.float32, 3)` reads
-  the `int32` count and makes a `np.frombuffer` view without a copy.
 
 ## Tests
 
@@ -428,8 +457,21 @@ GoogleTest, the `auto_tests` workspace:
   layout, refused payloads, disconnects and removed protocols failing the futures, two independent
   client endpoints; one call with a payload over the TCP transport.
 
-The Python `kv` module will be tested against bytes written by the engine and every row of the JSON
-view.
+Python unittest (`tools/python/eqrpc/tests/`, run from `tools/python`:
+`python -m unittest discover -s eqrpc/tests -t .`):
+
+- `test_kv.py`: the binary layout of every value type, round trips, every truncation and corrupt
+  headers fail, the nesting limit, every row of the JSON view;
+- `test_endpoint.py`: Python endpoints over TCP: calls, notifies, errors, exceptions, deferred
+  replies, payloads both ways, the payload layout, refused payloads, disconnects, removed protocols,
+  a failed connect;
+- `test_engine.py`: against the engine endpoint, the disabled `RPC_TESTS.DISABLED_ServePython` test
+  of `network_tests` that it starts (`EQRPC_NETWORK_TESTS` is the path of the executable, the tests
+  are skipped without it): `Hello` versions, every kind of KeyValues data and an engine `WriteObj`
+  payload read by Python, Python messages read by the engine, an echo of a section and a payload of
+  several chunks, a call from the engine to a Python method, an unknown method.
+
+The CI workflows run them after the C++ tests.
 
 ## Open questions
 

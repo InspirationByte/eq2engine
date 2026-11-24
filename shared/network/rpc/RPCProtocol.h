@@ -20,6 +20,7 @@ enum ERPCError : int
 	RPC_ERROR_PAYLOAD_TOO_LARGE	= -4,	// the peer refused the payload size
 	RPC_ERROR_NOT_CONNECTED		= -5,	// no connection to send the call to
 	RPC_ERROR_SEND_FAILED		= -6,	// the message is larger than the transport allows
+	RPC_ERROR_METHOD_FAILED		= -7,	// the method failed (a Python method raised an exception)
 };
 
 // a received message: the KeyValues root and the payload stream when it has one
