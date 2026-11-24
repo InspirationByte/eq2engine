@@ -29,7 +29,7 @@ on:
 env:
   PROJECT_NAME: auto_tests
   BUILD_PLATFORM: x64
-  TESTS: ds_tests ppmem_tests scripting_tests
+  TESTS: ds_tests ppmem_tests scripting_tests network_tests
   
   EXE_SUFFIX:
 

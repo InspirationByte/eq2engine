@@ -30,8 +30,8 @@ Related documents:
 | [physics_overview.md](physics_overview.md) | Physics (`shared/physics`, eqPhysics): world, collision objects, rigid bodies, ray tests, constraints |
 | [sound_emitter_system_overview.md](sound_emitter_system_overview.md) | Sound emitter system: script banks, sounding objects, parameter graphs, audio system |
 | [scripting_esl_overview.md](scripting_esl_overview.md) | ESL (Eq Script Library): Lua bindings, engine Lua state |
-| [network_transport_overview.md](network_transport_overview.md) | Design draft, not implemented: message transport (`INetTransport`) with TCP, loopback and GameNetworkingSockets backends |
-| [network_rpc_overview.md](network_rpc_overview.md) | Design draft, not implemented: RPC endpoints and protocols over the transport, payload streams, binary KeyValues messages |
+| [network_transport_overview.md](network_transport_overview.md) | Message transport (`INetTransport`): connections, lanes, the TCP and loopback backends; GameNetworkingSockets backend planned |
+| [network_rpc_overview.md](network_rpc_overview.md) | RPC endpoints and protocols over the transport: calls with `Future` replies, notifies, payload streams, binary KeyValues messages |
 | [tools_overview.md](tools_overview.md) | Content tools: egfCA, animCA, EGFMan2, FCompress, ShaderCooker, TexCooker, localization tool |
 
 ## Overview
@@ -231,7 +231,8 @@ Tools are not built in `Profile` and `Retail` configurations.
 
 Workspace `auto_tests` (tools and material system off, single-file build), generated into
 `build/auto_tests/`. Projects: `testsCommonLib`, `ds_tests` (`tests/ds/`), `ppmem_tests`
-(`tests/ppmem/`), `scripting_tests` (`tests/scripting/`), all on GoogleTest. PPMem is enabled only in
+(`tests/ppmem/`), `scripting_tests` (`tests/scripting/`), `network_tests` (`tests/network/`), all on
+GoogleTest. PPMem is enabled only in
 `Debug`; other configurations define `PPMEM_DISABLED` and `ppmem_tests` skips there.
 
 ### Samples

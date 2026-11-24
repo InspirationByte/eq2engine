@@ -100,7 +100,7 @@ Everything a workspace generates goes into its `BUILD_DIR` (see [architecture.md
 | `<BUILD_DIR>/thirdpartylib/<platform>/<configuration>/` | Third-party static libraries |
 | `<BUILD_DIR>/bin/<platform>/<configuration>/` | Executables and shared libraries |
 
-Test executables (`ds_tests`, `ppmem_tests`, `scripting_tests`) are placed in
+Test executables (`ds_tests`, `ppmem_tests`, `scripting_tests`, `network_tests`) are placed in
 `build/auto_tests/bin/x64/<configuration>/`.
 
 ## Overriding dependency paths
