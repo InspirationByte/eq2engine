@@ -105,10 +105,6 @@ project "networkLib"
     files {
 		"network/**",
 	}
-	-- this one is temporary. Once rewrite done it will be removed
-	excludes {
-		"network/NETThread.cpp",
-	}
 	
 	filter "system:Windows"
 		links { "wsock32" }

@@ -47,9 +47,6 @@ bool InitAppStates()
 
 	g_audioSystem->Init();
 
-#ifdef ENABLE_MULTIPLAYER
-	Networking::InitNetworking();
-#endif
 #ifdef IMGUI_ENABLED
 	g_imGuiHost->AddDebugMenu("ENGINE/SOUND/SCRIPT EDITOR UI", SoundScriptEditorUIDraw);
 #endif
@@ -63,10 +60,6 @@ void ShutdownAppStates()
 {
 	for (int i = 0; i < APP_STATE_COUNT; ++i)
 		s_appStates[i] = nullptr;
-
-#ifdef ENABLE_MULTIPLAYER
-	Networking::ShutdownNetworking();
-#endif
 
 	g_sounds->Shutdown();
 	g_audioSystem->Shutdown();

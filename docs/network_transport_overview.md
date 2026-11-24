@@ -2,8 +2,7 @@
 
 The transport layer gives the engine one interface for message connections, with interchangeable
 backends: TCP (local tool links such as the level editor ↔ Blender link) and GameNetworkingSockets
-(multiplayer, later; it replaces the custom reliable UDP protocol `CEqRDPSocket` of
-`shared/network`). The RPC layer ([network_rpc_overview.md](network_rpc_overview.md)) and the
+(multiplayer, later). The RPC layer ([network_rpc_overview.md](network_rpc_overview.md)) and the
 multiplayer data channels are separate users of it.
 
 Status: the interface, the TCP and the loopback backends are implemented and tested; the
@@ -17,9 +16,10 @@ GameNetworkingSockets backend is designed, not implemented yet.
 | `shared/network/transport/NetTransportGNS.*` | planned: GameNetworkingSockets backend |
 | `tests/network/transport_tests.cpp` | loopback and TCP tests |
 
-The files are part of `networkLib`; the legacy files of `shared/network` (`CEqRDPSocket`,
-`CNetworkThread`, `INetworkInterface`) stay until the GNS backend replaces them. On Windows the
-executables using the TCP backend link `wsock32`.
+The files are part of `networkLib`. The legacy UDP networking (`CEqRDPSocket`, `CNetworkThread`,
+`INetworkInterface`) is removed; `network/net_defs.h` keeps the socket definitions and
+`Networking::InitNetworking` (winsock startup) used by the TCP backend. On Windows the executables
+using the TCP backend link `wsock32`.
 
 ## Layers
 

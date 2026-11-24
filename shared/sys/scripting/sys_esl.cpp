@@ -454,7 +454,6 @@ bool eslSysInit(const esl::ScriptState& state)
 	ESL_SYS_INIT(eslSysFileSystemInit);
 	ESL_SYS_INIT(eslSysConsoleInit);
 	ESL_SYS_INIT(eslSysKeyValuesInit);
-	//ESL_SYS_INIT_EXT(eslSysNetworkingInit);
 
 	ESL_SYS_INIT(eslSysMathInit);
 	ESL_SYS_INIT(eslSysMathUtilsInit);

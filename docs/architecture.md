@@ -93,7 +93,7 @@ Public interfaces are declared in `public/` and implemented in `core/` or `share
 | `shared/imgui_backend/` | ImGui host (`g_imGuiHost`), SDL platform backend and material-system renderer backend |
 | `shared/scripting/` | ESL — Lua binding library |
 | `shared/movie/` | WebM movie player: AV1 video (dav1d), Vorbis audio, YUV to RGBA conversion on GPU (`MovieYUV` shader) |
-| `shared/network/` | UDP networking |
+| `shared/network/` | message transports, RPC, socket definitions, network property variables (`NetObject.h`) |
 | `shared/input/` | Input command binder |
 | `shared/sys/` | Application host: main loop, window, states, console, joystick, config loader; `sys/scripting/` exposes engine subsystems to ESL |
 | `shared/components/`, `shared/entity/` | Component system and data tables (no engine project; compiled by consumers) |
@@ -211,7 +211,7 @@ All are static libraries using `public` and `shared` include paths.
 | `animatingLib` | `animating/**` | studioLib |
 | `equiLib` | `equi/**` | fontLib (imgui) |
 | `imguiBackendLib` | `imgui_backend/**` | (SDL2, imgui) |
-| `networkLib` | `network/**` except `NETThread.cpp` | (zlib) |
+| `networkLib` | `network/**` | (zlib) |
 | `soundSystemLib` | `audio/**` | (minivorbis, openal-soft, imgui) |
 | `physicsLib` | `physics/**` | (bullet2) |
 | `movieLib` | `movie/**` | (dav1d, nestegg, minivorbis; disabled on Android) |

@@ -51,10 +51,6 @@ bool InitAppStates()
 {
 	s_appStates[APP_STATE_MAIN_GAMELOOP] = g_State_Demo;
 
-#ifdef ENABLE_MULTIPLAYER
-	Networking::InitNetworking();
-#endif
-
 	g_pHost->SetWindowTitle(GAME_WINDOW_TITLE);
 	g_eqCore->RegisterInterface(&s_shapeCache);
 	g_studioCache->Init(g_parallelJobs->GetJobMng());
@@ -90,10 +86,6 @@ void ShutdownAppStates()
 {
 	for (int i = 0; i < APP_STATE_COUNT; ++i)
 		s_appStates[i] = nullptr;
-
-#ifdef ENABLE_MULTIPLAYER
-	Networking::ShutdownNetworking();
-#endif
 
 	g_studioCache->Shutdown();
 	g_parallelJobs->Shutdown();
