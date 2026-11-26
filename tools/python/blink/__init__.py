@@ -14,10 +14,10 @@ from .client import (
 	Client, DEFAULT_PORT, DEFAULT_RECONNECT_INTERVAL,
 	STATE_DISCONNECTED, STATE_CONNECTING, STATE_WAITING, STATE_CONNECTED, STATE_FAILED,
 )
-from .mesh import Mesh, read_mesh
+from .mesh import Mesh, read_mesh, write_mesh, merge_meshes
 
 __all__ = [
 	"coords", "Client", "DEFAULT_PORT", "DEFAULT_RECONNECT_INTERVAL",
 	"STATE_DISCONNECTED", "STATE_CONNECTING", "STATE_WAITING", "STATE_CONNECTED", "STATE_FAILED",
-	"Mesh", "read_mesh",
+	"Mesh", "read_mesh", "write_mesh", "merge_meshes",
 ]

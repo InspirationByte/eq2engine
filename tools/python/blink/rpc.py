@@ -5,8 +5,8 @@ copied into the addon package (`<addon>.eqrpc`, `<addon>.blink`), where the rela
 """
 
 try:
-	from ..eqrpc import Endpoint, Protocol, PayloadReader, ERROR_DISCONNECTED
+	from ..eqrpc import Endpoint, Protocol, PayloadReader, PayloadWriter, ERROR_DISCONNECTED
 except ImportError:		# blink is a top-level package
-	from eqrpc import Endpoint, Protocol, PayloadReader, ERROR_DISCONNECTED
+	from eqrpc import Endpoint, Protocol, PayloadReader, PayloadWriter, ERROR_DISCONNECTED
 
-__all__ = ["Endpoint", "Protocol", "PayloadReader", "ERROR_DISCONNECTED"]
+__all__ = ["Endpoint", "Protocol", "PayloadReader", "PayloadWriter", "ERROR_DISCONNECTED"]

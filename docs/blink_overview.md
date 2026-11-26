@@ -17,10 +17,10 @@ Blender since it moved here from the editor.
 | `shared/blink/BlinkMesh.*` | `BlinkMesh`: triangles with material batches, written as a KeyValues result and a payload |
 | `tools/python/blink/client.py` | `blink.Client`: the connection, `blink.Hello`, waiting and reconnect, the state for the UI (no bpy) |
 | `tools/python/blink/coords.py` | Engine ↔ Blender coordinates of points, object transforms and meshes (no bpy) |
-| `tools/python/blink/mesh.py` | `read_mesh`: the `blink.Mesh` of a `BlinkMesh` reply, in Blender coordinates (numpy) |
+| `tools/python/blink/mesh.py` | `read_mesh`: the `blink.Mesh` of a `BlinkMesh` reply, in Blender coordinates; `write_mesh`: the params and payload of a `blink.Mesh` for `BlinkMesh::Read`; `merge_meshes` (numpy) |
 | `tools/python/blink/rpc.py` | The `eqrpc` import: a top-level package here, a sibling package inside an addon |
-| `tools/python/blink/blender/` | The Blender part (bpy): `Addon` (preferences, Connect / Disconnect, the menu and the panel, the timer, auto-connect), `mesh.build_mesh`, `mesh.box_mesh` |
-| `tools/python/blink/tests/` | unittest tests: the coordinates, the client against a Python server |
+| `tools/python/blink/blender/` | The Blender part (bpy): `Addon` (preferences, Connect / Disconnect, the menu and the panel, the timer, auto-connect), `mesh.build_mesh`, `mesh.read_bpy_mesh`, `mesh.geometry_hash`, `mesh.box_mesh` |
+| `tools/python/blink/tests/` | unittest tests: the coordinates, the meshes, the client against a Python server |
 
 The C++ files are `blinkLib` (uses `networkLib`).
 
@@ -69,10 +69,15 @@ After the reply the client is `Connected` and the application starts its sync.
 
 ## Meshes
 
-`BlinkMesh` holds engine coordinates: `positions`, `normals`, `texcoords`, `indices` (triangles)
-and batches; `BeginBatch(material)` starts a batch at the current index count. `Write(out, payload)`
-adds a `batch` section per batch (`material`, `firstIndex`, `indexCount`) to the result and writes
-the four arrays to the payload with `IFileStream::WriteObj` (an int count and the items each).
+`BlinkMesh` holds engine coordinates: `positions`, `normals`, `texcoords`, `indices` (triangles),
+`colors` (empty or a `TVec4D<ubyte>` per vertex; the application gives them a meaning) and batches;
+`BeginBatch(material)` starts a batch at the current index count. `Write(out, payload)` adds a
+`batch` section per batch (`material`, `firstIndex`, `indexCount`) to the result and writes the five
+arrays to the payload with `IFileStream::WriteObj` (an int count and the items each).
+`Read(params, payload, error)` takes a mesh sent by Blender and checks it before the application
+uses it: every array count against the bytes left (no allocation from a bad count), the vertex arrays
+of one size, the indices in range and a multiple of 3, the batches following each other over all
+the indices. A payload without the colors array has none.
 
 `blink.read_mesh(result, payload)` reads it into a `blink.Mesh` in Blender coordinates (numpy
 views, `coords.mesh_to_blender`); `blink.blender.mesh.build_mesh(bpy_mesh, mesh, on_material_created,
@@ -81,8 +86,22 @@ custom normals. The engine vertices are split where the UVs or normals change; `
 vertices at one position (`WELD_DISTANCE`, 0.1 mm), keeps the UVs and normals per face corner and
 drops the triangles that become degenerate, so the mesh is connected for editing and looks the same.
 `quads` joins the flat triangle pairs of one material with matching UVs into quads
-(`bmesh.ops.join_triangles`, the custom normals are kept). Sending a mesh back has to triangulate
-and split it again.
+(`bmesh.ops.join_triangles`, the custom normals are kept). The colors are the `Color` byte color
+corner attribute (the raw bytes as its sRGB values), so they can be painted. `build_mesh`
+returns the `geometry_hash` of what was built (positions, faces, materials, UVs, corner normals,
+colors); the application keeps it outside the mesh, because Blender undo restores the mesh
+with its properties, and compares it with `geometry_hash(mesh)` to tell whether the mesh was edited.
+A mesh in Edit Mode has its UVs and attributes in the edit mesh (`update_from_editmode` does not
+bring the UVs back), so `geometry_hash` and `read_bpy_mesh` raise `ValueError` for it: leave Edit
+Mode first.
+
+Back to the application: `read_bpy_mesh(bpy_mesh, matrix=None)` triangulates the mesh (loop
+triangles), splits a vertex per face corner where the material, the UV, the normal or the
+color differ, orders the triangles by material (a batch each, the name from `eq_material` of
+the slot material, else its Blender name) and moves the vertices by `matrix` (an object
+`matrix_world`; a mirroring matrix reverses the winding). `blink.write_mesh(mesh)` converts it to
+engine coordinates and gives the `batch` params and the payload; `blink.merge_meshes(meshes)` joins
+several (a batch per material name).
 
 `blink.blender.mesh.material(name, on_created)` is the Blender material of an engine material,
 found by the full name in the `eq_material` property: Blender names are limited to 63 bytes and get
@@ -165,5 +184,7 @@ python -m unittest discover -s blink/tests -t .
 ```
 
 The client tests run a Python server with `blink.Hello` on 127.0.0.1: the handshake, waiting for
-a server that is not running yet, the reconnect after the server restarts. The mesh coordinate
-test needs numpy and is skipped without it. CI runs them after the eqrpc tests.
+a server that is not running yet, the reconnect after the server restarts. The mesh tests
+(coordinates, `write_mesh` / `read_mesh`, `merge_meshes`) need numpy and are skipped without it.
+CI runs them after the eqrpc tests. `BlinkMesh::Write` / `Read` and the rejected meshes are checked by
+`BLINK_MESH_TESTS` of `network_tests` (it links `blinkLib`).

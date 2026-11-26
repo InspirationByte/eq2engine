@@ -99,3 +99,29 @@ def mesh_to_blender(positions, normals, texcoords, indices):
 	triangles = numpy.asarray(indices, dtype=numpy.int32).reshape(-1, 3)
 	out_indices = triangles[:, [0, 2, 1]].ravel()
 	return out_positions, out_normals, out_texcoords, out_indices
+
+
+def mesh_to_engine(positions, normals, texcoords, indices):
+	"""Blender mesh arrays in engine order, the inverse of `mesh_to_blender`."""
+	import numpy
+
+	positions = numpy.asarray(positions, dtype=numpy.float32)
+	normals = numpy.asarray(normals, dtype=numpy.float32)
+	texcoords = numpy.asarray(texcoords, dtype=numpy.float32)
+
+	out_positions = numpy.empty_like(positions)
+	out_positions[:, 0] = -positions[:, 0]
+	out_positions[:, 1] = positions[:, 2]
+	out_positions[:, 2] = -positions[:, 1]
+
+	out_normals = numpy.empty_like(normals)
+	out_normals[:, 0] = -normals[:, 0]
+	out_normals[:, 1] = normals[:, 2]
+	out_normals[:, 2] = -normals[:, 1]
+
+	out_texcoords = texcoords.copy()
+	out_texcoords[:, 1] = 1.0 - texcoords[:, 1]
+
+	triangles = numpy.asarray(indices, dtype=numpy.int32).reshape(-1, 3)
+	out_indices = triangles[:, [0, 2, 1]].ravel()
+	return out_positions, out_normals, out_texcoords, out_indices

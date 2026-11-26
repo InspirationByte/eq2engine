@@ -67,7 +67,7 @@ project "network_tests"
 	properties { "unitybuild" }
     uses {
 		"corelib", "frameworkLib",
-		"e2Core", "testsCommonLib", "networkLib",
+		"e2Core", "testsCommonLib", "networkLib", "blinkLib",
 		"public", "shared",
 		"gtest"
 	}
