@@ -3,7 +3,7 @@
 Remote method calls between applications: named protocols with methods, calls with replies,
 notifications and binary payload streams, over any transport of
 [network_transport_overview.md](network_transport_overview.md). The first user is the level editor ↔
-Blender link of the game (`docs/blender_link_design.md` of the game repository); later the game uses
+Blender link of the game (BLINK, [blink_overview.md](blink_overview.md), and `docs/blender_link_design.md` of the game repository); later the game uses
 it for its servers (rendez-vous, lobby, statistics) next to the multiplayer data channels.
 
 Status: the C++ endpoint and protocols and the Python side (`tools/python/eqrpc/`) are implemented
@@ -15,7 +15,7 @@ and tested, also against each other.
 | `shared/network/rpc/RPCProtocol.*` | `RPCProtocol`, `RPCCallContext`, `RPCDeferredReply`, `RPCResponse`, `RPCMessage`, `ERPCError` |
 | `framework/utils/KeyValues.cpp` | binary KeyValues (`WriteBinary` / `ParseBinary`), the wire format of the messages |
 | `tests/network/rpc_tests.cpp` | endpoint tests over the loopback and TCP transports |
-| `tools/python/eqrpc/` | Python client and server of the same protocol (standard library only), used by the Blender addon of the game |
+| `tools/python/eqrpc/` | Python client and server of the same protocol (standard library only), used by BLINK ([blink_overview.md](blink_overview.md)) |
 | `tools/python/eqrpc/tests/` | Python tests: binary KeyValues, the JSON view, endpoints over TCP, interop with the engine endpoint |
 
 The files are part of `networkLib`.

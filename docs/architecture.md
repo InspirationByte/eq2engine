@@ -32,6 +32,7 @@ Related documents:
 | [scripting_esl_overview.md](scripting_esl_overview.md) | ESL (Eq Script Library): Lua bindings, engine Lua state |
 | [network_transport_overview.md](network_transport_overview.md) | Message transport (`INetTransport`): connections, lanes, the TCP and loopback backends; GameNetworkingSockets backend planned |
 | [network_rpc_overview.md](network_rpc_overview.md) | RPC endpoints and protocols over the transport: calls with `Future` replies, notifies, payload streams, binary KeyValues messages |
+| [blink_overview.md](blink_overview.md) | BLINK (`shared/blink`, `tools/python/blink`): the link of an engine application with Blender over RPC: the server, `blink.Hello`, meshes, the Python client with reconnect, the Blender menu and auto-connect |
 | [tools_overview.md](tools_overview.md) | Content tools: egfCA, animCA, EGFMan2, FCompress, ShaderCooker, TexCooker, localization tool |
 
 ## Overview
@@ -94,10 +95,11 @@ Public interfaces are declared in `public/` and implemented in `core/` or `share
 | `shared/scripting/` | ESL — Lua binding library |
 | `shared/movie/` | WebM movie player: AV1 video (dav1d), Vorbis audio, YUV to RGBA conversion on GPU (`MovieYUV` shader) |
 | `shared/network/` | message transports, RPC, socket definitions, network property variables (`NetObject.h`) |
+| `shared/blink/` | BLINK server and mesh of the link with Blender — see [blink_overview.md](blink_overview.md) |
 | `shared/input/` | Input command binder |
 | `shared/sys/` | Application host: main loop, window, states, console, joystick, config loader; `sys/scripting/` exposes engine subsystems to ESL |
 | `shared/components/`, `shared/entity/` | Component system and data tables (no engine project; compiled by consumers) |
-| `tools/` | Content tools (see below); `localization_tool/` is a separate C# project, `imp-exp blender/` is a Blender add-on, `python/eqrpc/` the Python side of the RPC ([network_rpc_overview.md](network_rpc_overview.md)) |
+| `tools/` | Content tools (see below); `localization_tool/` is a separate C# project, `imp-exp blender/` is a Blender add-on, `python/eqrpc/` the Python side of the RPC ([network_rpc_overview.md](network_rpc_overview.md)), `python/blink/` the Blender side of BLINK ([blink_overview.md](blink_overview.md)) |
 | `samples/` | Sample applications, each with its own workspace `premake5.lua` |
 | `tests/` | GoogleTest-based test applications |
 | `src_dependency/` | Third-party libraries, each with its own `premake5.lua` |
@@ -212,6 +214,7 @@ All are static libraries using `public` and `shared` include paths.
 | `equiLib` | `equi/**` | fontLib (imgui) |
 | `imguiBackendLib` | `imgui_backend/**` | (SDL2, imgui) |
 | `networkLib` | `network/**` | (zlib) |
+| `blinkLib` | `blink/**` | networkLib |
 | `soundSystemLib` | `audio/**` | (minivorbis, openal-soft, imgui) |
 | `physicsLib` | `physics/**` | (bullet2) |
 | `movieLib` | `movie/**` | (dav1d, nestegg, minivorbis; disabled on Android) |
@@ -232,7 +235,7 @@ Tools are not built in `Profile` and `Retail` configurations.
 Workspace `auto_tests` (tools and material system off, single-file build), generated into
 `build/auto_tests/`. Projects: `testsCommonLib`, `ds_tests` (`tests/ds/`), `ppmem_tests`
 (`tests/ppmem/`), `scripting_tests` (`tests/scripting/`), `network_tests` (`tests/network/`), all on
-GoogleTest; the Python RPC package has unittest tests in `tools/python/eqrpc/tests/`. PPMem is enabled only in
+GoogleTest; the Python packages have unittest tests in `tools/python/eqrpc/tests/` and `tools/python/blink/tests/`. PPMem is enabled only in
 `Debug`; other configurations define `PPMEM_DISABLED` and `ppmem_tests` skips there.
 
 ### Samples

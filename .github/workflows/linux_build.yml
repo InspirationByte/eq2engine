@@ -83,7 +83,7 @@ jobs:
         done
         if [ -n "$failed" ]; then echo "::error::Failed tests:$failed"; exit 1; fi
 
-    - name: Run eqrpc Python tests
+    - name: Run eqrpc and blink Python tests
       working-directory: ./tools/python
       timeout-minutes: 5
       run: |
@@ -91,3 +91,4 @@ jobs:
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$bin_dir
         export EQRPC_NETWORK_TESTS=$bin_dir/network_tests
         python3 -m unittest discover -s eqrpc/tests -t .
+        python3 -m unittest discover -s blink/tests -t .

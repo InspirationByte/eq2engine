@@ -109,6 +109,17 @@ project "networkLib"
 	filter "system:Windows"
 		links { "wsock32" }
 
+-- BLINK: the RPC link of an engine application with Blender
+project "blinkLib"
+	properties { "staticlib", "unitybuild" }
+	uses {
+		"public", "shared",
+		"networkLib"
+	}
+    files {
+		"blink/**",
+	}
+
 -- Sound System
 project "soundSystemLib"
 	properties { "staticlib", "unitybuild" }
