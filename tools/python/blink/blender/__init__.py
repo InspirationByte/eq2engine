@@ -51,11 +51,13 @@ class Addon:
 
 	package: the addon `__package__` (the preferences id); ns: the lowercase operator prefix, unique
 	per addon; draw_status(layout) adds the state lines of the application, draw_commands(layout)
-	its commands (Sync, ...); classes are the bpy classes of the application, registered with it.
+	its commands (Sync, ...); props are the preferences of the application ({name: bpy property}),
+	shown in the menu after the BLINK ones; classes are the bpy classes of the application,
+	registered with it.
 	"""
 
 	def __init__(self, package, client, ns, title="BLINK", default_port=DEFAULT_PORT,
-			draw_status=None, draw_commands=None, classes=()):
+			draw_status=None, draw_commands=None, props=None, classes=()):
 		self.package = package
 		self.client = client
 		self.ns = ns
@@ -63,6 +65,7 @@ class Addon:
 		self.default_port = default_port
 		self.draw_status = draw_status
 		self.draw_commands = draw_commands
+		self.props = dict(props or {})
 		self.app_classes = tuple(classes)
 		self.classes = self._make_classes()
 
@@ -159,7 +162,7 @@ class Addon:
 			addon.client.reconnect_interval = float(prefs.reconnect_interval)
 
 		def preferences_draw(prefs, context):
-			for name in ("host", "port", "auto_connect", "reconnect_interval"):
+			for name in ("host", "port", "auto_connect", "reconnect_interval", *addon.props):
 				prefs.layout.prop(prefs, name)
 
 		preferences = type(ns_upper + "_Preferences", (bpy.types.AddonPreferences,), {
@@ -180,6 +183,7 @@ class Addon:
 					name="Reconnect interval (s)", default=5, min=1, max=600,
 					description="Seconds between the connection attempts while the server is not running or after it closed the link",
 					update=_set_interval),
+				**self.props,
 			},
 			"draw": preferences_draw,
 		})
@@ -228,8 +232,8 @@ class Addon:
 				addon.draw_commands(layout)
 			layout.separator()
 			prefs = addon.preferences(context)
-			layout.prop(prefs, "auto_connect")
-			layout.prop(prefs, "reconnect_interval")
+			for name in ("auto_connect", "reconnect_interval", *addon.props):
+				layout.prop(prefs, name)
 
 		menu = type(self.menu_idname, (bpy.types.Menu,), {
 			"bl_idname": self.menu_idname,

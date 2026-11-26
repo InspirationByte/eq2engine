@@ -75,8 +75,17 @@ adds a `batch` section per batch (`material`, `firstIndex`, `indexCount`) to the
 the four arrays to the payload with `IFileStream::WriteObj` (an int count and the items each).
 
 `blink.read_mesh(result, payload)` reads it into a `blink.Mesh` in Blender coordinates (numpy
-views, `coords.mesh_to_blender`); `blink.blender.mesh.build_mesh(bpy_mesh, mesh)` fills a Blender
-mesh: a material slot per material name, the UV map, the custom normals.
+views, `coords.mesh_to_blender`); `blink.blender.mesh.build_mesh(bpy_mesh, mesh, on_material_created)`
+fills a Blender mesh: a material slot per material name, the UV map, the custom normals.
+
+`blink.blender.mesh.material(name, on_created)` is the Blender material of an engine material,
+found by the full name in the `eq_material` property: Blender names are limited to 63 bytes and get
+`.001` when taken, so a lookup by name could mix two engine materials or copy one. `on_created`
+fills a new one, `fill_material(material, texture_path)` makes a Principled BSDF with
+the texture (`images.load(check_existing=True)`: one image per file; the image alpha mode is None,
+the engine textures keep other data in the alpha). `show_object_colors()` turns
+the Solid shading of the 3D views to the Object color type, for applications that color objects by
+`obj.color`.
 
 ## Coordinates
 
@@ -117,7 +126,8 @@ link.update()                       # main thread
 ## Blender part
 
 `blink.blender.Addon(package, client, ns, title="BLINK", draw_status=None, draw_commands=None,
-classes=())` makes the bpy classes of one addon; the addon calls its `register` / `unregister`.
+props=None, classes=())` makes the bpy classes of one addon (`props`: the preferences of the
+application, `{name: bpy property}`, shown after the BLINK ones in the preferences and the menu); the addon calls its `register` / `unregister`.
 `ns` is the lowercase operator prefix, unique per addon (`leveleditor_blink`), so several BLINK
 addons can be enabled together.
 

@@ -6,15 +6,36 @@ import numpy
 from .. import coords
 
 
-def material(name):
-	"""The Blender material named by an engine material, created when missing."""
-	result = bpy.data.materials.get(name)
-	if result is None:
-		result = bpy.data.materials.new(name)
+MATERIAL_KEY = "eq_material"	# the custom property with the full engine material name
+
+_materials = {}		# engine name -> Blender material name (a cache, checked on use)
+
+
+def material(name, on_created=None):
+	"""The Blender material of an engine material, created when missing.
+
+	Found by its `eq_material` property, not by the Blender name: Blender names are limited to
+	63 bytes and get a .001 suffix when taken, so two engine materials could share one, or one could
+	get a second copy. on_created(material) runs for a new one (to fill it).
+	"""
+	cached = bpy.data.materials.get(_materials.get(name, ""))
+	if cached is not None and cached.get(MATERIAL_KEY) == name:
+		return cached
+
+	for candidate in bpy.data.materials:
+		if candidate.get(MATERIAL_KEY) == name:
+			_materials[name] = candidate.name
+			return candidate
+
+	result = bpy.data.materials.new(name)
+	result[MATERIAL_KEY] = name
+	_materials[name] = result.name
+	if on_created:
+		on_created(result)
 	return result
 
 
-def build_mesh(mesh, data):
+def build_mesh(mesh, data, on_material_created=None):
 	"""Fills a bpy mesh from a `blink.Mesh`: a material slot per batch material, the UVs, the normals."""
 	num_vertices = len(data.positions)
 	num_loops = len(data.indices)
@@ -35,7 +56,7 @@ def build_mesh(mesh, data):
 	for name, first_index, index_count in data.batches:
 		if name not in slots:
 			slots[name] = len(mesh.materials)
-			mesh.materials.append(material(name))
+			mesh.materials.append(material(name, on_material_created))
 		first = first_index // 3
 		material_indices[first:first + index_count // 3] = slots[name]
 	mesh.polygons.foreach_set("material_index", material_indices)
@@ -57,3 +78,38 @@ def box_mesh(mesh, bbox_min, bbox_max):
 	mesh.clear_geometry()
 	mesh.from_pydata(corners, [], faces)
 	mesh.update()
+
+
+def fill_material(mat, texture_path="", color=(0.8, 0.8, 0.8, 1.0)):
+	"""A Principled BSDF with the base texture (loaded once per file: check_existing).
+
+	The image alpha is not used (alpha mode None): the engine textures keep other data in it.
+	"""
+	mat.use_nodes = True
+	mat.diffuse_color = color
+	nodes = mat.node_tree.nodes
+	bsdf = next((node for node in nodes if node.type == "BSDF_PRINCIPLED"), None)
+	if bsdf is None or not texture_path:
+		return
+
+	try:
+		image = bpy.data.images.load(texture_path, check_existing=True)
+	except RuntimeError:		# not readable by Blender
+		return
+	image.alpha_mode = "NONE"
+
+	texture = nodes.new("ShaderNodeTexImage")
+	texture.image = image
+	texture.location = (bsdf.location[0] - 300, bsdf.location[1])
+	mat.node_tree.links.new(texture.outputs["Color"], bsdf.inputs["Base Color"])
+
+
+def show_object_colors():
+	"""The Solid shading of the 3D views shows the object colors (obj.color)."""
+	for window in bpy.context.window_manager.windows:
+		for area in window.screen.areas:
+			if area.type != "VIEW_3D":
+				continue
+			for space in area.spaces:
+				if space.type == "VIEW_3D":
+					space.shading.color_type = "OBJECT"
