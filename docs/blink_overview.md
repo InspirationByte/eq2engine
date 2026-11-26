@@ -75,8 +75,14 @@ adds a `batch` section per batch (`material`, `firstIndex`, `indexCount`) to the
 the four arrays to the payload with `IFileStream::WriteObj` (an int count and the items each).
 
 `blink.read_mesh(result, payload)` reads it into a `blink.Mesh` in Blender coordinates (numpy
-views, `coords.mesh_to_blender`); `blink.blender.mesh.build_mesh(bpy_mesh, mesh, on_material_created)`
-fills a Blender mesh: a material slot per material name, the UV map, the custom normals.
+views, `coords.mesh_to_blender`); `blink.blender.mesh.build_mesh(bpy_mesh, mesh, on_material_created,
+weld_distance, quads)` fills a Blender mesh: a material slot per material name, the UV map, the
+custom normals. The engine vertices are split where the UVs or normals change; `build_mesh` welds the
+vertices at one position (`WELD_DISTANCE`, 0.1 mm), keeps the UVs and normals per face corner and
+drops the triangles that become degenerate, so the mesh is connected for editing and looks the same.
+`quads` joins the flat triangle pairs of one material with matching UVs into quads
+(`bmesh.ops.join_triangles`, the custom normals are kept). Sending a mesh back has to triangulate
+and split it again.
 
 `blink.blender.mesh.material(name, on_created)` is the Blender material of an engine material,
 found by the full name in the `eq_material` property: Blender names are limited to 63 bytes and get
