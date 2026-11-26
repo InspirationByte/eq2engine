@@ -12,6 +12,7 @@
 #endif
 
 #include "core/core_common.h"
+#include "network/net_defs.h"
 #include "NetTransportTCP.h"
 
 #ifdef _WIN32
@@ -36,6 +37,11 @@ struct NetTCPFrameHeader
 static_assert(sizeof(NetTCPFrameHeader) == 8, "NetTCPFrameHeader must be 8 bytes");
 
 //-------------------------------------------------------------------------------------------------
+
+static SOCKET TCPSocket(NetTCPSocket handle)
+{
+	return static_cast<SOCKET>(handle);
+}
 
 static bool TCPSetNonBlocking(SOCKET socket)
 {
@@ -134,13 +140,13 @@ CNetTransportTCP::~CNetTransportTCP()
 		DestroyConnection(*it);
 	m_connections.clear(true);
 
-	TCPCloseSocket(m_listenSocket);
+	TCPCloseSocket(TCPSocket(m_listenSocket));
 	Networking::ShutdownNetworking();
 }
 
 bool CNetTransportTCP::Listen(const char* address)
 {
-	ASSERT_MSG(m_listenSocket == INVALID_SOCKET, "CNetTransportTCP is already listening");
+	ASSERT_MSG(m_listenSocket == NET_TCP_INVALID_SOCKET, "CNetTransportTCP is already listening");
 
 	sockaddr_in addr;
 	if (!TCPParseAddress(address, true, addr))
@@ -171,18 +177,18 @@ bool CNetTransportTCP::Listen(const char* address)
 		return false;
 	}
 
-	m_listenSocket = listenSocket;
+	m_listenSocket = static_cast<NetTCPSocket>(listenSocket);
 	return true;
 }
 
 int CNetTransportTCP::GetListenPort() const
 {
-	if (m_listenSocket == INVALID_SOCKET)
+	if (m_listenSocket == NET_TCP_INVALID_SOCKET)
 		return 0;
 
 	sockaddr_in addr;
 	socklen_t addrLen = sizeof(addr);
-	if (getsockname(m_listenSocket, reinterpret_cast<sockaddr*>(&addr), &addrLen) == SOCKET_ERROR)
+	if (getsockname(TCPSocket(m_listenSocket), reinterpret_cast<sockaddr*>(&addr), &addrLen) == SOCKET_ERROR)
 		return 0;
 
 	return ntohs(addr.sin_port);
@@ -220,7 +226,7 @@ NetConnectionId CNetTransportTCP::Connect(const char* address)
 		}
 	}
 
-	return AddConnection(connSocket, true)->id;
+	return AddConnection(static_cast<NetTCPSocket>(connSocket), true)->id;
 }
 
 void CNetTransportTCP::Close(NetConnectionId connId, int reason)
@@ -320,11 +326,11 @@ int CNetTransportTCP::GetQueuedBytes(NetConnectionId connId, int laneIdx) const
 
 void CNetTransportTCP::Poll(NetTransportEventList& events)
 {
-	while (m_listenSocket != INVALID_SOCKET)
+	while (m_listenSocket != NET_TCP_INVALID_SOCKET)
 	{
 		sockaddr_in addr;
 		socklen_t addrLen = sizeof(addr);
-		const SOCKET connSocket = accept(m_listenSocket, reinterpret_cast<sockaddr*>(&addr), &addrLen);
+		const SOCKET connSocket = accept(TCPSocket(m_listenSocket), reinterpret_cast<sockaddr*>(&addr), &addrLen);
 		if (connSocket == INVALID_SOCKET)
 			break;
 
@@ -337,7 +343,7 @@ void CNetTransportTCP::Poll(NetTransportEventList& events)
 
 		NetTransportEvent& event = events.append();
 		event.type = NET_EVENT_CONNECTED;
-		event.conn = AddConnection(connSocket, false)->id;
+		event.conn = AddConnection(static_cast<NetTCPSocket>(connSocket), false)->id;
 	}
 
 	struct Drop
@@ -397,7 +403,7 @@ void CNetTransportTCP::Poll(NetTransportEventList& events)
 
 //-------------------------------------------------------------------------------------------------
 
-CNetTransportTCP::Connection* CNetTransportTCP::AddConnection(SOCKET socket, bool connecting)
+CNetTransportTCP::Connection* CNetTransportTCP::AddConnection(NetTCPSocket socket, bool connecting)
 {
 	Connection* conn = PPNew Connection();
 	conn->id = ++m_idCounter;
@@ -411,7 +417,7 @@ CNetTransportTCP::Connection* CNetTransportTCP::AddConnection(SOCKET socket, boo
 
 void CNetTransportTCP::DestroyConnection(Connection* conn)
 {
-	TCPCloseSocket(conn->socket);
+	TCPCloseSocket(TCPSocket(conn->socket));
 
 	PPFree(conn->sendFrame.data);
 	for (Lane* lane : conn->lanes)
@@ -430,20 +436,20 @@ bool CNetTransportTCP::UpdateConnecting(Connection* conn, NetTransportEventList&
 	fd_set exceptSet;
 	FD_ZERO(&writeSet);
 	FD_ZERO(&exceptSet);
-	FD_SET(conn->socket, &writeSet);
-	FD_SET(conn->socket, &exceptSet);
+	FD_SET(TCPSocket(conn->socket), &writeSet);
+	FD_SET(TCPSocket(conn->socket), &exceptSet);
 
 	timeval timeout{ 0, 0 };
 	const int result = select(static_cast<int>(conn->socket) + 1, nullptr, &writeSet, &exceptSet, &timeout);
 	if (result == 0)
 		return true;
 
-	if (result == SOCKET_ERROR || FD_ISSET(conn->socket, &exceptSet))
+	if (result == SOCKET_ERROR || FD_ISSET(TCPSocket(conn->socket), &exceptSet))
 		return false;
 
 	int error = 0;
 	socklen_t errorLen = sizeof(error);
-	if (getsockopt(conn->socket, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&error), &errorLen) == SOCKET_ERROR || error != 0)
+	if (getsockopt(TCPSocket(conn->socket), SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&error), &errorLen) == SOCKET_ERROR || error != 0)
 		return false;
 
 	conn->connecting = false;
@@ -464,7 +470,7 @@ int CNetTransportTCP::Receive(Connection* conn, NetTransportEventList& events)
 
 	while (totalReceived < TCP_MAX_RECV_PER_POLL)
 	{
-		const int received = recv(conn->socket, reinterpret_cast<char*>(buffer), sizeof(buffer), 0);
+		const int received = recv(TCPSocket(conn->socket), reinterpret_cast<char*>(buffer), sizeof(buffer), 0);
 		if (received == 0)
 			return NET_DISCONNECT_REMOTE;
 
@@ -547,7 +553,7 @@ bool CNetTransportTCP::Flush(Connection* conn)
 		}
 
 		const int toSend = conn->sendFrame.size - conn->sendOffset;
-		const int sent = send(conn->socket, reinterpret_cast<const char*>(conn->sendFrame.data + conn->sendOffset), toSend, TCP_SEND_FLAGS);
+		const int sent = send(TCPSocket(conn->socket), reinterpret_cast<const char*>(conn->sendFrame.data + conn->sendOffset), toSend, TCP_SEND_FLAGS);
 		if (sent == SOCKET_ERROR)
 			return TCPWouldBlock(sock_errno);
 

@@ -131,6 +131,11 @@ public:
 listening server. Meant for local tool links (the editor ↔ Blender link listens on `127.0.0.1`), so
 it has no encryption and no authentication. `GetCaps()` is 0.
 
+`NetTransportTCP.h` does not include `network/net_defs.h`: the sockets are kept as `NetTCPSocket`
+(`intptr`, `NET_TCP_INVALID_SOCKET`), so the system socket headers and their macros (`near`, `far`
+of `windows.h`) do not reach the code that creates the transport (for example a unity build of the
+level editor).
+
 - **Addresses**: `host:port`; the host is an IPv4 address or a name; an empty host is any address
   for `Listen` and the loopback address for `Connect`. Port 0 listens on a free port,
   `GetListenPort()` returns it.

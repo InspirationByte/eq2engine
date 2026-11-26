@@ -6,10 +6,14 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "network/net_defs.h"
 #include "NetTransport.h"
 
 static constexpr int NET_TCP_DEFAULT_MAX_MESSAGE = 1024 * 1024;
+
+// a socket handle (the winsock SOCKET or a descriptor): the header does not include the system
+// socket headers, whose macros (near, far, ...) break the code that includes it
+using NetTCPSocket = intptr;
+static constexpr NetTCPSocket NET_TCP_INVALID_SOCKET = -1;
 
 class CNetTransportTCP : public INetTransport
 {
@@ -51,7 +55,7 @@ private:
 	struct Connection
 	{
 		NetConnectionId	id{ NET_CONNECTION_NONE };
-		SOCKET			socket{ INVALID_SOCKET };
+		NetTCPSocket	socket{ NET_TCP_INVALID_SOCKET };
 		bool			connecting{ false };
 		bool			closing{ false };
 
@@ -67,7 +71,7 @@ private:
 		int				recvRemaining{ 0 };
 	};
 
-	Connection*		AddConnection(SOCKET socket, bool connecting);
+	Connection*		AddConnection(NetTCPSocket socket, bool connecting);
 	void			DestroyConnection(Connection* conn);
 
 	bool			UpdateConnecting(Connection* conn, NetTransportEventList& events);
@@ -76,7 +80,7 @@ private:
 	Lane*			PickSendLane(Connection* conn) const;
 
 	Map<NetConnectionId, Connection*>	m_connections{ PP_SL };
-	SOCKET			m_listenSocket{ INVALID_SOCKET };
+	NetTCPSocket	m_listenSocket{ NET_TCP_INVALID_SOCKET };
 	NetConnectionId	m_idCounter{ NET_CONNECTION_NONE };
 	int				m_maxMessageSize{ NET_TCP_DEFAULT_MAX_MESSAGE };
 };
