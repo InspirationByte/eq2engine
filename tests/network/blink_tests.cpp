@@ -4,6 +4,8 @@
 #include "ds/MemoryStream.h"
 #include "utils/KeyValues.h"
 #include "blink/BlinkMesh.h"
+#include "blink/BlinkStudio.h"
+#include "egf/model.h"
 
 // two batches, a quad and a triangle, with colors
 static BlinkMesh BlinkTestMesh()
@@ -125,4 +127,109 @@ TEST(BLINK_MESH_TESTS, ReadRejectsShortPayload)
 	EqString error;
 	EXPECT_FALSE(read.Read(params, *payload, error));
 	EXPECT_EQ(read.positions.numElem(), 0);
+}
+
+// two body groups: a strip with a degenerate end and no normals, a triangle list
+struct BlinkTestStudio
+{
+	studioHdr_t				hdr;
+	studioBodyGroup_t		bodyGroups[2];
+	studioLodModel_t		lodModels[2];
+	studioMeshGroupDesc_t	meshGroups[2];
+	studioMeshDesc_t		meshes[2];
+	studioMaterialDesc_t	materials[1];
+	studioVertexPosUv_t		vertices[4];
+	uint32					stripIndices[6];
+	uint32					listIndices[3];
+};
+
+static int BlinkTestOffset(const void* from, const void* to)
+{
+	return static_cast<int>(reinterpret_cast<const ubyte*>(to) - reinterpret_cast<const ubyte*>(from));
+}
+
+static void BlinkTestMakeStudio(BlinkTestStudio& studio)
+{
+	memset(&studio, 0, sizeof(studio));
+	studioHdr_t& hdr = studio.hdr;
+	hdr.numBodyGroups = 2;
+	hdr.bodyGroupsOffset = BlinkTestOffset(&hdr, studio.bodyGroups);
+	hdr.numLods = 2;
+	hdr.lodsOffset = BlinkTestOffset(&hdr, studio.lodModels);
+	hdr.numMeshGroups = 2;
+	hdr.meshGroupsOffset = BlinkTestOffset(&hdr, studio.meshGroups);
+	hdr.numMaterials = 1;
+	hdr.materialsOffset = BlinkTestOffset(&hdr, studio.materials);
+	strcpy(studio.materials[0].materialname, "mat_egf");
+
+	for (int i = 0; i < 2; ++i)
+	{
+		studio.bodyGroups[i].lodModelIndex = i;
+		memset(studio.lodModels[i].meshIndexes, EGF_INVALID_IDX, sizeof(studio.lodModels[i].meshIndexes));
+		studio.lodModels[i].meshIndexes[0] = i;		// only LOD 0
+
+		studio.meshGroups[i].numMeshes = 1;
+		studio.meshGroups[i].meshesOffset = BlinkTestOffset(&studio.meshGroups[i], &studio.meshes[i]);
+
+		studioMeshDesc_t& mesh = studio.meshes[i];
+		mesh.materialIndex = 0;
+		mesh.vertexType = STUDIO_VERTFLAG_POS_UV;
+		mesh.numVertices = i == 0 ? 4 : 3;
+		mesh.vertexOffset = BlinkTestOffset(&mesh, studio.vertices);
+	}
+
+	for (int i = 0; i < 4; ++i)
+	{
+		studio.vertices[i].point = Vector3D(static_cast<float>(i & 1), 0.0f, static_cast<float>(i >> 1));
+		studio.vertices[i].texCoord = Vector2D(static_cast<float>(i), 0.0f);
+	}
+
+	const uint32 stripIndices[] = { 0, 1, 2, 3, 3, 0 };
+	memcpy(studio.stripIndices, stripIndices, sizeof(stripIndices));
+	studio.meshes[0].primitiveType = STUDIO_PRIM_TRI_STRIP;
+	studio.meshes[0].numIndices = 6;
+	studio.meshes[0].indicesOffset = BlinkTestOffset(&studio.meshes[0], studio.stripIndices);
+
+	const uint32 listIndices[] = { 0, 1, 2 };
+	memcpy(studio.listIndices, listIndices, sizeof(listIndices));
+	studio.meshes[1].primitiveType = STUDIO_PRIM_TRIANGLES;
+	studio.meshes[1].numIndices = 3;
+	studio.meshes[1].indicesOffset = BlinkTestOffset(&studio.meshes[1], studio.listIndices);
+}
+
+TEST(BLINK_MESH_TESTS, StudioMesh)
+{
+	BlinkTestStudio studio;
+	BlinkTestMakeStudio(studio);
+
+	// the first body group, LOD 2 falls back to LOD 0
+	BlinkMesh mesh;
+	BlinkMakeStudioMesh(studio.hdr, nullptr, 1, 2, mesh);
+	ASSERT_EQ(mesh.positions.numElem(), 4);
+	ASSERT_EQ(mesh.normals.numElem(), 4);
+	EXPECT_EQ(mesh.normals[0], vec3_zero);
+	EXPECT_EQ(mesh.texcoords[3], Vector2D(3.0f, 0.0f));
+	const int stripTriangles[] = { 0, 1, 2, 3, 2, 1 };		// the second one flipped, the degenerate ones skipped
+	ASSERT_EQ(mesh.indices.numElem(), 6);
+	for (int i = 0; i < 6; ++i)
+		EXPECT_EQ(mesh.indices[i], stripTriangles[i]);
+	ASSERT_EQ(mesh.batches.numElem(), 1);
+	EXPECT_STREQ(mesh.batches[0].material.ToCString(), "mat_egf");
+
+	// both body groups: the list after the strip, its vertices after the strip ones
+	BlinkMesh both;
+	BlinkMakeStudioMesh(studio.hdr, nullptr, 3, 0, both);
+	ASSERT_EQ(both.positions.numElem(), 7);
+	ASSERT_EQ(both.indices.numElem(), 9);
+	EXPECT_EQ(both.indices[6], 4);
+	EXPECT_EQ(both.indices[8], 6);
+	ASSERT_EQ(both.batches.numElem(), 2);
+	EXPECT_EQ(both.batches[1].firstIndex, 6);
+
+	// the mesh is valid for BlinkMesh::Read
+	KVSection params;
+	CRefPtr<CMemoryStream> payload = BlinkTestWrite(both, params);
+	BlinkMesh read;
+	EqString error;
+	EXPECT_TRUE(read.Read(params, *payload, error)) << error.ToCString();
 }

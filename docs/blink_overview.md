@@ -15,6 +15,7 @@ Blender since it moved here from the editor.
 |---|---|
 | `shared/blink/BlinkServer.*` | `CBlinkServer`: the RPC server on `127.0.0.1:<port>`, one client, `blink.Hello`, the application protocols |
 | `shared/blink/BlinkMesh.*` | `BlinkMesh`: triangles with material batches, written as a KeyValues result and a payload |
+| `shared/blink/BlinkStudio.*` | `BlinkMakeStudioMesh`: the `BlinkMesh` of an EGF model |
 | `tools/python/blink/client.py` | `blink.Client`: the connection, `blink.Hello`, waiting and reconnect, the state for the UI (no bpy) |
 | `tools/python/blink/coords.py` | Engine ↔ Blender coordinates of points, object transforms and meshes (no bpy) |
 | `tools/python/blink/mesh.py` | `read_mesh`: the `blink.Mesh` of a `BlinkMesh` reply, in Blender coordinates; `write_mesh`: the params and payload of a `blink.Mesh` for `BlinkMesh::Read`; `merge_meshes` (numpy) |
@@ -78,6 +79,14 @@ arrays to the payload with `IFileStream::WriteObj` (an int count and the items e
 uses it: every array count against the bytes left (no allocation from a bad count), the vertex arrays
 of one size, the indices in range and a multiple of 3, the batches following each other over all
 the indices. A payload without the colors array has none.
+
+`BlinkMakeStudioMesh(studio, materials, bodyGroupFlags, lod, mesh)` adds an EGF model (the
+`studioHdr_t` of a loaded `CEqStudioGeom`) to a mesh: the meshes of the body groups in
+`bodyGroupFlags` at `lod` (a missing LOD falls back to a lower one, as the renderer does) in the bind
+pose and model space, a batch per EGF mesh, the strips as triangles without the degenerate ones, zero
+normals for a mesh without them (Blender computes those). The batch material is the name of
+`materials[materialIndex]` (`CEqStudioGeom::GetMaterials` of a skin), else the material name stored in
+the EGF; no colors. The bones and the weights are not sent yet.
 
 `blink.read_mesh(result, payload)` reads it into a `blink.Mesh` in Blender coordinates (numpy
 views, `coords.mesh_to_blender`); `blink.blender.mesh.build_mesh(bpy_mesh, mesh, on_material_created,
@@ -186,5 +195,5 @@ python -m unittest discover -s blink/tests -t .
 The client tests run a Python server with `blink.Hello` on 127.0.0.1: the handshake, waiting for
 a server that is not running yet, the reconnect after the server restarts. The mesh tests
 (coordinates, `write_mesh` / `read_mesh`, `merge_meshes`) need numpy and are skipped without it.
-CI runs them after the eqrpc tests. `BlinkMesh::Write` / `Read` and the rejected meshes are checked by
+CI runs them after the eqrpc tests. `BlinkMesh::Write` / `Read`, the rejected meshes and `BlinkMakeStudioMesh` (a strip and a triangle list built in memory) are checked by
 `BLINK_MESH_TESTS` of `network_tests` (it links `blinkLib`).
