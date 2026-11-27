@@ -10,6 +10,7 @@
 #include "sys/sys_viewport.h"
 
 class CEqRigidBody;
+class CAnimatedModel;
 class IGPURenderPassRecorder;
 struct ImVec2;
 
@@ -17,6 +18,16 @@ enum EAppStateType
 {
 	APP_STATE_VIEWER = 1,
 	APP_STATE_COUNT,
+};
+
+// the vertex data drawn over the model (View menu)
+enum EVertexDisplay : int
+{
+	VERTEX_DISPLAY_NONE = 0,
+	VERTEX_DISPLAY_NORMALS,
+	VERTEX_DISPLAY_TANGENTS,		// tangents and binormals
+	VERTEX_DISPLAY_COLORS,
+	VERTEX_DISPLAY_WEIGHTS,			// of the selected bone
 };
 
 class CState_EGFViewer : public CAppStateBase
@@ -67,15 +78,23 @@ private:
 
 	void		DrawMenuBar();
 	void		DrawSceneViewport(const ImVec2& pos, const ImVec2& size);
+	void		DrawInspector(const ImVec2& pos, const ImVec2& size);
 	void		DrawModelBrowser(float panelTop, float panelHeight);
 	void		DrawBrowserDir(const EqString& dirPath);
 	void		DrawBrowserFiltered(const EqString& dirPath);
 	void		DrawBrowserFile(const EqString& dirPath, const EqString& name, const EqString& label);
 	const BrowserDir&	GetBrowserDir(const EqString& dirPath);
 	void		DrawModelTab();
+	void		DrawMeshGroups();
+	void		DrawMaterials();
+	void		DrawSkeletonTab();
+	void		DrawBoneTree(int boneIdx);
 	void		DrawMotionTab();
+	void		DrawSequenceInfo();
 	void		DrawPhysicsTab();
-	void		DrawIKTab();
+
+	// selection highlights and the vertex display, over the drawn model
+	void		RenderOverlays(IGPURenderPassRecorder* rendPassRecorder);
 
 	void		OnSequenceSelected();
 	void		OnPoseControllerSelected();
@@ -113,10 +132,14 @@ private:
 	Map<uint, BrowserDir>	m_browserDirs{ PP_SL };
 	char		m_browserFilter[64]{};
 
+	int			m_vertexDisplay{ VERTEX_DISPLAY_NONE };
+
 	// Model tab
-	Array<EqString>	m_bodyGroupNames{ PP_SL };
 	int			m_lod{ 0 };
 	bool		m_lodOverride{ false };
+	int			m_selectedMeshGroup{ -1 };
+	int			m_selectedMesh{ -1 };		// in the selected mesh group, -1 for all of them
+
 
 	// Motion tab
 	Array<MotionItem>	m_motionItems{ PP_SL };
@@ -130,13 +153,11 @@ private:
 	float		m_poseValueMin{ 0.0f };
 	float		m_poseValueMax{ 1.0f };
 
-	// Physics tab, not connected to anything yet
-	char		m_objMass[32]{};
-	char		m_objSurfProps[64]{};
-	char		m_jointLimits[6][32]{};
-	char		m_simTimescale[32]{};
+	// Physics tab
+	float		m_simTimescale{ 1.0f };
 
 	bool		m_selectMotionTab{ true };
 };
 
 extern CStaticAutoPtr<CState_EGFViewer> g_stateViewer;
+extern CAnimatedModel g_viewerModel;

@@ -248,6 +248,8 @@ void CAnimatedModel::RenderPhysModel(IGPURenderPassRecorder* rendPassRecorder)
 			g_matSystem->SetMatrix(MATRIXMODE_WORLD, trs.toMatrix());
 		}
 		defaultRenderPass.drawColor.setHSV(float(i) / float(physData.objects.numElem()), 1.0f, 1.0f);
+		if (m_selectedPhysObject != -1 && m_selectedPhysObject != i)
+			defaultRenderPass.drawColor.a = 0.15f;
 
 		const StudioPhyObjData& physObj = physData.objects[i];
 		for(int j = 0; j < physObj.desc.numShapes; j++)
@@ -305,19 +307,7 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 		UpdateIK(dt, identity4);
 	}
 
-	Matrix4x4 wvp;
-
-	Matrix4x4 posMatrix = identity4;
-
-	if(m_physicsEnable)
-	{
-		if(m_ragdoll)
-			posMatrix.translate(m_ragdoll->GetPosition());
-		else if(m_physObj)
-			posMatrix = m_physObj->GetTransform().toMatrix();
-	}
-
-	g_matSystem->SetMatrix(MATRIXMODE_WORLD, posMatrix);
+	g_matSystem->SetMatrix(MATRIXMODE_WORLD, GetWorldMatrix());
 
 	const studioHdr_t& studio = m_model->GetStudioHdr();
 
@@ -340,6 +330,9 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 	else
 		startLOD = startLod;
 
+	startLOD = max(startLOD, 0);
+	m_drawnLod = startLOD;
+
 	RenderBoneTransform boneTransforms[128];
 	const int numBones = m_model->ConvertBoneMatricesToQuaternions(m_boneTransforms, boneTransforms);
 	
@@ -351,59 +344,20 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 		drawProperties.boneTransforms = g_matSystem->GetTransientUniformBuffer(boneTransforms, numBones * sizeof(RenderBoneTransform));
 	drawProperties.lod = startLOD;
 	drawProperties.bodyGroupFlags = m_bodyGroupFlags;
+	drawProperties.skinIdx = clamp(m_skinIdx, 0, max(0, m_model->GetSkinCount() - 1));
 	m_model->Draw(drawProperties, instData, RenderPassContext(rendPassRecorder, nullptr));
 
 	if(nViewRenderFlags & RFLAG_PHYSICS)
 		RenderPhysModel(rendPassRecorder);
 
-	if( nViewRenderFlags & RFLAG_BONES )
-		VisualizeBones();
-
-	if (nViewRenderFlags & RFLAG_ATTACHMENTS)
-		VisualizeAttachments();
+	// the selected bone and attachment are drawn also when the others are not
+	VisualizeBones((nViewRenderFlags & RFLAG_BONES) != 0);
+	VisualizeAttachments((nViewRenderFlags & RFLAG_ATTACHMENTS) != 0);
 }
 
-void CAnimatedModel::VisualizeBones()
+Matrix4x4 CAnimatedModel::GetWorldMatrix() const
 {
 	Matrix4x4 posMatrix = identity4;
-
-	if(m_physicsEnable)
-	{
-		if(m_ragdoll)
-			posMatrix.translate(m_ragdoll->GetPosition());
-		else if(m_physObj)
-			posMatrix = m_physObj->GetTransform().toMatrix();
-	}
-
-	// setup each bone's transformation
-	for(int i = 0; i < m_joints.numElem(); i++)
-	{
-		const Vector3D pos = transformPointTransposed(m_boneTransforms[i].rows[3].xyz(), posMatrix);
-
-		if(m_joints[i].parent != -1)
-		{
-			const Vector3D parent_pos = transformPointTransposed(m_boneTransforms[m_joints[i].parent].rows[3].xyz(), posMatrix);
-			debugoverlay->Line3D(pos,parent_pos, color_white, color_white);
-		}
-
-		const Vector3D dX = posMatrix.getRotationComponent() * m_boneTransforms[i].rows[0].xyz();
-		const Vector3D dY = posMatrix.getRotationComponent() * m_boneTransforms[i].rows[1].xyz();
-		const Vector3D dZ = posMatrix.getRotationComponent() * m_boneTransforms[i].rows[2].xyz();
-
-		// draw axis
-		debugoverlay->Line3D(pos, pos+dX*0.1f, ColorRGBA(1,0,0,1), ColorRGBA(1,0,0,1));
-		debugoverlay->Line3D(pos, pos+dY*0.1f, ColorRGBA(0,1,0,1), ColorRGBA(0,1,0,1));
-		debugoverlay->Line3D(pos, pos+dZ*0.1f, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1));
-
-		debugoverlay->Line3D(pos, pos + dX * 0.1f, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
-		debugoverlay->Text3D(pos, 100.0f, color_white, m_joints[i].bone->name);
-	}
-}
-
-void CAnimatedModel::VisualizeAttachments()
-{
-	Matrix4x4 posMatrix = identity4;
-
 	if (m_physicsEnable)
 	{
 		if (m_ragdoll)
@@ -411,24 +365,97 @@ void CAnimatedModel::VisualizeAttachments()
 		else if (m_physObj)
 			posMatrix = m_physObj->GetTransform().toMatrix();
 	}
+	return posMatrix;
+}
 
+// a wire octahedral bone from head to tail, widest at a tenth of its length; the parts behind the model hatched
+static void AnimatedModelDrawBone(const Vector3D& head, const Vector3D& tail, const MColor& color)
+{
+	const Vector3D dir = tail - head;
+	const float boneLength = length(dir);
+	if (boneLength < F_EPS)
+		return;
+
+	Vector3D right, up;
+	VectorVectors(dir / boneLength, right, up);
+	const Vector3D center = head + dir * 0.1f;
+	const float width = boneLength * 0.1f;
+
+	const Vector3D ring[4] = { center + right * width, center + up * width, center - right * width, center - up * width };
+	for (int i = 0; i < 4; ++i)
+	{
+		DbgLine().Start(head).End(ring[i]).Color(color).Occluded();
+		DbgLine().Start(tail).End(ring[i]).Color(color).Occluded();
+		DbgLine().Start(ring[i]).End(ring[(i + 1) & 3]).Color(color).Occluded();
+	}
+}
+
+// the axes of a transform in world space
+static void AnimatedModelDrawAxes(const Vector3D& position, const Matrix3x3& rotation, float size)
+{
+	DbgLine().Start(position).End(position + rotation.rows[0] * size).Color(MColor(1.0f, 0.0f, 0.0f)).Occluded();
+	DbgLine().Start(position).End(position + rotation.rows[1] * size).Color(MColor(0.0f, 1.0f, 0.0f)).Occluded();
+	DbgLine().Start(position).End(position + rotation.rows[2] * size).Color(MColor(0.0f, 0.0f, 1.0f)).Occluded();
+}
+
+void CAnimatedModel::VisualizeBones(bool all)
+{
+	const Matrix4x4 posMatrix = GetWorldMatrix();
+	const Matrix3x3 posRotation = posMatrix.getRotationComponent();
+	const auto bonePosition = [&](int boneIdx) {
+		return transformPointTransposed(m_boneTransforms[boneIdx].rows[3].xyz(), posMatrix);
+	};
+
+	for (int i = 0; i < m_joints.numElem(); i++)
+	{
+		const bool selected = i == m_selectedBone;
+		if (!all && !selected)
+			continue;
+
+		const MColor color = selected ? MColor(1.0f, 0.85f, 0.1f) : color_white;
+		const Vector3D head = bonePosition(i);
+		const StudioJoint& joint = m_joints[i];
+
+		// the tail is a child; a bone without children continues its parent by a third
+		float boneLength = 0.1f;
+		if (joint.parent != -1)
+			boneLength = length(head - bonePosition(joint.parent));
+
+		if (joint.childs.numElem())
+		{
+			for (const int childIdx : joint.childs)
+				AnimatedModelDrawBone(head, bonePosition(childIdx), color);
+			boneLength = length(bonePosition(joint.childs[0]) - head);
+		}
+		else
+		{
+			const Vector3D dir = joint.parent != -1 ? normalize(head - bonePosition(joint.parent)) : posRotation * m_boneTransforms[i].rows[0].xyz();
+			AnimatedModelDrawBone(head, head + dir * boneLength * 0.3f, color);
+		}
+
+		const Matrix3x3 boneRotation(posRotation * m_boneTransforms[i].rows[0].xyz(), posRotation * m_boneTransforms[i].rows[1].xyz(), posRotation * m_boneTransforms[i].rows[2].xyz());
+		AnimatedModelDrawAxes(head, boneRotation, selected ? max(boneLength * 0.5f, 0.05f) : boneLength * 0.2f);
+		DbgText3D().Position(head).Distance(100.0f).Color(color).Text("%s", joint.bone->name);
+	}
+}
+
+void CAnimatedModel::VisualizeAttachments(bool all)
+{
+	const Matrix4x4 posMatrix = GetWorldMatrix();
+	const Matrix3x3 posRotation = posMatrix.getRotationComponent();
 
 	for (int i = 0; i < m_transforms.numElem(); ++i)
 	{
+		const bool selected = i == m_selectedAttachment;
+		if (!all && !selected)
+			continue;
+
 		const Matrix4x4 attachTransform = GetLocalStudioTransformMatrix(i);
-
 		const Vector3D pos = transformPointTransposed(attachTransform.rows[3].xyz(), posMatrix);
-		const Vector3D dX = posMatrix.getRotationComponent() * attachTransform.rows[0].xyz();
-		const Vector3D dY = posMatrix.getRotationComponent() * attachTransform.rows[1].xyz();
-		const Vector3D dZ = posMatrix.getRotationComponent() * attachTransform.rows[2].xyz();
+		const Matrix3x3 rotation(posRotation * attachTransform.rows[0].xyz(), posRotation * attachTransform.rows[1].xyz(), posRotation * attachTransform.rows[2].xyz());
 
-		// draw axis
-		debugoverlay->Line3D(pos, pos + dX * 0.1f, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
-		debugoverlay->Line3D(pos, pos + dY * 0.1f, ColorRGBA(0, 1, 0, 1), ColorRGBA(0, 1, 0, 1));
-		debugoverlay->Line3D(pos, pos + dZ * 0.1f, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1));
-
-		debugoverlay->Line3D(pos, pos + dX * 0.1f, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
-		debugoverlay->Text3D(pos, 100.0f, color_white, m_transforms[i].name);
+		AnimatedModelDrawAxes(pos, rotation, selected ? 0.3f : 0.1f);
+		DbgText3D().Position(pos).Distance(100.0f).Color(selected ? MColor(1.0f, 0.85f, 0.1f) : color_white).Text("%s", m_transforms[i].name);
 	}
 }
 

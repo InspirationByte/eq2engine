@@ -36,8 +36,8 @@
 
 #include "egfman2_viewer.h"
 
-static constexpr const float s_bottomPanelHeight = 200.0f;
 static constexpr const float s_browserPanelWidth = 260.0f;
+static constexpr const float s_inspectorPanelWidth = 420.0f;
 static constexpr const char* s_browserRootDir = "models";
 
 static constexpr ImGuiWindowFlags s_panelFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove
@@ -54,14 +54,7 @@ enum EMouseButtonBits
 
 CStaticAutoPtr<CState_EGFViewer> g_stateViewer;
 
-// exposes pose controllers to the UI
-class CViewerModel : public CAnimatedModel
-{
-public:
-	ArrayCRef<AnimPoseController>	GetPoseControllers() const { return m_poseControllers; }
-};
-
-static CViewerModel		s_model;
+CAnimatedModel			g_viewerModel;
 static CViewParams		s_cameraParams(Vector3D(0, 0, -100), vec3_zero, 70);
 
 //-------------------------------------------------------------------------------------------------
@@ -126,7 +119,7 @@ void CState_EGFViewer::OnEnter(CAppStateBase* from)
 void CState_EGFViewer::OnLeave(CAppStateBase* to)
 {
 	m_dragObj = nullptr;
-	s_model.SetModel(nullptr);
+	g_viewerModel.SetModel(nullptr);
 	PhysicsSceneShutdown();
 	m_viewport.ReleaseTargets();
 }
@@ -142,12 +135,12 @@ void CState_EGFViewer::LoadModel(const char* modelPath)
 	if (cacheIndex == STUDIOCACHE_INVALID_IDX)
 		ErrorMsg("Can't open %s\n", modelPath);
 
-	s_model.SetModel(g_studioCache->GetModel(cacheIndex));
+	g_viewerModel.SetModel(g_studioCache->GetModel(cacheIndex));
 }
 
 void CState_EGFViewer::ReloadModel()
 {
-	CEqStudioGeom* model = s_model.m_model;
+	CEqStudioGeom* model = g_viewerModel.m_model;
 	if (!model)
 		return;
 
@@ -232,35 +225,36 @@ void CState_EGFViewer::ResetView()
 
 void CState_EGFViewer::SetOptimalCameraDistance()
 {
-	if (!s_model.m_model)
+	if (!g_viewerModel.m_model)
 		return;
 
-	const BoundingBox& bbox = s_model.m_model->GetBoundingBox();
+	const BoundingBox& bbox = g_viewerModel.m_model->GetBoundingBox();
 	m_cameraDistance = length(bbox.GetSize()) * 2.0f;
 }
 
 void CState_EGFViewer::RefreshGUI()
 {
-	m_bodyGroupNames.clear();
 	m_motionItems.clear();
 	m_motionSelection = -1;
 	m_poseControllerSelection = -1;
-	s_model.m_bodyGroupFlags = 0xFFFFFFFF;
+	m_selectedMeshGroup = -1;
+	m_selectedMesh = -1;
+	g_viewerModel.m_bodyGroupFlags = 0xFFFFFFFF;
+	g_viewerModel.m_skinIdx = 0;
+	g_viewerModel.m_selectedPhysObject = -1;
+	g_viewerModel.m_selectedBone = -1;
+	g_viewerModel.m_selectedAttachment = -1;
 
-	if (!s_model.m_model)
+	if (!g_viewerModel.m_model)
 		return;
-
-	const studioHdr_t& studio = s_model.m_model->GetStudioHdr();
-	for (int i = 0; i < studio.numBodyGroups; i++)
-		m_bodyGroupNames.append(studio.pBodyGroups(i)->name);
 
 	if (m_animMode == 0)
 	{
-		for (const AnimSequence* seq : s_model.m_sequencesList)
+		for (const AnimSequence* seq : g_viewerModel.m_sequencesList)
 		{
 			MotionItem& item = m_motionItems.append();
 			item.name = EqString::Format("%s.%s", seq->motionData->name, seq->desc->name);
-			item.sequenceId = s_model.FindSequence(item.name);
+			item.sequenceId = g_viewerModel.FindSequence(item.name);
 		}
 	}
 	// TODO: animation mode is not supported yet
@@ -271,15 +265,15 @@ void CState_EGFViewer::OnSequenceSelected()
 	if (m_motionSelection == -1)
 		return;
 
-	s_model.SetSequence(m_motionItems[m_motionSelection].sequenceId, 0);
-	s_model.ResetSequenceTime(0);
-	s_model.PlaySequence(0);
+	g_viewerModel.SetSequence(m_motionItems[m_motionSelection].sequenceId, 0);
+	g_viewerModel.ResetSequenceTime(0);
+	g_viewerModel.PlaySequence(0);
 
-	const AnimSequence* seq = s_model.m_sequencesList[m_motionSelection];
+	const AnimSequence* seq = g_viewerModel.m_sequencesList[m_motionSelection];
 	CString::PrintF(m_animFramerate, sizeof(m_animFramerate), "%g", seq->desc->framerate);
 
-	m_timelineMax = s_model.GetCurrentAnimationDurationInFrames() - 1;
-	s_model.SetPlaybackSpeedScale(1.0f, 0);
+	m_timelineMax = g_viewerModel.GetCurrentAnimationDurationInFrames() - 1;
+	g_viewerModel.SetPlaybackSpeedScale(1.0f, 0);
 }
 
 void CState_EGFViewer::OnPoseControllerSelected()
@@ -287,8 +281,8 @@ void CState_EGFViewer::OnPoseControllerSelected()
 	if (m_poseControllerSelection == -1)
 		return;
 
-	s_model.GetPoseControllerRange(m_poseControllerSelection, m_poseValueMin, m_poseValueMax);
-	m_poseValue = s_model.GetPoseControllerValue(m_poseControllerSelection);
+	g_viewerModel.GetPoseControllerRange(m_poseControllerSelection, m_poseValueMin, m_poseValueMax);
+	m_poseValue = g_viewerModel.GetPoseControllerValue(m_poseControllerSelection);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -370,7 +364,7 @@ bool CState_EGFViewer::Update(float fDt)
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 	debugoverlay->SetMatrices(m_projMat, m_viewMat);
 
-	if (s_model.IsPhysicsEnabled() && m_dragObj)
+	if (g_viewerModel.IsPhysicsEnabled() && m_dragObj)
 	{
 		const Vector3D worldDragPoint = transformPoint(m_dragObjLocalPoint, m_dragObj->GetTransform());
 
@@ -385,18 +379,18 @@ bool CState_EGFViewer::Update(float fDt)
 		m_dragObj->ApplyWorldImpulse(worldDragPoint, dragImpulse);
 	}
 
-	PhysicsSimulate(fDt);
-	s_model.Update(fDt);
+	PhysicsSimulate(fDt * m_simTimescale);
+	g_viewerModel.Update(fDt);
 
-	if (s_model.IsSequencePlaying() && m_motionSelection != -1)
+	if (g_viewerModel.IsSequencePlaying() && m_motionSelection != -1)
 	{
-		const AnimSequence* seq = s_model.m_sequencesList[m_motionSelection];
+		const AnimSequence* seq = g_viewerModel.m_sequencesList[m_motionSelection];
 
 		const float setFrameRate = atoi(m_animFramerate);
 		if (setFrameRate > 0)
-			s_model.SetPlaybackSpeedScale(setFrameRate / seq->desc->framerate, 0);
+			g_viewerModel.SetPlaybackSpeedScale(setFrameRate / seq->desc->framerate, 0);
 
-		m_timelineFrame = s_model.GetCurrentAnimationFrame();
+		m_timelineFrame = g_viewerModel.GetCurrentAnimationFrame();
 	}
 
 	int renderFlags = 0;
@@ -419,7 +413,8 @@ bool CState_EGFViewer::Update(float fDt)
 		.End()
 	);
 
-	s_model.Render(renderFlags, m_cameraDistance, m_lod, m_lodOverride, fDt, modelDrawRenderPass);
+	g_viewerModel.Render(renderFlags, m_cameraDistance, m_lod, m_lodOverride, fDt, modelDrawRenderPass);
+	RenderOverlays(modelDrawRenderPass);
 
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
@@ -430,9 +425,9 @@ bool CState_EGFViewer::Update(float fDt)
 	if (m_drawGrid)
 	{
 		DrawGrid(1.0f, 8, vec3_zero, ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), true, modelDrawRenderPass);
-		debugoverlay->Line3D(vec3_zero, vec3_right, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
-		debugoverlay->Line3D(vec3_zero, vec3_up, ColorRGBA(0, 1, 0, 1), ColorRGBA(0, 1, 0, 1));
-		debugoverlay->Line3D(vec3_zero, vec3_forward, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1));
+		DbgLine().Start(vec3_zero).End(vec3_right).Color(MColor(1.0f, 0.0f, 0.0f));
+		DbgLine().Start(vec3_zero).End(vec3_up).Color(MColor(0.0f, 1.0f, 0.0f));
+		DbgLine().Start(vec3_zero).End(vec3_forward).Color(MColor(0.0f, 0.0f, 1.0f));
 	}
 
 	g_matSystem->QueueCommandBuffer(modelDrawRenderPass->End());
@@ -581,7 +576,7 @@ void CState_EGFViewer::ProcessMouse(int x, int y, const Vector2D& moveDelta)
 		Vector3D rayStart, rayDir;
 		ScreenToDirection(Vector2D(w - x, y), Vector2D(w, h), s_cameraParams.GetOrigin(), m_projMat, m_viewMat, false, rayStart, rayDir);
 
-		if (s_model.IsPhysicsEnabled() && m_dragObj == nullptr)
+		if (g_viewerModel.IsPhysicsEnabled() && m_dragObj == nullptr)
 		{
 			eqCollisionInfo coll;
 			const FVector3D rayEnd = rayStart + rayDir * 1000.0f;
@@ -621,49 +616,14 @@ void CState_EGFViewer::DrawUI(bool& visible)
 	DrawMenuBar();
 
 	const ImGuiViewport* viewport = ImGui::GetMainViewport();
-	const float topPanelsHeight = viewport->WorkSize.y - s_bottomPanelHeight;
+	const float panelsHeight = viewport->WorkSize.y;
 	if (m_showBrowser)
-		DrawModelBrowser(viewport->WorkPos.y, topPanelsHeight);
+		DrawModelBrowser(viewport->WorkPos.y, panelsHeight);
 
 	const float browserWidth = m_showBrowser ? s_browserPanelWidth : 0.0f;
-	DrawSceneViewport(ImVec2(viewport->WorkPos.x + browserWidth, viewport->WorkPos.y), ImVec2(viewport->WorkSize.x - browserWidth, topPanelsHeight));
-
-	ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x, viewport->WorkPos.y + viewport->WorkSize.y - s_bottomPanelHeight));
-	ImGui::SetNextWindowSize(ImVec2(viewport->WorkSize.x, s_bottomPanelHeight));
-
-	if (ImGui::Begin("##egfman2Panel", nullptr, s_panelFlags))
-	{
-		if (ImGui::BeginTabBar("##egfman2Tabs"))
-		{
-			if (ImGui::BeginTabItem("Model"))
-			{
-				DrawModelTab();
-				ImGui::EndTabItem();
-			}
-
-			const ImGuiTabItemFlags motionTabFlags = m_selectMotionTab ? ImGuiTabItemFlags_SetSelected : 0;
-			m_selectMotionTab = false;
-			if (ImGui::BeginTabItem("Motion", nullptr, motionTabFlags))
-			{
-				DrawMotionTab();
-				ImGui::EndTabItem();
-			}
-
-			if (ImGui::BeginTabItem("Physics"))
-			{
-				DrawPhysicsTab();
-				ImGui::EndTabItem();
-			}
-
-			if (ImGui::BeginTabItem("Inverse Kinematics"))
-			{
-				DrawIKTab();
-				ImGui::EndTabItem();
-			}
-			ImGui::EndTabBar();
-		}
-	}
-	ImGui::End();
+	const float inspectorWidth = min(s_inspectorPanelWidth, viewport->WorkSize.x * 0.5f);
+	DrawSceneViewport(ImVec2(viewport->WorkPos.x + browserWidth, viewport->WorkPos.y), ImVec2(viewport->WorkSize.x - browserWidth - inspectorWidth, panelsHeight));
+	DrawInspector(ImVec2(viewport->WorkPos.x + viewport->WorkSize.x - inspectorWidth, viewport->WorkPos.y), ImVec2(inspectorWidth, panelsHeight));
 }
 
 void CState_EGFViewer::DrawSceneViewport(const ImVec2& pos, const ImVec2& size)
@@ -758,9 +718,9 @@ void CState_EGFViewer::DrawBrowserFile(const EqString& dirPath, const EqString& 
 	const EqString filePath = EqString::Format("%s/%s", dirPath.ToCString(), name.ToCString());
 
 	bool selected = false;
-	if (s_model.m_model)
+	if (g_viewerModel.m_model)
 	{
-		EqString currentModel = s_model.m_model->GetName();
+		EqString currentModel = g_viewerModel.m_model->GetName();
 		EqString cmpFilePath = filePath;
 		fnmPathFixSeparators(currentModel);
 		fnmPathFixSeparators(cmpFilePath);
@@ -853,240 +813,17 @@ void CState_EGFViewer::DrawMenuBar()
 		ImGui::MenuItem("Show ground", nullptr, &m_drawFloor);
 		ImGui::MenuItem("Show grid", nullptr, &m_drawGrid);
 		ImGui::MenuItem("Wireframe", "W", &m_wireframe);
+		ImGui::Separator();
+
+		static const char* s_vertexDisplayNames[] = { "No vertex data", "Normals", "Tangents", "Vertex colors", "Weights of the selected bone" };
+		for (int i = 0; i < elementsOf(s_vertexDisplayNames); ++i)
+		{
+			if (ImGui::MenuItem(s_vertexDisplayNames[i], nullptr, m_vertexDisplay == i))
+				m_vertexDisplay = i;
+		}
 
 		ImGui::EndMenu();
 	}
 
 	ImGui::EndMainMenuBar();
-}
-
-void CState_EGFViewer::DrawModelTab()
-{
-	ImGui::TextUnformatted("Body groups");
-	ImGui::SameLine();
-
-	if (ImGui::BeginListBox("##bodyGroups", ImVec2(250.0f, -FLT_MIN)))
-	{
-		for (int i = 0; i < m_bodyGroupNames.numElem(); ++i)
-		{
-			bool enabled = (s_model.m_bodyGroupFlags & (1 << i)) != 0;
-
-			ImGui::PushID(i);
-			if (ImGui::Checkbox(m_bodyGroupNames[i].ToCString(), &enabled))
-			{
-				if (enabled)
-					s_model.m_bodyGroupFlags |= (1 << i);
-				else
-					s_model.m_bodyGroupFlags &= ~(1 << i);
-			}
-			ImGui::PopID();
-		}
-		ImGui::EndListBox();
-	}
-
-	ImGui::SameLine();
-	ImGui::TextUnformatted("LODs");
-	ImGui::SameLine();
-
-	ImGui::SetNextItemWidth(100.0f);
-	if (ImGui::InputInt("##lod", &m_lod))
-		m_lod = clamp(m_lod, 0, 10);
-
-	ImGui::SameLine();
-	ImGui::Checkbox("override", &m_lodOverride);
-}
-
-void CState_EGFViewer::DrawMotionTab()
-{
-	if (ImGui::BeginTable("##motionTable", 4, ImGuiTableFlags_SizingFixedFit))
-	{
-		ImGui::TableNextRow();
-		ImGui::TableNextColumn();
-		ImGui::AlignTextToFramePadding();
-		ImGui::TextUnformatted("Anim/Act:");
-
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(250.0f);
-		const char* motionPreview = m_motionSelection != -1 ? m_motionItems[m_motionSelection].name.ToCString() : "select animation...";
-		if (ImGui::BeginCombo("##motion", motionPreview))
-		{
-			for (int i = 0; i < m_motionItems.numElem(); ++i)
-			{
-				ImGui::PushID(i);
-				if (ImGui::Selectable(m_motionItems[i].name.ToCString(), i == m_motionSelection))
-				{
-					m_motionSelection = i;
-					OnSequenceSelected();
-				}
-				ImGui::PopID();
-			}
-			ImGui::EndCombo();
-		}
-
-		ImGui::TableNextColumn();
-		ImGui::AlignTextToFramePadding();
-		ImGui::TextUnformatted("FPS:");
-
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(50.0f);
-		ImGui::InputText("##fps", m_animFramerate, sizeof(m_animFramerate), ImGuiInputTextFlags_CharsDecimal);
-
-		ImGui::TableNextRow();
-		ImGui::TableNextColumn();
-		ImGui::AlignTextToFramePadding();
-		ImGui::TextUnformatted("Timeline:");
-
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(250.0f);
-		if (ImGui::SliderInt("##timeline", &m_timelineFrame, 0, max(m_timelineMax, 0)))
-			s_model.SetSequenceTime(m_timelineFrame, 0);
-
-		ImGui::TableNextColumn();
-		if (ImGui::Button("Play"))
-		{
-			s_model.ResetSequenceTime(0);
-			s_model.PlaySequence(0);
-		}
-
-		ImGui::TableNextColumn();
-		if (ImGui::Button("Stop"))
-			s_model.StopSequence(0);
-
-		ImGui::TableNextRow();
-		ImGui::TableNextColumn();
-		ImGui::AlignTextToFramePadding();
-		ImGui::TextUnformatted("Pose controller");
-
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(250.0f);
-		const char* posePreview = m_poseControllerSelection != -1 ? s_model.GetPoseControllers()[m_poseControllerSelection].desc->name : "select controller...";
-		if (ImGui::BeginCombo("##poseController", posePreview))
-		{
-			for (int i = 0; i < s_model.GetPoseControllers().numElem(); ++i)
-			{
-				ImGui::PushID(i);
-				if (ImGui::Selectable(s_model.GetPoseControllers()[i].desc->name, i == m_poseControllerSelection))
-				{
-					m_poseControllerSelection = i;
-					OnPoseControllerSelected();
-				}
-				ImGui::PopID();
-			}
-			ImGui::EndCombo();
-		}
-
-		ImGui::TableNextRow();
-		ImGui::TableNextColumn();
-		ImGui::AlignTextToFramePadding();
-		ImGui::TextUnformatted("Control");
-
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(250.0f);
-		if (ImGui::SliderFloat("##poseValue", &m_poseValue, m_poseValueMin, m_poseValueMax) && m_poseControllerSelection != -1)
-			s_model.SetPoseControllerValue(m_poseControllerSelection, m_poseValue);
-
-		ImGui::EndTable();
-	}
-
-	ImGui::SameLine();
-	ImGui::BeginGroup();
-	ImGui::TextUnformatted("Mode");
-	bool modeChanged = ImGui::RadioButton("Sequence Activity", &m_animMode, 0);
-	modeChanged = ImGui::RadioButton("Animation", &m_animMode, 1) || modeChanged;
-	ImGui::EndGroup();
-
-	if (modeChanged)
-		RefreshGUI();
-}
-
-void CState_EGFViewer::DrawPhysicsTab()
-{
-	constexpr float fieldWidth = 80.0f;
-
-	ImGui::BeginGroup();
-	ImGui::TextUnformatted("Object");
-	if (ImGui::BeginTable("##physObject", 2, ImGuiTableFlags_SizingFixedFit))
-	{
-		ImGui::TableNextColumn();
-		ImGui::AlignTextToFramePadding();
-		ImGui::TextUnformatted("Mass");
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(fieldWidth);
-		ImGui::InputText("##mass", m_objMass, sizeof(m_objMass));
-
-		ImGui::TableNextColumn();
-		ImGui::AlignTextToFramePadding();
-		ImGui::TextUnformatted("Surfaceprops");
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(fieldWidth);
-		ImGui::InputText("##surfProps", m_objSurfProps, sizeof(m_objSurfProps));
-
-		ImGui::EndTable();
-	}
-	ImGui::EndGroup();
-
-	ImGui::SameLine(0.0f, 20.0f);
-
-	ImGui::BeginGroup();
-	ImGui::TextUnformatted("Joint limits");
-	if (ImGui::BeginTable("##physJointLimits", 3, ImGuiTableFlags_SizingFixedFit))
-	{
-		ImGui::TableNextColumn();
-		ImGui::AlignTextToFramePadding();
-		ImGui::TextUnformatted("Joint");
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(fieldWidth);
-		if (ImGui::BeginCombo("##joint", ""))
-			ImGui::EndCombo();
-		ImGui::TableNextColumn();
-
-		static const char* s_axisNames[] = { "X", "Y", "Z" };
-		for (int axis = 0; axis < 3; ++axis)
-		{
-			ImGui::PushID(axis);
-			ImGui::TableNextColumn();
-			ImGui::AlignTextToFramePadding();
-			ImGui::TextUnformatted(s_axisNames[axis]);
-
-			ImGui::TableNextColumn();
-			ImGui::SetNextItemWidth(fieldWidth);
-			ImGui::InputText("##min", m_jointLimits[axis * 2], sizeof(m_jointLimits[0]));
-
-			ImGui::TableNextColumn();
-			ImGui::SetNextItemWidth(fieldWidth);
-			ImGui::InputText("##max", m_jointLimits[axis * 2 + 1], sizeof(m_jointLimits[0]));
-			ImGui::PopID();
-		}
-
-		ImGui::EndTable();
-	}
-	ImGui::EndGroup();
-
-	ImGui::SameLine(0.0f, 20.0f);
-
-	ImGui::BeginGroup();
-	ImGui::TextUnformatted("Simulation");
-	ImGui::AlignTextToFramePadding();
-	ImGui::TextUnformatted("Timescale");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(fieldWidth);
-	ImGui::InputText("##timescale", m_simTimescale, sizeof(m_simTimescale));
-
-	if (ImGui::Button("Run/Pause"))
-		s_model.TogglePhysicsState();
-
-	ImGui::SameLine();
-	if (ImGui::Button("Reset"))
-		s_model.ResetPhysics();
-	ImGui::EndGroup();
-}
-
-void CState_EGFViewer::DrawIKTab()
-{
-	ImGui::AlignTextToFramePadding();
-	ImGui::TextUnformatted("Link");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(200.0f);
-	if (ImGui::BeginCombo("##ikLink", ""))
-		ImGui::EndCombo();
 }
