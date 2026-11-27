@@ -129,8 +129,15 @@ bool CEditGizmo::HandleMouse(EGizmoMouseEvent event, const Vector3D& rayStart, c
 		return true;
 	}
 
+	// the planes are drawn between two axes of the translation; a hit of the axes that are not
+	// available is no hit, a plane of them falls back to the single axes
 	const bool rotate = m_mode == EGizmoMode::ROTATE;
-	const int axes = TestRay(rayStart, rayDir, camDist, !rotate) & m_axes;
+	const bool testPlanes = !rotate && numBitsSet(m_axes) > 1;
+	int axes = TestRay(rayStart, rayDir, camDist, testPlanes);
+	if ((axes & ~m_axes) && testPlanes)
+		axes = TestRay(rayStart, rayDir, camDist, false);
+	if (axes & ~m_axes)
+		axes = 0;
 	SetHighlightAxes(axes);
 
 	if (event != GIZMO_MOUSE_DOWN || !axes || m_mode == EGizmoMode::SCALE)
@@ -288,84 +295,6 @@ void CEditGizmo::ProcessDrag(const Vector3D& rayStart, const Vector3D& rayDir)
 		m_dragFuncRotate(swappedAxesRotation);
 		m_dragMode = true;
 	}
-}
-
-Vector3D CEditGizmo::PerformTranslate(const Vector3D& rayStart, const Vector3D& rayDir, int initAxes)
-{
-	// calc movement plane
-	const Vector3D planeNormal = m_transform.t - rayStart;
-	const Plane pl(planeNormal, -dot(planeNormal, m_transform.t), true);
-
-	Vector3D point;
-	if (!pl.GetIntersectionWithRay(rayStart, rayDir, point))
-		return vec3_zero;
-
-	if (!m_draggedAxes)
-	{
-		if (initAxes == 0)
-			return vec3_zero;
-
-		m_dragStart = m_transform.t - point;
-		m_draggedAxes = initAxes;
-		m_dragMode = false;
-	}
-
-	const Vector3D v_x = m_transform.right();
-	const Vector3D v_y = m_transform.up();
-	const Vector3D v_z = m_transform.forward();
-
-	const Vector3D movement = (point - m_transform.t) + m_dragStart;
-	const float movementXAmount = (m_draggedAxes & AXIS_X) ? dot(movement, v_x) : 0.0f;
-	const float movementYAmount = (m_draggedAxes & AXIS_Y) ? dot(movement, v_y) : 0.0f;
-	const float movementZAmount = (m_draggedAxes & AXIS_Z) ? dot(movement, v_z) : 0.0f;
-
-	return movementXAmount * v_x + movementYAmount * v_y + movementZAmount * v_z;
-}
-
-Matrix3x3 CEditGizmo::PerformRotation(const Vector3D& rayStart, const Vector3D& rayDir, int initAxes)
-{
-	const bool init = !m_draggedAxes;
-	if (init)
-	{
-		ASSERT_MSG(numBitsSet(initAxes) <= 1, "testPlanes must be off for TestRay");
-
-		if (initAxes == 0)
-			return identity3;
-
-		m_draggedAxes = initAxes;
-		m_dragMode = true;
-	}
-
-	const Vector3D axsMod(	(m_draggedAxes & AXIS_X) ? 1.0f : 0.0f,
-							(m_draggedAxes & AXIS_Y) ? 1.0f : 0.0f,
-							(m_draggedAxes & AXIS_Z) ? 1.0f : 0.0f);
-
-	const Vector3D edAxis = rotateVector(axsMod, m_transform.r);
-
-	// movement plane
-	const Plane pl(edAxis, -dot(edAxis, m_transform.t), true);
-	Vector3D point;
-	if (!pl.GetIntersectionWithRay(rayStart, rayDir, point))
-		return identity3;
-
-	const Vector3D dirVec = normalize(point - m_transform.t);
-	if (init)
-		m_dragStart = dirVec;
-	m_dragDirCur = dirVec;
-
-	const Vector3D perpDirVec = normalize(cross(edAxis, dirVec));
-
-	// process rotation
-	int axisId = (m_draggedAxes == AXIS_X) ? 0 :
-				 (m_draggedAxes == AXIS_Y) ? -1 :
-				 (m_draggedAxes == AXIS_Z) ? -2 : -1;
-	axisId += 3;
-
-	const Matrix3x3 rotation(edAxis, dirVec, perpDirVec);
-
-	// swap axes
-	const Matrix3x3 swappedAxesRotation(rotation.rows[axisId % 3], rotation.rows[(axisId + 1) % 3], rotation.rows[(axisId + 2) % 3]);
-	return swappedAxesRotation;
 }
 
 void CEditGizmo::Draw(float camDist, int axes, EGizmoMode mode, IGPURenderPassRecorder* rendPassRecorder) const

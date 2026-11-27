@@ -52,7 +52,8 @@ public:
 	void		SetProps(const Matrix3x3& rotate, const Vector3D& pos);
 	void		SetProps(const Transform3D& transform);
 
-	// the mode and the axes (EAxisSelectionFlags) HandleMouse drags and Draw draws; rotation is around one axis
+	// the mode and the axes (EAxisSelectionFlags) HandleMouse drags and Draw draws; rotation is around one
+	// axis, translation also along the planes of two available axes
 	void		SetMode(EGizmoMode mode, int axes = AXIS_ALL);
 	EGizmoMode	GetMode() const { return m_mode; }
 	int			GetAxes() const { return m_axes; }
@@ -87,12 +88,6 @@ public:
 	int			TestRay(const Vector3D& start, const Vector3D& dir, float camDist, bool testPlanes = true) const;
 	void		Draw(float camDist, int axes, EGizmoMode mode, IGPURenderPassRecorder* rendPassRecorder) const;
 
-	// DEPRECATED
-	Vector3D	PerformTranslate(const Vector3D& rayStart, const Vector3D& rayDir, int initAxes);
-
-	// DEPRECATED
-	Matrix3x3	PerformRotation(const Vector3D& rayStart, const Vector3D& rayDir, int initAxes);
-	
 	// DEPRECATED public
 	Transform3D	m_transform;
 
