@@ -70,7 +70,10 @@ come from `nfd` (`src_dependency/nfd`).
   - Skeleton: the bone tree (position, rotation, IK link of the selected bone), the transforms and
     the IK chains with their links. A transform on a bone is an attachment, the others are in the
     model space. The selected bone (yellow) and transform are drawn also when View > Show bones /
-    Show attachments is off.
+    Show attachments is off. The selected transform gets a move / rotate gizmo (`CEditGizmo`,
+    `shared/input/EditGizmo.h`) while physics does not run: it edits a copy of the EGF transforms
+    (`CAnimatedModel::SetModelSpaceTransform`, the edited ones marked `*`, Reset restores one), a
+    preview that is not saved; Esc cancels the drag.
   - Motion: the sequence, the frame, the playback rate, the pose controllers; the selected sequence
     (activity and slot, flags, frame rate, transition, time and pose controllers, the animations, the
     layers, the events: clicking one goes to its frame) and the motion packages.

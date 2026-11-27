@@ -96,7 +96,7 @@ Public interfaces are declared in `public/` and implemented in `core/` or `share
 | `shared/movie/` | WebM movie player: AV1 video (dav1d), Vorbis audio, YUV to RGBA conversion on GPU (`MovieYUV` shader) |
 | `shared/network/` | message transports, RPC, socket definitions, network property variables (`NetObject.h`) |
 | `shared/blink/` | BLINK server and mesh of the link with Blender — see [blink_overview.md](blink_overview.md) |
-| `shared/input/` | Input command binder |
+| `shared/input/` | Input command binder; the move / rotate gizmo of the editors and tools (`EditGizmo.h`: `CEditGizmo`, `HandleMouse` takes the cursor ray and runs the drag with the handlers of `SetDragHandlers`; the lower level `TestRay` / `BeginDrag*` / `ProcessDrag`; drawing without depth test) |
 | `shared/sys/` | Application host: main loop, window, states, console, joystick, config loader; `sys/scripting/` exposes engine subsystems to ESL |
 | `shared/components/`, `shared/entity/` | Component system and data tables (no engine project; compiled by consumers) |
 | `tools/` | Content tools (see below); `localization_tool/` is a separate C# project, `imp-exp blender/` is a Blender add-on, `python/eqrpc/` the Python side of the RPC ([network_rpc_overview.md](network_rpc_overview.md)), `python/blink/` the Blender side of BLINK ([blink_overview.md](blink_overview.md)) |

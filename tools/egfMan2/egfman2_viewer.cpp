@@ -113,11 +113,13 @@ void CState_EGFViewer::OnEnter(CAppStateBase* from)
 		SetOptimalCameraDistance();
 	}
 
+	InitTransformGizmo();
 	RefreshGUI();
 }
 
 void CState_EGFViewer::OnLeave(CAppStateBase* to)
 {
+	m_transformGizmo.Cancel();
 	m_dragObj = nullptr;
 	g_viewerModel.SetModel(nullptr);
 	PhysicsSceneShutdown();
@@ -128,6 +130,7 @@ void CState_EGFViewer::OnLeave(CAppStateBase* to)
 
 void CState_EGFViewer::LoadModel(const char* modelPath)
 {
+	m_transformGizmo.Cancel();
 	m_dragObj = nullptr;
 	FlushCache();
 
@@ -337,6 +340,52 @@ void CState_EGFViewer::RenderFloor(IGPURenderPassRecorder* rendPassRecorder)
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
+// as the editors rotate the points around a pivot with the gizmo rotation
+static Vector3D ViewerRotateVector(const Vector3D& vec, const Matrix3x3& rotation)
+{
+	return transpose(Matrix4x4(rotation) * translate(vec)).getTranslationComponent();
+}
+
+void CState_EGFViewer::InitTransformGizmo()
+{
+	m_transformGizmo.SetDragHandlers([this](int axes) {
+		if (!UpdateTransformGizmo())
+			return false;
+		m_gizmoDragStart = g_viewerModel.GetLocalStudioTransformMatrix(g_viewerModel.m_selectedAttachment);
+		return true;
+	}, [this](const Vector3D& movement) {
+		Matrix4x4 transform = g_viewerModel.GetLocalStudioTransformMatrix(g_viewerModel.m_selectedAttachment);
+		transform.rows[3] += Vector4D(movement, 0.0f);
+		g_viewerModel.SetModelSpaceTransform(g_viewerModel.m_selectedAttachment, transform);
+	}, [this](const Matrix3x3& rotation) {
+		Matrix4x4 transform = m_gizmoDragStart;
+		for (int i = 0; i < 3; ++i)
+			transform.rows[i] = Vector4D(ViewerRotateVector(m_gizmoDragStart.rows[i].xyz(), rotation), 0.0f);
+		g_viewerModel.SetModelSpaceTransform(g_viewerModel.m_selectedAttachment, transform);
+	}, [this](bool cancel) {
+		if (cancel)
+			g_viewerModel.SetModelSpaceTransform(g_viewerModel.m_selectedAttachment, m_gizmoDragStart);
+	});
+}
+
+bool CState_EGFViewer::UpdateTransformGizmo()
+{
+	const int transformIdx = g_viewerModel.m_selectedAttachment;
+	if (!g_viewerModel.m_model || g_viewerModel.IsPhysicsEnabled() || transformIdx < 0 || transformIdx >= g_viewerModel.m_model->GetStudioHdr().numTransforms)
+	{
+		m_transformGizmo.Cancel();
+		return false;
+	}
+
+	// the dragged gizmo follows the mouse itself
+	if (!m_transformGizmo.IsDragging())
+	{
+		const Matrix4x4 transform = g_viewerModel.GetLocalStudioTransformMatrix(transformIdx);
+		m_transformGizmo.SetProps(Matrix3x3(normalize(transform.rows[0].xyz()), normalize(transform.rows[1].xyz()), normalize(transform.rows[2].xyz())), transform.rows[3].xyz());
+	}
+	return true;
+}
+
 bool CState_EGFViewer::Update(float fDt)
 {
 	const IVector2D screenSize = m_viewport.GetSize();
@@ -430,6 +479,10 @@ bool CState_EGFViewer::Update(float fDt)
 		DbgLine().Start(vec3_zero).End(vec3_forward).Color(MColor(0.0f, 0.0f, 1.0f));
 	}
 
+	// over everything, the gizmo has no depth test
+	if (UpdateTransformGizmo())
+		m_transformGizmo.Draw(distance(m_transformGizmo.m_transform.t, s_cameraParams.GetOrigin()), modelDrawRenderPass);
+
 	g_matSystem->QueueCommandBuffer(modelDrawRenderPass->End());
 
 	return true;
@@ -447,6 +500,12 @@ void CState_EGFViewer::HandleKeyPress(int key, bool down)
 {
 	if (!down)
 		return;
+
+	if (key == KEY_ESCAPE)
+	{
+		m_transformGizmo.Cancel();
+		return;
+	}
 
 	const bool ctrlDown = (SDL_GetModState() & KMOD_CTRL) != 0;
 
@@ -475,7 +534,8 @@ void CState_EGFViewer::HandleMouseClick(int x, int y, int buttons, bool down)
 	else
 		m_mouseButtons &= ~buttonBit;
 
-	ProcessMouse(x, y, vec2_zero);
+	const EGizmoMouseEvent gizmoEvent = buttonBit != MOUSE_BIT_LEFT ? GIZMO_MOUSE_MOVE : (down ? GIZMO_MOUSE_DOWN : GIZMO_MOUSE_UP);
+	ProcessMouse(x, y, vec2_zero, gizmoEvent);
 }
 
 void CState_EGFViewer::HandleMouseMove(int x, int y, float deltaX, float deltaY)
@@ -488,7 +548,7 @@ void CState_EGFViewer::HandleMouseMove(int x, int y, float deltaX, float deltaY)
 	}
 
 	// host gives deltas as -0.05 * (dx, -dy) * m_sensitivity, convert them back to pixels
-	ProcessMouse(x, y, Vector2D(deltaX, -deltaY) * -20.0f);
+	ProcessMouse(x, y, Vector2D(deltaX, -deltaY) * -20.0f, GIZMO_MOUSE_MOVE);
 }
 
 void CState_EGFViewer::WrapCursor(int x, int y)
@@ -518,7 +578,7 @@ void CState_EGFViewer::WrapCursor(int x, int y)
 	g_pHost->SetCursorPosition(wrapPos.x, wrapPos.y);
 }
 
-void CState_EGFViewer::ProcessMouse(int x, int y, const Vector2D& moveDelta)
+void CState_EGFViewer::ProcessMouse(int x, int y, const Vector2D& moveDelta, EGizmoMouseEvent gizmoEvent)
 {
 	// button release can be consumed by ImGui, so drop the buttons that are no longer held
 	const uint32 sdlButtons = SDL_GetMouseState(nullptr, nullptr);
@@ -547,7 +607,11 @@ void CState_EGFViewer::ProcessMouse(int x, int y, const Vector2D& moveDelta)
 	Vector3D forward, right, up;
 	AngleVectors(camAngles, forward, right, up);
 
-	if (SDL_GetModState() & KMOD_SHIFT)
+	// the release may be consumed by ImGui or come with Shift held
+	if (m_transformGizmo.IsDragging() && !(m_mouseButtons & MOUSE_BIT_LEFT))
+		gizmoEvent = GIZMO_MOUSE_UP;
+
+	if (!m_transformGizmo.IsDragging() && (SDL_GetModState() & KMOD_SHIFT))
 	{
 		if (m_mouseButtons & MOUSE_BIT_LEFT)
 		{
@@ -570,6 +634,12 @@ void CState_EGFViewer::ProcessMouse(int x, int y, const Vector2D& moveDelta)
 
 		if (m_mouseButtons)
 			WrapCursor(x, y);
+	}
+	else if (UpdateTransformGizmo())
+	{
+		Vector3D rayStart, rayDir;
+		ScreenToDirection(Vector2D(w - x, y), Vector2D(w, h), s_cameraParams.GetOrigin(), m_projMat, m_viewMat, false, rayStart, rayDir);
+		m_transformGizmo.HandleMouse(gizmoEvent, rayStart, rayDir, distance(m_transformGizmo.m_transform.t, s_cameraParams.GetOrigin()));
 	}
 	else if (m_mouseButtons & MOUSE_BIT_LEFT)
 	{

@@ -8,6 +8,7 @@
 #pragma once
 #include "sys/sys_state.h"
 #include "sys/sys_viewport.h"
+#include "input/EditGizmo.h"
 
 class CEqRigidBody;
 class CAnimatedModel;
@@ -71,7 +72,11 @@ private:
 	void		SetOptimalCameraDistance();
 	void		RefreshGUI();
 
-	void		ProcessMouse(int x, int y, const Vector2D& moveDelta);
+	void		ProcessMouse(int x, int y, const Vector2D& moveDelta, EGizmoMouseEvent gizmoEvent);
+
+	// the gizmo of the selected transform, active while physics does not run
+	void		InitTransformGizmo();
+	bool		UpdateTransformGizmo();
 	void		WrapCursor(int x, int y);
 	void		RenderFloor(IGPURenderPassRecorder* rendPassRecorder);
 	void		ShowFPS(float frameTime);
@@ -118,6 +123,10 @@ private:
 	Vector3D	m_dragObjLocalPoint{ 0.0f };
 	Vector3D	m_dragStartPoint{ 0.0f };
 	Vector3D	m_dragTargetPoint{ 0.0f };
+
+	// moves or rotates the selected transform, model space
+	CEditGizmo	m_transformGizmo;
+	Matrix4x4	m_gizmoDragStart{ identity4 };
 
 	// View menu
 	bool		m_drawPhysModel{ false };

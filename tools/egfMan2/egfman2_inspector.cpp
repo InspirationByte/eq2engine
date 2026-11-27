@@ -422,16 +422,53 @@ void CState_EGFViewer::DrawSkeletonTab()
 
 		for (int i = 0; i < studio.numTransforms; ++i)
 		{
-			const studioTransform_t* transform = studio.pTransform(i);
-			const Vector3D position = transform->transform.rows[3].xyz();
-			const bool onBone = transform->attachBoneIdx != EGF_INVALID_IDX;
+			const studioTransform_t& transform = g_viewerModel.GetTransform(i);
+			const Vector3D position = transform.transform.rows[3].xyz();
+			const bool onBone = transform.attachBoneIdx != EGF_INVALID_IDX;
 
 			ImGui::PushID(i);
-			if (ImGui::Selectable(EqString::Format("%s (%s%s)", transform->name, onBone ? "attachment, bone " : "model", onBone ? InspectorBoneName(studio, transform->attachBoneIdx) : ""), g_viewerModel.m_selectedAttachment == i))
+			if (ImGui::Selectable(EqString::Format("%s (%s%s)%s", transform.name, onBone ? "attachment, bone " : "model", onBone ? InspectorBoneName(studio, transform.attachBoneIdx) : "",
+				g_viewerModel.IsTransformEdited(i) ? " *" : ""), g_viewerModel.m_selectedAttachment == i))
+			{
+				m_transformGizmo.Cancel();
 				g_viewerModel.m_selectedAttachment = (g_viewerModel.m_selectedAttachment == i) ? -1 : i;
+			}
 			ImGui::PopID();
 			ImGui::SameLine();
 			ImGui::TextDisabled("%.3f %.3f %.3f", position.x, position.y, position.z);
+		}
+
+		// the gizmo edits a copy of the transform, a preview that is not saved
+		const int selected = g_viewerModel.m_selectedAttachment;
+		if (selected >= 0 && selected < studio.numTransforms)
+		{
+			const Matrix4x4& local = g_viewerModel.GetTransform(selected).transform;
+			const Vector3D rotation = EulerMatrixXYZ(Matrix3x3(local.rows[0].xyz(), local.rows[1].xyz(), local.rows[2].xyz())) * M_RAD2DEG;
+
+			if (ImGui::BeginTable("##transform", 2, s_inspectorTableFlags))
+			{
+				InspectorRow("Position", "%.3f %.3f %.3f", local.rows[3].x, local.rows[3].y, local.rows[3].z);
+				InspectorRow("Rotation", "%.1f %.1f %.1f", rotation.x, rotation.y, rotation.z);
+				ImGui::EndTable();
+			}
+
+			int gizmoMode = static_cast<int>(m_transformGizmo.GetMode());
+			ImGui::RadioButton("Move", &gizmoMode, static_cast<int>(EGizmoMode::TRANSLATE));
+			ImGui::SameLine();
+			ImGui::RadioButton("Rotate", &gizmoMode, static_cast<int>(EGizmoMode::ROTATE));
+			if (gizmoMode != static_cast<int>(m_transformGizmo.GetMode()) && !m_transformGizmo.IsDragging())
+				m_transformGizmo.SetMode(static_cast<EGizmoMode>(gizmoMode));
+
+			ImGui::SameLine();
+			ImGui::BeginDisabled(!g_viewerModel.IsTransformEdited(selected) || m_transformGizmo.IsDragging());
+			if (ImGui::Button("Reset"))
+				g_viewerModel.ResetTransform(selected);
+			ImGui::EndDisabled();
+
+			if (g_viewerModel.IsPhysicsEnabled())
+				ImGui::TextDisabled("The gizmo is hidden while physics runs");
+			else
+				ImGui::TextDisabled("Preview only, the edits are not saved; Esc cancels a drag");
 		}
 	}
 

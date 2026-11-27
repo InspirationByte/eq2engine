@@ -40,6 +40,15 @@ public:
 	ArrayCRef<AnimPoseController>	GetPoseControllers() const { return m_poseControllers; }
 	ArrayCRef<AnimDataProvider>		GetAnimData() const { return m_animData; }
 	ArrayCRef<AnimIkChain>			GetIkChains() const { return m_ikChains; }
+
+	// the transforms (attachments) are edited on a copy of the EGF ones, as a preview;
+	// a model space transform is the local one times the bone matrix of the current pose
+	const studioTransform_t&	GetTransform(int transformIdx) const { return m_transforms[transformIdx]; }
+	Matrix4x4					GetTransformParentMatrix(int transformIdx) const;
+	void						SetModelSpaceTransform(int transformIdx, const Matrix4x4& transform);
+	bool						IsTransformEdited(int transformIdx) const;
+	void						ResetTransform(int transformIdx);
+
 	virtual void				Update(float dt);
 
 	// sets model for this entity
@@ -80,5 +89,6 @@ public:
 	int							m_selectedAttachment{ -1 };	// highlighted, drawn also without RFLAG_ATTACHMENTS
 
 protected:
+	Array<studioTransform_t>	m_editedTransforms{ PP_SL };
 	int							m_drawnLod{ 0 };
 };

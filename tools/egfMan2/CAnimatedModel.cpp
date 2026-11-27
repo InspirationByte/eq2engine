@@ -48,6 +48,11 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 
 	InitAnimating(m_model);
 
+	// the transforms are edited on a copy, the loaded EGF stays as it is
+	m_editedTransforms.clear();
+	m_editedTransforms.append(m_transforms.ptr(), m_transforms.numElem());
+	m_transforms = m_editedTransforms;
+
 	// populate sequences list
 	m_sequencesList.clear();
 	for (AnimDataProvider& animData : m_animData)
@@ -353,6 +358,27 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 	// the selected bone and attachment are drawn also when the others are not
 	VisualizeBones((nViewRenderFlags & RFLAG_BONES) != 0);
 	VisualizeAttachments((nViewRenderFlags & RFLAG_ATTACHMENTS) != 0);
+}
+
+Matrix4x4 CAnimatedModel::GetTransformParentMatrix(int transformIdx) const
+{
+	const int boneIdx = m_transforms[transformIdx].attachBoneIdx;
+	return boneIdx != EGF_INVALID_IDX ? m_boneTransforms[boneIdx] : identity4;
+}
+
+void CAnimatedModel::SetModelSpaceTransform(int transformIdx, const Matrix4x4& transform)
+{
+	m_editedTransforms[transformIdx].transform = transform * !GetTransformParentMatrix(transformIdx);
+}
+
+bool CAnimatedModel::IsTransformEdited(int transformIdx) const
+{
+	return memcmp(&m_editedTransforms[transformIdx].transform, &m_model->GetStudioHdr().pTransform(transformIdx)->transform, sizeof(Matrix4x4)) != 0;
+}
+
+void CAnimatedModel::ResetTransform(int transformIdx)
+{
+	m_editedTransforms[transformIdx].transform = m_model->GetStudioHdr().pTransform(transformIdx)->transform;
 }
 
 Matrix4x4 CAnimatedModel::GetWorldMatrix() const
