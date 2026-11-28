@@ -695,6 +695,11 @@ float		fract(float value);
 template <typename T>
 TVec3D<T>	cross(const TVec3D<T> &u, const TVec3D<T> &v);
 
+// z of the crossproduct of two 2D vectors (u.x * v.y - u.y * v.x): positive when v turns
+// counter-clockwise from u with X to the right and Y up
+template <typename T>
+T			cross(const TVec2D<T> &u, const TVec2D<T> &v);
+
 // returns interpolation offset (a.k.a backwards lerp)
 template <typename T>
 T			lineProjection(const TVec2D<T> &start, const TVec2D<T> &end, const TVec2D<T> &point);

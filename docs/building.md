@@ -100,8 +100,17 @@ Everything a workspace generates goes into its `BUILD_DIR` (see [architecture.md
 | `<BUILD_DIR>/thirdpartylib/<platform>/<configuration>/` | Third-party static libraries |
 | `<BUILD_DIR>/bin/<platform>/<configuration>/` | Executables and shared libraries |
 
-Test executables (`ds_tests`, `ppmem_tests`, `scripting_tests`) are placed in
+Test executables (`ds_tests`, `ppmem_tests`, `scripting_tests`, `network_tests`) are placed in
 `build/auto_tests/bin/x64/<configuration>/`.
+
+The Python RPC package has its own tests, run from `tools/python` after `network_tests` is built
+(see [network_rpc_overview.md](network_rpc_overview.md#tests)):
+
+```
+# EQRPC_NETWORK_TESTS: the path of network_tests (network_tests.exe on Windows);
+# without it the interop tests with the engine endpoint are skipped
+EQRPC_NETWORK_TESTS=<bin dir>/network_tests python -m unittest discover -s eqrpc/tests -t .
+```
 
 ## Overriding dependency paths
 

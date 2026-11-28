@@ -29,7 +29,7 @@ on:
 env:
   PROJECT_NAME: auto_tests
   BUILD_PLATFORM: x64
-  TESTS: ds_tests ppmem_tests scripting_tests
+  TESTS: ds_tests ppmem_tests scripting_tests network_tests
   # Tracy needs SDK 10.0.26100 or newer (RelationProcessorDie, ETW system provider GUIDs);
   # it is preinstalled on the windows-2022 runner image
   WINSDK_VER: "10.0.26100.0"
@@ -79,3 +79,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { $failed += $test }
         }
         if ($failed) { Write-Error "Failed tests: $failed"; exit 1 }
+
+    - name: Run eqrpc and blink Python tests
+      working-directory: tools\python
+      shell: pwsh
+      timeout-minutes: 5
+      run: |
+        $env:EQRPC_NETWORK_TESTS = (Resolve-Path "..\..\build\${{env.PROJECT_NAME}}\bin\${{env.BUILD_PLATFORM}}\${{matrix.configuration}}\network_tests.exe").Path
+        python -m unittest discover -s eqrpc/tests -t .
+        if ($LASTEXITCODE -ne 0) { exit 1 }
+        python -m unittest discover -s blink/tests -t .
+        if ($LASTEXITCODE -ne 0) { exit 1 }

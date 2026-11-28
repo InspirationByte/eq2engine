@@ -7,8 +7,6 @@
 
 #pragma once
 
-namespace Networking { class Buffer; }
-
 template <class _TYPE, class CHANGER>
 class CNetworkVarBase
 {

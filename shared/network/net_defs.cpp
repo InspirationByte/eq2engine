@@ -11,30 +11,6 @@
 namespace Networking
 {
 
-bool NETCompareAdr(const sockaddr_in& a, const sockaddr_in& b)
-{
-#ifdef _WIN32
-	if (a.sin_addr.S_un.S_un_b.s_b1 == b.sin_addr.S_un.S_un_b.s_b1 &&
-		a.sin_addr.S_un.S_un_b.s_b2 == b.sin_addr.S_un.S_un_b.s_b2 &&
-		a.sin_addr.S_un.S_un_b.s_b3 == b.sin_addr.S_un.S_un_b.s_b3 &&
-		a.sin_addr.S_un.S_un_b.s_b4 == b.sin_addr.S_un.S_un_b.s_b4 &&
-		a.sin_port == b.sin_port)
-		return true;
-#else
-	uint8* ipA = (uint8*)&a.sin_addr.s_addr;
-	uint8* ipB = (uint8*)&b.sin_addr.s_addr;
-
-	if (ipA[0] == ipB[3] &&
-		ipA[1] == ipB[3] &&
-		ipA[2] == ipB[3] &&
-		ipA[3] == ipB[3] &&
-		a.sin_port == b.sin_port)
-		return true;
-#endif
-
-	return false;
-}
-
 const char* NETErrorString(int code)
 {
 	switch (code)
@@ -65,7 +41,7 @@ const char* NETErrorString(int code)
 		case WSAENETDOWN: return "WSAENETDOWN";
 		case WSAENETUNREACH: return "WSAENETUNREACH";
 		case WSAENETRESET: return "WSAENETRESET";
-		case WSAECONNABORTED: return "WSWSAECONNABORTEDAEINTR";
+		case WSAECONNABORTED: return "WSAECONNABORTED";
 		case WSAECONNRESET: return "WSAECONNRESET";
 		case WSAENOBUFS: return "WSAENOBUFS";
 		case WSAEISCONN: return "WSAEISCONN";
@@ -109,7 +85,7 @@ const char* NETErrorString(int code)
 		case ENETDOWN: return "WSAENETDOWN";
 		case ENETUNREACH: return "WSAENETUNREACH";
 		case ENETRESET: return "WSAENETRESET";
-		case ECONNABORTED: return "WSWSAECONNABORTEDAEINTR";
+		case ECONNABORTED: return "WSAECONNABORTED";
 		case ECONNRESET: return "WSAECONNRESET";
 		case ENOBUFS: return "WSAENOBUFS";
 		case EISCONN: return "WSAEISCONN";

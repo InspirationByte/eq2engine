@@ -105,13 +105,20 @@ project "networkLib"
     files {
 		"network/**",
 	}
-	-- this one is temporary. Once rewrite done it will be removed
-	excludes {
-		"network/NETThread.cpp",
-	}
 	
 	filter "system:Windows"
 		links { "wsock32" }
+
+-- BLINK: the RPC link of an engine application with Blender
+project "blinkLib"
+	properties { "staticlib", "unitybuild" }
+	uses {
+		"public", "shared",
+		"networkLib"
+	}
+    files {
+		"blink/**",
+	}
 
 -- Sound System
 project "soundSystemLib"

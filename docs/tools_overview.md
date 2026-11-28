@@ -58,8 +58,33 @@ come from `nfd` (`src_dependency/nfd`).
 - `-model <path>` opens a model on start.
 - The scene is rendered into a `CHostViewport` (see
   [sys_application_overview.md](sys_application_overview.md)) shown in the ImGui window between the
-  model browser and the bottom panel; camera and drag input and hotkeys work while the mouse is over
+  model browser and the inspector; camera and drag input and hotkeys work while the mouse is over
   the scene or the scene window is focused.
+- The inspector on the right (`egfman2_inspector.cpp`) shows what the EGF holds, in tabs:
+  - Model: the summary (bounds, counts, what the drawn LOD draws), the body groups (on / off) with
+    the mesh group of each LOD (distance, manual flag; the drawn one highlighted), the LOD override,
+    the skin, the mesh groups and their meshes (material, vertices, triangles, strip or list, vertex
+    streams), the materials of the skin (EGF name, the loaded material or not found) and their search
+    paths. A selected mesh group or mesh is outlined in the scene, whatever the LOD. A mesh group
+    placed by a transform (`studioMeshGroupDesc_t::transformIdx`, not written by egfCA yet) names it.
+  - Skeleton: the bone tree (position, rotation, IK link of the selected bone), the transforms and
+    the IK chains with their links. A transform on a bone is an attachment, the others are in the
+    model space. The selected bone (yellow) and transform are drawn also when View > Show bones /
+    Show attachments is off. The selected transform gets a move / rotate gizmo (`CEditGizmo`,
+    `shared/input/EditGizmo.h`) while physics does not run: it edits a copy of the EGF transforms
+    (`CAnimatedModel::SetModelSpaceTransform`, the edited ones marked `*`, Reset restores one), a
+    preview that is not saved; Esc cancels the drag.
+  - Motion: the sequence, the frame, the playback rate, the pose controllers; the selected sequence
+    (activity and slot, flags, frame rate, transition, time and pose controllers, the animations, the
+    layers, the events: clicking one goes to its frame) and the motion packages.
+  - Physics: the usage, the objects (mass, surface, shapes; the selected one is drawn brighter than
+    the others), the joints with their limits in degrees, Run / Pause, Reset and the timescale.
+- Bones are wire octahedra from the joint to each child (a bone without children continues its
+  parent), with their axes and names; the parts behind the model are hatched (`Dbg*` with
+  `Occluded`). Transforms are axes with names.
+- View menu vertex data, drawn over the enabled body groups at the drawn LOD and moved by the current
+  pose as the renderer skins them: normals, tangents (tangent red, binormal blue), vertex colors,
+  the weights of the selected bone (red full, blue small, gray none).
 - Model browser on the left (View → Model browser) lists `.egf` files under `models/` of the `SP_MOD`
   search paths; clicking a file opens it. Directories are scanned when first expanded, Refresh
   rescans them. The filter field shows a flat list of files whose names contain the text (case

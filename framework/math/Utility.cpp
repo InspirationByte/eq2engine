@@ -498,9 +498,116 @@ float DistanceLineSegLineSeg(const Vector3D& L0, const Vector3D& L1, const Vecto
 	return distance(ln, sn);
 }
 
+float DistanceSegSeg2D(const Vector2D& sA0, const Vector2D& sA1, const Vector2D& sB0, const Vector2D& sB1, float* outFA, float* outFB)
+{
+	// dist3D_Segment_to_Segment by Dan Sunday reduced to the plane, the 2D variant of
+	// DistanceLineSegLineSeg
+	const Vector2D u = sA1 - sA0;
+	const Vector2D v = sB1 - sB0;
+	const Vector2D w = sA0 - sB0;
+
+	const float a = dot(u, u);
+	const float b = dot(u, v);
+	const float c = dot(v, v);
+	const float d = dot(u, w);
+	const float e = dot(v, w);
+
+	// the degenerate segments keep their start as the closest point
+	if (a < F_EPS && c < F_EPS)
+	{
+		if (outFA) *outFA = 0.0f;
+		if (outFB) *outFB = 0.0f;
+		return length(w);
+	}
+	if (c < F_EPS) // B is a point, its projection on A
+	{
+		const float s = clamp(-d / a, 0.0f, 1.0f);
+		if (outFA) *outFA = s;
+		if (outFB) *outFB = 0.0f;
+		return length(lerp(sA0, sA1, s) - sB0);
+	}
+
+	const float D = a * c - b * b;
+	float sN = 0.0f;
+	float sD = D;
+	float tN = 0.0f;
+	float tD = D;
+
+	if (D < F_EPS) // the segments are almost parallel
+	{
+		sN = 0.0f;
+		tN = e;
+		tD = c;
+		sD = c;
+	}
+	else                  // get the closest points on the infinite lines
+	{
+		sN = (b * e - c * d);
+		tN = (a * e - b * d);
+		if (sN < 0.0f)    // sc < 0 => the s=0 edge is visible
+		{
+			sN = 0.0f;
+			tN = e;
+			tD = c;
+		}
+		else if (sN > sD) // sc > 1 => the s=1 edge is visible
+		{
+			sN = sD;
+			tN = e + b;
+			tD = c;
+		}
+	}
+
+	if (tN < 0.0f)        // tc < 0 => the t=0 edge is visible
+	{
+		tN = 0.0f;
+		// recompute sc for this edge
+		if (-d < 0.0f)
+		{
+			sN = 0.0f;
+		}
+		else if (-d > a)
+		{
+			sN = sD;
+		}
+		else
+		{
+			sN = -d;
+			sD = a;
+		}
+	}
+	else if (tN > tD)     // tc > 1 => the t=1 edge is visible
+	{
+		tN = tD;
+		// recompute sc for this edge
+		if ((-d + b) < 0.0f)
+		{
+			sN = 0.0f;
+		}
+		else if ((-d + b) > a)
+		{
+			sN = sD;
+		}
+		else
+		{
+			sN = (-d + b);
+			sD = a;
+		}
+	}
+
+	// finally do the division to get sc and tc
+	const float sc = (fabsf(sD) > F_EPS) ? sN / sD : 0.0f;
+	const float tc = (fabsf(tD) > F_EPS) ? tN / tD : 0.0f;
+
+	if (outFA) *outFA = sc;
+	if (outFB) *outFB = tc;
+
+	return length(lerp(sA0, sA1, sc) - lerp(sB0, sB1, tc));
+}
+
 static float ConvexOrient2D(const Vector2D& o, const Vector2D& a, const Vector2D& b)
 {
-	return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+	return cross(a - o, b - o);
 }
 
 void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
@@ -567,21 +674,25 @@ bool IsPointInPolygon2D(ArrayCRef<Vector2D> points, const Vector2D& point)
 	return inside;
 }
 
-bool PolygonConvexPartition2D(ArrayCRef<Vector2D> points, int maxPartPoints, Array<int>& outPartIndices, Array<int>& outPartSizes)
+// the turn tolerance relative to the polygon size
+static float PolygonTurnEps2D(ArrayCRef<Vector2D> points)
 {
-	outPartIndices.clear();
-	outPartSizes.clear();
-
-	const int numPoints = points.numElem();
-	const float signedArea = PolygonSignedArea2D(points);
-	if (numPoints < 3 || maxPartPoints < 3 || fabsf(signedArea) < F_EPS)
-		return false;
-
-	// the turns are measured relative to the polygon size
 	AARectangle bounds;
 	for (const Vector2D& point : points)
 		bounds.AddVertex(point);
-	const float eps = max(lengthSqr(bounds.GetSize()), 1.0f) * 1e-6f;
+	return max(lengthSqr(bounds.GetSize()), 1.0f) * 1e-6f;
+}
+
+bool PolygonTriangulate2D(ArrayCRef<Vector2D> points, Array<int>& outIndices)
+{
+	outIndices.clear();
+
+	const int numPoints = points.numElem();
+	const float signedArea = PolygonSignedArea2D(points);
+	if (numPoints < 3 || fabsf(signedArea) < F_EPS)
+		return false;
+
+	const float eps = PolygonTurnEps2D(points);
 
 	// working in the positive winding
 	Array<int> remaining(PP_SL);
@@ -600,8 +711,6 @@ bool PolygonConvexPartition2D(ArrayCRef<Vector2D> points, int maxPartPoints, Arr
 	};
 
 	// ear clipping, a collinear point is dropped when there is no ear
-	using Part = FixedArray<int, 64>;
-	Array<Part> parts(PP_SL);
 	while (remaining.numElem() > 3)
 	{
 		const int count = remaining.numElem();
@@ -634,14 +743,16 @@ bool PolygonConvexPartition2D(ArrayCRef<Vector2D> points, int maxPartPoints, Arr
 		}
 
 		if (earIdx == -1 && collinearIdx == -1)
+		{
+			outIndices.clear();
 			return false;
+		}
 
 		if (earIdx != -1)
 		{
-			Part& triangle = parts.append();
-			triangle.append(remaining[(earIdx + count - 1) % count]);
-			triangle.append(remaining[earIdx]);
-			triangle.append(remaining[(earIdx + 1) % count]);
+			outIndices.append(remaining[(earIdx + count - 1) % count]);
+			outIndices.append(remaining[earIdx]);
+			outIndices.append(remaining[(earIdx + 1) % count]);
 			remaining.removeIndex(earIdx);
 		}
 		else
@@ -652,14 +763,37 @@ bool PolygonConvexPartition2D(ArrayCRef<Vector2D> points, int maxPartPoints, Arr
 
 	if (ConvexOrient2D(points[remaining[0]], points[remaining[1]], points[remaining[2]]) > eps)
 	{
-		Part& triangle = parts.append();
-		triangle.append(remaining[0]);
-		triangle.append(remaining[1]);
-		triangle.append(remaining[2]);
+		outIndices.append(remaining[0]);
+		outIndices.append(remaining[1]);
+		outIndices.append(remaining[2]);
 	}
 
-	if (!parts.numElem())
+	return outIndices.numElem() > 0;
+}
+
+bool PolygonConvexPartition2D(ArrayCRef<Vector2D> points, int maxPartPoints, Array<int>& outPartIndices, Array<int>& outPartSizes)
+{
+	outPartIndices.clear();
+	outPartSizes.clear();
+
+	if (maxPartPoints < 3)
 		return false;
+
+	Array<int> triangles(PP_SL);
+	if (!PolygonTriangulate2D(points, triangles))
+		return false;
+
+	const float eps = PolygonTurnEps2D(points);
+
+	using Part = FixedArray<int, 64>;
+	Array<Part> parts(PP_SL);
+	for (int i = 0; i < triangles.numElem(); i += 3)
+	{
+		Part& triangle = parts.append();
+		triangle.append(triangles[i]);
+		triangle.append(triangles[i + 1]);
+		triangle.append(triangles[i + 2]);
+	}
 
 	auto isConvex = [&](const Part& part) {
 		const int count = part.numElem();
@@ -721,6 +855,148 @@ bool PolygonConvexPartition2D(ArrayCRef<Vector2D> points, int maxPartPoints, Arr
 	{
 		outPartIndices.append(part.ptr(), part.numElem());
 		outPartSizes.append(part.numElem());
+	}
+	return true;
+}
+
+bool PolygonTriangulateMinAngle(ArrayCRef<Vector2D> points2D, ArrayCRef<Vector3D> points3D, Array<int>& outIndices)
+{
+	static constexpr float AREA_EPS = 0.000001f;
+
+	outIndices.clear();
+	const int n = points2D.numElem();
+	if (n < 3)
+		return false;
+
+	float area = 0.0f;
+	for (int i = 0; i < n; ++i)
+		area += cross(points2D[i], points2D[(i + 1) % n]);
+	if (fabsf(area) < AREA_EPS)
+		return false;
+
+	// counter clockwise in the plane
+	const float sign = area > 0.0f ? 1.0f : -1.0f;
+	auto area2 = [&](int a, int b, int c) { return cross(points2D[b] - points2D[a], points2D[c] - points2D[a]) * sign; };
+	auto left = [&](int a, int b, int c) { return area2(a, b, c) > AREA_EPS; };
+	auto leftOn = [&](int a, int b, int c) { return area2(a, b, c) > -AREA_EPS; };
+	auto collinear = [&](int a, int b, int c) { return fabsf(area2(a, b, c)) <= AREA_EPS; };
+	auto between = [&](int a, int b, int c) {
+		if (!collinear(a, b, c))
+			return false;
+		const Vector2D ab = points2D[b] - points2D[a];
+		const float t = dot(points2D[c] - points2D[a], ab);
+		return t >= 0.0f && t <= lengthSqr(ab);
+	};
+	auto intersects = [&](int a, int b, int c, int d) {
+		if (!collinear(a, b, c) && !collinear(a, b, d) && !collinear(c, d, a) && !collinear(c, d, b))
+			return (left(a, b, c) != left(a, b, d)) && (left(c, d, a) != left(c, d, b));
+		return between(a, b, c) || between(a, b, d) || between(c, d, a) || between(c, d, b);
+	};
+	auto inCone = [&](int a, int b) {
+		const int a0 = (a + n - 1) % n;
+		const int a1 = (a + 1) % n;
+		if (leftOn(a, a1, a0))
+			return left(a, b, a0) && left(b, a, a1);
+		return !(leftOn(a, b, a1) && leftOn(b, a, a0));
+	};
+	auto isDiagonal = [&](int a, int b) {
+		if (!inCone(a, b) || !inCone(b, a))
+			return false;
+		for (int k = 0; k < n; ++k)
+		{
+			const int k1 = (k + 1) % n;
+			if (k != a && k1 != a && k != b && k1 != b && intersects(a, b, k, k1))
+				return false;
+		}
+		return true;
+	};
+
+	// the triangle quality: minus the largest cosine of its angles, a flat one is the worst
+	auto quality = [&](int a, int b, int c) {
+		if (!left(a, b, c))
+			return -2.0f;
+
+		const Vector3D& pa = points3D[a];
+		const Vector3D& pb = points3D[b];
+		const Vector3D& pc = points3D[c];
+		const float lab = length(pb - pa);
+		const float lbc = length(pc - pb);
+		const float lca = length(pa - pc);
+		if (lab < F_EPS || lbc < F_EPS || lca < F_EPS)
+			return -2.0f;
+
+		const float cosA = dot(pb - pa, pc - pa) / (lab * lca);
+		const float cosB = dot(pa - pb, pc - pb) / (lab * lbc);
+		const float cosC = dot(pa - pc, pb - pc) / (lca * lbc);
+		return -max(cosA, max(cosB, cosC));
+	};
+
+	// best[i * n + j]: the quality of the polygon part from i to j closed by the diagonal j - i
+	Array<float> best(PP_SL);
+	Array<int> splits(PP_SL);
+	best.setNum(n * n);
+	splits.setNum(n * n);
+	for (int i = 0; i < n * n; ++i)
+	{
+		best[i] = -FLT_MAX;
+		splits[i] = -1;
+	}
+	for (int i = 0; i + 1 < n; ++i)
+		best[i * n + i + 1] = FLT_MAX;
+
+	for (int gap = 2; gap < n; ++gap)
+	{
+		for (int i = 0; i + gap < n; ++i)
+		{
+			const int j = i + gap;
+			if (gap < n - 1 && !isDiagonal(i, j))
+				continue;
+
+			float bestQuality = -FLT_MAX;
+			int bestSplit = -1;
+			for (int k = i + 1; k < j; ++k)
+			{
+				const float first = best[i * n + k];
+				const float second = best[k * n + j];
+				if (first == -FLT_MAX || second == -FLT_MAX)
+					continue;
+
+				const float value = min(min(first, second), quality(i, k, j));
+				if (value > bestQuality)
+				{
+					bestQuality = value;
+					bestSplit = k;
+				}
+			}
+			best[i * n + j] = bestQuality;
+			splits[i * n + j] = bestSplit;
+		}
+	}
+
+	if (splits[n - 1] == -1)
+		return false;
+
+	outIndices.reserve((n - 2) * 3);
+
+	Array<int> stack(PP_SL);
+	stack.reserve(n * 2);
+	stack.append(0);
+	stack.append(n - 1);
+	while (stack.numElem())
+	{
+		const int j = stack.popBack();
+		const int i = stack.popBack();
+		if (j - i < 2)
+			continue;
+
+		const int k = splits[i * n + j];
+		outIndices.append(i);
+		outIndices.append(k);
+		outIndices.append(j);
+		stack.append(i);
+		stack.append(k);
+		stack.append(k);
+		stack.append(j);
 	}
 	return true;
 }

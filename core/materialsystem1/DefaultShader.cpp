@@ -175,6 +175,7 @@ BEGIN_SHADER_CLASS(
 			FixedArray<Vector4D, 4> bufferData;
 			bufferData.append(rendPassInfo->drawColor);
 			bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
+			AppendMaterialParams(bufferData, setupParams);
 
 			GPUBufferView cameraParamsBuffer;
 			for (const RenderBufferInfo& rendBuffer : setupParams.uniformBuffers)
@@ -211,8 +212,48 @@ BEGIN_SHADER_CLASS(
 		return setupParams.pipelineInfo.bindGroup[bindGroupId];
 	}
 
+	// the parameters of the derived shaders after the color and the texture transform
+	virtual void AppendMaterialParams(FixedArray<Vector4D, 4>& bufferData, const BindGroupSetupParams& setupParams) const {}
+
 	MatTextureProxy		m_baseTexture;
 	mutable GPUBufferView	m_currentCameraBuffer;
 	mutable int				m_currentCameraId{ -1 };
 
 END_SHADER_CLASS
+
+//------------------------------------------------------------
+// Debug overlay shader: the Default pipelines and bindings, the GPU shader draws
+// the dash and pattern effects from the vertex data (see DebugOverlay.cpp)
+
+namespace CDebugDrawShaderLocalNamespace {
+static const char ThisClassNameStr[] = "DebugDraw";
+static ArrayCRef<int> GetSupportedVertexLayoutIds()
+{
+	static const int supportedFormats[] = { 0, SHADER_VERTEX_ID(DynMeshVertex) };
+	return ArrayCRef(supportedFormats);
+}
+
+class CDebugDrawShader : public CDefaultShaderLocalNamespace::CDefaultShader
+{
+public:
+	CDebugDrawShader(IMaterial* material) : CDefaultShader(material) {}
+
+	ArrayCRef<int>	GetSupportedVertexLayoutIds() const override { return CDebugDrawShaderLocalNamespace::GetSupportedVertexLayoutIds(); }
+	const char*		GetName() const override { return ThisClassNameStr; }
+	int				GetNameHash() const override { return StringIdConst24("DebugDraw"); }
+
+	// the viewport size for the lines in pixels and the camera position for Lit
+	void AppendMaterialParams(FixedArray<Vector4D, 4>& bufferData, const BindGroupSetupParams& setupParams) const override
+	{
+		const IVector2D targetSize = setupParams.passContext.recorder->GetRenderTargetDimensions();
+		const float width = static_cast<float>(max(targetSize.x, 1));
+		const float height = static_cast<float>(max(targetSize.y, 1));
+		bufferData.append(Vector4D(width, height, 1.0f / width, 1.0f / height));
+
+		Matrix4x4 view;
+		g_matSystem->GetMatrix(MATRIXMODE_VIEW, view);
+		bufferData.append(Vector4D(inverse(view).getTranslationComponentTransposed(), 0.0f));
+	}
+};
+DEFINE_SHADER(ThisClassNameStr, CDebugDrawShader)
+}

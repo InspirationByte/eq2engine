@@ -32,10 +32,12 @@ public:
 	void		Position3fv(const Vector3D& v);
 	void		Position2f(float x, float y);
 	void		Position2fv(const Vector2D& v);
+	void		Position4fv(const Vector4D& v);		// w is a free value for the shader, 1 by the other setters
 
 	// normal setup
 	void		Normal3f(float nx, float ny, float nz);
 	void		Normal3fv(const Vector3D& v);
+	void		Normal4fv(const Vector4D& v);		// w is a free value for the shader, 0 by the other setters
 
 	// texcoord setup
 	void		TexCoord2f(float s, float t);
@@ -239,6 +241,12 @@ inline void CMeshBuilder::Position2fv(const Vector2D& v)
 	Position2f(v[0], v[1]);
 }
 
+inline void CMeshBuilder::Position4fv(const Vector4D& v)
+{
+	m_position.value = v;
+	m_pushedVert = true;
+}
+
 // normal setup
 inline void CMeshBuilder::Normal3f(float nx, float ny, float nz)
 {
@@ -251,6 +259,11 @@ inline void CMeshBuilder::Normal3f(float nx, float ny, float nz)
 inline void CMeshBuilder::Normal3fv(const Vector3D& v)
 {
 	Normal3f(v[0], v[1], v[2]);
+}
+
+inline void CMeshBuilder::Normal4fv(const Vector4D& v)
+{
+	m_normal.value = v;
 }
 
 inline void CMeshBuilder::TexCoord2f(float s, float t)

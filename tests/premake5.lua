@@ -61,3 +61,19 @@ project "scripting_tests"
 		"scripting/*.cpp",
 		"scripting/*.h"
 	}
+
+project "network_tests"
+    kind "ConsoleApp"
+	properties { "unitybuild" }
+    uses {
+		"corelib", "frameworkLib",
+		"e2Core", "testsCommonLib", "networkLib", "blinkLib",
+		"public", "shared",
+		"gtest"
+	}
+    files {
+		"network/*.cpp",
+		"network/*.h"
+	}
+	filter "system:Windows"
+		links { "wsock32" }

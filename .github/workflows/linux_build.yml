@@ -29,7 +29,7 @@ on:
 env:
   PROJECT_NAME: auto_tests
   BUILD_PLATFORM: x64
-  TESTS: ds_tests ppmem_tests scripting_tests
+  TESTS: ds_tests ppmem_tests scripting_tests network_tests
   
   EXE_SUFFIX:
 
@@ -82,3 +82,13 @@ jobs:
           ./$test || failed="$failed $test"
         done
         if [ -n "$failed" ]; then echo "::error::Failed tests:$failed"; exit 1; fi
+
+    - name: Run eqrpc and blink Python tests
+      working-directory: ./tools/python
+      timeout-minutes: 5
+      run: |
+        bin_dir=$(pwd)/../../build/${{env.PROJECT_NAME}}/bin/${{env.BUILD_PLATFORM}}/${{matrix.configuration}}
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$bin_dir
+        export EQRPC_NETWORK_TESTS=$bin_dir/network_tests
+        python3 -m unittest discover -s eqrpc/tests -t .
+        python3 -m unittest discover -s blink/tests -t .

@@ -119,6 +119,11 @@ KeyValues::WriteBinary(outStream, root);	// binary form, read back with ParseBin
 `KV_LoadFromFile` is deprecated; open the stream through `g_fileSystem` and call `KeyValues::Parse`.
 Parse errors are reported to the log with the file name and line.
 
+The binary form is also the wire format of the RPC messages
+([network_rpc_overview.md](network_rpc_overview.md#binary-keyvalues)). `ParseBinary` checks every
+count and length against the rest of the stream and limits the nesting depth, so broken or foreign
+data fails the parse; `WriteBinary` gives equal bytes for equal sections.
+
 ## Reading values
 
 ### Finding keys

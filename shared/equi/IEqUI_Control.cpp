@@ -299,7 +299,11 @@ void IUIControl::Parse(const KVSection& sec)
 		const Vector2D scaleVal = KV_GetVector2D(transformSec->FindSection("elementScale"), 0, 1.0f);
 		const Vector2D translate = KV_GetVector2D(transformSec->FindSection("translate"), 0, 0.0f);
 
+		// "skew x;" or "skew x y;" in degrees, a missing y reads as 0
+		const Vector2D skewVal = KV_GetVector2D(transformSec->FindSection("skew"), 0, 0.0f);
+
 		SetTransform(translate, scaleVal, rotateVal);
+		SetSkew(skewVal);
 	}
 
 	//------------------------------------------------------------------------------
@@ -439,6 +443,19 @@ void IUIControl::SetTransform(const Vector2D& translateVal, const Vector2D& scal
 	m_transform.translation = translateVal;
 	m_transform.scale = scaleVal;
 	m_transform.rotation = rotateVal;
+}
+
+static constexpr float UI_MAX_SKEW_DEGREES = 80.0f;
+
+void IUIControl::SetSkew(const Vector2D& skewDegrees)
+{
+	m_transform.skew.x = clamp(skewDegrees.x, -UI_MAX_SKEW_DEGREES, UI_MAX_SKEW_DEGREES);
+	m_transform.skew.y = clamp(skewDegrees.y, -UI_MAX_SKEW_DEGREES, UI_MAX_SKEW_DEGREES);
+}
+
+Vector2D IUIControl::GetSkew() const
+{
+	return m_transform.skew;
 }
 
 bool IUIControl::IsVisible() const
@@ -756,6 +773,21 @@ void IUIControl::Render(int depth, RenderContextAbstract& context)
 		const Vector2D clientRectCenter = clientRectRender.GetCenter();
 		const Matrix4x4 clientPosMat = translate(clientRectCenter.x, clientRectCenter.y, 0.0f);
 		Matrix4x4 rotationScale = clientPosMat * scale4(m_transform.scale.x, m_transform.scale.y, 1.0f) * rotateZ4(DEG2RAD(m_transform.rotation));
+
+		// skew around the centre, applied first so rotation and scale act on the sheared shape.
+		// screen Y points down, so a positive x skew moves rows above the centre to the right.
+		if (m_transform.skew.x != 0.0f || m_transform.skew.y != 0.0f)
+		{
+			const float shearX = tanf(DEG2RAD(m_transform.skew.x));
+			const float shearY = tanf(DEG2RAD(m_transform.skew.y));
+			const Matrix4x4 skewMat(
+				1.0f,		-shearX,	0.0f,	0.0f,
+				-shearY,	1.0f,		0.0f,	0.0f,
+				0.0f,		0.0f,		1.0f,	0.0f,
+				0.0f,		0.0f,		0.0f,	1.0f);
+			rotationScale = rotationScale * skewMat;
+		}
+
 		rotationScale = rotationScale * !clientPosMat;
 
 		const Matrix4x4 localTransform = translate(m_transform.translation.x * elementScale.x, m_transform.translation.y * elementScale.y, 0.0f) * rotationScale;

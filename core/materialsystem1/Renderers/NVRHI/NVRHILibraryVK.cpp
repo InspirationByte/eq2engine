@@ -231,6 +231,17 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 	}
 #endif
 
+#ifdef NVRHI_WITH_VALIDATION
+	// synchronization validation reports buffer/image hazards that the default
+	// validation layer does not catch (write-after-read across submissions etc)
+	if (vulkan_validation.GetBool() && arrayFindIndex(m_optionalExtensions.instance, VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME) != -1)
+	{
+		m_enabledExtensions.instance.append(VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME);
+		m_validationFeatures.setEnabledValidationFeatures({ 1u, &m_syncValidationEnable });
+		m_useSyncValidation = true;
+	}
+#endif
+
 	Array<const char*> vkInstExtNames(PP_SL);
 	Array<const char*> vkLayerNames(PP_SL);
 
@@ -310,6 +321,11 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 			.setEnabledExtensionCount(vkInstExtNames.numElem())
 			.setPpEnabledExtensionNames(vkInstExtNames.ptr())
 			.setPApplicationInfo(&applicationInfo);
+
+#ifdef NVRHI_WITH_VALIDATION
+		if (m_useSyncValidation)
+			info.setPNext(&m_validationFeatures);
+#endif
 
 		const vk::Result res = vk::createInstance(&info, nullptr, &m_vkInstance);
 		if (res != vk::Result::eSuccess)
@@ -453,6 +469,12 @@ bool CNVRHIRenderLibVK::InitAPI(const ShaderAPIParams& params)
 	m_nvrhiFrameWaitQuery = m_nvrhiDevice->createEventQuery();
 	m_nvrhiDevice->setEventQuery(m_nvrhiFrameWaitQuery, nvrhi::CommandQueue::Graphics);
 
+	// the presentation waits these semaphores, which are signaled by an empty
+	// submission at the end of every frame (see EndFrame); one per frame in flight
+	for (VkSemaphore& semaphore : m_framePresentSemaphores)
+		semaphore = m_vkDevice.createSemaphore(vk::SemaphoreCreateInfo());
+	m_nvrhiFramePresentCmdList = m_nvrhiDevice->createCommandList();
+
 	return true;
 }
 
@@ -583,6 +605,13 @@ bool CNVRHIRenderLibVK::FindQueueFamilies(vk::PhysicalDevice vkPhysicalDevice, v
 	// TODO: ShaderAPIParams
 	const bool enableComputeQueue = false;
 	const bool enableCopyQueue = false;
+
+	// this may be called multiple times (device probing and the final call for the
+	// picked device), so the families must be rediscovered from scratch
+	m_vkGraphicsQueueFamily = -1;
+	m_vkComputeQueueFamily = -1;
+	m_vkTransferQueueFamily = -1;
+	m_vkPresentQueueFamily = -1;
 
 	auto queueFamiliyProps = vkPhysicalDevice.getQueueFamilyProperties();
 
@@ -873,6 +902,17 @@ void CNVRHIRenderLibVK::ExitAPI()
 	CNVRHIRenderAPI::Instance.m_rhiDevice = nullptr;
 	m_nvrhiDevice = nullptr;
 	m_nvrhiFrameWaitQuery = nullptr;
+	m_nvrhiFramePresentCmdList = nullptr;
+	m_framePresentSemaphore = nullptr;
+
+	for (VkSemaphore& semaphore : m_framePresentSemaphores)
+	{
+		if (semaphore)
+		{
+			m_vkDevice.destroySemaphore(semaphore);
+			semaphore = nullptr;
+		}
+	}
 
 	if (m_vkDebugReportCallback)
 		m_vkInstance.destroyDebugReportCallbackEXT(m_vkDebugReportCallback);
@@ -923,6 +963,21 @@ void CNVRHIRenderLibVK::EndFrame()
 	stats.textureUpdateCount = 0;
 
 	g_renderWorker.Execute(__func__, [this]() {
+		// signal the frame-present semaphore from an empty submission: queue submissions
+		// execute in order, so it completes only after every pass of this frame, and the
+		// present (which waits it) cannot show a partially rendered image
+		if (m_nvrhiFramePresentCmdList)
+		{
+			VkSemaphore vkFramePresentSemaphore = m_framePresentSemaphores[m_framePresentSemaphoreIdx];
+			m_framePresentSemaphoreIdx = (m_framePresentSemaphoreIdx + 1) % uint32_t(std::size(m_framePresentSemaphores));
+			m_framePresentSemaphore = vkFramePresentSemaphore;
+			m_nvrhiDevice->queueSignalSemaphore(nvrhi::CommandQueue::Graphics, vkFramePresentSemaphore, 0);
+
+			m_nvrhiFramePresentCmdList->open();
+			m_nvrhiFramePresentCmdList->close();
+			m_nvrhiDevice->executeCommandList(m_nvrhiFramePresentCmdList);
+		}
+
 		m_currentSwapChain->SwapBuffers();
 
 		const int bufferCount = 3;// m_currentSwapChain->m_rhiSwapChainTextures.numElem();

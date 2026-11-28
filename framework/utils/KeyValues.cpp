@@ -1649,15 +1649,35 @@ struct kvbin_hdr
 	// - nested key bases
 };
 
-void KeyValues::ReadBinaryValue(IFileStream* stream, KVSection& outSection)
+// binary data may come from another process (network messages), so every size is checked
+// against the rest of the stream before it is read
+static constexpr int KV_BINARY_MAX_DEPTH = 64;
+static constexpr int KV_BINARY_STACK_STRING = 1024;
+
+static bool KVBinaryCanRead(IFileStream* stream, VSSize size)
+{
+	return size >= 0 && stream->GetSize() - stream->Tell() >= size;
+}
+
+bool KeyValues::ReadBinaryValue(IFileStream* stream, KVSection& outSection, int depth)
 {
 	kvbin_value_t binValue;
+	if (!KVBinaryCanRead(stream, sizeof(binValue)))
+		return false;
 	stream->Read(&binValue, 1, sizeof(binValue));
 
 	if(binValue.type == KVPAIR_STRING)
 	{
 		// int value as string length
-		char* strVal = (char*)stackalloc(binValue.nValue+1);
+		if (!KVBinaryCanRead(stream, binValue.nValue))
+			return false;
+
+		const bool onHeap = binValue.nValue >= KV_BINARY_STACK_STRING;
+		char* strVal = onHeap ? static_cast<char*>(PPAlloc(binValue.nValue + 1)) : static_cast<char*>(stackalloc(binValue.nValue + 1));
+		defer{
+			if (onHeap)
+				PPFree(strVal);
+		};
 
 		stream->Read(strVal, 1, binValue.nValue);
 		strVal[binValue.nValue] = '\0';
@@ -1679,21 +1699,44 @@ void KeyValues::ReadBinaryValue(IFileStream* stream, KVSection& outSection)
 	else if(binValue.type == KVPAIR_SECTION)
 	{
 		KVSection& parseSec = outSection.CreateSectionValue();
-		KeyValues::ParseBinary(stream, parseSec);
+		return KeyValues::ParseBinarySection(stream, parseSec, depth + 1);
 	}
+	else
+	{
+		return false;
+	}
+
+	return true;
 }
 
 // reads binary section
 bool KeyValues::ParseBinary(IFileStream* stream, KVSection& outSection)
 {
+	if (ParseBinarySection(stream, outSection, 0))
+		return true;
+
+	MsgError("KeyValues::ParseBinary - invalid or truncated data\n");
+	return false;
+}
+
+bool KeyValues::ParseBinarySection(IFileStream* stream, KVSection& outSection, int depth)
+{
+	if (depth > KV_BINARY_MAX_DEPTH)
+		return false;
+
 	kvbin_hdr binBase;
+	if (!KVBinaryCanRead(stream, sizeof(binBase)))
+		return false;
 	stream->Read(&binBase, 1, sizeof(binBase));
 
-	if(binBase.ident != KV_IDENT_BINARY)
-	{
-		MsgError("KV_ReadBinaryBase - invalid header\n");
+	if(binBase.ident != KV_IDENT_BINARY || binBase.keyCount < 0)
 		return false;
-	}
+
+	if (binBase.type < KVPAIR_STRING || binBase.type >= KVPAIR_TYPES)
+		return false;
+
+	if (!KVBinaryCanRead(stream, binBase.nameLen))
+		return false;
 
 	// read name after section header
 	char* nameTemp = (char*)stackalloc(binBase.nameLen+1);
@@ -1707,13 +1750,17 @@ bool KeyValues::ParseBinary(IFileStream* stream, KVSection& outSection)
 	
 	// read values if we have any
 	for(int i = 0; i < binBase.valueCount; i++)
-		ReadBinaryValue(stream, outSection);
+	{
+		if (!ReadBinaryValue(stream, outSection, depth))
+			return false;
+	}
 
 	// read nested sections as well
 	for(int i = 0; i < binBase.keyCount; i++)
 	{
 		KVSection& parseSec = outSection.CreateSection(nullptr);
-		KeyValues::ParseBinary(stream, parseSec);
+		if (!KeyValues::ParseBinarySection(stream, parseSec, depth + 1))
+			return false;
 	}
 
 	return true;
@@ -1723,6 +1770,7 @@ bool KeyValues::ParseBinary(IFileStream* stream, KVSection& outSection)
 void KeyValues::WriteValueBinary(IFileStream* outStream, const KVPairValue& value)
 {
 	kvbin_value_t binValue;
+	memset(&binValue, 0, sizeof(binValue));
 	binValue.type = value.type;
 
 	if(binValue.type == KVPAIR_STRING)

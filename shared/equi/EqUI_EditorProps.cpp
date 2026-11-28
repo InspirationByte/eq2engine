@@ -29,7 +29,7 @@ enum EPropType
 	PROP_FLAGS,		// any combination of option tokens
 	PROP_ENUM,		// one of option tokens
 	PROP_FONT,		// local font name or font description values
-	PROP_TRANSFORM,	// nested section: rotate, translate, elementScale
+	PROP_TRANSFORM,	// nested section: rotate, translate, elementScale, skew
 };
 
 struct PropDesc
@@ -345,6 +345,7 @@ static bool DrawPropertyValue(KVSection& sec, KVSection*& key, const PropDesc& d
 			float rotate = KV_GetValueFloat(key ? key->FindSection("rotate") : nullptr, 0, 0.0f);
 			Vector2D translate = KV_GetVector2D(key ? key->FindSection("translate") : nullptr, 0, vec2_zero);
 			Vector2D elementScale = KV_GetVector2D(key ? key->FindSection("elementScale") : nullptr, 0, Vector2D(1.0f));
+			Vector2D skew = KV_GetVector2D(key ? key->FindSection("skew") : nullptr, 0, vec2_zero);
 
 			// short labels to fit narrow columns and menus, key names are in the tooltips
 			const auto beginRow = [&](const char* label, const char* tooltip) {
@@ -365,7 +366,10 @@ static bool DrawPropertyValue(KVSection& sec, KVSection*& key, const PropDesc& d
 			beginRow("S", "elementScale");
 			const bool scaleChanged = ImGui::DragFloat2("##elementScale", &elementScale.x, 0.01f);
 
-			if (!rotateChanged && !translateChanged && !scaleChanged)
+			beginRow("K", "skew x y, degrees");
+			const bool skewChanged = ImGui::DragFloat2("##skew", &skew.x, 0.25f, -80.0f, 80.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
+
+			if (!rotateChanged && !translateChanged && !scaleChanged && !skewChanged)
 				return false;
 
 			// nested keys are kept, only the changed one is written
@@ -378,6 +382,8 @@ static bool DrawPropertyValue(KVSection& sec, KVSection*& key, const PropDesc& d
 				SetFloatValues(*key, "translate", &translate.x, 2);
 			if (scaleChanged)
 				SetFloatValues(*key, "elementScale", &elementScale.x, 2);
+			if (skewChanged)
+				SetFloatValues(*key, "skew", &skew.x, 2);
 
 			return true;
 		}

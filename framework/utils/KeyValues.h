@@ -434,7 +434,8 @@ public:
 protected:
 	static bool ParseTextV2(const char* pszBuffer, VSSize bufferSize, KVSection& outSection, const char* pszFileName, int startLine);
 	static bool ParseTextV3(const char* pszBuffer, VSSize bufferSize, KVSection& outSection, const char* pszFileName, int startLine);
-	static void ReadBinaryValue(IFileStream* stream, KVSection& addTo);
+	static bool ParseBinarySection(IFileStream* stream, KVSection& outSection, int depth);
+	static bool ReadBinaryValue(IFileStream* stream, KVSection& addTo, int depth);
 
 	static EKVPairType ResolvePairType(const char* name);
 	static int	ReadProcessString(const char* pszStr, char* dest, int maxLength = COM_INT_MAX);

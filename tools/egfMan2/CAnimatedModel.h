@@ -20,7 +20,6 @@ enum ViewerRenderFlags
 	RFLAG_PHYSICS		= (1 << 0),
 	RFLAG_BONES			= (1 << 1),
 	RFLAG_ATTACHMENTS	= (1 << 2),
-	RFLAG_WIREFRAME		= (1 << 2),
 };
 
 // basic animating class
@@ -33,6 +32,23 @@ public:
 	// renders model
 	virtual void				Render(int nViewRenderFlags, float fDist, int startLod, bool overrideLod, float dt, IGPURenderPassRecorder* rendPassRecorder);
 	virtual void				RenderPhysModel(IGPURenderPassRecorder* rendPassRecorder);
+
+	// the transform of the model: the physics body or the ragdoll while physics runs
+	Matrix4x4					GetWorldMatrix() const;
+	int							GetDrawnLod() const { return m_drawnLod; }
+
+	ArrayCRef<AnimPoseController>	GetPoseControllers() const { return m_poseControllers; }
+	ArrayCRef<AnimDataProvider>		GetAnimData() const { return m_animData; }
+	ArrayCRef<AnimIkChain>			GetIkChains() const { return m_ikChains; }
+
+	// the transforms (attachments) are edited on a copy of the EGF ones, as a preview;
+	// a model space transform is the local one times the bone matrix of the current pose
+	const studioTransform_t&	GetTransform(int transformIdx) const { return m_transforms[transformIdx]; }
+	Matrix4x4					GetTransformParentMatrix(int transformIdx) const;
+	void						SetModelSpaceTransform(int transformIdx, const Matrix4x4& transform);
+	bool						IsTransformEdited(int transformIdx) const;
+	void						ResetTransform(int transformIdx);
+
 	virtual void				Update(float dt);
 
 	// sets model for this entity
@@ -47,8 +63,8 @@ public:
 
 protected:
 
-	void						VisualizeBones();
-	void						VisualizeAttachments();
+	void						VisualizeBones(bool all);
+	void						VisualizeAttachments(bool all);
 
 	void						UpdateRagdollBones();
 	void						DestroyPhysics();
@@ -67,4 +83,12 @@ public:
 	Array<AnimSequence*>		m_sequencesList{ PP_SL };
 
 	int							m_bodyGroupFlags;
+	int							m_skinIdx{ 0 };
+	int							m_selectedPhysObject{ -1 };	// drawn brighter than the others
+	int							m_selectedBone{ -1 };		// highlighted, drawn also without RFLAG_BONES
+	int							m_selectedAttachment{ -1 };	// highlighted, drawn also without RFLAG_ATTACHMENTS
+
+protected:
+	Array<studioTransform_t>	m_editedTransforms{ PP_SL };
+	int							m_drawnLod{ 0 };
 };

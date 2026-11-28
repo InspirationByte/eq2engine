@@ -55,6 +55,10 @@ float DistancePointPoly2D(const Vector2D& point, ArrayCRef<Vector2D> edgeVerts, 
 float DistanceLineLine(const Vector3D& lB1, const Vector3D& lE1, const Vector3D& lB2, const Vector3D& lE2);
 float DistanceLineSegLineSeg(const Vector3D& L0, const Vector3D& L1, const Vector3D& S0, const Vector3D& S1, float* Lt = nullptr, Vector3D* Ln = nullptr, float* St = nullptr, Vector3D* Sn = nullptr);
 
+// distance between the two segments in the plane, the fractions of the closest points along them
+// (Dan Sunday's segment to segment distance, the degenerate segments keep their start)
+float DistanceSegSeg2D(const Vector2D& sA0, const Vector2D& sA1, const Vector2D& sB0, const Vector2D& sB1, float* outFA = nullptr, float* outFB = nullptr);
+
 //---------------------------------------------------------------------------------
 
 void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& out);
@@ -65,6 +69,20 @@ float PolygonSignedArea2D(ArrayCRef<Vector2D> points);
 
 // the point is inside the closed polygon of any winding (even-odd rule), false for less than 3 points
 bool IsPointInPolygon2D(ArrayCRef<Vector2D> points, const Vector2D& point);
+
+// splits the simple polygon (any winding, no self crossings) into triangles by ear clipping: outIndices holds
+// three polygon point indices per triangle, the triangles have a positive PolygonSignedArea2D. A collinear
+// point stays a triangle point while the polygon has an ear, else it is dropped and lies on a triangle edge.
+// False when the polygon is degenerate or crosses itself, outIndices is empty then
+bool PolygonTriangulate2D(ArrayCRef<Vector2D> points, Array<int>& outIndices);
+
+// splits the simple polygon into the most even triangles: the smallest triangle angle, measured on points3D,
+// is as big as it can be, the diagonals go inside the polygon on points2D (any winding; the points of a
+// steep or curved polygon can go there by their lengths across and along it). Unlike PolygonTriangulate2D
+// (fast ear clipping, any triangles that fit) it picks the triangles by their shape in 3D, with n^3 time
+// and n^2 memory, for polygons of a few tens of points. outIndices holds three point indices per
+// triangle. False when the polygon is degenerate or no diagonals make it (it crosses itself)
+bool PolygonTriangulateMinAngle(ArrayCRef<Vector2D> points2D, ArrayCRef<Vector3D> points3D, Array<int>& outIndices);
 
 // splits the simple polygon (any winding, no self crossings) into convex parts of at most maxPartPoints
 // points: ear clipping, then the diagonals are removed while the merged parts stay convex (Hertel-Mehlhorn).

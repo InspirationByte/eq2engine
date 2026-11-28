@@ -266,6 +266,8 @@ EQSCRIPT_TYPE_BEGIN(equi::IUIControl)
 	EQSCRIPT_BIND_FUNC( SetTextAlignment )
 
 	EQSCRIPT_BIND_FUNC( SetTransform )
+	EQSCRIPT_BIND_FUNC( SetSkew )
+	EQSCRIPT_BIND_FUNC( GetSkew )
 
 	EQSCRIPT_BIND_FUNC( CalcScaling )
 
