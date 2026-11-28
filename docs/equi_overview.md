@@ -141,7 +141,7 @@ panel
 | `align ...` | Alignment inside the parent: `left`, `right`, `hcenter`, `top`, `bottom`, `vcenter`, `center` |
 | `anchors ...` | Sides kept at the same distance when the parent is resized: `left`, `top`, `right`, `bottom`, `all` |
 | `scaling mode` | How the parent's resize scales the control: `none`, `inherit`, `inherit_min`, `inherit_max`, `aspectw`, `aspecth` / `uniform`, `aspect_min`, `aspect_max` |
-| `transform { rotate deg; translate x y; elementScale x y; }` | Extra transform around the control center (does not affect hit testing) |
+| `transform { rotate deg; translate x y; elementScale x y; skew x y; }` | Extra transform around the control center (does not affect hit testing). `skew` is a shear in degrees, applied before rotation and scale: `x > 0` leans the vertical sides like `/` (top edge moves right), `y > 0` raises the right side; a single value is `x`. Clamped to ±80 |
 | `clipChilds 0/1`, `clipTransform 0/1` | Clip children to this control's rectangle; apply the transform to the clip rectangle. Default is inherited from the parent |
 | `command <args>` | Handler for the `command` event, see [Events](#events) |
 | `font "Name" [size] [bold] [italic]` | Font of the control. A single name refers to an entry of `fonts` in this control or a parent |
@@ -190,7 +190,7 @@ if (equi::ProgressBar* bar = panel->FindChildRecursive("Health")->As<equi::Progr
 - Visibility and state: `Show`, `Hide`, `SetVisible`, `SetSelfVisible`, `Enable`. `IsVisible()`
   and `IsEnabled()` include the parents.
 - Geometry: `SetPosition`, `SetSize`, `SetRectangle`, `SetAnchors`, `SetAlignment`, `SetScaling`,
-  `SetTransform(translate, scale, rotate)`.
+  `SetTransform(translate, scale, rotate)` (leaves skew unchanged), `SetSkew(vec2 degrees)`, `GetSkew()`.
 - Text: `SetLabel` (UTF-8 or `#TOKEN`), `SetLabelText` (wide string), `SetFontScale`,
   `SetTextColor`, `SetTextAlignment`. Labels support font tags (`TEXT_STYLE_USE_TAGS`).
 - `Image::SetMaterial`, `SetAtlasImage`, `SetColor`, `SetUVRegion` (in texture pixels);
@@ -224,7 +224,7 @@ not build new UI logic on them. Event handlers are named callbacks stored in the
 `Render(colorTarget)` draws the root panel in one render pass on the given target (the backbuffer
 or the state viewport). Each control:
 
-1. Pushes its transform (`transform` block, rotated and scaled around its center).
+1. Pushes its transform (`transform` block, skewed, rotated and scaled around its center).
 2. Sets the scissor rectangle (its client rectangle, clipped by parents with `clipChilds`).
 3. Calls `DrawSelf(rect, recorder)` if `selfVisible`. The manager root panel is created with
    `selfVisible` off; controls rendered without a parent (the game HUD layout) are drawn like any
@@ -344,8 +344,8 @@ registered. `equiEditorOpenFile(path)` opens a file from code.
   editors; a checkbox writes or removes the key, flag options wrap to the next line when the
   column is narrow. `font` has a list of local fonts: names from `fonts` sections of the
   control, its parents and their included files. Other keys are edited as raw values written as
-  in `.res` files. `transform` has its own editor (T, R, S: `translate`, `rotate`,
-  `elementScale`); other nested sections (`fonts`) are edited in the KeyValues tab.
+  in `.res` files. `transform` has its own editor (T, R, S, K: `translate`, `rotate`,
+  `elementScale`, `skew`); other nested sections (`fonts`) are edited in the KeyValues tab.
 - **Editor-only controls:** child sections with `editorOnly 1;` are shown in the preview (for
   example sample content for a list) and removed from the file on save. This includes
   `child file "<path>" { editorOnly 1; }` (Add child file... has an Editor only option, the

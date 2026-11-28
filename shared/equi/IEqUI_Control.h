@@ -144,7 +144,14 @@ public:
 	virtual IAARectangle		GetRectangle() const;
 
 	// sets new transformation. Set all zeros to reset
+	// NOTE: does not touch skew, so code animating translate/scale/rotate keeps a skew set in the layout
 	void						SetTransform(const Vector2D& translate, const Vector2D& scale, float rotate);
+
+	// skew (shear) in degrees, applied around the control's centre before rotation and scale.
+	// x > 0: top edge leans right ("/"), the vertical sides tilt. y > 0: right edge rises, the horizontal sides tilt.
+	// Clamped to +/-80 degrees.
+	void						SetSkew(const Vector2D& skewDegrees);
+	Vector2D					GetSkew() const;
 
 	// drawn rectangle
 	virtual IAARectangle		GetClientRectangle() const;
@@ -209,6 +216,7 @@ protected:
 		float		rotation{ 0.0f };
 		Vector2D	translation{ 0.0f };
 		Vector2D	scale{ 1.0f };
+		Vector2D	skew{ 0.0f };	// degrees
 	};
 
 	struct FontProps
